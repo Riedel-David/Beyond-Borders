@@ -1,6 +1,7 @@
 package com.riedel.aeroglobe.ui.map
 
 import androidx.compose.ui.graphics.toArgb
+import com.riedel.aeroglobe.data.visa.VisaBand
 import com.riedel.aeroglobe.ui.theme.MapPalette
 import java.net.URI
 import org.maplibre.android.maps.Style
@@ -33,6 +34,18 @@ internal object PlacesMapStyle {
     const val LAYER_WISHLIST = "places-wishlist"
     const val LAYER_BORDER = "places-border"
     const val LAYER_SELECTED = "places-selected"
+    const val LAYER_VISA_SELECTED = "places-visa-selected"
+
+    /**
+     * The visa lens' fills, in ramp order and named by band.
+     *
+     * Added above the status fills so switching the lens on is a filter change rather
+     * than a style rebuild — the four layers cover all 252 places, so nothing of the
+     * travel colours shows through. A place with no requirement is the one exception,
+     * and it falls through to [LAYER_FILL]'s unmarked land, which reads as "no answer"
+     * because that is what it is.
+     */
+    fun visaLayerId(band: VisaBand): String = "places-visa-${band.name.lowercase()}"
 
     /** The asset the geo pipeline writes; see tools/geo/build_geo.py. */
     private const val GEOJSON_ASSET = "asset://places.geojson"
@@ -49,7 +62,7 @@ internal object PlacesMapStyle {
         // "raw JSON" and throws on anything that looks like a URL.
         val source = GeoJsonSource(SOURCE_ID, URI.create(GEOJSON_ASSET))
 
-        return Style.Builder()
+        var builder = Style.Builder()
             .fromJson(EMPTY_STYLE)
             .withSource(source)
             .withLayer(
@@ -83,6 +96,20 @@ internal object PlacesMapStyle {
                     .withProperties(PropertyFactory.fillColor(palette.wishlist.toArgb()))
                     .withFilter(noPlaces())
             )
+
+        // The visa lens, one layer per band, above the travel colours and below the
+        // borders. Same trick as the statuses: each layer owns one colour and shows
+        // whichever codes its filter names, so turning the lens on or off never
+        // rebuilds the style.
+        VisaBand.entries.forEach { band ->
+            builder = builder.withLayer(
+                FillLayer(visaLayerId(band), SOURCE_ID)
+                    .withProperties(PropertyFactory.fillColor(palette.visa.colorFor(band).toArgb()))
+                    .withFilter(noPlaces())
+            )
+        }
+
+        return builder
             .withLayer(
                 LineLayer(LAYER_BORDER, SOURCE_ID).withProperties(
                     PropertyFactory.lineColor(palette.border.toArgb()),
@@ -103,20 +130,34 @@ internal object PlacesMapStyle {
                 LineLayer(LAYER_SELECTED, SOURCE_ID)
                     .withProperties(
                         PropertyFactory.lineColor(palette.selectedOutline.toArgb()),
-                        // Also zoom-dependent: a fixed 2 dp outline turns
-                        // Greenland's fjords into a solid navy blob at world zoom.
-                        PropertyFactory.lineWidth(
-                            Expression.interpolate(
-                                Expression.linear(),
-                                Expression.zoom(),
-                                Expression.stop(1, 1.4f),
-                                Expression.stop(5, 2.6f),
-                            )
-                        ),
+                        PropertyFactory.lineWidth(selectionWidth()),
+                    )
+                    .withFilter(noPlaces())
+            )
+            // A second outline in the lens' own colour rather than a recolour of the
+            // one above, because a layer's paint properties are fixed when the style
+            // is built and the lens toggles far more often than the theme does. Only
+            // ever one of the two carries a filter, so they cannot both draw.
+            .withLayer(
+                LineLayer(LAYER_VISA_SELECTED, SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.lineColor(palette.visa.selectedOutline.toArgb()),
+                        PropertyFactory.lineWidth(selectionWidth()),
                     )
                     .withFilter(noPlaces())
             )
     }
+
+    /**
+     * Zoom-dependent, like the borders: a fixed 2 dp outline turns Greenland's fjords
+     * into a solid blob at world zoom.
+     */
+    private fun selectionWidth(): Expression = Expression.interpolate(
+        Expression.linear(),
+        Expression.zoom(),
+        Expression.stop(1, 1.4f),
+        Expression.stop(5, 2.6f),
+    )
 
     /** A filter that matches nothing — the starting state of every overlay. */
     fun noPlaces(): Expression = Expression.literal(false)

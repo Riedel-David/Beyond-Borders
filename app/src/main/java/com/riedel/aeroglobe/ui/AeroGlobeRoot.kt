@@ -59,7 +59,7 @@ fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
     // Hoisted to the root so the map and the passport share one instance: marking
     // a country on one is instantly visible on the other, with no syncing.
     val placesViewModel: PlacesViewModel = viewModel(
-        factory = PlacesViewModel.factory(container.places),
+        factory = PlacesViewModel.factory(container.places, container.visa),
     )
 
     Scaffold(

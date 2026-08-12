@@ -15,15 +15,16 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 
 | | |
 |---|---|
-| Travel map | working — 252 places, tap to select, Been / Lived / Want |
+| Travel map | working — 252 places, tap to select, Been / Lived / Want, plus a visa lens |
 | Passport list | working — search, filters, per-continent stats |
+| Passport visas | working — where a German passport goes, 252 answers, offline |
 | Settings | working — theme, map colours, opening screen, JSON export / import |
 | Flights | not started (phase 3) |
 
 Everything that works, works **offline**: the geometry is bundled in the APK and
 there is no basemap, no tile server and no API key.
 
-Phase 1.5 is closed (version `0.2.5`) and visas are next, in phase 2.
+Phase 2 is closed (version `0.3.0`); flights are next, in phase 3.
 
 ## Choosing the map colours
 
@@ -49,6 +50,57 @@ of each other on the colour wheel — because contrast says a fill is *visible*,
 that two fills are *distinguishable*. Adding a seventh colour breaks the build until
 it earns its place.
 
+## Where the passport gets you
+
+Passport → **Where I can go** answers the other half of the question the map answers.
+252 destinations, one requirement each, entirely offline, for a **German** passport
+only. The map has a matching **Visa** toggle that repaints the same map by requirement
+instead of by your own history.
+
+The interesting part is not the dataset — it is the 53 places the dataset does not
+cover. The Passport Index matrix is 199 sovereign states; AeroGlobe has 252 places,
+because the whole point of this app is that Greenland is not Denmark. So those 53 are
+hand-written in [`tools/visa/rules.py`](tools/visa/rules.py), one entry at a time, and
+they are exactly the ones other apps get wrong:
+
+- **Greenland** is outside the EU *and* outside Schengen — a Schengen visa is not valid
+  there, and an ID card is not enough.
+- **French Guiana** *is* the EU with full freedom of movement, but outside Schengen, so
+  expect a passport check on a domestic flight from Paris. No 90-day limit, because
+  freedom of movement does not have one.
+- **American Samoa** does not accept an ESTA even though Guam does.
+
+Every one of the 53 carries a note written for a traveller, a source link, and a
+**confidence** the app displays — seven are marked *uncertain*, and the app says so on
+the row rather than presenting all 53 in the same authoritative voice. Every
+destination links to its Auswärtiges Amt travel-advice page and to the IATA Travel
+Centre, and every visa surface carries *"data as of <date> — verify officially before
+booking"*. A bundled dataset is a navigation aid, not an authority.
+
+The map's lens uses **four** bands rather than all eight categories, and one violet at
+four intensities rather than a ramp through several hues. That is measured, not
+preferred: hue is the channel colour-vision deficiency takes away, so an ordered scale
+has to carry its order in intensity — and the dark theme's usable luminance range only
+fits four steps that survive simulated protanopia, deuteranopia and tritanopia.
+[`VisaRampTest`](app/src/test/java/com/riedel/aeroglobe/ui/theme/VisaRampTest.kt)
+asserts all of that. The exact answer — "e-Visa · 30 days" — is text in the list, where
+an exact answer belongs; the map is for "roughly, where can I go".
+
+## Regenerating the visa asset
+
+Committed like the geo assets, so a normal build never needs this. There is
+deliberately no in-app refresh: a new matrix has to be re-reviewed against the 53
+overrides, which is a review rather than a download.
+
+```sh
+python3 tools/visa/build_visa.py
+```
+
+It refuses to write unless every one of the 252 places resolves to exactly one answer
+and every curated rule is still live — so the day the dataset starts covering a
+territory itself, the build says the override is dead instead of preserving a stale
+opinion forever.
+
 ## Build and run
 
 Requires Android Studio (for its bundled JDK 21) and an emulator or device with
@@ -57,13 +109,13 @@ API 26+.
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew :app:testDebugUnitTest    # 73 tests, no device needed
+./gradlew :app:testDebugUnitTest    # 116 tests, no device needed
 ./gradlew :app:installDebug         # build + install
 ```
 
-The unit tests are the useful ones to run first: they read the shipped geo assets
-directly and assert the territory splits, so they catch a broken dataset without
-launching anything.
+The unit tests are the useful ones to run first: they read the shipped geo and visa
+assets directly and assert the territory splits, the visa coverage and the colour
+contrast, so they catch a broken dataset without launching anything.
 
 ## Getting the data out
 
@@ -136,6 +188,10 @@ they are worth sequencing.
 
 - Boundaries: [Natural Earth](https://www.naturalearthdata.com/) `admin_0_map_units`,
   public domain.
+- Visa requirements: [Passport Index Data](https://github.com/imorte/passport-index-data),
+  MIT. One passport row, plus 53 hand-curated territory answers of our own.
+- Travel-advice links: the German Federal Foreign Office
+  ([Auswärtiges Amt](https://www.auswaertiges-amt.de/)) — links only, no content copied.
 - Map rendering: [MapLibre Native Android](https://github.com/maplibre/maplibre-native),
   BSD-2-Clause. Note it requires Vulkan.
 

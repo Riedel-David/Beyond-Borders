@@ -38,9 +38,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.aeroglobe.data.place.Place
 import com.riedel.aeroglobe.data.place.PlaceStatus
+import com.riedel.aeroglobe.data.visa.VisaBand
+import com.riedel.aeroglobe.data.visa.VisaConfidence
+import com.riedel.aeroglobe.data.visa.VisaRegistry
+import com.riedel.aeroglobe.data.visa.VisaRequirement
 import com.riedel.aeroglobe.ui.places.PlacesViewModel
 import com.riedel.aeroglobe.ui.theme.LocalMapPalette
 import com.riedel.aeroglobe.ui.theme.MapPalette
+import com.riedel.aeroglobe.ui.theme.VisaRamp
+import com.riedel.aeroglobe.ui.visa.asOfNotice
+import com.riedel.aeroglobe.ui.visa.requirementSummary
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -86,6 +93,9 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val visa by viewModel.visa.collectAsStateWithLifecycle()
+    val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
+    val lens by viewModel.visaLens.collectAsStateWithLifecycle()
     val palette = LocalMapPalette.current
 
     val controller = remember { PlacesMapController() }
@@ -102,6 +112,8 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             controller = controller,
             palette = palette,
             statuses = statuses,
+            visaBands = visaBands,
+            lens = lens,
             selectedCode = selectedCode,
             onTap = viewModel::select,
             modifier = Modifier.fillMaxSize(),
@@ -118,7 +130,9 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (stats.been == 0 && stats.wishlist == 0) {
+                if (lens) {
+                    VisaLegend(palette.visa, visa)
+                } else if (stats.been == 0 && stats.wishlist == 0) {
                     // Nothing marked yet, so the counter would say "0" and teach
                     // nothing. Say what to do instead.
                     Text("Tap a place to mark it", style = MaterialTheme.typography.labelLarge)
@@ -140,23 +154,40 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             }
         }
 
-        MapPill(
+        Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(12.dp),
-            onClick = controller::showWorld,
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                "World",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            MapPill(onClick = controller::showWorld) {
+                Text(
+                    "World",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            // Offered only once the asset is known to have loaded: a toggle that
+            // silently paints nothing would be worse than no toggle.
+            if (visa != null) {
+                MapPill(onClick = { viewModel.setVisaLens(!lens) }) {
+                    Text(
+                        if (lens) "My travels" else "Visa",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
 
         if (selected != null) {
             SelectedPlaceCard(
                 place = selected,
                 status = statuses[selected.code] ?: PlaceStatus.NONE,
+                // Carried into the card whenever the lens is on, so a tap answers the
+                // question the map is currently asking rather than the other one.
+                requirement = if (lens) viewModel.requirementOf(selected.code) else null,
                 onToggle = { target -> viewModel.toggle(selected.code, target) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -180,7 +211,9 @@ private class PlacesMapController {
     private var appliedVisited: Set<String> = emptySet()
     private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
+    private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
     private var appliedSelection: String? = null
+    private var appliedLens = false
 
     fun attach(map: MapLibreMap) {
         this.map = map
@@ -192,7 +225,9 @@ private class PlacesMapController {
         appliedVisited = emptySet()
         appliedLived = emptySet()
         appliedWishlist = emptySet()
+        appliedBands = emptyMap()
         appliedSelection = null
+        appliedLens = false
     }
 
     fun detach() {
@@ -200,11 +235,19 @@ private class PlacesMapController {
         style = null
     }
 
-    fun applyStatuses(statuses: Map<String, PlaceStatus>) {
+    /**
+     * While [lens] is on the travel colours are cleared rather than merely covered.
+     * The visa fills do cover all 252 places today, so covering would look the same —
+     * but a place the asset had no answer for would then show its travel colour under
+     * a visa legend, and "I have been here" reading as a visa band is the one thing
+     * this map must never say.
+     */
+    fun applyStatuses(statuses: Map<String, PlaceStatus>, lens: Boolean) {
         val style = style ?: return
-        val visited = statuses.filterValues { it == PlaceStatus.VISITED }.keys
-        val lived = statuses.filterValues { it == PlaceStatus.LIVED }.keys
-        val wishlist = statuses.filterValues { it == PlaceStatus.WISHLIST }.keys
+        val effective = if (lens) emptyMap() else statuses
+        val visited = effective.filterValues { it == PlaceStatus.VISITED }.keys
+        val lived = effective.filterValues { it == PlaceStatus.LIVED }.keys
+        val wishlist = effective.filterValues { it == PlaceStatus.WISHLIST }.keys
         if (visited != appliedVisited) {
             style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_VISITED)
                 ?.setFilter(PlacesMapStyle.onlyPlaces(visited))
@@ -222,13 +265,30 @@ private class PlacesMapController {
         }
     }
 
-    fun applySelection(code: String?) {
+    /** Which codes each visa band paints. Empty map means the lens is off. */
+    fun applyVisa(bands: Map<VisaBand, Set<String>>) {
         val style = style ?: return
-        if (code == appliedSelection) return
+        if (bands == appliedBands) return
+        appliedBands = bands
+        VisaBand.entries.forEach { band ->
+            style.getLayerAs<FillLayer>(PlacesMapStyle.visaLayerId(band))
+                ?.setFilter(PlacesMapStyle.onlyPlaces(bands[band].orEmpty()))
+        }
+    }
+
+    fun applySelection(code: String?, lens: Boolean) {
+        val style = style ?: return
+        if (code == appliedSelection && lens == appliedLens) return
         appliedSelection = code
-        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_SELECTED)?.setFilter(
+        appliedLens = lens
+        val outline =
             if (code == null) PlacesMapStyle.noPlaces() else PlacesMapStyle.onlyPlace(code)
-        )
+        // Exactly one of the two outlines is armed, so the lens' colour and the travel
+        // view's can never draw over each other.
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_SELECTED)
+            ?.setFilter(if (lens) PlacesMapStyle.noPlaces() else outline)
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_VISA_SELECTED)
+            ?.setFilter(if (lens) outline else PlacesMapStyle.noPlaces())
     }
 
     fun showWorld() {
@@ -260,6 +320,8 @@ private fun PlacesMapView(
     controller: PlacesMapController,
     palette: MapPalette,
     statuses: Map<String, PlaceStatus>,
+    visaBands: Map<VisaBand, Set<String>>,
+    lens: Boolean,
     selectedCode: String?,
     onTap: (String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -322,8 +384,9 @@ private fun PlacesMapView(
             controller.attach(map)
             map.setStyle(PlacesMapStyle.builder(palette)) { style ->
                 controller.onStyleLoaded(style)
-                controller.applyStatuses(statuses)
-                controller.applySelection(selectedCode)
+                controller.applyStatuses(statuses, lens)
+                controller.applyVisa(visaBands)
+                controller.applySelection(selectedCode, lens)
             }
         }
         onDispose { }
@@ -349,8 +412,9 @@ private fun PlacesMapView(
         factory = { mapView },
         modifier = modifier,
         update = {
-            controller.applyStatuses(statuses)
-            controller.applySelection(selectedCode)
+            controller.applyStatuses(statuses, lens)
+            controller.applyVisa(visaBands)
+            controller.applySelection(selectedCode, lens)
         },
     )
 }
@@ -372,6 +436,47 @@ private fun MapPill(
         shadowElevation = 2.dp,
     ) {
         Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
+    }
+}
+
+/**
+ * The lens' legend: the ramp itself, the headline count, and the dataset date.
+ *
+ * The date is not optional decoration. Visa rules change without notice and this asset
+ * is a snapshot, so PLAN.md requires every visa surface to say how old it is and to
+ * point at an official source — the map's share of that is this line.
+ */
+@Composable
+private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?) {
+    Column {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Touching segments rather than the separated dots the travel legend uses:
+            // these four are an ordered scale, and a scale reads as one when its steps
+            // are adjacent.
+            Row(Modifier.clip(MaterialTheme.shapes.extraSmall)) {
+                VisaBand.entries.forEach { band ->
+                    Box(
+                        Modifier
+                            .size(width = 14.dp, height = 10.dp)
+                            .background(ramp.colorFor(band))
+                    )
+                }
+            }
+            Text(
+                if (visa == null) "No visa data" else "${visa.visaFreeCount} visa-free",
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+        if (visa != null) {
+            Text(
+                asOfNotice(visa),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -399,6 +504,7 @@ private fun LegendDot(color: Color) {
 private fun SelectedPlaceCard(
     place: Place,
     status: PlaceStatus,
+    requirement: VisaRequirement?,
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -429,6 +535,31 @@ private fun SelectedPlaceCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (requirement != null) {
+                Text(
+                    requirementSummary(requirement),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                // The curated note is the answer for exactly the places this app was
+                // built for — Greenland, French Guiana, Sint Maarten — so it is shown
+                // here in full rather than being reserved for a detail screen.
+                requirement.note?.let { note ->
+                    Text(
+                        note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (requirement.confidence == VisaConfidence.LOW) {
+                    Text(
+                        VisaConfidence.LOW.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
             Row(
                 Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

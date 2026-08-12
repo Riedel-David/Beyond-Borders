@@ -20,10 +20,14 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,9 +38,11 @@ import com.riedel.aeroglobe.data.place.PlaceStatus
 import com.riedel.aeroglobe.ui.places.ContinentStat
 import com.riedel.aeroglobe.ui.places.Grouping
 import com.riedel.aeroglobe.ui.places.PlaceRow
+import com.riedel.aeroglobe.ui.places.PassportMode
 import com.riedel.aeroglobe.ui.places.PlacesViewModel
 import com.riedel.aeroglobe.ui.places.StatusFilter
 import com.riedel.aeroglobe.ui.places.TravelStats
+import com.riedel.aeroglobe.ui.places.visaFilters
 
 /**
  * The passport: every place, searchable, with the counts that make the tracking
@@ -46,6 +52,11 @@ import com.riedel.aeroglobe.ui.places.TravelStats
  * entry (fifty countries on first run) is the dominant use, and "tap Been on the
  * row" is one unambiguous gesture where a cycling control would need two taps and
  * a moment of thought.
+ *
+ * Two modes share the screen — where I have been, and where this passport lets me go.
+ * They are the same 252 places under two questions, and the search box is shared on
+ * purpose: looking up Greenland and then asking what it wants should not mean typing
+ * it twice.
  */
 @Composable
 fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
@@ -54,33 +65,69 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val query by viewModel.query.collectAsStateWithLifecycle()
     val grouping by viewModel.grouping.collectAsStateWithLifecycle()
     val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
+    val mode by viewModel.mode.collectAsStateWithLifecycle()
+    val visa by viewModel.visa.collectAsStateWithLifecycle()
+    val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
+    val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
+    val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
+    // Derived from an asset that is read once, so a flow would be a subscription to
+    // something that never changes twice.
+    val filters = remember(visa) { visaFilters(visa) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
+        item("mode") {
+            ModeToggle(
+                mode = mode,
+                // Offered only where it can be honoured: with no visa asset the
+                // second mode has nothing to say, and a toggle that lands on an
+                // apology is worse than one tab's worth of function.
+                visaAvailable = visa != null,
+                onMode = viewModel::setMode,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+            )
+        }
+
+        if (mode == PassportMode.VISA) {
+            visaSection(
+                visa = visa,
+                rows = visaRows,
+                filter = visaFilter,
+                filters = filters,
+                query = query,
+                // The same selection the map's card uses. Sharing it is what makes a
+                // row you opened here the country still selected when you switch to
+                // the map, rather than two ideas of "the place I am looking at".
+                selectedCode = selectedCode,
+                onQuery = viewModel::setQuery,
+                onFilter = viewModel::setVisaFilter,
+                onSelect = viewModel::select,
+                nameOf = { code -> viewModel.placeOf(code)?.name },
+            )
+            return@LazyColumn
+        }
+
         item("stats") {
             StatsCard(stats, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
         }
 
         item("controls") {
             Column(Modifier.padding(horizontal = 16.dp)) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = viewModel::setQuery,
-                    label = { Text("Search places") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                SearchField(
+                    query = query,
+                    onQuery = viewModel::setQuery,
+                    label = "Search places",
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
-                // Five filters do not fit across a 360 dp phone, so this one row
-                // scrolls. It is the only horizontal scroll in the app: the chips are
-                // a single flat set where a second wrapped line would imply a
-                // grouping that isn't there, and "All" staying put on the left is
-                // what makes the overflow discoverable.
+                // Five filters do not fit across a 360 dp phone, so this row
+                // scrolls, as the visa mode's does: the chips are a single flat set
+                // where a second wrapped line would imply a grouping that isn't
+                // there, and "All" staying put on the left is what makes the
+                // overflow discoverable.
                 Row(
-                    Modifier
-                        .padding(top = 8.dp)
-                        .horizontalScroll(rememberScrollState()),
+                    Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     StatusFilter.entries.forEach { filter ->
@@ -140,6 +187,60 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
+        }
+    }
+}
+
+/**
+ * The one search box both modes use.
+ *
+ * Shared state, not just a shared look: typing "greenland" and then asking what it
+ * wants should not mean typing it again. Only the label changes, because the two modes
+ * are searching the same 252 places for different reasons.
+ */
+@Composable
+internal fun SearchField(
+    query: String,
+    onQuery: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQuery,
+        label = { Text(label) },
+        singleLine = true,
+        modifier = modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * The two questions the screen answers, as one control at the top.
+ *
+ * A segmented button rather than the filter chips the rest of the screen uses: the
+ * chips narrow a list, this changes what the list is *about*, and using the same
+ * component for both would make the more consequential control the quieter one.
+ */
+@Composable
+private fun ModeToggle(
+    mode: PassportMode,
+    visaAvailable: Boolean,
+    onMode: (PassportMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!visaAvailable) return
+    SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
+        PassportMode.entries.forEachIndexed { index, option ->
+            SegmentedButton(
+                selected = option == mode,
+                onClick = { onMode(option) },
+                shape = SegmentedButtonDefaults.itemShape(index, PassportMode.entries.size),
+                // No check mark. Its 26 dp is the difference between "Where I've been"
+                // fitting and eliding on a 360 dp phone, and with two segments the
+                // selected one is already obvious from its fill.
+                icon = {},
+                label = { Text(option.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            )
         }
     }
 }

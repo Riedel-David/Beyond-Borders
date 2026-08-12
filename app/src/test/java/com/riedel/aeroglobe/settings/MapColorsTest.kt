@@ -1,11 +1,10 @@
 package com.riedel.aeroglobe.settings
 
-import com.riedel.aeroglobe.ui.theme.mapPalette
 import androidx.compose.ui.graphics.toArgb
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
+import com.riedel.aeroglobe.ui.theme.ColorMath.contrast
+import com.riedel.aeroglobe.ui.theme.ColorMath.hueGap
+import com.riedel.aeroglobe.ui.theme.ColorMath.rgb
+import com.riedel.aeroglobe.ui.theme.mapPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
@@ -127,8 +126,8 @@ class MapColorsTest {
     fun `every preset clears 3 to 1 against unmarked land and ocean in both themes`() {
         listOf(false, true).forEach { dark ->
             val palette = mapPalette(dark, MapColors.DEFAULT)
-            val land = palette.unvisited.toArgb().toLong() and 0xFFFFFF
-            val ocean = palette.ocean.toArgb().toLong() and 0xFFFFFF
+            val land = palette.unvisited.rgb()
+            val ocean = palette.ocean.rgb()
             MapHue.entries.forEach { hue ->
                 val fill = hue.argb(dark) and 0xFFFFFF
                 val theme = if (dark) "dark" else "light"
@@ -182,43 +181,5 @@ class MapColorsTest {
         assertEquals(MapHue.AZURE.lightArgb.toInt(), light.visited.toArgb())
         assertEquals(MapHue.ROSE.lightArgb.toInt(), light.lived.toArgb())
         assertEquals(MapHue.TEAL.lightArgb.toInt(), light.wishlist.toArgb())
-    }
-
-    // --- colour maths, kept in the test so the assertions above stay readable --
-
-    private fun luminance(rgb: Long): Double {
-        fun channel(shift: Int): Double {
-            val c = ((rgb shr shift) and 0xFF).toDouble() / 255.0
-            return if (c <= 0.03928) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
-        }
-        return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0)
-    }
-
-    private fun contrast(a: Long, b: Long): Double {
-        val la = luminance(a)
-        val lb = luminance(b)
-        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
-    }
-
-    /** The shorter way round the colour wheel between two colours, in degrees. */
-    private fun hueGap(a: Long, b: Long): Double {
-        val gap = abs(hueDegrees(a) - hueDegrees(b))
-        return min(gap, 360.0 - gap)
-    }
-
-    private fun hueDegrees(rgb: Long): Double {
-        val r = ((rgb shr 16) and 0xFF).toDouble() / 255.0
-        val g = ((rgb shr 8) and 0xFF).toDouble() / 255.0
-        val b = (rgb and 0xFF).toDouble() / 255.0
-        val high = maxOf(r, g, b)
-        val low = minOf(r, g, b)
-        val span = high - low
-        if (span == 0.0) return 0.0
-        val sextant = when (high) {
-            r -> (g - b) / span
-            g -> (b - r) / span + 2.0
-            else -> (r - g) / span + 4.0
-        }
-        return (sextant * 60.0 + 360.0) % 360.0
     }
 }

@@ -20,12 +20,12 @@ captures/
 *.jks
 *.keystore
 
-# Geo pipeline: the source download is 25 MB and reproducible from build_geo.py's
-# printed curl command. The generated assets under app/src/main/assets ARE
-# committed, so a normal build never needs the cache.
-tools/geo/cache/
+# Data pipelines: the source downloads (25 MB of Natural Earth, 600 kB of visa
+# matrix) are reproducible from each build script's printed curl command. The
+# generated assets under app/src/main/assets ARE committed, so a normal build
+# never needs the caches.
+tools/*/cache/
 
-tools/geo/__pycache__/
 __pycache__/
 *.pyc
 

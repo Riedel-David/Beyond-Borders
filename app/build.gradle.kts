@@ -20,11 +20,12 @@ android {
         targetSdk = 37
         // 0.x while the plan's phases are still being worked through: the minor
         // number is the last completed phase (0.1 scaffold, 0.2 travel map and
-        // backup), so the About card never claims more than the app does. The patch
-        // number carries the half phases — 0.2.5 is phase 1.5, the round of fixes
+        // backup, 0.3 passport and visas), so the About card never claims more than
+        // the app does. The patch
+        // number carries the half phases — 0.2.5 was phase 1.5, the round of fixes
         // from notes.md. versionCode only ever increases, independently of the name.
-        versionCode = 3
-        versionName = "0.2.5"
+        versionCode = 4
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

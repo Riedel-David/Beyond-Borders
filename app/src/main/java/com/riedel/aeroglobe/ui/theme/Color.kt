@@ -3,6 +3,7 @@ package com.riedel.aeroglobe.ui.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import com.riedel.aeroglobe.data.visa.VisaBand
 import com.riedel.aeroglobe.settings.MapColors
 
 /**
@@ -121,7 +122,87 @@ data class MapPalette(
     val wishlist: Color,
     val border: Color,
     val selectedOutline: Color,
+    /** The colours the visa lens paints with; see [VisaRamp]. */
+    val visa: VisaRamp,
 )
+
+/**
+ * The visa lens' colour ramp: one violet, four intensities.
+ *
+ * A *sequential* scheme, where the three status fills are a *qualitative* one, and
+ * the difference is the whole reason this is not another set of hues. Visited, lived
+ * and wishlist are unordered answers, so they get unrelated hues and MapColorsTest
+ * holds them 40° apart. Visa bands are ordered, so order is what the colour has to
+ * carry — and one hue at four intensities carries it, while four hues would leave the
+ * reader to memorise which hue means "harder". This is the standard cartographic split
+ * and it is also the accessible one: intensity survives colour-vision deficiency,
+ * where a hue path from blue to red does not.
+ *
+ * Violet because it is the one family left. Green and red are out — PLAN.md rules out
+ * a green-to-red ramp for red/green CVD — amber is reserved for phase 3's flight
+ * alerts, and cyan reads as water next to a blue ocean. Violet also shares no hue with
+ * azure, rose or teal, so switching the lens on looks like a different question rather
+ * than a recolour of the same one.
+ *
+ * The ramp runs by *openness*, not by difficulty: [visaFree] has the most contrast
+ * against the background and [closed] the least that still clears 3:1. So the places
+ * you can go are the strongest thing on the map and the rest recede — which is the
+ * question the lens exists to answer. Because that is defined against the background
+ * rather than as "darker" or "lighter", the direction is the same statement in both
+ * themes even though the two backgrounds are inverted.
+ *
+ * Every value here is measured rather than eyeballed; VisaRampTest asserts 3:1 against
+ * land and ocean, a monotonic ramp with 1.4:1 between neighbours, and that no two bands
+ * collapse under protanopia, deuteranopia or tritanopia simulation.
+ */
+data class VisaRamp(
+    val visaFree: Color,
+    val easy: Color,
+    val paperwork: Color,
+    val closed: Color,
+    /**
+     * The selection outline while the lens is on.
+     *
+     * Its own value because [MapPalette.selectedOutline] was picked against the
+     * status fills: the light one is a near-navy that vanishes on [visaFree]'s deep
+     * violet, and the dark one is a near-white that vanishes on it in dark mode. The
+     * lens repaints every fill on the map, so it repaints this too.
+     */
+    val selectedOutline: Color,
+) {
+    fun colorFor(band: VisaBand): Color = when (band) {
+        VisaBand.VISA_FREE -> visaFree
+        VisaBand.EASY -> easy
+        VisaBand.PAPERWORK -> paperwork
+        VisaBand.CLOSED -> closed
+    }
+}
+
+/**
+ * The ramp for one theme.
+ *
+ * Not user-repaintable, unlike the status fills. A sequential ramp is only readable
+ * while its steps stay evenly spaced in contrast against a known background, which is
+ * a property of the whole set and not of any one colour — so there is nothing here a
+ * per-colour picker could safely offer.
+ */
+private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
+    VisaRamp(
+        visaFree = Color(0xFFEFD0F5),
+        easy = Color(0xFFDEA2EB),
+        paperwork = Color(0xFFCE75E0),
+        closed = Color(0xFFBC48D4),
+        selectedOutline = Color(0xFF05080C),
+    )
+} else {
+    VisaRamp(
+        visaFree = Color(0xFF370D40),
+        easy = Color(0xFF6A1B7A),
+        paperwork = Color(0xFF9532A8),
+        closed = Color(0xFFB15FC2),
+        selectedOutline = Color(0xFFF7FAFF),
+    )
+}
 
 /**
  * The palette the map draws with, for one theme and one set of chosen hues.
@@ -138,6 +219,7 @@ fun mapPalette(dark: Boolean, colors: MapColors): MapPalette = MapPalette(
     wishlist = Color(colors.wishlist.argb(dark)),
     border = if (dark) Color(0xFF4C5663) else Color(0xFFA9B4C2),
     selectedOutline = if (dark) Color(0xFFDCE7FF) else Color(0xFF0B2C63),
+    visa = visaRamp(dark),
 )
 
 // Derived from MapColors.DEFAULT rather than spelled out again, so the palette the
