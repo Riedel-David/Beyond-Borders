@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Every screen is Compose, so this theme deliberately does almost nothing.
+         It is AppCompat-based rather than Material-based because MapLibre's
+         MapView inflates AppCompat widgets for its own dialogs and would crash
+         under a plain android:Theme. All real colour decisions are in
+         ui/theme/Color.kt so that the in-app light/dark switch works without
+         recreating the Activity. -->
+    <style name="Theme.AeroGlobe" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+</resources>

@@ -1,0 +1,257 @@
+"""Curation rules that turn Natural Earth map units into AeroGlobe places.
+
+Why this file exists
+--------------------
+Natural Earth's `admin_0_map_units` layer is the only admin-0 layer that keeps
+Greenland separate from Denmark and French Guiana separate from France, which is
+the entire reason AeroGlobe uses it (see PLAN.md section 3).
+
+But it also splits things we do NOT want split: England/Scotland/Wales/Northern
+Ireland, Belgium's three regions, the Azores and Madeira, Zanzibar, Republika
+Srpska. And it contains overlay polygons (the Korean DMZ, UNDOF) that would draw
+on top of real countries.
+
+So the raw layer is not usable as-is in either direction. These tables are the
+curation. Every entry is a deliberate decision, not a default.
+
+Guiding rules
+-------------
+1. A place is somewhere you can meaningfully say "I have been there" — normally
+   because it has its own entry/exit formalities or its own ISO code.
+2. No holes in the map. Every land polygon must end up owned by some place, so
+   leftovers get merged into their geographic neighbour rather than dropped.
+3. Only uninhabited specks and overlay polygons may be dropped outright.
+"""
+
+# ---------------------------------------------------------------------------
+# MERGE: map unit GU_A3 -> GU_A3 of the place that absorbs it.
+# The target keeps its own name and code; the merged geometry is appended.
+# ---------------------------------------------------------------------------
+MERGE = {
+    # --- United Kingdom: one place, per the granularity decision -----------
+    # Natural Earth has no parent unit for the UK at all, only the four home
+    # nations, so England is used as the anchor and renamed. Same pattern for
+    # Belgium (BFR) and Bosnia (BHF) below.
+    "SCT": "ENG",  # Scotland
+    "WLS": "ENG",  # Wales
+    "NIR": "ENG",  # Northern Ireland
+    # UK Sovereign Base Areas on Cyprus. Legally British, but they are enclaves
+    # inside Cyprus and Natural Earth cuts them out of the Cyprus polygon.
+    # Merged into Cyprus so the island renders without holes; nobody tracks a
+    # visit to Akrotiri as distinct from Cyprus.
+    "WSB": "CYP",  # Akrotiri Sovereign Base Area
+    "ESB": "CYP",  # Dhekelia Sovereign Base Area
+    # --- Sub-national splits we do not want -------------------------------
+    "BCR": "BFR",  # Brussels Capital Region -> Belgium (BFR is the anchor)
+    "BWR": "BFR",  # Walloon Region
+    "BHB": "BHF",  # Brcko District          -> Bosnia and Herzegovina
+    "BIS": "BHF",  # Republika Srpska
+    "PAZ": "PRX",  # Azores        - part of Portugal, EU and Schengen
+    "PMD": "PRX",  # Madeira       - same
+    "GEA": "GEG",  # Ajaria        - autonomous republic of Georgia
+    "IRK": "IRR",  # Iraqi Kurdistan
+    "SOP": "SOX",  # Puntland      - Somaliland stays separate, see KEEP below
+    "SRV": "SRS",  # Vojvodina
+    "TZZ": "TZA",  # Zanzibar      - same visa regime as mainland Tanzania
+    "PNB": "PNX",  # Bougainville
+    "ACB": "ACA",  # Barbuda       - Antigua and Barbuda is one country (AG)
+    # --- Palestine: Natural Earth splits it, ISO does not ------------------
+    "WEB": "GAZ",  # West Bank + Gaza -> Palestine (PS)
+    # --- Uninhabited dependencies with no ISO code of their own ------------
+    "ATC": "AUS",  # Ashmore and Cartier Islands
+    "CSI": "AUS",  # Coral Sea Islands
+    "NJM": "NSV",  # Jan Mayen -> ISO SJ is "Svalbard and Jan Mayen"
+    "PFA": "CHN",  # Paracel Islands (disputed; NE assigns sovereignty to China)
+    # --- Leases: territory of the host country for travel purposes --------
+    "USG": "CUB",  # US Naval Base Guantanamo Bay
+    "KAB": "KAZ",  # Baykonur Cosmodrome
+    # --- Undefined / unclaimed land, merged into a neighbour to avoid holes -
+    "KAS": "IND",  # Siachen Glacier      - administered by India
+    "SPI": "CHL",  # Southern Patagonian Ice Field - CL/AR boundary undefined
+    "BRT": "SDN",  # Bir Tawil            - claimed by neither Egypt nor Sudan
+    "CNM": "CYP",  # Cyprus No Mans Area  - UN buffer zone
+    "BRI": "BRA",  # Brazilian Island (Isla Brasilera) - uninhabited islet
+                   # disputed with Uruguay; Natural Earth already tags it BR
+    # --- US Minor Outlying Islands: nine specks, one ISO code (UM) ---------
+    "DQI": "BQI",  # Jarvis Island     -> Navassa becomes the UM anchor
+    "FQI": "BQI",  # Baker Island
+    "HQI": "BQI",  # Howland Island
+    "JQI": "BQI",  # Johnston Atoll
+    "KQI": "BQI",  # Kingman Reef
+    "LQI": "BQI",  # Palmyra Atoll
+    "MQI": "BQI",  # Midway Islands
+    "WQI": "BQI",  # Wake Atoll
+}
+
+# ---------------------------------------------------------------------------
+# DROP: removed entirely. Only overlay polygons and uninhabited disputed reefs.
+# Dropping these creates no holes because they are isolated features.
+# ---------------------------------------------------------------------------
+DROP = {
+    "KNZ",  # Korean Demilitarized Zone (north) - overlay, would double-draw
+    "KNX",  # Korean Demilitarized Zone (south) - overlay
+    "SYU",  # UNDOF buffer zone (Golan)         - overlay
+    "CLP",  # Clipperton Island    - uninhabited French islet 5000 km from
+            # France. Merging it into FR would stretch France's bounding box to
+            # 109 deg W and break "zoom to France".
+    "PGA",  # Spratly Islands      - uninhabited disputed reefs
+    "SCR",  # Scarborough Reef     - uninhabited disputed reef
+    "BJN",  # Bajo Nuevo Bank      - uninhabited disputed reef
+    "SER",  # Serranilla Bank      - uninhabited disputed reef
+}
+
+# ---------------------------------------------------------------------------
+# CODES: places with no usable ISO 3166-1 alpha-2 code in Natural Earth.
+# ISO reserves XA-XZ for user assignment, so these are legitimate private codes.
+# ---------------------------------------------------------------------------
+CODE_OVERRIDE = {
+    "SOL": "XS",  # Somaliland      - de facto state, own visa and entry stamps
+    "CYN": "XN",  # Northern Cyprus - separate entry regime from Cyprus
+    "BQI": "UM",  # US Minor Outlying Islands anchor (see MERGE above)
+    "GAZ": "PS",  # Palestine
+}
+
+# ---------------------------------------------------------------------------
+# CONTINENTS: Natural Earth files nine island places under the pseudo-continent
+# "Seven seas (open ocean)". That is fine for a cartographer and useless for a
+# traveller, who wants Seychelles counted somewhere they can be proud of. Keyed by
+# the final 2-letter place code, not GU_A3, so the intent stays readable.
+# ---------------------------------------------------------------------------
+CONTINENT_OVERRIDE = {
+    "MU": "Africa",       # Mauritius
+    "RE": "Africa",       # Réunion
+    "SC": "Africa",       # Seychelles
+    "SH": "Africa",       # Saint Helena, Ascension and Tristan da Cunha
+    "IO": "Africa",       # British Indian Ocean Territory (Chagos)
+    "MV": "Asia",         # Maldives
+    "TF": "Antarctica",   # French Southern Territories - subantarctic
+    "HM": "Antarctica",   # Heard Island and McDonald Islands - subantarctic
+    "GS": "Antarctica",   # South Georgia and South Sandwich Islands
+}
+
+# The seven continents any place must end up in. Guards against a future Natural
+# Earth release inventing another bucket.
+VALID_CONTINENTS = {
+    "Africa", "Antarctica", "Asia", "Europe",
+    "North America", "Oceania", "South America",
+}
+
+# ---------------------------------------------------------------------------
+# NAMES: Natural Earth's GEOUNIT name is not always what a traveller expects.
+# ---------------------------------------------------------------------------
+NAME_OVERRIDE = {
+    "ENG": "United Kingdom",  # anchor for the four home nations
+    "BFR": "Belgium",         # anchor for the three Belgian regions
+    "BHF": "Bosnia and Herzegovina",
+    "FXX": "France",
+    "NLX": "Netherlands",
+    "PRX": "Portugal",
+    "GEG": "Georgia",
+    "IRR": "Iraq",
+    "SOX": "Somalia",
+    "SRS": "Serbia",
+    "TZA": "Tanzania",
+    "PNX": "Papua New Guinea",
+    "ACA": "Antigua and Barbuda",
+    "GAZ": "Palestine",
+    "BQI": "US Minor Outlying Islands",
+    "NSV": "Svalbard and Jan Mayen",
+    "REU": "Réunion",
+    "MAC": "Macao",
+    "HKG": "Hong Kong",
+    "ALD": "Åland Islands",
+    "NOW": "Norway",
+    "SOL": "Somaliland",
+    "CYN": "Northern Cyprus",
+    "CHN": "China",
+    "USA": "United States",
+    "COD": "DR Congo",
+    "COG": "Republic of the Congo",
+    "CZE": "Czechia",
+    "SWZ": "Eswatini",
+    "TUR": "Türkiye",
+    "MKD": "North Macedonia",
+    "VAT": "Vatican City",
+    "BRN": "Brunei",
+    "LAO": "Laos",
+    "PRK": "North Korea",
+    "KOR": "South Korea",
+    "SYX": "Syria",
+    "VNM": "Vietnam",
+    "IRN": "Iran",
+    "BOL": "Bolivia",
+    "VEN": "Venezuela",
+    "TTO": "Trinidad and Tobago",
+    "VCT": "Saint Vincent and the Grenadines",
+    "KNA": "Saint Kitts and Nevis",
+    "FSM": "Micronesia",
+    "SGS": "South Georgia and South Sandwich Islands",
+    "ATF": "French Southern Territories",
+    "VIR": "US Virgin Islands",
+    "MNP": "Northern Mariana Islands",
+    "BLM": "Saint Barthélemy",
+    "MAF": "Saint Martin",
+    "SXM": "Sint Maarten",
+    "NLY": "Caribbean Netherlands",
+    "CUW": "Curaçao",
+    "TLS": "Timor-Leste",
+    "CIV": "Côte d'Ivoire",
+    "CPV": "Cabo Verde",
+    "STP": "São Tomé and Príncipe",
+    "GNQ": "Equatorial Guinea",
+    "CAF": "Central African Republic",
+    "BFA": "Burkina Faso",
+    "SSD": "South Sudan",
+    "DOM": "Dominican Republic",
+    "PSX": "Palestine",
+    "IOT": "British Indian Ocean Territory",
+}
+
+# ---------------------------------------------------------------------------
+# UNINHABITED: real places, but nobody plans a holiday there. Kept in the list
+# and shown on the map, sorted to the bottom of list views.
+# ---------------------------------------------------------------------------
+UNINHABITED = {
+    "AQ",  # Antarctica
+    "BV",  # Bouvet Island
+    "HM",  # Heard Island and McDonald Islands
+    "TF",  # French Southern Territories
+    "UM",  # US Minor Outlying Islands
+    "GS",  # South Georgia and South Sandwich Islands
+    "IO",  # British Indian Ocean Territory (Diego Garcia, military only)
+}
+
+# ---------------------------------------------------------------------------
+# SPLIT_ASSERTIONS: the regression test from PLAN.md section 3.
+# Each tuple must come out as distinct, independently selectable places.
+# If a future Natural Earth release merges any of these, the build fails loudly
+# rather than silently shipping the bug this whole app exists to avoid.
+# ---------------------------------------------------------------------------
+SPLIT_ASSERTIONS = [
+    ("DK", "GL", "FO"),
+    ("FR", "GF", "GP", "MQ", "RE", "YT", "PM", "BL", "MF", "WF", "PF", "NC", "TF"),
+    ("NL", "AW", "CW", "SX", "BQ"),
+    ("US", "PR", "VI", "GU", "AS", "MP"),
+    ("GB", "GI", "JE", "GG", "IM", "FK", "BM", "KY", "TC", "VG", "SH", "AI", "MS", "PN"),
+    ("CN", "HK", "MO", "TW"),
+    ("NO", "SJ", "BV"),
+    ("NZ", "CK", "NU", "TK"),
+    ("AU", "CX", "CC", "NF", "HM"),
+    ("FI", "AX"),
+    ("CY", "XN"),
+    ("SO", "XS"),
+    ("RS", "XK"),
+    ("IL", "PS"),
+]
+
+# ---------------------------------------------------------------------------
+# MERGE_ASSERTIONS: codes that must NOT exist as separate places, because the
+# granularity decision says the parent is one place. Guards the other direction.
+# ---------------------------------------------------------------------------
+MERGE_ASSERTIONS = [
+    "SCT", "WLS", "NIR",   # UK home nations folded into the England anchor
+    "PAZ", "PMD",          # Azores, Madeira
+    "TZZ",                 # Zanzibar
+    "BCR", "BWR",          # Belgian regions folded into the Flanders anchor
+    "BHB", "BIS",          # Brcko, Republika Srpska
+]

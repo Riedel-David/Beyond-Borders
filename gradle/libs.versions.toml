@@ -1,0 +1,65 @@
+[versions]
+# AGP 9 ships built-in Kotlin support, and the Kotlin version it bundles is
+# 2.2.10. The Compose compiler and KSP plugin versions must match that exactly,
+# so `kotlin` below is not a free choice - it tracks whatever AGP provides.
+# Check with: ./gradlew :app:dependencies --configuration debugCompileClasspath
+agp = "9.3.1"
+kotlin = "2.2.10"
+ksp = "2.2.10-2.0.2"
+
+composeBom = "2026.06.01"
+activityCompose = "1.13.0"
+lifecycle = "2.11.0"
+room = "2.8.4"
+coroutines = "1.11.0"
+maplibre = "13.4.1"
+coreKtx = "1.10.1"
+appcompat = "1.6.1"
+
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+# Only for host-side unit tests: android.jar ships org.json as method stubs that
+# throw, so tests that parse the bundled places.json need the real implementation.
+json = "20240303"
+
+[libraries]
+# --- Compose ---------------------------------------------------------------
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+
+# --- Data ------------------------------------------------------------------
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# --- Map -------------------------------------------------------------------
+# MapLibre's MapView is an Android View, embedded in Compose via AndroidView.
+# It expects an AppCompat-based XML theme for its dialogs, hence appcompat.
+maplibre-android-sdk = { group = "org.maplibre.gl", name = "android-sdk", version.ref = "maplibre" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+
+# --- Test ------------------------------------------------------------------
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+json = { group = "org.json", name = "json", version.ref = "json" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -1,0 +1,70 @@
+package com.riedel.aeroglobe.settings
+
+import android.content.Context
+import androidx.core.content.edit
+import com.riedel.aeroglobe.core.Uuid
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/**
+ * Which screen the app opens on.
+ *
+ * [AUTO] is the behaviour asked for in PLAN.md section 6: the flight screen wins
+ * whenever a flight is being tracked, the map wins when none is.
+ */
+enum class HomeTab { AUTO, MAP, FLIGHTS }
+
+/**
+ * Preferences, on plain SharedPreferences.
+ *
+ * DataStore would be the modern choice, but the only stable release is behind an
+ * alpha and it buys us nothing here: this is a handful of scalars read once at
+ * startup, and SharedPreferences already loads them off the main thread and
+ * commits asynchronously. Revisit if settings ever grow beyond scalars.
+ */
+class SettingsStore(context: Context) {
+    private val prefs = context.getSharedPreferences("aeroglobe.settings", Context.MODE_PRIVATE)
+
+    private val _themeMode = MutableStateFlow(
+        runCatching { ThemeMode.valueOf(prefs.getString(KEY_THEME, null) ?: "") }
+            .getOrDefault(ThemeMode.SYSTEM)
+    )
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    private val _homeTab = MutableStateFlow(
+        runCatching { HomeTab.valueOf(prefs.getString(KEY_HOME_TAB, null) ?: "") }
+            .getOrDefault(HomeTab.AUTO)
+    )
+    val homeTab: StateFlow<HomeTab> = _homeTab.asStateFlow()
+
+    /**
+     * Stable per-install id, stamped onto every row we write.
+     *
+     * Phase 5 sync needs to tell "this device already knows about that edit" from
+     * "another device made this edit" without a user account, so the id is
+     * generated on first launch and never leaves the device except inside sync
+     * payloads. It is not tied to any hardware identifier.
+     */
+    val deviceId: String = prefs.getString(KEY_DEVICE_ID, null) ?: Uuid.v7().also {
+        prefs.edit { putString(KEY_DEVICE_ID, it) }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        _themeMode.value = mode
+        prefs.edit { putString(KEY_THEME, mode.name) }
+    }
+
+    fun setHomeTab(tab: HomeTab) {
+        _homeTab.value = tab
+        prefs.edit { putString(KEY_HOME_TAB, tab.name) }
+    }
+
+    private companion object {
+        const val KEY_THEME = "theme_mode"
+        const val KEY_HOME_TAB = "home_tab"
+        const val KEY_DEVICE_ID = "device_id"
+    }
+}

@@ -1,0 +1,50 @@
+package com.riedel.aeroglobe.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import com.riedel.aeroglobe.settings.ThemeMode
+
+/** The map palette for the theme currently in effect. */
+val LocalMapPalette = staticCompositionLocalOf { MapPaletteLight }
+
+/** True when the app is rendering dark, regardless of how that was decided. */
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
+
+@Composable
+fun AeroGlobeTheme(
+    mode: ThemeMode = ThemeMode.SYSTEM,
+    content: @Composable () -> Unit,
+) {
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
+    // Status- and navigation-bar icons have to follow the app's choice, not the
+    // system's, otherwise forcing light mode on a dark-mode phone leaves white
+    // icons on our white background.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        val window = (view.context as? android.app.Activity)?.window
+        if (window != null) {
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !dark
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !dark
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalMapPalette provides if (dark) MapPaletteDark else MapPaletteLight,
+        LocalIsDarkTheme provides dark,
+    ) {
+        MaterialTheme(
+            colorScheme = if (dark) AeroGlobeDark else AeroGlobeLight,
+            content = content,
+        )
+    }
+}

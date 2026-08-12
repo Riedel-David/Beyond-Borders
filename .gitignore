@@ -1,0 +1,41 @@
+# Build output
+build/
+app/build/
+
+# Gradle and Kotlin caches. .gradle/ still appears despite the relocated project
+# cache in gradle.properties (Android Studio recreates parts of it), so it is
+# ignored rather than fought with.
+.gradle/
+.kotlin/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing material must never be committed
+*.jks
+*.keystore
+
+# Geo pipeline: the source download is 25 MB and reproducible from build_geo.py's
+# printed curl command. The generated assets under app/src/main/assets ARE
+# committed, so a normal build never needs the cache.
+tools/geo/cache/
+
+tools/geo/__pycache__/
+__pycache__/
+*.pyc
+
+# OneDrive sync-conflict copies. Two shapes so far: "MapScreen-David's MacBook
+# Air.kt" and "rules 2.py". These have broken the Kotlin build before; ignoring
+# them keeps them out of git at least, but delete them when they appear — a stale
+# copy of a rules file that still imports cleanly is the dangerous kind.
+*-David's MacBook Air.*
+*conflicted copy*
+* 2.*
+
+# macOS
+.DS_Store

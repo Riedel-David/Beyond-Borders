@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Passport booklet: cover, crest circle and two text lines. evenOdd punches
+     the inner shapes out of the cover so it works as a single tinted path. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M6.5,2.5h11a1.8,1.8 0 0 1 1.8,1.8v15.4a1.8,1.8 0 0 1 -1.8,1.8h-11a1.8,1.8 0 0 1 -1.8,-1.8V4.3a1.8,1.8 0 0 1 1.8,-1.8zM12,5.6a3,3 0 1,0 0,6a3,3 0 1,0 0,-6zM8.4,14.1h7.2v1.5H8.4zM8.4,17h7.2v1.5H8.4z" />
+</vector>
