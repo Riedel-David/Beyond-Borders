@@ -10,6 +10,9 @@ import com.riedel.aeroglobe.data.backup.BackupMerge
 import com.riedel.aeroglobe.data.backup.TravelBackup
 import com.riedel.aeroglobe.data.place.PlaceRepository
 import com.riedel.aeroglobe.settings.HomeTab
+import com.riedel.aeroglobe.settings.MapColors
+import com.riedel.aeroglobe.settings.MapHue
+import com.riedel.aeroglobe.settings.MapSlot
 import com.riedel.aeroglobe.settings.SettingsStore
 import com.riedel.aeroglobe.settings.ThemeMode
 import java.io.ByteArrayOutputStream
@@ -50,6 +53,7 @@ class SettingsViewModel(
 
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
     val homeTab: StateFlow<HomeTab> = settings.homeTab
+    val mapColors: StateFlow<MapColors> = settings.mapColors
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
@@ -57,6 +61,10 @@ class SettingsViewModel(
     fun setThemeMode(mode: ThemeMode) = settings.setThemeMode(mode)
 
     fun setHomeTab(tab: HomeTab) = settings.setHomeTab(tab)
+
+    fun setMapHue(slot: MapSlot, hue: MapHue) = settings.setMapHue(slot, hue)
+
+    fun resetMapColors() = settings.resetMapColors()
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())
@@ -190,6 +198,21 @@ internal fun importMessage(plan: BackupMerge.Plan): String = buildString {
         append(if (plan.unknownCodes.size == 1) " unknown code: " else " unknown codes: ")
         append(plan.unknownCodes.take(5).joinToString(", "))
         if (plan.unknownCodes.size > 5) append(", …")
+        append(".")
+    }
+    if (plan.unknownStatuses.isNotEmpty()) {
+        // Named for the same reason, and urgent for a different one: an unrecognised
+        // status means the file was written by a newer build, so those places still
+        // exist somewhere and the user needs to know this phone did not take them.
+        // The count is rows and the list is distinct words, so "2 entries" with one
+        // word named is normal rather than a bug.
+        append(" Skipped ")
+        append(plan.unknownStatuses.size)
+        append(if (plan.unknownStatuses.size == 1) " entry" else " entries")
+        val names = plan.unknownStatuses.distinct()
+        append(if (names.size == 1) " with an unrecognised status: " else " with unrecognised statuses: ")
+        append(names.take(5).joinToString(", "))
+        if (names.size > 5) append(", …")
         append(".")
     }
 }

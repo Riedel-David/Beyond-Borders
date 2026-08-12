@@ -1,6 +1,7 @@
 package com.riedel.aeroglobe.ui.passport
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -70,8 +72,15 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                // Five filters do not fit across a 360 dp phone, so this one row
+                // scrolls. It is the only horizontal scroll in the app: the chips are
+                // a single flat set where a second wrapped line would imply a
+                // grouping that isn't there, and "All" staying put on the left is
+                // what makes the overflow discoverable.
                 Row(
-                    Modifier.padding(top = 8.dp),
+                    Modifier
+                        .padding(top = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     StatusFilter.entries.forEach { filter ->
@@ -170,11 +179,20 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // Three chips take enough width that a long name now wraps to a second line.
+        // Accepted deliberately: bulk entry happens here, so every status has to be
+        // one tap away on this screen, and a hidden third option would push the
+        // rarest answer onto the map only.
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             FilterChip(
                 selected = row.status == PlaceStatus.VISITED,
                 onClick = { onToggle(PlaceStatus.VISITED) },
                 label = { Text("Been") },
+            )
+            FilterChip(
+                selected = row.status == PlaceStatus.LIVED,
+                onClick = { onToggle(PlaceStatus.LIVED) },
+                label = { Text("Lived") },
             )
             FilterChip(
                 selected = row.status == PlaceStatus.WISHLIST,
@@ -196,7 +214,9 @@ private fun StatsCard(stats: TravelStats, modifier: Modifier = Modifier) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "${stats.visited}",
+                    // been, not visited: a place you have lived in is a place you
+                    // have been, so promoting one must never shrink this number.
+                    "${stats.been}",
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -209,8 +229,13 @@ private fun StatsCard(stats: TravelStats, modifier: Modifier = Modifier) {
                 )
             }
             Text(
-                "${stats.continentsTouched} of ${stats.continents.size} continents" +
-                    if (stats.wishlist > 0) " · ${stats.wishlist} on the wishlist" else "",
+                buildString {
+                    append("${stats.continentsTouched} of ${stats.continents.size} continents")
+                    // Each clause appears only when it has something to say, so the
+                    // line stays short for someone who only ever taps "Been".
+                    if (stats.lived > 0) append(" · ${stats.lived} lived in")
+                    if (stats.wishlist > 0) append(" · ${stats.wishlist} on the wishlist")
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -243,7 +268,7 @@ private fun ContinentBar(stat: ContinentStat, modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f, fill = false),
             )
             Text(
-                " ${stat.visited}/${stat.total}",
+                " ${stat.been}/${stat.total}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -256,7 +281,7 @@ private fun ContinentBar(stat: ContinentStat, modifier: Modifier = Modifier) {
                 .height(5.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(3.dp))
         ) {
-            val fraction = if (stat.total == 0) 0f else stat.visited.toFloat() / stat.total
+            val fraction = if (stat.total == 0) 0f else stat.been.toFloat() / stat.total
             if (fraction > 0f) {
                 Box(
                     Modifier

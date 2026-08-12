@@ -58,13 +58,6 @@ class PlaceRepository(
         else PlaceStatus.fromStorage(row.status)
     }
 
-    /** Advance one place through none -> visited -> wishlist -> none. */
-    suspend fun cycleStatus(code: String): PlaceStatus {
-        val next = currentStatus(code).next()
-        setStatus(code, next)
-        return next
-    }
-
     suspend fun setFirstVisitedOn(code: String, isoDate: String?) = withContext(Dispatchers.IO) {
         dao.updateFirstVisitedOn(code, isoDate, clock(), deviceId)
         Unit
@@ -119,6 +112,7 @@ class PlaceRepository(
             entries = payload.entries,
             localUpdatedAt = local,
             knownCodes = registry.places.mapTo(HashSet()) { it.code },
+            unknownStatuses = payload.unknownStatuses,
         )
         dao.applyAll(
             plan.apply.map { entry ->

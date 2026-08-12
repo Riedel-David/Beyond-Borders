@@ -18,31 +18,44 @@ import kotlinx.coroutines.launch
 /** How the passport list is ordered. */
 enum class Grouping { CONTINENT, ALPHABETICAL }
 
-/** Which rows the passport list shows. */
+/**
+ * Which rows the passport list shows.
+ *
+ * [BEEN] is the superset — visited *and* lived, matching what the stats card counts
+ * — and [LIVED] narrows to the handful inside it. A "Been" filter that hid the
+ * places you have lived in would contradict the number at the top of the screen.
+ */
 enum class StatusFilter(val label: String) {
     ALL("All"),
-    VISITED("Been"),
+    BEEN("Been"),
+    LIVED("Lived"),
     WISHLIST("Want"),
     NONE("Not yet"),
 }
 
 data class PlaceRow(val place: Place, val status: PlaceStatus)
 
-data class ContinentStat(val continent: String, val visited: Int, val total: Int)
+/** [been] counts visited and lived together; see [PlaceStatus.isBeen]. */
+data class ContinentStat(val continent: String, val been: Int, val total: Int)
 
 data class TravelStats(
+    /** Strictly [PlaceStatus.VISITED]; for the map legend, which has a dot per colour. */
     val visited: Int,
+    val lived: Int,
     val wishlist: Int,
     val total: Int,
     val continents: List<ContinentStat>,
 ) {
-    val percent: Int = if (total == 0) 0 else (visited * 100) / total
+    /** Places you have set foot in. The headline number, and never smaller than [visited]. */
+    val been: Int = visited + lived
+
+    val percent: Int = if (total == 0) 0 else (been * 100) / total
 
     /** Continents with at least one visit — the "6 of 8 continents" headline. */
-    val continentsTouched: Int = continents.count { it.visited > 0 }
+    val continentsTouched: Int = continents.count { it.been > 0 }
 
     companion object {
-        val EMPTY = TravelStats(0, 0, 0, emptyList())
+        val EMPTY = TravelStats(0, 0, 0, 0, emptyList())
     }
 }
 
@@ -109,11 +122,6 @@ class PlacesViewModel(private val repo: PlaceRepository) : ViewModel() {
         }
     }
 
-    /** none -> visited -> wishlist -> none. What a tap on the map does. */
-    fun cycle(code: String) {
-        viewModelScope.launch { repo.setStatus(code, statusOf(code).next()) }
-    }
-
     companion object {
         fun factory(repo: PlaceRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
@@ -136,15 +144,16 @@ internal fun computeStats(
         .map { (continent, group) ->
             ContinentStat(
                 continent = continent,
-                visited = group.count { statuses[it.code] == PlaceStatus.VISITED },
+                been = group.count { statuses[it.code]?.isBeen == true },
                 total = group.size,
             )
         }
         // Biggest achievement first, then alphabetically so the order is stable.
-        .sortedWith(compareByDescending<ContinentStat> { it.visited }.thenBy { it.continent })
+        .sortedWith(compareByDescending<ContinentStat> { it.been }.thenBy { it.continent })
 
     return TravelStats(
         visited = statuses.count { it.value == PlaceStatus.VISITED },
+        lived = statuses.count { it.value == PlaceStatus.LIVED },
         wishlist = statuses.count { it.value == PlaceStatus.WISHLIST },
         total = places.size,
         continents = continents,
@@ -165,7 +174,8 @@ internal fun buildRows(
         .filter {
             when (filter) {
                 StatusFilter.ALL -> true
-                StatusFilter.VISITED -> it.status == PlaceStatus.VISITED
+                StatusFilter.BEEN -> it.status.isBeen
+                StatusFilter.LIVED -> it.status == PlaceStatus.LIVED
                 StatusFilter.WISHLIST -> it.status == PlaceStatus.WISHLIST
                 StatusFilter.NONE -> it.status == PlaceStatus.NONE
             }

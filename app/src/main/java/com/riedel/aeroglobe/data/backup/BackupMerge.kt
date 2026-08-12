@@ -21,6 +21,10 @@ object BackupMerge {
      * @property updated entries that beat the local row on [TravelBackup.Entry.updatedAt].
      * @property unchanged entries the local row is the same age or newer than.
      * @property unknownCodes codes this build has no place for, sorted; skipped.
+     * @property unknownStatuses one entry per row [TravelBackup.decode] dropped for
+     *   having a status this build does not know. Carried rather than computed here —
+     *   those rows never reach [plan] — so that the import report can name them next
+     *   to the unknown codes instead of staying silent about them.
      */
     data class Plan(
         val apply: List<TravelBackup.Entry>,
@@ -28,8 +32,9 @@ object BackupMerge {
         val updated: Int,
         val unchanged: Int,
         val unknownCodes: List<String>,
+        val unknownStatuses: List<String> = emptyList(),
     ) {
-        val skipped: Int get() = unchanged + unknownCodes.size
+        val skipped: Int get() = unchanged + unknownCodes.size + unknownStatuses.size
     }
 
     /**
@@ -39,11 +44,13 @@ object BackupMerge {
      * @param knownCodes the codes this build's registry has. An entry for anything
      *   else is dropped rather than stored: it would be a row no screen can show
      *   and no tap can reach, and it would quietly inflate the visited count.
+     * @param unknownStatuses passed straight through to [Plan.unknownStatuses].
      */
     fun plan(
         entries: List<TravelBackup.Entry>,
         localUpdatedAt: Map<String, Long>,
         knownCodes: Set<String>,
+        unknownStatuses: List<String> = emptyList(),
     ): Plan {
         val unknown = sortedSetOf<String>()
         // A file can name the same place twice — hand-edited, or concatenated from
@@ -94,6 +101,7 @@ object BackupMerge {
             updated = updated,
             unchanged = unchanged,
             unknownCodes = unknown.toList(),
+            unknownStatuses = unknownStatuses,
         )
     }
 }

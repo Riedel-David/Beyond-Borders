@@ -15,12 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +45,6 @@ import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
@@ -121,13 +118,20 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (stats.visited == 0 && stats.wishlist == 0) {
+                if (stats.been == 0 && stats.wishlist == 0) {
                     // Nothing marked yet, so the counter would say "0" and teach
                     // nothing. Say what to do instead.
                     Text("Tap a place to mark it", style = MaterialTheme.typography.labelLarge)
                 } else {
+                    // One dot per map colour, and only for colours actually on the
+                    // map: this is a legend, so it counts each status strictly rather
+                    // than showing the combined "been" total the passport leads with.
                     LegendDot(palette.visited)
                     Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
+                    if (stats.lived > 0) {
+                        LegendDot(palette.lived)
+                        Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
+                    }
                     if (stats.wishlist > 0) {
                         LegendDot(palette.wishlist)
                         Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
@@ -154,8 +158,6 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 place = selected,
                 status = statuses[selected.code] ?: PlaceStatus.NONE,
                 onToggle = { target -> viewModel.toggle(selected.code, target) },
-                onZoom = { controller.zoomTo(selected) },
-                onDismiss = { viewModel.select(null) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(12.dp),
@@ -176,6 +178,7 @@ private class PlacesMapController {
     private var style: Style? = null
 
     private var appliedVisited: Set<String> = emptySet()
+    private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
     private var appliedSelection: String? = null
 
@@ -187,6 +190,7 @@ private class PlacesMapController {
         this.style = style
         // Force a re-apply: this style object has fresh layers with empty filters.
         appliedVisited = emptySet()
+        appliedLived = emptySet()
         appliedWishlist = emptySet()
         appliedSelection = null
     }
@@ -199,11 +203,17 @@ private class PlacesMapController {
     fun applyStatuses(statuses: Map<String, PlaceStatus>) {
         val style = style ?: return
         val visited = statuses.filterValues { it == PlaceStatus.VISITED }.keys
+        val lived = statuses.filterValues { it == PlaceStatus.LIVED }.keys
         val wishlist = statuses.filterValues { it == PlaceStatus.WISHLIST }.keys
         if (visited != appliedVisited) {
             style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_VISITED)
                 ?.setFilter(PlacesMapStyle.onlyPlaces(visited))
             appliedVisited = visited.toSet()
+        }
+        if (lived != appliedLived) {
+            style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_LIVED)
+                ?.setFilter(PlacesMapStyle.onlyPlaces(lived))
+            appliedLived = lived.toSet()
         }
         if (wishlist != appliedWishlist) {
             style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_WISHLIST)
@@ -223,27 +233,6 @@ private class PlacesMapController {
 
     fun showWorld() {
         map?.animateCamera(CameraUpdateFactory.newCameraPosition(WORLD), 500)
-    }
-
-    /**
-     * Frame one place. The registry's bbox is a camera frame, not the true extent
-     * — see the absorption heuristic in tools/geo/build_geo.py — so "zoom to the
-     * United States" lands on the lower 48 rather than on the Aleutians.
-     */
-    fun zoomTo(place: Place) {
-        val map = map ?: return
-        val b = place.bounds
-        // Vatican City is 0.006 deg across; without a floor the camera would try
-        // to zoom to a point and clamp at maximum zoom on a blank street.
-        val padLat = maxOf(0.15, (b.north - b.south) * 0.08)
-        val padLon = maxOf(0.15, (b.east - b.west) * 0.08)
-        val bounds = LatLngBounds.from(
-            minOf(90.0, b.north + padLat),
-            minOf(180.0, b.east + padLon),
-            maxOf(-90.0, b.south - padLat),
-            maxOf(-180.0, b.west - padLon),
-        )
-        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 64), 600)
     }
 
     /** Hit-test a tap, precise first and forgiving second. */
@@ -400,14 +389,17 @@ private fun LegendDot(color: Color) {
  * What a tap opens. Deliberately a card and not a modal sheet: the map stays
  * visible and interactive, so tapping a second country just swaps the card
  * instead of forcing a dismiss first.
+ *
+ * It carries no Close button either, for the same reason: a tap on open ocean
+ * already clears the selection, so a button would only occupy the one thing this
+ * screen cannot spare — space over the map — to duplicate a gesture the card
+ * itself is proof of.
  */
 @Composable
 private fun SelectedPlaceCard(
     place: Place,
     status: PlaceStatus,
     onToggle: (PlaceStatus) -> Unit,
-    onZoom: () -> Unit,
-    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -417,49 +409,50 @@ private fun SelectedPlaceCard(
         ),
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        place.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        buildString {
-                            append(place.code)
-                            append(" · ")
-                            append(place.continent)
-                            // Shown only where it says something new: "Greenland
-                            // (Denmark)" is the point of this app, "France
-                            // (France)" is noise.
-                            if (place.sovereign != place.name) {
-                                append(" · ")
-                                append(place.sovereign)
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                TextButton(onClick = onDismiss) { Text("Close") }
-            }
+            Text(
+                place.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                buildString {
+                    append(place.code)
+                    append(" · ")
+                    append(place.continent)
+                    // Shown only where it says something new: "Greenland (Denmark)"
+                    // is the point of this app, "France (France)" is noise.
+                    if (place.sovereign != place.name) {
+                        append(" · ")
+                        append(place.sovereign)
+                    }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Row(
                 Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Short labels, matching the passport rows. Three chips reading
+                // "Been here / Lived here / Want to go" overflow a 360 dp phone once
+                // the card's padding is taken off, and a wrapped or scrolling row of
+                // three would hide one of the three answers behind a gesture.
                 FilterChip(
                     selected = status == PlaceStatus.VISITED,
                     onClick = { onToggle(PlaceStatus.VISITED) },
-                    label = { Text("Been here") },
+                    label = { Text("Been") },
+                )
+                FilterChip(
+                    selected = status == PlaceStatus.LIVED,
+                    onClick = { onToggle(PlaceStatus.LIVED) },
+                    label = { Text("Lived") },
                 )
                 FilterChip(
                     selected = status == PlaceStatus.WISHLIST,
                     onClick = { onToggle(PlaceStatus.WISHLIST) },
-                    label = { Text("Want to go") },
+                    label = { Text("Want") },
                 )
-                Box(Modifier.weight(1f))
-                FilledTonalButton(onClick = onZoom) { Text("Zoom") }
             }
         }
     }

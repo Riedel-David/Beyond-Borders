@@ -59,6 +59,37 @@ class PlacesLogicTest {
         assertEquals(1, stats.continentsTouched)
     }
 
+    /**
+     * The regression this whole category has to avoid: saying "I lived there" is a
+     * stronger claim than "I have been there", so it must never cost you a place.
+     */
+    @Test
+    fun `promoting a visit to lived leaves the been count alone`() {
+        val visited = computeStats(places, mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.VISITED))
+        val lived = computeStats(places, mapOf("DK" to PlaceStatus.LIVED, "FR" to PlaceStatus.VISITED))
+
+        assertEquals(2, visited.been)
+        assertEquals(2, lived.been)
+        assertEquals(visited.percent, lived.percent)
+        // Strict counts still split them, because the map legend needs one per colour.
+        assertEquals(1, lived.visited)
+        assertEquals(1, lived.lived)
+    }
+
+    @Test
+    fun `a continent bar counts lived as been`() {
+        val stats = computeStats(places, mapOf("DK" to PlaceStatus.LIVED, "FR" to PlaceStatus.WISHLIST))
+        assertEquals(1, stats.continents.first { it.continent == "Europe" }.been)
+        assertEquals(1, stats.continentsTouched)
+    }
+
+    @Test
+    fun `wishlist is not a kind of been`() {
+        val stats = computeStats(places, mapOf("DK" to PlaceStatus.WISHLIST))
+        assertEquals(0, stats.been)
+        assertEquals(0, stats.percent)
+    }
+
     @Test
     fun `search ignores case and accents`() {
         val hits = buildRows(places, emptyMap(), "reunion", StatusFilter.ALL, Grouping.ALPHABETICAL)
@@ -82,7 +113,7 @@ class PlacesLogicTest {
         val statuses = mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.WISHLIST)
         assertEquals(
             listOf("DK"),
-            buildRows(places, statuses, "", StatusFilter.VISITED, Grouping.ALPHABETICAL).map { it.place.code },
+            buildRows(places, statuses, "", StatusFilter.BEEN, Grouping.ALPHABETICAL).map { it.place.code },
         )
         assertEquals(
             listOf("FR"),
@@ -94,10 +125,26 @@ class PlacesLogicTest {
         )
     }
 
+    /**
+     * "Been" is the superset and "Lived" narrows inside it. If Been excluded lived
+     * places, the filter would disagree with the count at the top of the screen.
+     */
     @Test
-    fun `tap cycle returns to none`() {
-        assertEquals(PlaceStatus.VISITED, PlaceStatus.NONE.next())
-        assertEquals(PlaceStatus.WISHLIST, PlaceStatus.VISITED.next())
-        assertEquals(PlaceStatus.NONE, PlaceStatus.WISHLIST.next())
+    fun `the been filter includes lived places and the lived filter narrows`() {
+        val statuses = mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.LIVED)
+        assertEquals(
+            setOf("DK", "FR"),
+            buildRows(places, statuses, "", StatusFilter.BEEN, Grouping.ALPHABETICAL)
+                .map { it.place.code }.toSet(),
+        )
+        assertEquals(
+            listOf("FR"),
+            buildRows(places, statuses, "", StatusFilter.LIVED, Grouping.ALPHABETICAL).map { it.place.code },
+        )
+        // And a lived place is not "not yet".
+        assertTrue(
+            buildRows(places, statuses, "", StatusFilter.NONE, Grouping.ALPHABETICAL)
+                .none { it.place.code == "FR" },
+        )
     }
 }

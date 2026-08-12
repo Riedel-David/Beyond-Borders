@@ -40,6 +40,15 @@ class SettingsStore(context: Context) {
     )
     val homeTab: StateFlow<HomeTab> = _homeTab.asStateFlow()
 
+    private val _mapColors = MutableStateFlow(
+        MapColors.parse(
+            visited = prefs.getString(KEY_HUE_VISITED, null),
+            lived = prefs.getString(KEY_HUE_LIVED, null),
+            wishlist = prefs.getString(KEY_HUE_WISHLIST, null),
+        )
+    )
+    val mapColors: StateFlow<MapColors> = _mapColors.asStateFlow()
+
     /**
      * Stable per-install id, stamped onto every row we write.
      *
@@ -62,9 +71,47 @@ class SettingsStore(context: Context) {
         prefs.edit { putString(KEY_HOME_TAB, tab.name) }
     }
 
+    /**
+     * Repaint one status. The other two follow, because [MapColors.with] swaps.
+     *
+     * All three keys are written every time even though one slot was asked for: the
+     * swap can move a hue the user did not touch, and a partial write would leave
+     * two statuses sharing a colour on the next launch — the one state the model
+     * refuses to represent.
+     */
+    fun setMapHue(slot: MapSlot, hue: MapHue) {
+        val next = _mapColors.value.with(slot, hue)
+        if (next == _mapColors.value) return
+        _mapColors.value = next
+        prefs.edit {
+            putString(KEY_HUE_VISITED, next.visited.name)
+            putString(KEY_HUE_LIVED, next.lived.name)
+            putString(KEY_HUE_WISHLIST, next.wishlist.name)
+        }
+    }
+
+    /**
+     * Back to the shipped palette.
+     *
+     * The keys are removed rather than written with the default names, so a later
+     * build that changes what the default is picks the new one up instead of being
+     * stuck with today's answer frozen into a preference file.
+     */
+    fun resetMapColors() {
+        _mapColors.value = MapColors.DEFAULT
+        prefs.edit {
+            remove(KEY_HUE_VISITED)
+            remove(KEY_HUE_LIVED)
+            remove(KEY_HUE_WISHLIST)
+        }
+    }
+
     private companion object {
         const val KEY_THEME = "theme_mode"
         const val KEY_HOME_TAB = "home_tab"
         const val KEY_DEVICE_ID = "device_id"
+        const val KEY_HUE_VISITED = "map_hue_visited"
+        const val KEY_HUE_LIVED = "map_hue_lived"
+        const val KEY_HUE_WISHLIST = "map_hue_wishlist"
     }
 }

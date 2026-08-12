@@ -91,6 +91,25 @@ class BackupMergeTest {
         assertEquals(2, plan.skipped)
     }
 
+    /**
+     * Rows dropped for an unrecognised status never reach [BackupMerge.plan] — the
+     * decoder already threw them away — so they are carried in rather than counted
+     * here. They still belong in [BackupMerge.Plan.skipped], because from the user's
+     * side a row the app refused to take is a row the app skipped.
+     */
+    @Test
+    fun `statuses dropped by the decoder are carried through and counted as skipped`() {
+        val plan = BackupMerge.plan(
+            listOf(entry("DK", 100), entry("XX", 100)),
+            emptyMap(),
+            known,
+            unknownStatuses = listOf("worked", "worked"),
+        )
+        assertEquals(listOf("worked", "worked"), plan.unknownStatuses)
+        // One unknown code plus two dropped rows; the applied DK is not skipped.
+        assertEquals(3, plan.skipped)
+    }
+
     /** A hand-edited file, or two exports concatenated. Newest wins, once. */
     @Test
     fun `a code repeated in the file is applied once at its newest`() {

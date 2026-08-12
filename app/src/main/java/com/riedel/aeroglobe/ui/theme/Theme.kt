@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.settings.ThemeMode
 
 /** The map palette for the theme currently in effect. */
@@ -18,6 +19,7 @@ val LocalIsDarkTheme = staticCompositionLocalOf { false }
 @Composable
 fun AeroGlobeTheme(
     mode: ThemeMode = ThemeMode.SYSTEM,
+    mapColors: MapColors = MapColors.DEFAULT,
     content: @Composable () -> Unit,
 ) {
     val dark = when (mode) {
@@ -39,7 +41,10 @@ fun AeroGlobeTheme(
     }
 
     CompositionLocalProvider(
-        LocalMapPalette provides if (dark) MapPaletteDark else MapPaletteLight,
+        // Recomputed on every change to either input, which is all the live
+        // recolouring needs: MapScreen keys its style rebuild on this palette, and
+        // MapPalette is a data class, so a new hue reaches MapLibre by itself.
+        LocalMapPalette provides mapPalette(dark, mapColors),
         LocalIsDarkTheme provides dark,
     ) {
         MaterialTheme(

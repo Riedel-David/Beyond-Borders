@@ -29,6 +29,7 @@ internal object PlacesMapStyle {
     const val LAYER_BACKGROUND = "ocean"
     const val LAYER_FILL = "places-fill"
     const val LAYER_VISITED = "places-visited"
+    const val LAYER_LIVED = "places-lived"
     const val LAYER_WISHLIST = "places-wishlist"
     const val LAYER_BORDER = "places-border"
     const val LAYER_SELECTED = "places-selected"
@@ -63,12 +64,18 @@ internal object PlacesMapStyle {
                     PropertyFactory.fillAntialias(true),
                 )
             )
-            // Two overlays, each showing only the codes in its filter. Recolouring
-            // is then one setFilter call instead of rebuilding a 252-branch match
-            // expression, and a place can only ever be in one of them.
+            // One overlay per status, each showing only the codes in its filter.
+            // Recolouring is then one setFilter call instead of rebuilding a
+            // 252-branch match expression, and because PlaceStatus is a single value
+            // per place, a place can only ever be in one of them.
             .withLayer(
                 FillLayer(LAYER_VISITED, SOURCE_ID)
                     .withProperties(PropertyFactory.fillColor(palette.visited.toArgb()))
+                    .withFilter(noPlaces())
+            )
+            .withLayer(
+                FillLayer(LAYER_LIVED, SOURCE_ID)
+                    .withProperties(PropertyFactory.fillColor(palette.lived.toArgb()))
                     .withFilter(noPlaces())
             )
             .withLayer(

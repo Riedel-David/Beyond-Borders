@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The themed-icon layer (Android 13+), which needs its own drawing rather than a
+    reuse of the foreground.
+
+    A monochrome layer keeps only the alpha channel and is tinted by the launcher, so
+    the foreground's pale disc would arrive as one solid blob with the grid and the
+    three dots invisible inside it. Here the disc is an outline instead, which makes
+    the wireframe itself the shape.
+
+    The three marked places are gone rather than redrawn. In one colour there is
+    nowhere on this grid to put a dot: the gap between the left meridian and the rim
+    is about 5 units, so any dot large enough to see fuses with a line into a
+    lollipop. A bare wireframe globe is the better monotone mark anyway, and colour is
+    what the dots were carrying.
+
+    Fills are written white so the file previews as something recognisable in the
+    IDE; the launcher ignores them and tints the coverage.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M27,54 A27,27 0 0 1 81,54 A27,27 0 0 1 27,54 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4" />
+
+    <group>
+        <clip-path android:pathData="M27,54 A27,27 0 0 1 81,54 A27,27 0 0 1 27,54 Z" />
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M22,54 L86,54"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.2" />
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M22,40 L86,40"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.2" />
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M22,68 L86,68"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.2" />
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M54,25 L54,83"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.2" />
+        <path
+            android:fillColor="#00000000"
+            android:pathData="M54,27 A15,27 0 0 1 54,81 A15,27 0 0 1 54,27 Z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.2" />
+    </group>
+</vector>

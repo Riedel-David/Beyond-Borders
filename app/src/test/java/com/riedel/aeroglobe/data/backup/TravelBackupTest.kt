@@ -41,6 +41,13 @@ class TravelBackupTest {
             deletedAt = 1_700_000_002_000,
             deviceId = "device-b",
         ),
+        TravelBackup.Entry(
+            code = "NO",
+            status = PlaceStatus.LIVED,
+            firstVisitedOn = "2011-01-03",
+            updatedAt = 1_700_000_003_000,
+            deviceId = "device-b",
+        ),
     )
 
     private fun roundTrip(): List<TravelBackup.Entry> =
@@ -72,7 +79,7 @@ class TravelBackupTest {
         val once = TravelBackup.encode(entries, 1_700_000_009_000, "device-a")
         val again = TravelBackup.encode(entries.reversed(), 1_700_000_009_000, "device-a")
         assertEquals(once, again)
-        assertEquals(listOf("DK", "FR", "GL"), TravelBackup.decode(once).entries.map { it.code })
+        assertEquals(listOf("DK", "FR", "GL", "NO"), TravelBackup.decode(once).entries.map { it.code })
     }
 
     @Test
@@ -86,7 +93,7 @@ class TravelBackupTest {
         assertTrue("the name should be in the file", json.contains("Greenland"))
         // Nothing in Entry holds it: the registry is the authority on names, and a
         // file that could rename a place would let a typo outrank the dataset.
-        assertEquals(3, TravelBackup.decode(json).entries.size)
+        assertEquals(entries.size, TravelBackup.decode(json).entries.size)
     }
 
     @Test
@@ -115,6 +122,36 @@ class TravelBackupTest {
         // Otherwise the merge would have no way to tell "un-mark this" from "mark
         // this as something", and importing the file would resurrect the place.
         assertEquals(1_700_000_000_000, entry.deletedAt)
+    }
+
+    /**
+     * The trap this guards against: [PlaceStatus.fromStorage] falls back to NONE, and
+     * NONE decodes as a tombstone. Reading an unknown word that way would turn "I
+     * lived here", written by a newer build, into "un-mark this place" — a silent
+     * deletion of real history. Skipping and naming the row is the honest failure.
+     */
+    @Test
+    fun `a status this build does not know is skipped and named, not read as an un-marking`() {
+        val json = """
+            {"format":"aeroglobe.travel","version":1,"places":[
+              {"code":"DK","status":"worked","updatedAt":1700000000000},
+              {"code":"NO","status":"worked","updatedAt":1700000001000},
+              {"code":"SE","status":"lived","updatedAt":1700000002000}
+            ]}
+        """.trimIndent()
+        val payload = TravelBackup.decode(json)
+
+        assertEquals(listOf("SE"), payload.entries.map { it.code })
+        assertEquals(PlaceStatus.LIVED, payload.entries.single().status)
+        // One per dropped row, so the count is a number of places and not a number
+        // of distinct words. The report distincts them itself.
+        assertEquals(listOf("worked", "worked"), payload.unknownStatuses)
+    }
+
+    @Test
+    fun `a readable file reports no unknown statuses`() {
+        val json = TravelBackup.encode(entries, exportedAt = 1L, deviceId = "device-a")
+        assertEquals(emptyList<String>(), TravelBackup.decode(json).unknownStatuses)
     }
 
     @Test

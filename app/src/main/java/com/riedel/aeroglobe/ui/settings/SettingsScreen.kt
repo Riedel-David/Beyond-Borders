@@ -2,7 +2,10 @@ package com.riedel.aeroglobe.ui.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,8 +31,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,7 +46,11 @@ import com.riedel.aeroglobe.AppContainer
 import com.riedel.aeroglobe.BuildConfig
 import com.riedel.aeroglobe.data.backup.TravelBackup
 import com.riedel.aeroglobe.settings.HomeTab
+import com.riedel.aeroglobe.settings.MapColors
+import com.riedel.aeroglobe.settings.MapHue
+import com.riedel.aeroglobe.settings.MapSlot
 import com.riedel.aeroglobe.settings.ThemeMode
+import com.riedel.aeroglobe.ui.theme.LocalIsDarkTheme
 
 /**
  * Settings: how the app looks, where it starts, and how to get the data out.
@@ -59,6 +74,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val homeTab by viewModel.homeTab.collectAsStateWithLifecycle()
+    val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -95,6 +111,22 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 },
                 onSelect = viewModel::setThemeMode,
             )
+        }
+
+        Section(
+            "Map colours",
+            // The swap is stated up front because it is the one thing about this
+            // control that would otherwise look like a bug.
+            "Picking a colour another status already uses swaps the two, so no two " +
+                "statuses can end up the same.",
+        ) {
+            HueRow("Been", mapColors.visited) { viewModel.setMapHue(MapSlot.VISITED, it) }
+            HueRow("Lived", mapColors.lived) { viewModel.setMapHue(MapSlot.LIVED, it) }
+            HueRow("Want to", mapColors.wishlist) { viewModel.setMapHue(MapSlot.WISHLIST, it) }
+            // Hidden at the default, where it would be a button that does nothing.
+            if (mapColors != MapColors.DEFAULT) {
+                TextButton(onClick = viewModel::resetMapColors) { Text("Reset to default colours") }
+            }
         }
 
         Section(
@@ -221,6 +253,84 @@ private fun <T> ChoiceRow(
         }
     }
 }
+
+/**
+ * One status and the colours it can take.
+ *
+ * The label sits above the swatches rather than beside them so that all six get the
+ * card's full width and a 44 dp touch target each. Beside the label they would be
+ * 28 dp — small enough to mis-tap, which on a swapping control means undoing
+ * someone else's colour by accident.
+ */
+@Composable
+private fun HueRow(label: String, selected: MapHue, onSelect: (MapHue) -> Unit) {
+    // Read here rather than passed in: the swatch has to show what the map will
+    // actually look like right now, and each hue is a light/dark pair.
+    val dark = LocalIsDarkTheme.current
+    Column(Modifier.padding(bottom = 8.dp)) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            MapHue.entries.forEach { hue ->
+                Swatch(
+                    color = Color(hue.argb(dark)),
+                    isSelected = hue == selected,
+                    name = "$label: ${hue.displayName}",
+                    onClick = { onSelect(hue) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Swatch(color: Color, isSelected: Boolean, name: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            // selectable rather than clickable: it announces the swatch as a radio
+            // button and carries the selected state, which a colour alone cannot.
+            .selectable(selected = isSelected, onClick = onClick)
+            .semantics { contentDescription = name },
+        contentAlignment = Alignment.Center,
+    ) {
+        // A ring around the dot rather than a tick inside it: a tick needs a colour
+        // of its own, and there is no single one that stays legible on all six.
+        if (isSelected) {
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+            )
+        }
+        Box(
+            Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(color)
+                // A hairline so the palest swatch still has an edge on a pale card.
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+        )
+    }
+}
+
+/**
+ * Display names, kept here with the other user-facing strings rather than on the
+ * enum, which stays a data type the settings layer can persist without knowing
+ * anything about words on a screen.
+ */
+private val MapHue.displayName: String
+    get() = when (this) {
+        MapHue.AZURE -> "Azure"
+        MapHue.TEAL -> "Teal"
+        MapHue.GREEN -> "Green"
+        MapHue.ROSE -> "Rose"
+        MapHue.VIOLET -> "Violet"
+        MapHue.AMBER -> "Amber"
+    }
 
 @Composable
 private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> Unit) {

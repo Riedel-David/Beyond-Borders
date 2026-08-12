@@ -53,12 +53,19 @@ object TravelBackup {
         val deviceId: String? = null,
     )
 
-    /** A decoded file: the header plus its rows. */
+    /**
+     * A decoded file: the header plus its rows.
+     *
+     * [unknownStatuses] holds one entry per *row* that was dropped because this build
+     * does not know its status, so its size is a row count and its distinct values
+     * name the statuses. See [decode] for why those rows are dropped rather than read.
+     */
     data class Payload(
         val version: Int,
         val exportedAt: Long,
         val deviceId: String?,
         val entries: List<Entry>,
+        val unknownStatuses: List<String> = emptyList(),
     )
 
     /**
@@ -137,6 +144,7 @@ object TravelBackup {
             ?: throw BackupFormatException("The backup has no places in it.")
 
         val entries = ArrayList<Entry>(array.length())
+        val unknownStatuses = ArrayList<String>()
         for (i in 0 until array.length()) {
             val row = array.optJSONObject(i) ?: continue
             val code = row.optString("code").takeIf { it.isNotBlank() } ?: continue
@@ -144,7 +152,16 @@ object TravelBackup {
             // nothing to compare, and defaulting to "now" would let a stale backup
             // silently overwrite newer local edits.
             val updatedAt = row.optLong("updatedAt", 0L).takeIf { it > 0L } ?: continue
-            val status = PlaceStatus.fromStorage(row.optString("status"))
+            val rawStatus = row.optString("status")
+            // Strict, not PlaceStatus.fromStorage: falling back to NONE here would
+            // read a status from a newer build as an *un-marking* and delete real
+            // history on import. A word we do not know is skipped and reported
+            // instead, exactly like a place code we do not know.
+            val status = PlaceStatus.parseOrNull(rawStatus)
+            if (status == null) {
+                unknownStatuses.add(rawStatus)
+                continue
+            }
             entries.add(
                 Entry(
                     code = code,
@@ -169,6 +186,7 @@ object TravelBackup {
             exportedAt = root.optLong("exportedAt", 0L),
             deviceId = root.optStringOrNull("deviceId"),
             entries = entries,
+            unknownStatuses = unknownStatuses.sorted(),
         )
     }
 

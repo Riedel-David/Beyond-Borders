@@ -15,17 +15,39 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 
 | | |
 |---|---|
-| Travel map | working — 252 places, tap to select, Been / Want, zoom to place |
+| Travel map | working — 252 places, tap to select, Been / Lived / Want |
 | Passport list | working — search, filters, per-continent stats |
-| Settings | working — theme, opening screen, JSON export / import |
+| Settings | working — theme, map colours, opening screen, JSON export / import |
 | Flights | not started (phase 3) |
 
 Everything that works, works **offline**: the geometry is bundled in the APK and
 there is no basemap, no tile server and no API key.
 
-Next up is the short list in [PLAN.md](PLAN.md) phase 1.5 — map card cleanup, a
-*lived there* category, custom category colours and a real launcher icon — then
-visas in phase 2.
+Phase 1.5 is closed (version `0.2.5`) and visas are next, in phase 2.
+
+## Choosing the map colours
+
+Settings → **Map colours** repaints Been, Lived and Want to. Six presets each, not a
+colour picker: the reason this app has a hand-picked palette at all is that the four
+map states have to stay tellable apart, and a free picker can land on three shades
+of one hue just as easily as Material You can.
+
+Two things follow from that, both deliberate:
+
+- **Picking a colour another status holds swaps the two.** With six colours and
+  three statuses, refusing the tap would leave you to work out unprompted that the
+  *other* status has to move first. A swap always works and is its own undo, so the
+  three colours are distinct by construction rather than by validation.
+- **Each preset is a light/dark pair.** A single hex would look chosen-for-daylight
+  the first evening you saw it.
+
+The palette's claim to be readable is a test rather than a promise:
+[`MapColorsTest`](app/src/test/java/com/riedel/aeroglobe/settings/MapColorsTest.kt)
+computes each preset's WCAG contrast against unmarked land and open water in both
+themes and fails below 3:1, and separately checks that no two presets sit within 40°
+of each other on the colour wheel — because contrast says a fill is *visible*, not
+that two fills are *distinguishable*. Adding a seventh colour breaks the build until
+it earns its place.
 
 ## Build and run
 
@@ -35,7 +57,7 @@ API 26+.
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew :app:testDebugUnitTest    # 52 tests, no device needed
+./gradlew :app:testDebugUnitTest    # 73 tests, no device needed
 ./gradlew :app:installDebug         # build + install
 ```
 
@@ -91,9 +113,24 @@ configuration cache off, and the project cache relocated outside the synced
 folder. Each is commented in place, and all three can be deleted if the repo moves
 to a local path.
 
-OneDrive has also produced sync-conflict copies of source files
-(`Foo-David's MacBook Air.kt`) after concurrent edits. If Kotlin suddenly reports
-redeclarations, look for one of those before believing the error.
+OneDrive has also produced sync-conflict copies of source files after concurrent
+edits, in two shapes: `Foo-David's MacBook Air.kt` and `Foo 2.kt`. If Kotlin
+suddenly reports a redeclaration or an unresolved reference to something you just
+wrote, look for one of those before believing the error.
+
+The second shape is the nastier one. `.gitignore` has `* 2.*`, so `git status` stays
+clean while Kotlin compiles the copy anyway — and a fork made mid-edit can end up
+with *half* of two rapid changes, leaving the real file with the other half. Both
+files then look almost right. Two consequences worth knowing:
+
+```sh
+# Find them, since git will not.
+find . -name "* 2.*" -not -path "./build/*" -not -path "*/build/*"
+```
+
+Also: OneDrive has silently truncated a tracked file to 0 bytes here (`notes.md`).
+Two edits to the same file in quick succession are the trigger for both problems, so
+they are worth sequencing.
 
 ## Data and licences
 

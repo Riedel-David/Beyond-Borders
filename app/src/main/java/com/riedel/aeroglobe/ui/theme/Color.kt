@@ -3,15 +3,21 @@ package com.riedel.aeroglobe.ui.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import com.riedel.aeroglobe.settings.MapColors
 
 /**
  * A hand-picked palette rather than Material You dynamic colour.
  *
- * The map is the app's centrepiece and it only works if "visited", "wishlist"
- * and "not yet" stay clearly distinguishable from each other and from the ocean.
- * Dynamic colour would re-tint those from the user's wallpaper and could easily
- * land on three shades of the same hue. So: fixed palette, deep azure for the
- * app, teal for wishlist, warm amber reserved for flight alerts.
+ * The map is the app's centrepiece and it only works if "visited", "lived",
+ * "wishlist" and "not yet" stay clearly distinguishable from each other and from
+ * the ocean. Dynamic colour would re-tint those from the user's wallpaper and could
+ * easily land on four shades of the same hue. So: fixed palette, deep azure for the
+ * app, rose for lived, teal for wishlist, warm amber reserved for flight alerts.
+ *
+ * The three map statuses are repaintable from settings, but only from the vetted
+ * list in [com.riedel.aeroglobe.settings.MapHue] — which keeps the guarantee
+ * dynamic colour would have cost, since every option on that list was checked
+ * against these backgrounds and against the other options.
  */
 
 // --- light ------------------------------------------------------------------
@@ -103,25 +109,38 @@ data class MapPalette(
     val ocean: Color,
     val unvisited: Color,
     val visited: Color,
+    /**
+     * A hue of its own, and deliberately not a tint of [visited].
+     *
+     * "Lived there" is a different answer, not a weaker version of visited, so a
+     * tint would read as *less* visited. Rose is the default because this is by far
+     * the rarest status, so it can afford to be the loudest colour on the map
+     * without shouting over everything else.
+     */
+    val lived: Color,
     val wishlist: Color,
     val border: Color,
     val selectedOutline: Color,
 )
 
-val MapPaletteLight = MapPalette(
-    ocean = Color(0xFFDCE6F2),
-    unvisited = Color(0xFFFBFCFE),
-    visited = Azure40,
-    wishlist = Teal40,
-    border = Color(0xFFA9B4C2),
-    selectedOutline = Color(0xFF0B2C63),
+/**
+ * The palette the map draws with, for one theme and one set of chosen hues.
+ *
+ * Ocean, land, border and selection are fixed here rather than in [MapColors]: they
+ * are the backgrounds every hue was contrast-checked against, so they are part of
+ * the check and not part of the choice.
+ */
+fun mapPalette(dark: Boolean, colors: MapColors): MapPalette = MapPalette(
+    ocean = if (dark) Color(0xFF121A24) else Color(0xFFDCE6F2),
+    unvisited = if (dark) Color(0xFF2A323C) else Color(0xFFFBFCFE),
+    visited = Color(colors.visited.argb(dark)),
+    lived = Color(colors.lived.argb(dark)),
+    wishlist = Color(colors.wishlist.argb(dark)),
+    border = if (dark) Color(0xFF4C5663) else Color(0xFFA9B4C2),
+    selectedOutline = if (dark) Color(0xFFDCE7FF) else Color(0xFF0B2C63),
 )
 
-val MapPaletteDark = MapPalette(
-    ocean = Color(0xFF121A24),
-    unvisited = Color(0xFF2A323C),
-    visited = Color(0xFF3D7DE0),
-    wishlist = Color(0xFF14A192),
-    border = Color(0xFF4C5663),
-    selectedOutline = Color(0xFFDCE7FF),
-)
+// Derived from MapColors.DEFAULT rather than spelled out again, so the palette the
+// app opens with and the palette "reset" returns to cannot drift apart.
+val MapPaletteLight = mapPalette(dark = false, colors = MapColors.DEFAULT)
+val MapPaletteDark = mapPalette(dark = true, colors = MapColors.DEFAULT)

@@ -18,12 +18,14 @@ class SettingsMessageTest {
         updated: Int = 0,
         unchanged: Int = 0,
         unknown: List<String> = emptyList(),
+        unknownStatuses: List<String> = emptyList(),
     ) = BackupMerge.Plan(
         apply = emptyList<TravelBackup.Entry>(),
         added = added,
         updated = updated,
         unchanged = unchanged,
         unknownCodes = unknown,
+        unknownStatuses = unknownStatuses,
     )
 
     @Test
@@ -56,6 +58,34 @@ class SettingsMessageTest {
 
         val many = importMessage(plan(added = 1, unknown = ('A'..'H').map { "$it$it" }))
         assertTrue(many, many.contains("Skipped 8 unknown codes: AA, BB, CC, DD, EE, …"))
+    }
+
+    /**
+     * A row dropped for an unrecognised status is data this phone refused to take, so
+     * the report has to say so out loud — otherwise "Imported 1 new place." is the
+     * only thing the user sees and the missing ones look like they were never there.
+     */
+    @Test
+    fun `entries skipped for an unrecognised status are counted and the words named`() {
+        val one = importMessage(plan(added = 1, unknownStatuses = listOf("worked")))
+        assertTrue(one, one.endsWith("Skipped 1 entry with an unrecognised status: worked."))
+
+        // Two rows, one word: the count is rows, so it does not have to match the list.
+        val same = importMessage(plan(added = 1, unknownStatuses = listOf("worked", "worked")))
+        assertTrue(same, same.endsWith("Skipped 2 entries with an unrecognised status: worked."))
+
+        val mixed = importMessage(plan(added = 1, unknownStatuses = listOf("dreamt", "worked", "worked")))
+        assertTrue(mixed, mixed.endsWith("Skipped 3 entries with unrecognised statuses: dreamt, worked."))
+    }
+
+    @Test
+    fun `an import can report an unknown code and an unknown status at once`() {
+        val message = importMessage(plan(added = 1, unknown = listOf("XX"), unknownStatuses = listOf("worked")))
+        assertEquals(
+            "Imported 1 new place. Skipped 1 unknown code: XX." +
+                " Skipped 1 entry with an unrecognised status: worked.",
+            message,
+        )
     }
 
     @Test
