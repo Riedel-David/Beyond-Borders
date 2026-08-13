@@ -11,15 +11,17 @@ class AeroDataBoxFlightDataSourceTest {
 
     @Test
     fun `a flight with a gate and terminal parses into a status`() {
+        // AeroDataBox's real "utc" shape: a space separator and no seconds, not ISO-8601.
         val body = """
             [{
                 "status": "Boarding",
                 "departure": {
-                    "scheduledTime": { "utc": "2026-08-13T12:00:00Z" },
-                    "revisedTime": { "utc": "2026-08-13T12:20:00Z" },
+                    "scheduledTime": { "utc": "2026-08-13 12:00Z" },
+                    "revisedTime": { "utc": "2026-08-13 12:20Z" },
                     "terminal": "2",
                     "gate": "42"
-                }
+                },
+                "aircraft": { "modeS": "47A05E" }
             }]
         """.trimIndent()
 
@@ -30,6 +32,7 @@ class AeroDataBoxFlightDataSourceTest {
         assertEquals("42", status?.departureGate)
         assertEquals("2", status?.departureTerminal)
         assertEquals(FlightPhase.BOARDING, status?.phase)
+        assertEquals("47a05e", status?.aircraftIcao24)
     }
 
     @Test
@@ -37,7 +40,7 @@ class AeroDataBoxFlightDataSourceTest {
         val body = """
             [{
                 "status": "Expected",
-                "departure": { "scheduledTime": { "utc": "2026-08-13T12:00:00Z" } }
+                "departure": { "scheduledTime": { "utc": "2026-08-13 12:00Z" } }
             }]
         """.trimIndent()
 
@@ -45,6 +48,7 @@ class AeroDataBoxFlightDataSourceTest {
 
         assertNull(status?.estimatedDepartureUtc)
         assertNull(status?.departureGate)
+        assertNull(status?.aircraftIcao24)
     }
 
     @Test
@@ -56,6 +60,17 @@ class AeroDataBoxFlightDataSourceTest {
     fun `a flight with no scheduled time is no signal`() {
         val body = """[{ "status": "Expected", "departure": {} }]"""
         assertNull(parseAeroDataBoxResponse("flight-1", body, now))
+    }
+
+    @Test
+    fun `a flight with no aircraft assigned yet has no icao24`() {
+        val body = """
+            [{
+                "status": "Expected",
+                "departure": { "scheduledTime": { "utc": "2026-08-13 12:00Z" } }
+            }]
+        """.trimIndent()
+        assertNull(parseAeroDataBoxResponse("flight-1", body, now)?.aircraftIcao24)
     }
 
     @Test

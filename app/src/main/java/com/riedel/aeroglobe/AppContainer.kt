@@ -8,6 +8,7 @@ import com.riedel.aeroglobe.data.flights.FlightPollScheduler
 import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.FlightWorkerFactory
+import com.riedel.aeroglobe.data.flights.OpenSkyAircraftPositionSource
 import com.riedel.aeroglobe.data.flights.SwitchingFlightDataSource
 import com.riedel.aeroglobe.data.place.PlaceRegistry
 import com.riedel.aeroglobe.data.place.PlaceRepository
@@ -69,6 +70,8 @@ class AppContainer(context: Context) {
             deviceId = settings.deviceId,
         )
     }
+
+    val aircraftPositions: OpenSkyAircraftPositionSource by lazy { OpenSkyAircraftPositionSource() }
 
     val flightWorkerFactory: FlightWorkerFactory by lazy {
         FlightWorkerFactory(flights = flights, statuses = flightStatuses, scheduler = flightPollScheduler)

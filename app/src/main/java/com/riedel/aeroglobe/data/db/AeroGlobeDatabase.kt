@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         FlightStatusEntity::class,
         FlightStatusChangeEntity::class,
     ],
-    version = 4,
+    version = 5,
     // Schemas are committed under app/schemas so migrations can be tested against
     // the real previous version instead of a reconstruction of it.
     exportSchema = true,
@@ -97,13 +97,19 @@ abstract class AeroGlobeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `aircraftIcao24` TEXT")
+            }
+        }
+
         fun open(context: Context): AeroGlobeDatabase =
             Room.databaseBuilder(context, AeroGlobeDatabase::class.java, NAME)
                 // No fallbackToDestructiveMigration: this database holds the one
                 // thing in the app that cannot be re-fetched from anywhere. A
                 // missing migration must fail the build's tests, not quietly wipe
                 // a decade of travel history on upgrade.
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }

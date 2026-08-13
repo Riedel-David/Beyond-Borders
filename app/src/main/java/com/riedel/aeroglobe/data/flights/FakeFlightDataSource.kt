@@ -46,5 +46,6 @@ internal fun fakeStatusFor(flightId: String, flightNumber: String, date: String,
         departureTerminal = gate?.let { terminal },
         phase = phase,
         fetchedAt = now,
+        aircraftIcao24 = rng.nextInt(0x1000000).toString(16).padStart(6, '0'),
     )
 }

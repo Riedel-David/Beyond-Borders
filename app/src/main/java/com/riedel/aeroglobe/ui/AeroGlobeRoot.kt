@@ -86,7 +86,11 @@ fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
                 Tab.PASSPORT -> PassportScreen(placesViewModel)
                 Tab.FLIGHTS -> {
                     val flightsViewModel: FlightsViewModel = viewModel(
-                        factory = FlightsViewModel.factory(container.flights, container.flightStatuses),
+                        factory = FlightsViewModel.factory(
+                            container.flights,
+                            container.flightStatuses,
+                            container.aircraftPositions,
+                        ),
                     )
                     FlightsScreen(flightsViewModel)
                 }

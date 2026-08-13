@@ -60,6 +60,7 @@ class FlightStatusRepository(
         departureTerminal = departureTerminal,
         phase = FlightPhase.valueOf(phase),
         fetchedAt = Instant.ofEpochMilli(fetchedAt),
+        aircraftIcao24 = aircraftIcao24,
     )
 
     private fun FlightStatusChangeEntity.toDomain() = StatusChange(
@@ -79,6 +80,7 @@ class FlightStatusRepository(
         fetchedAt = fetchedAt.toEpochMilli(),
         updatedAt = updatedAt,
         deviceId = deviceId,
+        aircraftIcao24 = aircraftIcao24,
     )
 }
 

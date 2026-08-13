@@ -22,6 +22,7 @@ data class FlightStatus(
     val departureTerminal: String?,
     val phase: FlightPhase,
     val fetchedAt: Instant,
+    val aircraftIcao24: String? = null,
 )
 
 /** One field that changed between two [FlightStatus] snapshots, e.g. "gate" A15 -> B42. */

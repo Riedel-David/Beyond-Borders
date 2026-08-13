@@ -5,15 +5,19 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.aeroglobe.data.db.FlightEntity
+import com.riedel.aeroglobe.data.flights.AircraftPosition
+import com.riedel.aeroglobe.data.flights.AircraftPositionSource
 import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.StatusChange
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -25,6 +29,7 @@ data class FlightWithStatus(val flight: FlightEntity, val status: FlightStatus?)
 class FlightsViewModel(
     private val repo: FlightRepository,
     private val statuses: FlightStatusRepository,
+    private val positions: AircraftPositionSource,
 ) : ViewModel() {
 
     val flights: StateFlow<List<FlightWithStatus>> =
@@ -55,12 +60,30 @@ class FlightsViewModel(
 
     fun changesFor(flightId: String): Flow<List<StatusChange>> = statuses.observeChanges(flightId)
 
+    /**
+     * Polls OpenSky for [icao24]'s live position while collected — the hero screen is
+     * the only collector (3e decision), so closing it cancels the poll. Emits null and
+     * keeps polling on any failure, same "no signal, try again" contract as [FlightDataSource].
+     */
+    fun positionFor(icao24: String): Flow<AircraftPosition?> = flow {
+        while (true) {
+            emit(positions.fetchPosition(icao24))
+            delay(POSITION_POLL_INTERVAL_MILLIS)
+        }
+    }
+
     companion object {
-        fun factory(repo: FlightRepository, statuses: FlightStatusRepository): ViewModelProvider.Factory =
+        private const val POSITION_POLL_INTERVAL_MILLIS = 15_000L
+
+        fun factory(
+            repo: FlightRepository,
+            statuses: FlightStatusRepository,
+            positions: AircraftPositionSource,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     @Suppress("UNCHECKED_CAST")
-                    return FlightsViewModel(repo, statuses) as T
+                    return FlightsViewModel(repo, statuses, positions) as T
                 }
             }
     }

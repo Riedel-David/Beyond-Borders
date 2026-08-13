@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.aeroglobe.R
+import com.riedel.aeroglobe.data.flights.AircraftPosition
 import com.riedel.aeroglobe.data.flights.FlightPhase
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.StatusChange
@@ -42,6 +43,7 @@ import com.riedel.aeroglobe.ui.ComingSoon
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
 fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
@@ -64,9 +66,13 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
             selected != null -> {
                 val changes by viewModel.changesFor(selected.flight.id)
                     .collectAsStateWithLifecycle(initialValue = emptyList())
+                val icao24 = selected.status?.aircraftIcao24
+                val position by (icao24?.let(viewModel::positionFor) ?: emptyFlow())
+                    .collectAsStateWithLifecycle(initialValue = null)
                 FlightHeroScreen(
                     entry = selected,
                     changes = changes,
+                    position = position,
                     onBack = { selectedFlightId = null },
                     onSeatChange = { seat -> viewModel.updateSeat(selected.flight.id, seat) },
                     modifier = Modifier.padding(padding),
@@ -129,6 +135,7 @@ private fun FlightRow(entry: FlightWithStatus, onClick: () -> Unit, onRemove: ()
 private fun FlightHeroScreen(
     entry: FlightWithStatus,
     changes: List<StatusChange>,
+    position: AircraftPosition?,
     onBack: () -> Unit,
     onSeatChange: (String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -153,6 +160,9 @@ private fun FlightHeroScreen(
             Text(status.departureTerminal?.let { "Terminal $it" } ?: "Terminal not yet assigned")
             Text(delayLabel(status))
             Text(status.phase.label())
+            if (status.phase == FlightPhase.IN_AIR) {
+                Text(positionLabel(position), style = MaterialTheme.typography.bodyMedium)
+            }
         }
 
         Text(
@@ -184,6 +194,13 @@ private fun FlightHeroScreen(
 private fun delayLabel(status: FlightStatus): String {
     val minutes = delayMinutes(status) ?: return "No delay estimate yet"
     return if (minutes <= 0) "On time" else "Delayed $minutes min"
+}
+
+private fun positionLabel(position: AircraftPosition?): String {
+    if (position == null) return "Live position unavailable"
+    val altitude = position.altitudeMeters?.let { "%,.0f m".format(it) } ?: "altitude unknown"
+    val speed = position.velocityMs?.let { "%.0f km/h".format(it * 3.6) } ?: "speed unknown"
+    return "%.4f, %.4f · %s · %s".format(position.latitude, position.longitude, altitude, speed)
 }
 
 @Composable

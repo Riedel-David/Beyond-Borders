@@ -3,6 +3,9 @@ package com.riedel.aeroglobe.data.flights
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -16,10 +19,9 @@ import org.json.JSONObject
  * against this the same way it does against [FakeFlightDataSource] with no signal —
  * nothing else has to know a key is missing.
  *
- * The JSON field names in [parseAeroDataBoxResponse] match AeroDataBox's documented
- * shape at integration time, but have never been checked against a live response —
- * there is no key yet to call with. Verify field names against a real response before
- * relying on this against actual flights.
+ * Field names in [parseAeroDataBoxResponse] are verified against a live response
+ * (DY 2003, 2026-08-13): "utc" timestamps come back as "yyyy-MM-dd HH:mmZ", not
+ * ISO-8601, and the aircraft's Mode-S/ICAO24 address is at `aircraft.modeS`.
  */
 class AeroDataBoxFlightDataSource(
     private val apiKey: () -> String?,
@@ -72,11 +74,17 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
         departureTerminal = departure.optNonBlankString("terminal"),
         phase = mapAeroDataBoxStatus(flight.optString("status")),
         fetchedAt = now,
+        aircraftIcao24 = flight.optJSONObject("aircraft")?.optNonBlankString("modeS")?.lowercase(),
     )
 }
 
+/** AeroDataBox's "utc" strings are "yyyy-MM-dd HH:mmZ" — a space, no seconds, not ISO-8601. */
+private val AERODATABOX_UTC_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
 private fun JSONObject.utcInstant(key: String): Instant? =
-    optJSONObject(key)?.optNonBlankString("utc")?.let(Instant::parse)
+    optJSONObject(key)?.optNonBlankString("utc")?.let { raw ->
+        LocalDateTime.parse(raw.removeSuffix("Z"), AERODATABOX_UTC_FORMAT).toInstant(ZoneOffset.UTC)
+    }
 
 private fun JSONObject.optNonBlankString(key: String): String? = optString(key).takeIf { it.isNotBlank() }
 
