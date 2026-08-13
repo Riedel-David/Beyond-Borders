@@ -24,15 +24,18 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -59,6 +62,9 @@ import com.riedel.aeroglobe.ui.theme.LocalIsDarkTheme
  * MainActivity reads the theme and AeroGlobeRoot reads the home tab — so everything
  * here is a control over state that already works.
  */
+/** STATUS.md puts the free tier at ~2-4 tracked flights/month; warn once close to the low end of that. */
+private const val FREE_TIER_WARNING_THRESHOLD = 2
+
 @Composable
 fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -76,6 +82,9 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val homeTab by viewModel.homeTab.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
+    val useRealFlightData by viewModel.useRealFlightData.collectAsStateWithLifecycle()
+    val aeroDataBoxApiKey by viewModel.aeroDataBoxApiKey.collectAsStateWithLifecycle()
+    val flightRequestCount by viewModel.flightRequestCount.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(TravelBackup.MIME_TYPE)
@@ -146,6 +155,41 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     }
                 },
                 onSelect = viewModel::setHomeTab,
+            )
+        }
+
+        Section(
+            "Live flight data",
+            "AeroDataBox's free tier is only a handful of tracked flights a month, " +
+                "so this stays off until a key is entered, and never blocks on its own " +
+                "— just warns here when the month is running low.",
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Use real flight data", style = MaterialTheme.typography.bodyMedium)
+                Switch(checked = useRealFlightData, onCheckedChange = viewModel::setUseRealFlightData)
+            }
+            OutlinedTextField(
+                value = aeroDataBoxApiKey ?: "",
+                onValueChange = viewModel::setAeroDataBoxApiKey,
+                label = { Text("AeroDataBox API key") },
+                placeholder = { Text("RapidAPI key") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            )
+            Text(
+                "$flightRequestCount requests this month" +
+                    if (flightRequestCount >= FREE_TIER_WARNING_THRESHOLD) " — likely close to the free tier limit" else "",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (flightRequestCount >= FREE_TIER_WARNING_THRESHOLD) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.padding(top = 6.dp),
             )
         }
 
