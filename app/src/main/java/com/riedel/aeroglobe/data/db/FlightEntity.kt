@@ -25,4 +25,6 @@ data class FlightEntity(
     /** Unix millis when the flight was removed; null while it is active. */
     val deletedAt: Long? = null,
     val deviceId: String,
+    /** Typed by the user, not fetched — no data source has ever known a seat. */
+    val seat: String? = null,
 )

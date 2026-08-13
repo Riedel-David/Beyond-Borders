@@ -8,6 +8,8 @@ import com.riedel.aeroglobe.data.db.FlightEntity
 import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
+import com.riedel.aeroglobe.data.flights.StatusChange
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -37,15 +39,21 @@ class FlightsViewModel(
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Returns false, and adds nothing, if [rawNumber] does not look like a flight number. */
-    fun addFlight(rawNumber: String, isoDate: String): Boolean {
+    fun addFlight(rawNumber: String, isoDate: String, seat: String? = null): Boolean {
         val parsed = parseFlightNumber(rawNumber) ?: return false
-        viewModelScope.launch { repo.add(parsed, isoDate) }
+        viewModelScope.launch { repo.add(parsed, isoDate, seat?.trim()?.ifBlank { null }) }
         return true
     }
 
     fun removeFlight(id: String) {
         viewModelScope.launch { repo.remove(id) }
     }
+
+    fun updateSeat(id: String, seat: String?) {
+        viewModelScope.launch { repo.updateSeat(id, seat?.trim()?.ifBlank { null }) }
+    }
+
+    fun changesFor(flightId: String): Flow<List<StatusChange>> = statuses.observeChanges(flightId)
 
     companion object {
         fun factory(repo: FlightRepository, statuses: FlightStatusRepository): ViewModelProvider.Factory =

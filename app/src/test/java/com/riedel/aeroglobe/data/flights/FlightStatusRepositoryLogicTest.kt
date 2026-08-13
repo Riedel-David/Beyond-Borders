@@ -1,6 +1,7 @@
 package com.riedel.aeroglobe.data.flights
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -48,5 +49,24 @@ class FlightStatusRepositoryLogicTest {
         val current = status("B42", "B", FlightPhase.BOARDING)
         val fields = diffStatus(previous, current).map { it.field }.toSet()
         assertEquals(setOf("gate", "terminal", "phase"), fields)
+    }
+
+    @Test
+    fun `no estimate yet means no delay to report`() {
+        val current = status("A12", "A", FlightPhase.SCHEDULED).copy(estimatedDepartureUtc = null)
+        assertNull(delayMinutes(current))
+    }
+
+    @Test
+    fun `an estimate later than scheduled is a positive delay in minutes`() {
+        val current = status("A12", "A", FlightPhase.SCHEDULED)
+            .copy(estimatedDepartureUtc = now.plusSeconds(25 * 60))
+        assertEquals(25L, delayMinutes(current))
+    }
+
+    @Test
+    fun `an estimate at or before scheduled is not a delay`() {
+        val current = status("A12", "A", FlightPhase.SCHEDULED).copy(estimatedDepartureUtc = now)
+        assertEquals(0L, delayMinutes(current))
     }
 }

@@ -18,4 +18,7 @@ interface FlightDao {
 
     @Query("UPDATE flight SET deletedAt = :now WHERE id = :id AND deletedAt IS NULL")
     suspend fun tombstone(id: String, now: Long): Int
+
+    @Query("UPDATE flight SET seat = :seat, updatedAt = :now WHERE id = :id AND deletedAt IS NULL")
+    suspend fun updateSeat(id: String, seat: String?, now: Long): Int
 }

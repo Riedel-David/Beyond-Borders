@@ -17,7 +17,7 @@ class FlightRepository(
     /** [FlightEntity.flightNumber] is already normalized by the caller. */
     val flights: Flow<List<FlightEntity>> = dao.observeActive()
 
-    suspend fun add(flightNumber: String, isoDate: String) = withContext(Dispatchers.IO) {
+    suspend fun add(flightNumber: String, isoDate: String, seat: String? = null) = withContext(Dispatchers.IO) {
         val now = clock()
         val id = Uuid.v7(now)
         dao.insert(
@@ -27,6 +27,7 @@ class FlightRepository(
                 date = isoDate,
                 updatedAt = now,
                 deviceId = deviceId,
+                seat = seat,
             )
         )
         scheduler.scheduleNow(id)
@@ -35,5 +36,9 @@ class FlightRepository(
     suspend fun remove(id: String) = withContext(Dispatchers.IO) {
         dao.tombstone(id, clock())
         scheduler.cancel(id)
+    }
+
+    suspend fun updateSeat(id: String, seat: String?) = withContext(Dispatchers.IO) {
+        dao.updateSeat(id, seat, clock())
     }
 }

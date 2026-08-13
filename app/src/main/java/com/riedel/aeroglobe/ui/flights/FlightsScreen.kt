@@ -1,5 +1,6 @@
 package com.riedel.aeroglobe.ui.flights
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -27,11 +29,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.aeroglobe.R
 import com.riedel.aeroglobe.data.flights.FlightPhase
+import com.riedel.aeroglobe.data.flights.FlightStatus
+import com.riedel.aeroglobe.data.flights.StatusChange
+import com.riedel.aeroglobe.data.flights.delayMinutes
 import com.riedel.aeroglobe.ui.ComingSoon
 import java.time.Instant
 import java.time.ZoneOffset
@@ -41,31 +47,49 @@ import java.time.format.DateTimeFormatter
 fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
     val flights by viewModel.flights.collectAsStateWithLifecycle()
     var showForm by rememberSaveable { mutableStateOf(false) }
+    var selectedFlightId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = flights.find { it.flight.id == selectedFlightId }
 
     Scaffold(
         modifier = modifier,
         floatingActionButton = {
-            FloatingActionButton(onClick = { showForm = true }) {
-                Text("+", style = MaterialTheme.typography.headlineSmall)
+            if (selected == null) {
+                FloatingActionButton(onClick = { showForm = true }) {
+                    Text("+", style = MaterialTheme.typography.headlineSmall)
+                }
             }
         },
     ) { padding ->
-        if (flights.isEmpty()) {
-            ComingSoon(
+        when {
+            selected != null -> {
+                val changes by viewModel.changesFor(selected.flight.id)
+                    .collectAsStateWithLifecycle(initialValue = emptyList())
+                FlightHeroScreen(
+                    entry = selected,
+                    changes = changes,
+                    onBack = { selectedFlightId = null },
+                    onSeatChange = { seat -> viewModel.updateSeat(selected.flight.id, seat) },
+                    modifier = Modifier.padding(padding),
+                )
+            }
+            flights.isEmpty() -> ComingSoon(
                 icon = R.drawable.ic_tab_flights,
                 title = "No flights yet",
                 detail = "Add a flight number and date. Gate, aircraft position and " +
                     "delay risk come in a later step of phase 3.",
                 modifier = Modifier.padding(padding),
             )
-        } else {
-            LazyColumn(
+            else -> LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(flights, key = { it.flight.id }) { entry ->
-                    FlightRow(entry, onRemove = { viewModel.removeFlight(entry.flight.id) })
+                    FlightRow(
+                        entry,
+                        onClick = { selectedFlightId = entry.flight.id },
+                        onRemove = { viewModel.removeFlight(entry.flight.id) },
+                    )
                 }
             }
         }
@@ -74,14 +98,14 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
     if (showForm) {
         AddFlightDialog(
             onDismiss = { showForm = false },
-            onAdd = { number, isoDate -> viewModel.addFlight(number, isoDate) },
+            onAdd = { number, isoDate, seat -> viewModel.addFlight(number, isoDate, seat) },
         )
     }
 }
 
 @Composable
-private fun FlightRow(entry: FlightWithStatus, onRemove: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun FlightRow(entry: FlightWithStatus, onClick: () -> Unit, onRemove: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -101,6 +125,87 @@ private fun FlightRow(entry: FlightWithStatus, onRemove: () -> Unit) {
     }
 }
 
+@Composable
+private fun FlightHeroScreen(
+    entry: FlightWithStatus,
+    changes: List<StatusChange>,
+    onBack: () -> Unit,
+    onSeatChange: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var editingSeat by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconButton(onClick = onBack) { Text("←") }
+            Text(entry.flight.flightNumber, style = MaterialTheme.typography.headlineSmall)
+        }
+        Text(entry.flight.date)
+
+        val status = entry.status
+        if (status == null) {
+            Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
+        } else {
+            Text(status.departureGate?.let { "Gate $it" } ?: "Gate not yet assigned")
+            Text(status.departureTerminal?.let { "Terminal $it" } ?: "Terminal not yet assigned")
+            Text(delayLabel(status))
+            Text(status.phase.label())
+        }
+
+        Text(
+            entry.flight.seat?.let { "Seat $it" } ?: "No seat entered — tap to add",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.clickable { editingSeat = true },
+        )
+
+        if (changes.isNotEmpty()) {
+            Text("Change history", style = MaterialTheme.typography.titleMedium)
+            changes.forEach { change ->
+                Text(
+                    "${change.field}: ${change.oldValue ?: "—"} → ${change.newValue ?: "—"}",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+
+    if (editingSeat) {
+        SeatEditDialog(
+            initial = entry.flight.seat,
+            onDismiss = { editingSeat = false },
+            onConfirm = { seat -> onSeatChange(seat); editingSeat = false },
+        )
+    }
+}
+
+private fun delayLabel(status: FlightStatus): String {
+    val minutes = delayMinutes(status) ?: return "No delay estimate yet"
+    return if (minutes <= 0) "On time" else "Delayed $minutes min"
+}
+
+@Composable
+private fun SeatEditDialog(initial: String?, onDismiss: () -> Unit, onConfirm: (String?) -> Unit) {
+    var seat by remember { mutableStateOf(initial ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Seat") },
+        text = {
+            OutlinedTextField(
+                value = seat,
+                onValueChange = { seat = it },
+                placeholder = { Text("14A") },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(seat.trim().ifBlank { null }) }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
 private fun FlightPhase.label(): String = when (this) {
     FlightPhase.SCHEDULED -> "Scheduled"
     FlightPhase.BOARDING -> "Boarding"
@@ -113,8 +218,9 @@ private fun FlightPhase.label(): String = when (this) {
 /** [onAdd] returns false when [number] doesn't parse; the field is marked invalid rather than dismissing. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddFlightDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Boolean) {
+private fun AddFlightDialog(onDismiss: () -> Unit, onAdd: (String, String, String?) -> Boolean) {
     var number by remember { mutableStateOf("") }
+    var seat by remember { mutableStateOf("") }
     var invalid by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = Instant.now().toEpochMilli())
 
@@ -125,7 +231,7 @@ private fun AddFlightDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Bo
                 val millis = datePickerState.selectedDateMillis ?: return@TextButton
                 val isoDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
                     .format(DateTimeFormatter.ISO_LOCAL_DATE)
-                invalid = !onAdd(number, isoDate)
+                invalid = !onAdd(number, isoDate, seat.trim().ifBlank { null })
                 if (!invalid) onDismiss()
             }) { Text("Add") }
         },
@@ -138,6 +244,13 @@ private fun AddFlightDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Bo
                 label = { Text("Flight number") },
                 placeholder = { Text("LH 400") },
                 isError = invalid,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+            )
+            OutlinedTextField(
+                value = seat,
+                onValueChange = { seat = it },
+                label = { Text("Seat (optional)") },
+                placeholder = { Text("14A") },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
             DatePicker(state = datePickerState)
