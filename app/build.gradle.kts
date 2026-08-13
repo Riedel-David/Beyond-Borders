@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.maplibre.android.sdk)
 

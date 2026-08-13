@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 class FlightRepository(
     private val dao: FlightDao,
     private val deviceId: String,
+    private val scheduler: FlightPollScheduler,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     /** [FlightEntity.flightNumber] is already normalized by the caller. */
@@ -18,19 +19,21 @@ class FlightRepository(
 
     suspend fun add(flightNumber: String, isoDate: String) = withContext(Dispatchers.IO) {
         val now = clock()
+        val id = Uuid.v7(now)
         dao.insert(
             FlightEntity(
-                id = Uuid.v7(now),
+                id = id,
                 flightNumber = flightNumber,
                 date = isoDate,
                 updatedAt = now,
                 deviceId = deviceId,
             )
         )
+        scheduler.scheduleNow(id)
     }
 
     suspend fun remove(id: String) = withContext(Dispatchers.IO) {
         dao.tombstone(id, clock())
-        Unit
+        scheduler.cancel(id)
     }
 }

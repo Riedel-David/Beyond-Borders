@@ -6,15 +6,35 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.aeroglobe.data.db.FlightEntity
 import com.riedel.aeroglobe.data.flights.FlightRepository
+import com.riedel.aeroglobe.data.flights.FlightStatus
+import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class FlightsViewModel(private val repo: FlightRepository) : ViewModel() {
+/** A tracked flight paired with its latest cached status — null while nothing has been fetched yet. */
+data class FlightWithStatus(val flight: FlightEntity, val status: FlightStatus?)
 
-    val flights: StateFlow<List<FlightEntity>> =
-        repo.flights.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+class FlightsViewModel(
+    private val repo: FlightRepository,
+    private val statuses: FlightStatusRepository,
+) : ViewModel() {
+
+    val flights: StateFlow<List<FlightWithStatus>> =
+        repo.flights.flatMapLatest { tracked ->
+            if (tracked.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                combine(tracked.map { flight -> statuses.observeStatus(flight.id).map { FlightWithStatus(flight, it) } }) {
+                    it.toList()
+                }
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Returns false, and adds nothing, if [rawNumber] does not look like a flight number. */
     fun addFlight(rawNumber: String, isoDate: String): Boolean {
@@ -28,11 +48,11 @@ class FlightsViewModel(private val repo: FlightRepository) : ViewModel() {
     }
 
     companion object {
-        fun factory(repo: FlightRepository): ViewModelProvider.Factory =
+        fun factory(repo: FlightRepository, statuses: FlightStatusRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     @Suppress("UNCHECKED_CAST")
-                    return FlightsViewModel(repo) as T
+                    return FlightsViewModel(repo, statuses) as T
                 }
             }
     }

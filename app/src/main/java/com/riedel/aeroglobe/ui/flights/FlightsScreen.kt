@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.aeroglobe.R
-import com.riedel.aeroglobe.data.db.FlightEntity
+import com.riedel.aeroglobe.data.flights.FlightPhase
 import com.riedel.aeroglobe.ui.ComingSoon
 import java.time.Instant
 import java.time.ZoneOffset
@@ -64,8 +64,8 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(flights, key = { it.id }) { flight ->
-                    FlightRow(flight, onRemove = { viewModel.removeFlight(flight.id) })
+                items(flights, key = { it.flight.id }) { entry ->
+                    FlightRow(entry, onRemove = { viewModel.removeFlight(entry.flight.id) })
                 }
             }
         }
@@ -80,21 +80,34 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FlightRow(flight: FlightEntity, onRemove: () -> Unit) {
+private fun FlightRow(entry: FlightWithStatus, onRemove: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
-                Text(flight.flightNumber)
-                Text(flight.date)
+                Text(entry.flight.flightNumber)
+                Text(entry.flight.date)
+                entry.status?.let { status ->
+                    val gate = status.departureGate?.let { "Gate $it" } ?: "Gate not yet assigned"
+                    Text("$gate · ${status.phase.label()}", style = MaterialTheme.typography.bodySmall)
+                }
             }
             IconButton(onClick = onRemove) {
                 Text("✕")
             }
         }
     }
+}
+
+private fun FlightPhase.label(): String = when (this) {
+    FlightPhase.SCHEDULED -> "Scheduled"
+    FlightPhase.BOARDING -> "Boarding"
+    FlightPhase.DEPARTED -> "Departed"
+    FlightPhase.IN_AIR -> "In the air"
+    FlightPhase.LANDED -> "Landed"
+    FlightPhase.CANCELLED -> "Cancelled"
 }
 
 /** [onAdd] returns false when [number] doesn't parse; the field is marked invalid rather than dismissing. */

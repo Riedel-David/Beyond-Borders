@@ -11,8 +11,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         PlaceStatusEntity::class,
         FlightEntity::class,
+        FlightStatusEntity::class,
+        FlightStatusChangeEntity::class,
     ],
-    version = 2,
+    version = 3,
     // Schemas are committed under app/schemas so migrations can be tested against
     // the real previous version instead of a reconstruction of it.
     exportSchema = true,
@@ -21,6 +23,8 @@ abstract class AeroGlobeDatabase : RoomDatabase() {
 
     abstract fun placeStatusDao(): PlaceStatusDao
     abstract fun flightDao(): FlightDao
+    abstract fun flightStatusDao(): FlightStatusDao
+    abstract fun flightStatusChangeDao(): FlightStatusChangeDao
 
     companion object {
         const val NAME = "aeroglobe.db"
@@ -46,13 +50,54 @@ abstract class AeroGlobeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `flight_status` (
+                        `flightId` TEXT NOT NULL,
+                        `scheduledDepartureUtc` INTEGER NOT NULL,
+                        `estimatedDepartureUtc` INTEGER,
+                        `departureGate` TEXT,
+                        `departureTerminal` TEXT,
+                        `phase` TEXT NOT NULL,
+                        `fetchedAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        `deviceId` TEXT NOT NULL,
+                        PRIMARY KEY(`flightId`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `flight_status_change` (
+                        `id` TEXT NOT NULL,
+                        `flightId` TEXT NOT NULL,
+                        `field` TEXT NOT NULL,
+                        `oldValue` TEXT,
+                        `newValue` TEXT,
+                        `changedAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        `deviceId` TEXT NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_flight_status_change_flightId_changedAt` ON `flight_status_change` (`flightId`, `changedAt`)"
+                )
+            }
+        }
+
         fun open(context: Context): AeroGlobeDatabase =
             Room.databaseBuilder(context, AeroGlobeDatabase::class.java, NAME)
                 // No fallbackToDestructiveMigration: this database holds the one
                 // thing in the app that cannot be re-fetched from anywhere. A
                 // missing migration must fail the build's tests, not quietly wipe
                 // a decade of travel history on upgrade.
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }

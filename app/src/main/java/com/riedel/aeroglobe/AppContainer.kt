@@ -2,7 +2,11 @@ package com.riedel.aeroglobe
 
 import android.content.Context
 import com.riedel.aeroglobe.data.db.AeroGlobeDatabase
+import com.riedel.aeroglobe.data.flights.FakeFlightDataSource
+import com.riedel.aeroglobe.data.flights.FlightPollScheduler
 import com.riedel.aeroglobe.data.flights.FlightRepository
+import com.riedel.aeroglobe.data.flights.FlightStatusRepository
+import com.riedel.aeroglobe.data.flights.FlightWorkerFactory
 import com.riedel.aeroglobe.data.place.PlaceRegistry
 import com.riedel.aeroglobe.data.place.PlaceRepository
 import com.riedel.aeroglobe.data.visa.VisaRegistry
@@ -36,10 +40,27 @@ class AppContainer(context: Context) {
         VisaRepository(registryLoader = { VisaRegistry.load(appContext.assets) })
     }
 
+    private val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext) }
+
     val flights: FlightRepository by lazy {
         FlightRepository(
             dao = database.flightDao(),
             deviceId = settings.deviceId,
+            scheduler = flightPollScheduler,
         )
+    }
+
+    // FakeFlightDataSource until 3d wires up a real AeroDataBox adapter behind this seam.
+    val flightStatuses: FlightStatusRepository by lazy {
+        FlightStatusRepository(
+            statusDao = database.flightStatusDao(),
+            changeDao = database.flightStatusChangeDao(),
+            dataSource = FakeFlightDataSource(),
+            deviceId = settings.deviceId,
+        )
+    }
+
+    val flightWorkerFactory: FlightWorkerFactory by lazy {
+        FlightWorkerFactory(flights = flights, statuses = flightStatuses, scheduler = flightPollScheduler)
     }
 }
