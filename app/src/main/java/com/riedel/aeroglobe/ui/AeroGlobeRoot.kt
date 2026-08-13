@@ -22,6 +22,7 @@ import com.riedel.aeroglobe.AppContainer
 import com.riedel.aeroglobe.R
 import com.riedel.aeroglobe.settings.HomeTab
 import com.riedel.aeroglobe.ui.flights.FlightsScreen
+import com.riedel.aeroglobe.ui.flights.FlightsViewModel
 import com.riedel.aeroglobe.ui.map.MapScreen
 import com.riedel.aeroglobe.ui.passport.PassportScreen
 import com.riedel.aeroglobe.ui.places.PlacesViewModel
@@ -83,7 +84,12 @@ fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
                 // and floats its controls above the system bars.
                 Tab.MAP -> MapScreen(placesViewModel)
                 Tab.PASSPORT -> PassportScreen(placesViewModel)
-                Tab.FLIGHTS -> FlightsScreen()
+                Tab.FLIGHTS -> {
+                    val flightsViewModel: FlightsViewModel = viewModel(
+                        factory = FlightsViewModel.factory(container.flights),
+                    )
+                    FlightsScreen(flightsViewModel)
+                }
                 Tab.SETTINGS -> SettingsScreen(container)
             }
         }

@@ -2,6 +2,7 @@ package com.riedel.aeroglobe
 
 import android.content.Context
 import com.riedel.aeroglobe.data.db.AeroGlobeDatabase
+import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.place.PlaceRegistry
 import com.riedel.aeroglobe.data.place.PlaceRepository
 import com.riedel.aeroglobe.data.visa.VisaRegistry
@@ -33,5 +34,12 @@ class AppContainer(context: Context) {
 
     val visa: VisaRepository by lazy {
         VisaRepository(registryLoader = { VisaRegistry.load(appContext.assets) })
+    }
+
+    val flights: FlightRepository by lazy {
+        FlightRepository(
+            dao = database.flightDao(),
+            deviceId = settings.deviceId,
+        )
     }
 }
