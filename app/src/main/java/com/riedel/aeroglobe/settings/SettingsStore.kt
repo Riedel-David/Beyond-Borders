@@ -63,10 +63,6 @@ class SettingsStore(context: Context) {
         prefs.edit { putString(KEY_DEVICE_ID, it) }
     }
 
-    /** Off by default: with no key entered this would just poll AeroDataBox into null responses. */
-    private val _useRealFlightData = MutableStateFlow(prefs.getBoolean(KEY_USE_REAL_FLIGHT_DATA, false))
-    val useRealFlightData: StateFlow<Boolean> = _useRealFlightData.asStateFlow()
-
     /** The RapidAPI key for AeroDataBox. Null until the user pastes one in. */
     private val _aeroDataBoxApiKey = MutableStateFlow(prefs.getString(KEY_AERODATABOX_API_KEY, null))
     val aeroDataBoxApiKey: StateFlow<String?> = _aeroDataBoxApiKey.asStateFlow()
@@ -84,11 +80,6 @@ class SettingsStore(context: Context) {
         )
     )
     val flightRequestCount: StateFlow<Int> = _flightRequestCount.asStateFlow()
-
-    fun setUseRealFlightData(enabled: Boolean) {
-        _useRealFlightData.value = enabled
-        prefs.edit { putBoolean(KEY_USE_REAL_FLIGHT_DATA, enabled) }
-    }
 
     fun setAeroDataBoxApiKey(key: String?) {
         val trimmed = key?.trim()?.ifBlank { null }
@@ -163,7 +154,6 @@ class SettingsStore(context: Context) {
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"
         const val KEY_HUE_WISHLIST = "map_hue_wishlist"
-        const val KEY_USE_REAL_FLIGHT_DATA = "use_real_flight_data"
         const val KEY_AERODATABOX_API_KEY = "aerodatabox_api_key"
         const val KEY_FLIGHT_REQUEST_MONTH = "flight_request_month"
         const val KEY_FLIGHT_REQUEST_COUNT = "flight_request_count"

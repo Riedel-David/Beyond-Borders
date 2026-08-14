@@ -28,7 +28,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -90,7 +89,6 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val homeTab by viewModel.homeTab.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
-    val useRealFlightData by viewModel.useRealFlightData.collectAsStateWithLifecycle()
     val aeroDataBoxApiKey by viewModel.aeroDataBoxApiKey.collectAsStateWithLifecycle()
     val flightRequestCount by viewModel.flightRequestCount.collectAsStateWithLifecycle()
 
@@ -172,14 +170,6 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 "so this stays off until a key is entered, and never blocks on its own " +
                 "— just warns here when the month is running low.",
         ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Use real flight data", style = MaterialTheme.typography.bodyMedium)
-                Switch(checked = useRealFlightData, onCheckedChange = viewModel::setUseRealFlightData)
-            }
             OutlinedTextField(
                 value = aeroDataBoxApiKey ?: "",
                 onValueChange = viewModel::setAeroDataBoxApiKey,

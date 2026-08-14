@@ -12,7 +12,7 @@ import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.StatusChange
-import com.riedel.aeroglobe.settings.SettingsStore
+import java.time.Instant
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +34,6 @@ class FlightsViewModel(
     private val repo: FlightRepository,
     private val statuses: FlightStatusRepository,
     private val positions: AircraftPositionSource,
-    private val settings: SettingsStore,
 ) : ViewModel() {
 
     val flights: StateFlow<List<FlightWithStatus>> =
@@ -47,12 +46,6 @@ class FlightsViewModel(
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    /** True once a key is entered and the toggle is on — the same condition [SwitchingFlightDataSource] uses to pick real over fake. */
-    val isUsingRealData: StateFlow<Boolean> =
-        combine(settings.useRealFlightData, settings.aeroDataBoxApiKey) { useReal, key ->
-            useReal && !key.isNullOrBlank()
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Returns false, and adds nothing, if [rawNumber] does not look like a flight number. */
     fun addFlight(rawNumber: String, isoDate: String, seat: String? = null): Boolean {
@@ -67,6 +60,18 @@ class FlightsViewModel(
 
     fun updateSeat(id: String, seat: String?) {
         viewModelScope.launch { repo.updateSeat(id, seat?.trim()?.ifBlank { null }) }
+    }
+
+    fun setManualRoute(
+        flightId: String,
+        departureAirportIata: String?,
+        arrivalAirportIata: String?,
+        scheduledDepartureUtc: Instant,
+        scheduledArrivalUtc: Instant?,
+    ) {
+        viewModelScope.launch {
+            statuses.setManualRoute(flightId, departureAirportIata, arrivalAirportIata, scheduledDepartureUtc, scheduledArrivalUtc)
+        }
     }
 
     fun changesFor(flightId: String): Flow<List<StatusChange>> = statuses.observeChanges(flightId)
@@ -111,12 +116,11 @@ class FlightsViewModel(
             repo: FlightRepository,
             statuses: FlightStatusRepository,
             positions: AircraftPositionSource,
-            settings: SettingsStore,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     @Suppress("UNCHECKED_CAST")
-                    return FlightsViewModel(repo, statuses, positions, settings) as T
+                    return FlightsViewModel(repo, statuses, positions) as T
                 }
             }
     }
@@ -138,3 +142,19 @@ internal fun parseFlightNumber(raw: String): String? {
 // The carrier group is non-greedy: a greedy {2,3} would happily absorb the
 // number's first digit into a 3-character carrier ("LH400" -> "LH4" + "00").
 private val FLIGHT_NUMBER_PATTERN = Regex("""([A-Z0-9]{2,3}?)\s*(\d{1,4})([A-Z]?)""")
+
+/** Combines the flight's own date with a typed "HH:mm" UTC time. Null on blank or malformed input. */
+internal fun parseScheduledUtc(isoDate: String, hhmm: String): Instant? {
+    if (hhmm.isBlank()) return null
+    return try {
+        java.time.LocalDate.parse(isoDate)
+            .atTime(java.time.LocalTime.parse(hhmm.trim()))
+            .toInstant(java.time.ZoneOffset.UTC)
+    } catch (e: java.time.format.DateTimeParseException) {
+        null
+    }
+}
+
+/** An arrival typed earlier than its departure is assumed to be the next day, not the past. */
+internal fun rollToNextDayIfBefore(candidate: Instant, reference: Instant): Instant =
+    if (candidate.isBefore(reference)) candidate.plus(1, java.time.temporal.ChronoUnit.DAYS) else candidate

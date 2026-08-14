@@ -1,0 +1,351 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "ea35ee148df6f83e31a2c7495a8b69df",
+    "entities": [
+      {
+        "tableName": "place_status",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `code` TEXT NOT NULL, `status` TEXT NOT NULL, `firstVisitedOn` TEXT, `note` TEXT, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `deviceId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstVisitedOn",
+            "columnName": "firstVisitedOn",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_place_status_code",
+            "unique": true,
+            "columnNames": [
+              "code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_place_status_code` ON `${TABLE_NAME}` (`code`)"
+          },
+          {
+            "name": "index_place_status_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_place_status_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "flight",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `flightNumber` TEXT NOT NULL, `date` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `deviceId` TEXT NOT NULL, `seat` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flightNumber",
+            "columnName": "flightNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seat",
+            "columnName": "seat",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_flight_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_flight_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "flight_status",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`flightId` TEXT NOT NULL, `scheduledDepartureUtc` INTEGER NOT NULL, `estimatedDepartureUtc` INTEGER, `departureGate` TEXT, `departureTerminal` TEXT, `phase` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `deviceId` TEXT NOT NULL, `aircraftIcao24` TEXT, `departureAirportIata` TEXT, `actualDepartureUtc` INTEGER, `arrivalAirportIata` TEXT, `scheduledArrivalUtc` INTEGER, `estimatedArrivalUtc` INTEGER, `actualArrivalUtc` INTEGER, `airlineName` TEXT, `airlineIata` TEXT, `airlineIcao` TEXT, `aircraftModel` TEXT, PRIMARY KEY(`flightId`))",
+        "fields": [
+          {
+            "fieldPath": "flightId",
+            "columnName": "flightId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledDepartureUtc",
+            "columnName": "scheduledDepartureUtc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedDepartureUtc",
+            "columnName": "estimatedDepartureUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "departureGate",
+            "columnName": "departureGate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "departureTerminal",
+            "columnName": "departureTerminal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phase",
+            "columnName": "phase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aircraftIcao24",
+            "columnName": "aircraftIcao24",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "departureAirportIata",
+            "columnName": "departureAirportIata",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "actualDepartureUtc",
+            "columnName": "actualDepartureUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "arrivalAirportIata",
+            "columnName": "arrivalAirportIata",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "scheduledArrivalUtc",
+            "columnName": "scheduledArrivalUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "estimatedArrivalUtc",
+            "columnName": "estimatedArrivalUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "actualArrivalUtc",
+            "columnName": "actualArrivalUtc",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "airlineName",
+            "columnName": "airlineName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "airlineIata",
+            "columnName": "airlineIata",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "airlineIcao",
+            "columnName": "airlineIcao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "aircraftModel",
+            "columnName": "aircraftModel",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "flightId"
+          ]
+        }
+      },
+      {
+        "tableName": "flight_status_change",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `flightId` TEXT NOT NULL, `field` TEXT NOT NULL, `oldValue` TEXT, `newValue` TEXT, `changedAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `deviceId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flightId",
+            "columnName": "flightId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "field",
+            "columnName": "field",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "oldValue",
+            "columnName": "oldValue",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newValue",
+            "columnName": "newValue",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "changedAt",
+            "columnName": "changedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_flight_status_change_flightId_changedAt",
+            "unique": false,
+            "columnNames": [
+              "flightId",
+              "changedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_flight_status_change_flightId_changedAt` ON `${TABLE_NAME}` (`flightId`, `changedAt`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ea35ee148df6f83e31a2c7495a8b69df')"
+    ]
+  }
+}

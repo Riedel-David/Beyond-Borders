@@ -54,7 +54,6 @@ class SettingsViewModel(
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
     val homeTab: StateFlow<HomeTab> = settings.homeTab
     val mapColors: StateFlow<MapColors> = settings.mapColors
-    val useRealFlightData: StateFlow<Boolean> = settings.useRealFlightData
     val aeroDataBoxApiKey: StateFlow<String?> = settings.aeroDataBoxApiKey
     val flightRequestCount: StateFlow<Int> = settings.flightRequestCount
 
@@ -68,8 +67,6 @@ class SettingsViewModel(
     fun setMapHue(slot: MapSlot, hue: MapHue) = settings.setMapHue(slot, hue)
 
     fun resetMapColors() = settings.resetMapColors()
-
-    fun setUseRealFlightData(enabled: Boolean) = settings.setUseRealFlightData(enabled)
 
     fun setAeroDataBoxApiKey(key: String) = settings.setAeroDataBoxApiKey(key)
 

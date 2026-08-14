@@ -12,7 +12,6 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -25,19 +24,16 @@ import org.json.JSONObject
 /**
  * Real flight status from AeroDataBox (RapidAPI, "Flights by number" endpoint).
  *
- * Scaffolded ahead of a key per the 3d decision: with no key configured, [fetchStatus]
- * returns null exactly like a dead connection, so the cache-first repository behaves
- * against this the same way it does against [FakeFlightDataSource] with no signal —
- * nothing else has to know a key is missing.
+ * With no key configured, [fetchStatus] returns [FetchResult.NoKey] — nothing else has
+ * to know a key is missing.
  *
  * Field names in [parseAeroDataBoxResponse] are verified against a live response
  * (DY 2003, 2026-08-13): "utc" timestamps come back as "yyyy-MM-dd HH:mmZ", not
- * ISO-8601, and the aircraft's Mode-S/ICAO24 address is at `aircraft.modeS`.
- *
- * [parseInboundLeg] and [fetchInbound]'s "Flights by aircraft" endpoint are **not**
- * verified against a live response — built from AeroDataBox's documented shape only,
- * on the assumption it reuses the same departure/arrival/status fields as "Flights by
- * number". See the open question in STATUS.md.
+ * ISO-8601, and the aircraft's Mode-S/ICAO24 address is at `aircraft.modeS`. Arrival,
+ * airline and aircraft-model fields are verified against the same OpenAPI spec
+ * (`arrival.airport.iata`, `arrival.scheduledTime.utc`/`revisedTime.utc`,
+ * `arrival.runwayTime.utc`, `airline.name`/`iata`/`icao`, `aircraft.model`,
+ * `departure.runwayTime.utc`).
  *
  * Every request passes through [awaitRequestSlot] first. The Basic plan allows one request
  * per second, and the app has several callers that naturally fire together — pull-to-refresh
@@ -62,13 +58,6 @@ class AeroDataBoxFlightDataSource(
             }
             awaitRequestSlot()
             fetch(key, flightId, flightNumber, date)
-        }
-
-    override suspend fun fetchInboundLeg(icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg? =
-        withContext(Dispatchers.IO) {
-            val key = apiKey()?.trim()?.takeIf { it.isNotEmpty() } ?: return@withContext null
-            awaitRequestSlot()
-            runCatching { fetchInbound(key, icao24, departureAirportIata, beforeUtc) }.getOrNull()
         }
 
     /**
@@ -154,31 +143,6 @@ class AeroDataBoxFlightDataSource(
         }
     }
 
-    /**
-     * Windowed to the 30 hours before [beforeUtc]: wide enough to cover the inbound leg on a
-     * long-haul aircraft turnaround without pulling the aircraft's entire recent history.
-     */
-    private fun fetchInbound(key: String, icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg? {
-        val from = INBOUND_WINDOW_FORMAT.format(beforeUtc.minus(INBOUND_WINDOW_HOURS, ChronoUnit.HOURS).atZone(ZoneOffset.UTC))
-        val to = INBOUND_WINDOW_FORMAT.format(beforeUtc.atZone(ZoneOffset.UTC))
-        val url = URL("https://$HOST/flights/aircraft/icao24/$icao24/$from/$to")
-        val connection = url.openConnection() as HttpURLConnection
-        connection.setRequestProperty("X-RapidAPI-Key", key)
-        connection.setRequestProperty("X-RapidAPI-Host", HOST)
-        connection.connectTimeout = TIMEOUT_MILLIS
-        connection.readTimeout = TIMEOUT_MILLIS
-        return try {
-            val responseCode = connection.responseCode
-            Log.i(TAG, "Inbound leg response code: $responseCode")
-            if (responseCode != HTTP_TOO_MANY_REQUESTS) onRequestMade()
-            if (responseCode != HttpURLConnection.HTTP_OK) return null
-            val body = connection.inputStream.bufferedReader().readText()
-            parseInboundLeg(departureAirportIata, body, beforeUtc)
-        } finally {
-            connection.disconnect()
-        }
-    }
-
     private companion object {
         const val HOST = "aerodatabox.p.rapidapi.com"
         const val TIMEOUT_MILLIS = 10_000
@@ -192,8 +156,6 @@ class AeroDataBoxFlightDataSource(
 
         /** `HttpURLConnection` predates RFC 6585 and has no constant for it. */
         const val HTTP_TOO_MANY_REQUESTS = 429
-        const val INBOUND_WINDOW_HOURS = 30L
-        val INBOUND_WINDOW_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
     }
 }
 
@@ -299,6 +261,10 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
     }
     val phase = mapped ?: FlightPhase.SCHEDULED
 
+    val arrival = flight.optJSONObject("arrival")
+    val airline = flight.optJSONObject("airline")
+    val aircraft = flight.optJSONObject("aircraft")
+
     val status = FlightStatus(
         flightId = flightId,
         scheduledDepartureUtc = scheduled,
@@ -307,43 +273,20 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
         departureTerminal = departure.optNonBlankString("terminal"),
         phase = phase,
         fetchedAt = now,
-        aircraftIcao24 = flight.optJSONObject("aircraft")?.optNonBlankString("modeS")?.lowercase(),
+        aircraftIcao24 = aircraft?.optNonBlankString("modeS")?.lowercase(),
         departureAirportIata = departure.optJSONObject("airport")?.optNonBlankString("iata"),
+        actualDepartureUtc = departure.utcInstant("runwayTime"),
+        arrivalAirportIata = arrival?.optJSONObject("airport")?.optNonBlankString("iata"),
+        scheduledArrivalUtc = arrival?.utcInstant("scheduledTime"),
+        estimatedArrivalUtc = arrival?.utcInstant("revisedTime") ?: arrival?.utcInstant("predictedTime"),
+        actualArrivalUtc = arrival?.utcInstant("runwayTime"),
+        airlineName = airline?.optNonBlankString("name"),
+        airlineIata = airline?.optNonBlankString("iata"),
+        airlineIcao = airline?.optNonBlankString("icao"),
+        aircraftModel = aircraft?.optNonBlankString("model"),
     )
 
     return FetchResult.Success(status)
-}
-
-/**
- * Picks the aircraft's most recent leg that landed at [departureAirportIata] no later than
- * [beforeUtc] — i.e. the leg this flight's own aircraft is flying in on. Unverified against a
- * live response: built from AeroDataBox's documented "Flights by aircraft" shape, which reuses
- * the same departure/arrival/status fields as "Flights by number".
- */
-internal fun parseInboundLeg(departureAirportIata: String, body: String, beforeUtc: Instant): InboundLeg? {
-    val flights = JSONArray(body)
-    var best: JSONObject? = null
-    var bestArrival: Instant? = null
-    for (i in 0 until flights.length()) {
-        val flight = flights.getJSONObject(i)
-        val arrival = flight.optJSONObject("arrival") ?: continue
-        if (arrival.optJSONObject("airport")?.optNonBlankString("iata") != departureAirportIata) continue
-        val arrivalTime = arrival.utcInstant("revisedTime") ?: arrival.utcInstant("scheduledTime") ?: continue
-        if (arrivalTime.isAfter(beforeUtc)) continue
-        if (bestArrival == null || arrivalTime.isAfter(bestArrival)) {
-            bestArrival = arrivalTime
-            best = flight
-        }
-    }
-    val flight = best ?: return null
-    val departure = flight.optJSONObject("departure") ?: return null
-    val arrival = flight.optJSONObject("arrival")
-    return InboundLeg(
-        originAirportIata = departure.optJSONObject("airport")?.optNonBlankString("iata"),
-        scheduledArrivalUtc = arrival?.utcInstant("scheduledTime"),
-        estimatedArrivalUtc = arrival?.utcInstant("revisedTime") ?: arrival?.utcInstant("predictedTime"),
-        phase = mapAeroDataBoxStatus(flight.optString("status")),
-    )
 }
 
 private fun JSONObject.utcInstant(key: String): Instant? =

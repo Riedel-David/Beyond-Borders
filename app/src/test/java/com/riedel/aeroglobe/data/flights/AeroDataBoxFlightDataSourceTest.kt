@@ -82,53 +82,59 @@ class AeroDataBoxFlightDataSourceTest {
     }
 
     @Test
-    fun `the inbound leg is the most recent arrival at the departure airport before the cutoff`() {
-        val body = """
-            [
-                {
-                    "status": "Landed",
-                    "departure": { "airport": { "iata": "AMS" }, "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
-                    "arrival": { "airport": { "iata": "OSL" }, "scheduledTime": { "utc": "2026-08-13 08:00Z" } }
-                },
-                {
-                    "status": "EnRoute",
-                    "departure": { "airport": { "iata": "CDG" }, "scheduledTime": { "utc": "2026-08-13 09:00Z" } },
-                    "arrival": { "airport": { "iata": "FRA" }, "scheduledTime": { "utc": "2026-08-13 11:00Z" } }
-                }
-            ]
-        """.trimIndent()
-
-        val leg = parseInboundLeg("OSL", body, Instant.parse("2026-08-13T12:00:00Z"))
-
-        assertEquals("AMS", leg?.originAirportIata)
-        assertEquals(Instant.parse("2026-08-13T08:00:00Z"), leg?.scheduledArrivalUtc)
-        assertEquals(FlightPhase.LANDED, leg?.phase)
-    }
-
-    @Test
-    fun `an arrival after the cutoff is not the inbound leg`() {
+    fun `arrival, airline and aircraft model parse when present`() {
         val body = """
             [{
                 "status": "EnRoute",
-                "departure": { "airport": { "iata": "AMS" }, "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
-                "arrival": { "airport": { "iata": "OSL" }, "scheduledTime": { "utc": "2026-08-13 13:00Z" } }
+                "departure": {
+                    "airport": { "iata": "AMS" },
+                    "scheduledTime": { "utc": "2026-08-13 06:00Z" },
+                    "runwayTime": { "utc": "2026-08-13 06:05Z" }
+                },
+                "arrival": {
+                    "airport": { "iata": "OSL" },
+                    "scheduledTime": { "utc": "2026-08-13 08:00Z" },
+                    "revisedTime": { "utc": "2026-08-13 08:10Z" },
+                    "runwayTime": { "utc": "2026-08-13 08:12Z" }
+                },
+                "airline": { "name": "SAS", "iata": "SK", "icao": "SAS" },
+                "aircraft": { "modeS": "47A05E", "model": "A320neo" }
             }]
         """.trimIndent()
 
-        assertNull(parseInboundLeg("OSL", body, Instant.parse("2026-08-13T12:00:00Z")))
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertEquals("AMS", status.departureAirportIata)
+        assertEquals(Instant.parse("2026-08-13T06:05:00Z"), status.actualDepartureUtc)
+        assertEquals("OSL", status.arrivalAirportIata)
+        assertEquals(Instant.parse("2026-08-13T08:00:00Z"), status.scheduledArrivalUtc)
+        assertEquals(Instant.parse("2026-08-13T08:10:00Z"), status.estimatedArrivalUtc)
+        assertEquals(Instant.parse("2026-08-13T08:12:00Z"), status.actualArrivalUtc)
+        assertEquals("SAS", status.airlineName)
+        assertEquals("SK", status.airlineIata)
+        assertEquals("SAS", status.airlineIcao)
+        assertEquals("A320neo", status.aircraftModel)
     }
 
     @Test
-    fun `an arrival at a different airport is not the inbound leg`() {
+    fun `missing arrival, airline and aircraft model leave those fields null`() {
         val body = """
             [{
-                "status": "Landed",
-                "departure": { "airport": { "iata": "AMS" }, "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
-                "arrival": { "airport": { "iata": "FRA" }, "scheduledTime": { "utc": "2026-08-13 08:00Z" } }
+                "status": "Expected",
+                "departure": { "scheduledTime": { "utc": "2026-08-13 12:00Z" } }
             }]
         """.trimIndent()
 
-        assertNull(parseInboundLeg("OSL", body, Instant.parse("2026-08-13T12:00:00Z")))
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertNull(status.arrivalAirportIata)
+        assertNull(status.scheduledArrivalUtc)
+        assertNull(status.airlineName)
+        assertNull(status.aircraftModel)
     }
 
     @Test

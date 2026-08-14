@@ -1,7 +1,6 @@
 package com.riedel.aeroglobe.ui.flights
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -42,7 +40,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,7 +48,6 @@ import com.riedel.aeroglobe.data.flights.AircraftPosition
 import com.riedel.aeroglobe.data.flights.FetchResult
 import com.riedel.aeroglobe.data.flights.FlightPhase
 import com.riedel.aeroglobe.data.flights.FlightStatus
-import com.riedel.aeroglobe.data.flights.InboundLeg
 import com.riedel.aeroglobe.data.flights.StatusChange
 import com.riedel.aeroglobe.data.flights.delayMinutes
 import com.riedel.aeroglobe.ui.ComingSoon
@@ -64,7 +60,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
     val flights by viewModel.flights.collectAsStateWithLifecycle()
-    val isUsingRealData by viewModel.isUsingRealData.collectAsStateWithLifecycle()
     var showForm by rememberSaveable { mutableStateOf(false) }
     var selectedFlightId by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = flights.find { it.flight.id == selectedFlightId }
@@ -110,9 +105,11 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
                         changes = changes,
                         position = position,
                         lastFetchResult = lastFetchResult,
-                        isUsingRealData = isUsingRealData,
                         onBack = { selectedFlightId = null },
                         onSeatChange = { seat -> viewModel.updateSeat(selected.flight.id, seat) },
+                        onRouteEdit = { departure, arrival, scheduledDeparture, scheduledArrival ->
+                            viewModel.setManualRoute(selected.flight.id, departure, arrival, scheduledDeparture, scheduledArrival)
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -131,7 +128,6 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
                     items(flights, key = { it.flight.id }) { entry ->
                         FlightRow(
                             entry,
-                            isUsingRealData = isUsingRealData,
                             onClick = { selectedFlightId = entry.flight.id },
                             onRemove = { viewModel.removeFlight(entry.flight.id) },
                         )
@@ -150,25 +146,8 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun DemoDataBadge(modifier: Modifier = Modifier) {
-    Box(
-        modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-    ) {
-        Text(
-            "Demo data",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-        )
-    }
-}
-
-@Composable
 private fun FlightRow(
     entry: FlightWithStatus,
-    isUsingRealData: Boolean,
     onClick: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -179,10 +158,7 @@ private fun FlightRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(entry.flight.flightNumber, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    if (!isUsingRealData) DemoDataBadge()
-                }
+                Text(entry.flight.flightNumber, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(
                     entry.flight.date,
                     style = MaterialTheme.typography.bodySmall,
@@ -210,12 +186,13 @@ private fun FlightHeroScreen(
     changes: List<StatusChange>,
     position: AircraftPosition?,
     lastFetchResult: FetchResult?,
-    isUsingRealData: Boolean,
     onBack: () -> Unit,
     onSeatChange: (String?) -> Unit,
+    onRouteEdit: (departureIata: String?, arrivalIata: String?, scheduledDepartureUtc: Instant, scheduledArrivalUtc: Instant?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var editingSeat by remember { mutableStateOf(false) }
+    var editingRoute by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
@@ -225,7 +202,6 @@ private fun FlightHeroScreen(
             IconButton(onClick = onBack) { Text("←") }
             Text(entry.flight.flightNumber, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            if (!isUsingRealData) DemoDataBadge()
         }
         Text(
             entry.flight.date,
@@ -256,7 +232,7 @@ private fun FlightHeroScreen(
                             color = MaterialTheme.colorScheme.error,
                         )
                         is FetchResult.NoKey -> Text(
-                            "No API key configured. Enable real flight data in settings.",
+                            "No API key configured. Add one in settings.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -280,6 +256,7 @@ private fun FlightHeroScreen(
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
+                    TextButton(onClick = { editingRoute = true }) { Text("Enter route manually") }
                 } else {
                     Text(status.phase.label(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     InfoRow("Gate", status.departureGate ?: "Not yet assigned")
@@ -287,11 +264,6 @@ private fun FlightHeroScreen(
                     InfoRow("Delay", delayLabel(status))
                     if (status.phase == FlightPhase.IN_AIR) {
                         InfoRow("Position", positionLabel(position))
-                    }
-                    if (status.phase == FlightPhase.SCHEDULED || status.phase == FlightPhase.BOARDING) {
-                        inboundLegLabel(status.inboundLeg, status.inboundLegCheckedAt)?.let {
-                            InfoRow("Inbound aircraft", it)
-                        }
                     }
                 }
             }
@@ -333,6 +305,17 @@ private fun FlightHeroScreen(
             onConfirm = { seat -> onSeatChange(seat); editingSeat = false },
         )
     }
+
+    if (editingRoute) {
+        RouteEditDialog(
+            date = entry.flight.date,
+            onDismiss = { editingRoute = false },
+            onConfirm = { departure, arrival, scheduledDeparture, scheduledArrival ->
+                onRouteEdit(departure, arrival, scheduledDeparture, scheduledArrival)
+                editingRoute = false
+            },
+        )
+    }
 }
 
 @Composable
@@ -355,18 +338,6 @@ private fun positionLabel(position: AircraftPosition?): String {
     return "%.4f, %.4f · %s · %s".format(position.latitude, position.longitude, altitude, speed)
 }
 
-/** Null before the one-time inbound-leg check has happened — nothing to show yet, not "no signal". */
-private fun inboundLegLabel(leg: InboundLeg?, checkedAt: Instant?): String? {
-    if (checkedAt == null) return null
-    if (leg == null) return "Inbound aircraft status unavailable"
-    val origin = leg.originAirportIata ?: "unknown origin"
-    if (leg.phase == FlightPhase.LANDED) return "Aircraft inbound from $origin has landed"
-    val eta = (leg.estimatedArrivalUtc ?: leg.scheduledArrivalUtc)
-        ?.atZone(ZoneOffset.UTC)?.format(DateTimeFormatter.ofPattern("HH:mm"))
-        ?: "unknown time"
-    return "Aircraft inbound from $origin, landing ~$eta UTC"
-}
-
 @Composable
 private fun SeatEditDialog(initial: String?, onDismiss: () -> Unit, onConfirm: (String?) -> Unit) {
     var seat by remember { mutableStateOf(initial ?: "") }
@@ -382,6 +353,86 @@ private fun SeatEditDialog(initial: String?, onDismiss: () -> Unit, onConfirm: (
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(seat.trim().ifBlank { null }) }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/**
+ * For a flight added with no API access — everything here is overwritten the moment a
+ * real status fetch succeeds, so this only ever needs to get the flight onto the screen,
+ * not keep it perfectly in sync. [date] is the flight's own date; only a time-of-day is
+ * asked for so a typo can't silently land the flight on the wrong day.
+ */
+@Composable
+private fun RouteEditDialog(
+    date: String,
+    onDismiss: () -> Unit,
+    onConfirm: (departureIata: String?, arrivalIata: String?, scheduledDepartureUtc: Instant, scheduledArrivalUtc: Instant?) -> Unit,
+) {
+    var departureIata by remember { mutableStateOf("") }
+    var arrivalIata by remember { mutableStateOf("") }
+    var departureTime by remember { mutableStateOf("") }
+    var arrivalTime by remember { mutableStateOf("") }
+    var invalid by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Route") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "For when there's no API access yet — a real status fetch always takes over once one succeeds.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = departureIata,
+                    onValueChange = { departureIata = it },
+                    label = { Text("From (IATA)") },
+                    placeholder = { Text("AMS") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = arrivalIata,
+                    onValueChange = { arrivalIata = it },
+                    label = { Text("To (IATA)") },
+                    placeholder = { Text("OSL") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = departureTime,
+                    onValueChange = { departureTime = it; invalid = false },
+                    label = { Text("Scheduled departure (UTC)") },
+                    placeholder = { Text("14:30") },
+                    isError = invalid,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = arrivalTime,
+                    onValueChange = { arrivalTime = it },
+                    label = { Text("Scheduled arrival (UTC, optional)") },
+                    placeholder = { Text("16:45") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val scheduledDeparture = parseScheduledUtc(date, departureTime)
+                if (scheduledDeparture == null) {
+                    invalid = true
+                } else {
+                    val scheduledArrival = parseScheduledUtc(date, arrivalTime)
+                        ?.let { candidate -> rollToNextDayIfBefore(candidate, scheduledDeparture) }
+                    onConfirm(
+                        departureIata.trim().uppercase().ifBlank { null },
+                        arrivalIata.trim().uppercase().ifBlank { null },
+                        scheduledDeparture,
+                        scheduledArrival,
+                    )
+                }
+            }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

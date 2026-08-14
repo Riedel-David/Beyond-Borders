@@ -90,7 +90,6 @@ fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
                             container.flights,
                             container.flightStatuses,
                             container.aircraftPositions,
-                            container.settings,
                         ),
                     )
                     FlightsScreen(flightsViewModel)

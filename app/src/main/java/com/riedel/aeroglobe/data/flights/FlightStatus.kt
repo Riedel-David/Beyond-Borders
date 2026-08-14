@@ -24,17 +24,15 @@ data class FlightStatus(
     val fetchedAt: Instant,
     val aircraftIcao24: String? = null,
     val departureAirportIata: String? = null,
-    val inboundLeg: InboundLeg? = null,
-    /** Non-null once the one-time inbound-leg lookup has been attempted, success or not. */
-    val inboundLegCheckedAt: Instant? = null,
-)
-
-/** The tracked aircraft's leg into [FlightStatus.departureAirportIata] immediately before this flight. */
-data class InboundLeg(
-    val originAirportIata: String?,
-    val scheduledArrivalUtc: Instant?,
-    val estimatedArrivalUtc: Instant?,
-    val phase: FlightPhase,
+    val actualDepartureUtc: Instant? = null,
+    val arrivalAirportIata: String? = null,
+    val scheduledArrivalUtc: Instant? = null,
+    val estimatedArrivalUtc: Instant? = null,
+    val actualArrivalUtc: Instant? = null,
+    val airlineName: String? = null,
+    val airlineIata: String? = null,
+    val airlineIcao: String? = null,
+    val aircraftModel: String? = null,
 )
 
 /** One field that changed between two [FlightStatus] snapshots, e.g. "gate" A15 -> B42. */
