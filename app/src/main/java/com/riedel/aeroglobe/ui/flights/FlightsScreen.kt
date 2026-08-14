@@ -16,6 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,12 +27,14 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -51,7 +57,9 @@ import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.StatusChange
 import com.riedel.aeroglobe.data.flights.delayMinutes
 import com.riedel.aeroglobe.ui.ComingSoon
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.emptyFlow
@@ -106,6 +114,10 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
                         position = position,
                         lastFetchResult = lastFetchResult,
                         onBack = { selectedFlightId = null },
+                        onDelete = {
+                            viewModel.removeFlight(selected.flight.id)
+                            selectedFlightId = null
+                        },
                         onSeatChange = { seat -> viewModel.updateSeat(selected.flight.id, seat) },
                         onRouteEdit = { departure, arrival, scheduledDeparture, scheduledArrival ->
                             viewModel.setManualRoute(selected.flight.id, departure, arrival, scheduledDeparture, scheduledArrival)
@@ -116,8 +128,9 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
                 flights.isEmpty() -> ComingSoon(
                     icon = R.drawable.ic_tab_flights,
                     title = "No flights yet",
-                    detail = "Add a flight number and date. Gate, aircraft position and " +
-                        "delay risk come in a later step of phase 3.",
+                    detail = "Add a flight number and date. Route, gate, aircraft position and " +
+                        "delay estimate fill in from a live lookup — or enter route and " +
+                        "schedule by hand on the flight's own screen if there's no key yet.",
                     modifier = Modifier.fillMaxSize(),
                 )
                 else -> LazyColumn(
@@ -151,6 +164,8 @@ private fun FlightRow(
     onClick: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    var confirmingDelete by remember { mutableStateOf(false) }
+
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -173,13 +188,33 @@ private fun FlightRow(
                     )
                 }
             }
-            IconButton(onClick = onRemove) {
-                Text("✕")
+            IconButton(onClick = { confirmingDelete = true }) {
+                Icon(Icons.Filled.Delete, contentDescription = "Remove ${entry.flight.flightNumber}")
             }
         }
     }
+
+    if (confirmingDelete) {
+        DeleteFlightConfirmDialog(
+            flightNumber = entry.flight.flightNumber,
+            onDismiss = { confirmingDelete = false },
+            onConfirm = { onRemove(); confirmingDelete = false },
+        )
+    }
 }
 
+@Composable
+private fun DeleteFlightConfirmDialog(flightNumber: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Stop tracking $flightNumber?") },
+        text = { Text("Its cached status and change history are removed too.") },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Remove") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FlightHeroScreen(
     entry: FlightWithStatus,
@@ -187,111 +222,147 @@ private fun FlightHeroScreen(
     position: AircraftPosition?,
     lastFetchResult: FetchResult?,
     onBack: () -> Unit,
+    onDelete: () -> Unit,
     onSeatChange: (String?) -> Unit,
     onRouteEdit: (departureIata: String?, arrivalIata: String?, scheduledDepartureUtc: Instant, scheduledArrivalUtc: Instant?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var editingSeat by remember { mutableStateOf(false) }
     var editingRoute by remember { mutableStateOf(false) }
+    var confirmingDelete by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = onBack) { Text("←") }
-            Text(entry.flight.flightNumber, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.weight(1f))
-        }
-        Text(
-            entry.flight.date,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 48.dp),
-        )
-
-        val status = entry.status
-        Card(
-            Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (status == null) {
-                    // No cached status: show either "waiting" or the failure reason
-                    when (lastFetchResult) {
-                        null -> Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
-                        is FetchResult.Success -> Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
-                        is FetchResult.NotFound -> Text(
-                            "No flight ${entry.flight.flightNumber} found on ${entry.flight.date}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        is FetchResult.HttpError -> Text(
-                            "Lookup failed: ${lastFetchResult.code} — ${lastFetchResult.message}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        is FetchResult.NoKey -> Text(
-                            "No API key configured. Add one in settings.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        is FetchResult.Offline -> Text(
-                            "Network unavailable. Pull down to retry.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        is FetchResult.ParseError -> Text(
-                            "Parse error: ${lastFetchResult.reason}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        is FetchResult.RateLimited -> Text(
-                            if (lastFetchResult.transient) {
-                                "Too many lookups at once. Pull down to retry."
-                            } else {
-                                "Monthly API quota spent — no more lookups until the plan resets."
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                        )
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text(entry.flight.flightNumber) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                    TextButton(onClick = { editingRoute = true }) { Text("Enter route manually") }
-                } else {
-                    Text(status.phase.label(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    InfoRow("Gate", status.departureGate ?: "Not yet assigned")
-                    InfoRow("Terminal", status.departureTerminal ?: "Not yet assigned")
-                    InfoRow("Delay", delayLabel(status))
-                    if (status.phase == FlightPhase.IN_AIR) {
-                        InfoRow("Position", positionLabel(position))
+                },
+                actions = {
+                    IconButton(onClick = { confirmingDelete = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Remove ${entry.flight.flightNumber}")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(padding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                entry.flight.date,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            val status = entry.status
+            if (status != null && (status.departureAirportIata != null || status.arrivalAirportIata != null)) {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            routeLabel(status.departureAirportIata, status.arrivalAirportIata),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        InfoRow("Departs", localTimeLabel(status.actualDepartureUtc ?: status.estimatedDepartureUtc ?: status.scheduledDepartureUtc))
+                        status.scheduledArrivalUtc?.let {
+                            InfoRow("Arrives", localTimeLabel(status.actualArrivalUtc ?: status.estimatedArrivalUtc ?: it))
+                        }
+                        listOfNotNull(status.airlineName, status.aircraftModel).takeIf { it.isNotEmpty() }?.let {
+                            InfoRow("Aircraft", it.joinToString(" · "))
+                        }
                     }
                 }
             }
-        }
 
-        Card(Modifier.fillMaxWidth().clickable { editingSeat = true }) {
-            Row(
-                Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             ) {
-                Text(
-                    entry.flight.seat?.let { "Seat $it" } ?: "No seat entered",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text("Edit", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-
-        if (changes.isNotEmpty()) {
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Change history", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    changes.forEach { change ->
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (status == null) {
+                        // No cached status: show either "waiting" or the failure reason
+                        when (lastFetchResult) {
+                            null -> Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
+                            is FetchResult.Success -> Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
+                            is FetchResult.NotFound -> Text(
+                                "No flight ${entry.flight.flightNumber} found on ${entry.flight.date}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            is FetchResult.HttpError -> Text(
+                                "Lookup failed: ${lastFetchResult.code} — ${lastFetchResult.message}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            is FetchResult.NoKey -> Text(
+                                "No API key configured. Add one in settings.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            is FetchResult.Offline -> Text(
+                                "Network unavailable. Pull down to retry.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            is FetchResult.ParseError -> Text(
+                                "Parse error: ${lastFetchResult.reason}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            is FetchResult.RateLimited -> Text(
+                                if (lastFetchResult.transient) {
+                                    "Too many lookups at once. Pull down to retry."
+                                } else {
+                                    "Monthly API quota spent — no more lookups until the plan resets."
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        TextButton(onClick = { editingRoute = true }) { Text("Enter route manually") }
+                    } else {
+                        Text(status.phase.label(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        InfoRow("Gate", status.departureGate ?: "Not yet assigned")
+                        InfoRow("Terminal", status.departureTerminal ?: "Not yet assigned")
+                        InfoRow("Delay", delayLabel(status))
+                        if (status.phase == FlightPhase.IN_AIR) {
+                            InfoRow("Position", positionLabel(position))
+                        }
                         Text(
-                            "${change.field}: ${change.oldValue ?: "—"} → ${change.newValue ?: "—"}",
-                            style = MaterialTheme.typography.bodySmall,
+                            freshnessLabel(status.fetchedAt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+            }
+
+            Card(Modifier.fillMaxWidth().clickable { editingSeat = true }) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        entry.flight.seat?.let { "Seat $it" } ?: "No seat entered",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text("Edit", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            if (changes.isNotEmpty()) {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Change history", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        changes.forEach { change ->
+                            Text(humanizeStatusChange(change), style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
             }
@@ -316,6 +387,14 @@ private fun FlightHeroScreen(
             },
         )
     }
+
+    if (confirmingDelete) {
+        DeleteFlightConfirmDialog(
+            flightNumber = entry.flight.flightNumber,
+            onDismiss = { confirmingDelete = false },
+            onConfirm = { confirmingDelete = false; onDelete() },
+        )
+    }
 }
 
 @Composable
@@ -336,6 +415,37 @@ private fun positionLabel(position: AircraftPosition?): String {
     val altitude = position.altitudeMeters?.let { "%,.0f m".format(it) } ?: "altitude unknown"
     val speed = position.velocityMs?.let { "%.0f km/h".format(it * 3.6) } ?: "speed unknown"
     return "%.4f, %.4f · %s · %s".format(position.latitude, position.longitude, altitude, speed)
+}
+
+private fun routeLabel(departureIata: String?, arrivalIata: String?): String =
+    "${departureIata ?: "?"} → ${arrivalIata ?: "?"}"
+
+private val LOCAL_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM, HH:mm")
+
+private fun localTimeLabel(instant: Instant): String =
+    LOCAL_TIME_FORMATTER.withZone(ZoneId.systemDefault()).format(instant)
+
+private fun freshnessLabel(fetchedAt: Instant): String {
+    val minutes = Duration.between(fetchedAt, Instant.now()).toMinutes()
+    return when {
+        minutes < 1 -> "Updated just now"
+        minutes < 60 -> "Updated $minutes min ago"
+        else -> "Updated ${minutes / 60} h ago"
+    }
+}
+
+private fun humanizeStatusChange(change: StatusChange): String {
+    val fieldLabel = when (change.field) {
+        "gate" -> "Gate"
+        "terminal" -> "Terminal"
+        "phase" -> "Status"
+        else -> change.field
+    }
+    fun humanizeValue(value: String?): String {
+        if (change.field != "phase" || value == null) return value ?: "—"
+        return runCatching { FlightPhase.valueOf(value).label() }.getOrDefault(value)
+    }
+    return "$fieldLabel: ${humanizeValue(change.oldValue)} → ${humanizeValue(change.newValue)}"
 }
 
 @Composable
@@ -484,7 +594,7 @@ private fun AddFlightDialog(onDismiss: () -> Unit, onAdd: (String, String, Strin
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Date") },
-                        trailingIcon = { Text("📅", modifier = Modifier.padding(end = 4.dp)) },
+                        trailingIcon = { Icon(Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.padding(end = 4.dp)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     // A readOnly field still consumes touches for cursor placement, so a
