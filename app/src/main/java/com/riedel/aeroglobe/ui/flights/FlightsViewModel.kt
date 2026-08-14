@@ -7,15 +7,19 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.aeroglobe.data.db.FlightEntity
 import com.riedel.aeroglobe.data.flights.AircraftPosition
 import com.riedel.aeroglobe.data.flights.AircraftPositionSource
+import com.riedel.aeroglobe.data.flights.FetchResult
 import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.StatusChange
+import com.riedel.aeroglobe.settings.SettingsStore
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -30,6 +34,7 @@ class FlightsViewModel(
     private val repo: FlightRepository,
     private val statuses: FlightStatusRepository,
     private val positions: AircraftPositionSource,
+    private val settings: SettingsStore,
 ) : ViewModel() {
 
     val flights: StateFlow<List<FlightWithStatus>> =
@@ -42,6 +47,12 @@ class FlightsViewModel(
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** True once a key is entered and the toggle is on — the same condition [SwitchingFlightDataSource] uses to pick real over fake. */
+    val isUsingRealData: StateFlow<Boolean> =
+        combine(settings.useRealFlightData, settings.aeroDataBoxApiKey) { useReal, key ->
+            useReal && !key.isNullOrBlank()
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Returns false, and adds nothing, if [rawNumber] does not look like a flight number. */
     fun addFlight(rawNumber: String, isoDate: String, seat: String? = null): Boolean {
@@ -59,6 +70,27 @@ class FlightsViewModel(
     }
 
     fun changesFor(flightId: String): Flow<List<StatusChange>> = statuses.observeChanges(flightId)
+
+    /** The most recent fetch result per flight ID; a flight absent from the map has never been fetched. */
+    val lastFetchResults: StateFlow<Map<String, FetchResult>> = statuses.lastFetchResults
+
+    /** Fetches [flightId]'s status right now, outside the adaptive poll schedule — used by pull-to-refresh. */
+    suspend fun refreshNow(flightId: String) {
+        val flight = repo.flights.first().find { it.id == flightId } ?: return
+        statuses.refresh(flight.id, flight.flightNumber, flight.date)
+    }
+
+    /**
+     * Refreshes every tracked flight — the list screen's pull-to-refresh. The fan-out is
+     * deliberate but the requests do not actually leave together: the data source holds them
+     * to one per second, so this takes roughly a second per flight and the spinner stays up
+     * for all of it. Firing them in parallel got half of them refused with a 429.
+     */
+    suspend fun refreshAll() = coroutineScope {
+        repo.flights.first().forEach { flight ->
+            launch { statuses.refresh(flight.id, flight.flightNumber, flight.date) }
+        }
+    }
 
     /**
      * Polls OpenSky for [icao24]'s live position while collected — the hero screen is
@@ -79,11 +111,12 @@ class FlightsViewModel(
             repo: FlightRepository,
             statuses: FlightStatusRepository,
             positions: AircraftPositionSource,
+            settings: SettingsStore,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     @Suppress("UNCHECKED_CAST")
-                    return FlightsViewModel(repo, statuses, positions) as T
+                    return FlightsViewModel(repo, statuses, positions, settings) as T
                 }
             }
     }

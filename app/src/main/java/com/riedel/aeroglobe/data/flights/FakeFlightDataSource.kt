@@ -12,8 +12,11 @@ import kotlin.random.Random
  * status-change history (3c) has something to show without waiting on a real provider.
  */
 class FakeFlightDataSource : FlightDataSource {
-    override suspend fun fetchStatus(flightId: String, flightNumber: String, date: String): FlightStatus =
-        fakeStatusFor(flightId, flightNumber, date, Instant.now())
+    override suspend fun fetchStatus(flightId: String, flightNumber: String, date: String): FetchResult =
+        FetchResult.Success(fakeStatusFor(flightId, flightNumber, date, Instant.now()))
+
+    override suspend fun fetchInboundLeg(icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg =
+        fakeInboundLegFor(icao24, departureAirportIata, beforeUtc)
 }
 
 // --- pure functions, unit-testable without Android ---------------------------
@@ -29,6 +32,7 @@ internal fun fakeStatusFor(flightId: String, flightNumber: String, date: String,
     val terminal = ('A' + rng.nextInt(5)).toString()
     val gateBeforeBoarding = terminal + rng.nextInt(10, 30)
     val gateFromBoarding = terminal + rng.nextInt(30, 60)
+    val airport = FAKE_AIRPORTS[rng.nextInt(FAKE_AIRPORTS.size)]
 
     val (phase, gate) = when {
         !now.isBefore(arrival) -> FlightPhase.LANDED to gateFromBoarding
@@ -47,5 +51,26 @@ internal fun fakeStatusFor(flightId: String, flightNumber: String, date: String,
         phase = phase,
         fetchedAt = now,
         aircraftIcao24 = rng.nextInt(0x1000000).toString(16).padStart(6, '0'),
+        departureAirportIata = airport,
+    )
+}
+
+private val FAKE_AIRPORTS = listOf("OSL", "CDG", "AMS", "LHR", "FRA")
+
+/** Deterministic per-aircraft/airport so the same flight sees the same inbound leg across polls. */
+internal fun fakeInboundLegFor(icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg {
+    val rng = Random((icao24 + departureAirportIata).hashCode())
+    val origin = FAKE_AIRPORTS.filter { it != departureAirportIata }.let { it[rng.nextInt(it.size)] }
+    val scheduledArrival = beforeUtc.minus(Duration.ofMinutes(rng.nextLong(30, 180)))
+    val delayMinutes = rng.nextLong(-10, 60)
+    return InboundLeg(
+        originAirportIata = origin,
+        scheduledArrivalUtc = scheduledArrival,
+        estimatedArrivalUtc = scheduledArrival.plus(Duration.ofMinutes(delayMinutes)),
+        phase = if (scheduledArrival.plus(Duration.ofMinutes(delayMinutes)).isBefore(beforeUtc)) {
+            FlightPhase.LANDED
+        } else {
+            FlightPhase.IN_AIR
+        },
     )
 }

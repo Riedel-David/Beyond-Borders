@@ -29,9 +29,15 @@ class PollScheduleLogicTest {
     }
 
     @Test
-    fun `once departed the next poll is sixty seconds away regardless of schedule`() {
+    fun `once departed the next poll is thirty minutes away regardless of schedule`() {
         val departure = now.minus(Duration.ofHours(1))
-        assertEquals(Duration.ofSeconds(60).toMillis(), nextPollDelayMillis(now, departure, FlightPhase.IN_AIR))
+        assertEquals(Duration.ofMinutes(30).toMillis(), nextPollDelayMillis(now, departure, FlightPhase.IN_AIR))
+    }
+
+    @Test
+    fun `just departed also gets the thirty minute cadence, not the boarding cadence`() {
+        val departure = now.minus(Duration.ofMinutes(1))
+        assertEquals(Duration.ofMinutes(30).toMillis(), nextPollDelayMillis(now, departure, FlightPhase.DEPARTED))
     }
 
     @Test

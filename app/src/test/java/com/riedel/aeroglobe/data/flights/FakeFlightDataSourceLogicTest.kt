@@ -52,4 +52,17 @@ class FakeFlightDataSourceLogicTest {
         val status = fakeStatusFor("id", "LH 400", "2026-08-13", departure.plus(Duration.ofHours(3)))
         assertEquals(FlightPhase.LANDED, status.phase)
     }
+
+    @Test
+    fun `the same aircraft and airport always produce the same inbound leg`() {
+        val a = fakeInboundLegFor("47a05e", "OSL", Instant.EPOCH)
+        val b = fakeInboundLegFor("47a05e", "OSL", Instant.EPOCH)
+        assertEquals(a, b)
+    }
+
+    @Test
+    fun `the fake inbound leg never originates from its own departure airport`() {
+        val leg = fakeInboundLegFor("47a05e", "OSL", Instant.EPOCH)
+        assertNotEquals("OSL", leg.originAirportIata)
+    }
 }

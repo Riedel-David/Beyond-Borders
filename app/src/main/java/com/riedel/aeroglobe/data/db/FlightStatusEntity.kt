@@ -17,4 +17,10 @@ data class FlightStatusEntity(
     val deletedAt: Long? = null,
     val deviceId: String,
     val aircraftIcao24: String? = null,
+    val departureAirportIata: String? = null,
+    val inboundOriginIata: String? = null,
+    val inboundScheduledArrivalUtc: Long? = null,
+    val inboundEstimatedArrivalUtc: Long? = null,
+    val inboundPhase: String? = null,
+    val inboundLegCheckedAt: Long? = null,
 )

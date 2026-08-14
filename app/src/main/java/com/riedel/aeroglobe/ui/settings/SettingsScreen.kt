@@ -62,8 +62,16 @@ import com.riedel.aeroglobe.ui.theme.LocalIsDarkTheme
  * MainActivity reads the theme and AeroGlobeRoot reads the home tab — so everything
  * here is a control over state that already works.
  */
-/** STATUS.md puts the free tier at ~2-4 tracked flights/month; warn once close to the low end of that. */
-private const val FREE_TIER_WARNING_THRESHOLD = 2
+/** AeroDataBox's confirmed Basic/free-tier ceiling (STATUS.md). */
+private const val FREE_TIER_MONTHLY_UNITS = 600
+
+/**
+ * Warn once what's left won't cover another full flight's lifecycle — STATUS.md puts
+ * that at ~60 requests. Gated on requests *remaining*, not requests used: with a
+ * 600-unit budget, "used" alone crosses any small absolute threshold almost
+ * immediately without it meaning the month is actually running low.
+ */
+private const val FREE_TIER_REMAINING_WARNING_THRESHOLD = 60
 
 @Composable
 fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
@@ -180,11 +188,14 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             )
+            val remaining = (FREE_TIER_MONTHLY_UNITS - flightRequestCount).coerceAtLeast(0)
+            val runningLow = remaining <= FREE_TIER_REMAINING_WARNING_THRESHOLD
             Text(
-                "$flightRequestCount requests this month" +
-                    if (flightRequestCount >= FREE_TIER_WARNING_THRESHOLD) " — likely close to the free tier limit" else "",
+                "$flightRequestCount / $FREE_TIER_MONTHLY_UNITS requests this month" +
+                    " — $remaining left" +
+                    if (runningLow) " — running low" else "",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (flightRequestCount >= FREE_TIER_WARNING_THRESHOLD) {
+                color = if (runningLow) {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant

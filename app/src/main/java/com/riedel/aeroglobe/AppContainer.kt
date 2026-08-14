@@ -43,7 +43,7 @@ class AppContainer(context: Context) {
         VisaRepository(registryLoader = { VisaRegistry.load(appContext.assets) })
     }
 
-    private val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext) }
+    val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext) }
 
     val flights: FlightRepository by lazy {
         FlightRepository(

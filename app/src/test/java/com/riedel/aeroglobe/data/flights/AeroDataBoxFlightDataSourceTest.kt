@@ -25,14 +25,16 @@ class AeroDataBoxFlightDataSourceTest {
             }]
         """.trimIndent()
 
-        val status = parseAeroDataBoxResponse("flight-1", body, now)
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
 
-        assertEquals(Instant.parse("2026-08-13T12:00:00Z"), status?.scheduledDepartureUtc)
-        assertEquals(Instant.parse("2026-08-13T12:20:00Z"), status?.estimatedDepartureUtc)
-        assertEquals("42", status?.departureGate)
-        assertEquals("2", status?.departureTerminal)
-        assertEquals(FlightPhase.BOARDING, status?.phase)
-        assertEquals("47a05e", status?.aircraftIcao24)
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertEquals(Instant.parse("2026-08-13T12:00:00Z"), status.scheduledDepartureUtc)
+        assertEquals(Instant.parse("2026-08-13T12:20:00Z"), status.estimatedDepartureUtc)
+        assertEquals("42", status.departureGate)
+        assertEquals("2", status.departureTerminal)
+        assertEquals(FlightPhase.BOARDING, status.phase)
+        assertEquals("47a05e", status.aircraftIcao24)
     }
 
     @Test
@@ -44,22 +46,26 @@ class AeroDataBoxFlightDataSourceTest {
             }]
         """.trimIndent()
 
-        val status = parseAeroDataBoxResponse("flight-1", body, now)
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
 
-        assertNull(status?.estimatedDepartureUtc)
-        assertNull(status?.departureGate)
-        assertNull(status?.aircraftIcao24)
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertNull(status.estimatedDepartureUtc)
+        assertNull(status.departureGate)
+        assertNull(status.aircraftIcao24)
     }
 
     @Test
-    fun `an empty flight list is no signal`() {
-        assertNull(parseAeroDataBoxResponse("flight-1", "[]", now))
+    fun `an empty flight list is not found`() {
+        val result = parseAeroDataBoxResponse("flight-1", "[]", now)
+        assert(result is FetchResult.NotFound)
     }
 
     @Test
-    fun `a flight with no scheduled time is no signal`() {
+    fun `a flight with no scheduled time is a parse error`() {
         val body = """[{ "status": "Expected", "departure": {} }]"""
-        assertNull(parseAeroDataBoxResponse("flight-1", body, now))
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+        assert(result is FetchResult.ParseError)
     }
 
     @Test
@@ -70,7 +76,59 @@ class AeroDataBoxFlightDataSourceTest {
                 "departure": { "scheduledTime": { "utc": "2026-08-13 12:00Z" } }
             }]
         """.trimIndent()
-        assertNull(parseAeroDataBoxResponse("flight-1", body, now)?.aircraftIcao24)
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+        assert(result is FetchResult.Success)
+        assertNull((result as FetchResult.Success).status.aircraftIcao24)
+    }
+
+    @Test
+    fun `the inbound leg is the most recent arrival at the departure airport before the cutoff`() {
+        val body = """
+            [
+                {
+                    "status": "Landed",
+                    "departure": { "airport": { "iata": "AMS" }, "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
+                    "arrival": { "airport": { "iata": "OSL" }, "scheduledTime": { "utc": "2026-08-13 08:00Z" } }
+                },
+                {
+                    "status": "EnRoute",
+                    "departure": { "airport": { "iata": "CDG" }, "scheduledTime": { "utc": "2026-08-13 09:00Z" } },
+                    "arrival": { "airport": { "iata": "FRA" }, "scheduledTime": { "utc": "2026-08-13 11:00Z" } }
+                }
+            ]
+        """.trimIndent()
+
+        val leg = parseInboundLeg("OSL", body, Instant.parse("2026-08-13T12:00:00Z"))
+
+        assertEquals("AMS", leg?.originAirportIata)
+        assertEquals(Instant.parse("2026-08-13T08:00:00Z"), leg?.scheduledArrivalUtc)
+        assertEquals(FlightPhase.LANDED, leg?.phase)
+    }
+
+    @Test
+    fun `an arrival after the cutoff is not the inbound leg`() {
+        val body = """
+            [{
+                "status": "EnRoute",
+                "departure": { "airport": { "iata": "AMS" }, "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
+                "arrival": { "airport": { "iata": "OSL" }, "scheduledTime": { "utc": "2026-08-13 13:00Z" } }
+            }]
+        """.trimIndent()
+
+        assertNull(parseInboundLeg("OSL", body, Instant.parse("2026-08-13T12:00:00Z")))
+    }
+
+    @Test
+    fun `an arrival at a different airport is not the inbound leg`() {
+        val body = """
+            [{
+                "status": "Landed",
+                "departure": { "airport": { "iata": "AMS" }, "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
+                "arrival": { "airport": { "iata": "FRA" }, "scheduledTime": { "utc": "2026-08-13 08:00Z" } }
+            }]
+        """.trimIndent()
+
+        assertNull(parseInboundLeg("OSL", body, Instant.parse("2026-08-13T12:00:00Z")))
     }
 
     @Test
@@ -84,5 +142,86 @@ class AeroDataBoxFlightDataSourceTest {
         assertEquals(FlightPhase.IN_AIR, mapAeroDataBoxStatus("EnRoute"))
         assertEquals(FlightPhase.LANDED, mapAeroDataBoxStatus("Landed"))
         assertEquals(FlightPhase.CANCELLED, mapAeroDataBoxStatus("Cancelled"))
+    }
+
+    @Test
+    fun `all documented status values map to a phase`() {
+        assertEquals(FlightPhase.SCHEDULED, mapAeroDataBoxStatus("Unknown"))
+        assertEquals(FlightPhase.SCHEDULED, mapAeroDataBoxStatus("Expected"))
+        assertEquals(FlightPhase.SCHEDULED, mapAeroDataBoxStatus("CheckIn"))
+        assertEquals(FlightPhase.BOARDING, mapAeroDataBoxStatus("Boarding"))
+        assertEquals(FlightPhase.BOARDING, mapAeroDataBoxStatus("GateClosed"))
+        assertEquals(FlightPhase.DEPARTED, mapAeroDataBoxStatus("Departed"))
+        assertEquals(FlightPhase.SCHEDULED, mapAeroDataBoxStatus("Delayed"))
+        assertEquals(FlightPhase.IN_AIR, mapAeroDataBoxStatus("Approaching"))
+        assertEquals(FlightPhase.LANDED, mapAeroDataBoxStatus("Arrived"))
+        assertEquals(FlightPhase.CANCELLED, mapAeroDataBoxStatus("Canceled"))
+        assertEquals(FlightPhase.IN_AIR, mapAeroDataBoxStatus("Diverted"))
+        assertEquals(FlightPhase.CANCELLED, mapAeroDataBoxStatus("CanceledUncertain"))
+    }
+
+    @Test
+    fun `date parsing accepts the documented space-separated format`() {
+        assertEquals(Instant.parse("2026-08-20T14:30:00Z"), parseAeroDataBoxUtc("2026-08-20 14:30Z"))
+        assertEquals(Instant.parse("2026-08-20T14:30:00Z"), parseAeroDataBoxUtc("2026-08-20 14:30"))
+    }
+
+    @Test
+    fun `date parsing accepts space-separated format with seconds`() {
+        assertEquals(Instant.parse("2026-08-20T14:30:00Z"), parseAeroDataBoxUtc("2026-08-20 14:30:00Z"))
+        assertEquals(Instant.parse("2026-08-20T14:30:00Z"), parseAeroDataBoxUtc("2026-08-20 14:30:00"))
+    }
+
+    @Test
+    fun `date parsing accepts ISO-8601 with offset`() {
+        assertEquals(Instant.parse("2026-08-20T14:30:00Z"), parseAeroDataBoxUtc("2026-08-20T14:30:00Z"))
+        assertEquals(Instant.parse("2026-08-20T12:30:00Z"), parseAeroDataBoxUtc("2026-08-20T14:30:00+02:00"))
+    }
+
+    @Test
+    fun `date parsing returns null for garbage`() {
+        assertNull(parseAeroDataBoxUtc("not a date"))
+        assertNull(parseAeroDataBoxUtc(""))
+        assertNull(parseAeroDataBoxUtc("2026-13-45 99:99"))
+    }
+
+    @Test
+    fun `the first request of all waits for nothing`() {
+        assertEquals(0L, millisUntilNextRequest(lastRequestAtMillis = 0L, nowMillis = 5_000L, minIntervalMillis = 1_100L))
+    }
+
+    @Test
+    fun `a request arriving inside the interval waits out the remainder`() {
+        assertEquals(1_100L, millisUntilNextRequest(1_000L, 1_000L, 1_100L))
+        assertEquals(100L, millisUntilNextRequest(1_000L, 2_000L, 1_100L))
+    }
+
+    @Test
+    fun `a request arriving after the interval goes straight out`() {
+        assertEquals(0L, millisUntilNextRequest(1_000L, 2_100L, 1_100L))
+        assertEquals(0L, millisUntilNextRequest(1_000L, 60_000L, 1_100L))
+    }
+
+    @Test
+    fun `a clock that went backwards does not stall the queue`() {
+        assertEquals(0L, millisUntilNextRequest(5_000L, 1_000L, 1_100L))
+    }
+
+    @Test
+    fun `the per-second rate limit is recognised as transient`() {
+        assertEquals(
+            true,
+            isPerSecondRateLimit(
+                "You have exceeded the rate limit per second for your plan, BASIC, by the API provider"
+            ),
+        )
+    }
+
+    @Test
+    fun `a monthly quota rate limit is not transient`() {
+        assertEquals(false, isPerSecondRateLimit("You have exceeded the MONTHLY quota for Requests on your current plan"))
+        // An unrecognised 429 is treated as the expensive kind on purpose: guessing
+        // "per-second" and being wrong retries against a spent plan for the rest of the month.
+        assertEquals(false, isPerSecondRateLimit("Rate limit exceeded"))
     }
 }

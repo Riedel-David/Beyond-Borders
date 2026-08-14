@@ -7,6 +7,9 @@ import com.riedel.aeroglobe.data.db.FlightStatusDao
 import com.riedel.aeroglobe.data.db.FlightStatusEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -22,35 +25,81 @@ class FlightStatusRepository(
     private val deviceId: String,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
+    private val _lastFetchResults = MutableStateFlow<Map<String, FetchResult>>(emptyMap())
+
     fun observeStatus(flightId: String): Flow<FlightStatus?> =
         statusDao.observe(flightId).map { it?.toDomain() }
 
     fun observeChanges(flightId: String): Flow<List<StatusChange>> =
         changeDao.observe(flightId).map { rows -> rows.map { it.toDomain() } }
 
+    /**
+     * The most recent fetch result per flight ID, absent until one has been attempted.
+     *
+     * Exposed as the whole map rather than a per-flight flow because a `lastFetchResult(id)`
+     * accessor has to build its flow somewhere, and building it per call handed the UI a fresh
+     * single-value flow that could never emit the *next* result. That failed silently in the
+     * one case it exists for: a fetch that fails leaves the cached status untouched, so
+     * nothing else recomposes, so the reason for the failure never appeared on screen.
+     */
+    val lastFetchResults: StateFlow<Map<String, FetchResult>> = _lastFetchResults.asStateFlow()
+
     /** Fetches, diffs against the cache, and writes both the snapshot and any change log rows. */
     suspend fun refresh(flightId: String, flightNumber: String, date: String): FlightStatus? =
         withContext(Dispatchers.IO) {
-            val fetched = dataSource.fetchStatus(flightId, flightNumber, date) ?: return@withContext null
-            val previous = statusDao.get(flightId)?.toDomain()
-            val now = clock()
-            diffStatus(previous, fetched).forEach { change ->
-                changeDao.insert(
-                    FlightStatusChangeEntity(
-                        id = Uuid.v7(now),
-                        flightId = flightId,
-                        field = change.field,
-                        oldValue = change.oldValue,
-                        newValue = change.newValue,
-                        changedAt = now,
-                        updatedAt = now,
-                        deviceId = deviceId,
-                    )
-                )
+            val result = dataSource.fetchStatus(flightId, flightNumber, date)
+
+            // Always record the result so the UI can show what happened
+            _lastFetchResults.value = _lastFetchResults.value + (flightId to result)
+
+            when (result) {
+                is FetchResult.Success -> {
+                    val fetched = result.status
+                    val previousEntity = statusDao.get(flightId)
+                    val previous = previousEntity?.toDomain()
+                    val now = clock()
+                    val withInbound = withInboundLeg(fetched, previousEntity, now)
+                    diffStatus(previous, withInbound).forEach { change ->
+                        changeDao.insert(
+                            FlightStatusChangeEntity(
+                                id = Uuid.v7(now),
+                                flightId = flightId,
+                                field = change.field,
+                                oldValue = change.oldValue,
+                                newValue = change.newValue,
+                                changedAt = now,
+                                updatedAt = now,
+                                deviceId = deviceId,
+                            )
+                        )
+                    }
+                    statusDao.upsert(withInbound.toEntity(deviceId, now))
+                    withInbound
+                }
+                else -> {
+                    // Failure: keep the cached status and return null
+                    null
+                }
             }
-            statusDao.upsert(fetched.toEntity(deviceId, now))
-            fetched
         }
+
+    /**
+     * The inbound leg is looked up once, the moment [FlightStatus.aircraftIcao24] first
+     * becomes known, and carried forward on every later [refresh] rather than re-fetched —
+     * it spends its own AeroDataBox request, and a completed leg's schedule doesn't change.
+     */
+    private suspend fun withInboundLeg(fetched: FlightStatus, previousEntity: FlightStatusEntity?, now: Long): FlightStatus {
+        if (previousEntity?.inboundLegCheckedAt != null) {
+            return fetched.copy(
+                inboundLeg = previousEntity.toDomain().inboundLeg,
+                inboundLegCheckedAt = Instant.ofEpochMilli(previousEntity.inboundLegCheckedAt),
+            )
+        }
+        val icao24 = fetched.aircraftIcao24 ?: return fetched
+        val airport = fetched.departureAirportIata ?: return fetched
+        val inbound = dataSource.fetchInboundLeg(icao24, airport, fetched.scheduledDepartureUtc)
+        return fetched.copy(inboundLeg = inbound, inboundLegCheckedAt = Instant.ofEpochMilli(now))
+    }
 
     private fun FlightStatusEntity.toDomain() = FlightStatus(
         flightId = flightId,
@@ -61,6 +110,16 @@ class FlightStatusRepository(
         phase = FlightPhase.valueOf(phase),
         fetchedAt = Instant.ofEpochMilli(fetchedAt),
         aircraftIcao24 = aircraftIcao24,
+        departureAirportIata = departureAirportIata,
+        inboundLeg = inboundPhase?.let {
+            InboundLeg(
+                originAirportIata = inboundOriginIata,
+                scheduledArrivalUtc = inboundScheduledArrivalUtc?.let(Instant::ofEpochMilli),
+                estimatedArrivalUtc = inboundEstimatedArrivalUtc?.let(Instant::ofEpochMilli),
+                phase = FlightPhase.valueOf(it),
+            )
+        },
+        inboundLegCheckedAt = inboundLegCheckedAt?.let(Instant::ofEpochMilli),
     )
 
     private fun FlightStatusChangeEntity.toDomain() = StatusChange(
@@ -81,6 +140,12 @@ class FlightStatusRepository(
         updatedAt = updatedAt,
         deviceId = deviceId,
         aircraftIcao24 = aircraftIcao24,
+        departureAirportIata = departureAirportIata,
+        inboundOriginIata = inboundLeg?.originAirportIata,
+        inboundScheduledArrivalUtc = inboundLeg?.scheduledArrivalUtc?.toEpochMilli(),
+        inboundEstimatedArrivalUtc = inboundLeg?.estimatedArrivalUtc?.toEpochMilli(),
+        inboundPhase = inboundLeg?.phase?.name,
+        inboundLegCheckedAt = inboundLegCheckedAt?.toEpochMilli(),
     )
 }
 
