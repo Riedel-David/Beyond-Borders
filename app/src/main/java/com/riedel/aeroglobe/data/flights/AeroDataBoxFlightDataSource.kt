@@ -44,6 +44,7 @@ import org.json.JSONObject
 class AeroDataBoxFlightDataSource(
     private val apiKey: () -> String?,
     private val onRequestMade: () -> Unit = {},
+    private val onQuotaRemaining: (Int) -> Unit = {},
 ) : FlightDataSource {
 
     private val requestGate = Mutex()
@@ -101,6 +102,12 @@ class AeroDataBoxFlightDataSource(
             val responseCode = connection.responseCode
             Log.i(TAG, "Response code: $responseCode")
 
+            // RapidAPI stamps this on every response, refused or served, so it is read
+            // unconditionally — the provider's own count is always more trustworthy than
+            // ours, which only ever counted requests, not the 2-unit-per-call this endpoint
+            // actually bills.
+            parseQuotaRemaining(connection.getHeaderField(QUOTA_REMAINING_HEADER))?.let(onQuotaRemaining)
+
             // Counted here rather than before the call: a request the gateway refused outright
             // isn't one the provider served, and counting it makes the settings figure drift
             // further from the truth every time we trip a limit.
@@ -146,6 +153,7 @@ class AeroDataBoxFlightDataSource(
     private companion object {
         const val HOST = "aerodatabox.p.rapidapi.com"
         const val TIMEOUT_MILLIS = 10_000
+        const val QUOTA_REMAINING_HEADER = "x-ratelimit-requests-remaining"
 
         /**
          * 1.1s, not 1.0s: the plan's limit is one request per second measured at the provider,
@@ -227,6 +235,9 @@ internal fun isPerSecondRateLimit(message: String): Boolean {
     val normalized = message.lowercase()
     return normalized.contains("per second") || normalized.contains("per-second")
 }
+
+/** RapidAPI's header value, or null if the header was absent or not a plain integer. */
+internal fun parseQuotaRemaining(headerValue: String?): Int? = headerValue?.trim()?.toIntOrNull()
 
 internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Instant): FetchResult {
     val flights = try {

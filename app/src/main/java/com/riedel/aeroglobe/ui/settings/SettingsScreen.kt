@@ -91,6 +91,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val aeroDataBoxApiKey by viewModel.aeroDataBoxApiKey.collectAsStateWithLifecycle()
     val flightRequestCount by viewModel.flightRequestCount.collectAsStateWithLifecycle()
+    val quotaRemaining by viewModel.quotaRemaining.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(TravelBackup.MIME_TYPE)
@@ -178,12 +179,12 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             )
-            val remaining = (FREE_TIER_MONTHLY_UNITS - flightRequestCount).coerceAtLeast(0)
-            val runningLow = remaining <= FREE_TIER_REMAINING_WARNING_THRESHOLD
+            val runningLow = (quotaRemaining ?: Int.MAX_VALUE) <= FREE_TIER_REMAINING_WARNING_THRESHOLD
             Text(
-                "$flightRequestCount / $FREE_TIER_MONTHLY_UNITS requests this month" +
-                    " — $remaining left" +
-                    if (runningLow) " — running low" else "",
+                quotaRemaining?.let { remaining ->
+                    "$remaining / $FREE_TIER_MONTHLY_UNITS units left this month" +
+                        if (runningLow) " — running low" else ""
+                } ?: "$flightRequestCount requests made this month — units left unknown until the next live lookup",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (runningLow) {
                     MaterialTheme.colorScheme.error

@@ -56,6 +56,7 @@ class SettingsViewModel(
     val mapColors: StateFlow<MapColors> = settings.mapColors
     val aeroDataBoxApiKey: StateFlow<String?> = settings.aeroDataBoxApiKey
     val flightRequestCount: StateFlow<Int> = settings.flightRequestCount
+    val quotaRemaining: StateFlow<Int?> = settings.quotaRemaining
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()

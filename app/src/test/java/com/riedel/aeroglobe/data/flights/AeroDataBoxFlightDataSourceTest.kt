@@ -230,4 +230,16 @@ class AeroDataBoxFlightDataSourceTest {
         // "per-second" and being wrong retries against a spent plan for the rest of the month.
         assertEquals(false, isPerSecondRateLimit("Rate limit exceeded"))
     }
+
+    @Test
+    fun `a plain integer header parses as the units remaining`() {
+        assertEquals(598, parseQuotaRemaining("598"))
+    }
+
+    @Test
+    fun `a missing or non-numeric header has no known remaining count`() {
+        assertNull(parseQuotaRemaining(null))
+        assertNull(parseQuotaRemaining(""))
+        assertNull(parseQuotaRemaining("unlimited"))
+    }
 }

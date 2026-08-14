@@ -60,6 +60,7 @@ class AppContainer(context: Context) {
             dataSource = AeroDataBoxFlightDataSource(
                 apiKey = { settings.aeroDataBoxApiKey.value },
                 onRequestMade = settings::recordFlightRequest,
+                onQuotaRemaining = settings::recordQuotaRemaining,
             ),
             deviceId = settings.deviceId,
         )

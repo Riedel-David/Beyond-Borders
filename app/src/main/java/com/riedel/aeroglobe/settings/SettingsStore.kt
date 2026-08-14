@@ -81,6 +81,23 @@ class SettingsStore(context: Context) {
     )
     val flightRequestCount: StateFlow<Int> = _flightRequestCount.asStateFlow()
 
+    /**
+     * The provider's own count of AeroDataBox units left this month, straight off
+     * `x-ratelimit-requests-remaining` — null until the first live lookup, since nothing
+     * local can derive it (flights-by-number is a Tier 2 endpoint at 2 units/call, so a
+     * count of *requests* undercounts spend by 2x). Resets itself the moment RapidAPI's
+     * own counter does; no month bookkeeping needed here.
+     */
+    private val _quotaRemaining = MutableStateFlow(
+        prefs.getInt(KEY_QUOTA_REMAINING, -1).takeIf { it >= 0 }
+    )
+    val quotaRemaining: StateFlow<Int?> = _quotaRemaining.asStateFlow()
+
+    fun recordQuotaRemaining(remaining: Int) {
+        _quotaRemaining.value = remaining
+        prefs.edit { putInt(KEY_QUOTA_REMAINING, remaining) }
+    }
+
     fun setAeroDataBoxApiKey(key: String?) {
         val trimmed = key?.trim()?.ifBlank { null }
         _aeroDataBoxApiKey.value = trimmed
@@ -157,6 +174,7 @@ class SettingsStore(context: Context) {
         const val KEY_AERODATABOX_API_KEY = "aerodatabox_api_key"
         const val KEY_FLIGHT_REQUEST_MONTH = "flight_request_month"
         const val KEY_FLIGHT_REQUEST_COUNT = "flight_request_count"
+        const val KEY_QUOTA_REMAINING = "aerodatabox_quota_remaining"
     }
 }
 
