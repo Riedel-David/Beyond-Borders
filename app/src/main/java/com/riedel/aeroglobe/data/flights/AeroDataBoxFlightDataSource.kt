@@ -105,7 +105,9 @@ class AeroDataBoxFlightDataSource(
             // RapidAPI stamps this on every response, refused or served, so it is read
             // unconditionally — the provider's own count is always more trustworthy than
             // ours, which only ever counted requests, not the 2-unit-per-call this endpoint
-            // actually bills.
+            // actually bills. Specifically the API-units bucket, not X-RateLimit-Requests-*,
+            // which is a much larger, unrelated RapidAPI-wide request-count limit (a live
+            // response showed 2368/2400 there against 536/600 here — confirmed by inspection).
             parseQuotaRemaining(connection.getHeaderField(QUOTA_REMAINING_HEADER))?.let(onQuotaRemaining)
 
             // Counted here rather than before the call: a request the gateway refused outright
@@ -153,7 +155,7 @@ class AeroDataBoxFlightDataSource(
     private companion object {
         const val HOST = "aerodatabox.p.rapidapi.com"
         const val TIMEOUT_MILLIS = 10_000
-        const val QUOTA_REMAINING_HEADER = "x-ratelimit-requests-remaining"
+        const val QUOTA_REMAINING_HEADER = "x-ratelimit-api-units-remaining"
 
         /**
          * 1.1s, not 1.0s: the plan's limit is one request per second measured at the provider,
@@ -275,6 +277,14 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
     val arrival = flight.optJSONObject("arrival")
     val airline = flight.optJSONObject("airline")
     val aircraft = flight.optJSONObject("aircraft")
+    val departureAirport = departure.optJSONObject("airport")
+    val arrivalAirport = arrival?.optJSONObject("airport")
+
+    // "Live" in the quality tag is the only signal that this flight has any real-time
+    // tracking at all — its absence means gate/position will never appear, no matter
+    // when it's fetched, which is a different message than "not yet assigned".
+    val quality = flight.optJSONArray("quality")
+    val hasLiveTracking = quality?.let { array -> (0 until array.length()).any { array.optString(it) == "Live" } } ?: false
 
     val status = FlightStatus(
         flightId = flightId,
@@ -285,9 +295,9 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
         phase = phase,
         fetchedAt = now,
         aircraftIcao24 = aircraft?.optNonBlankString("modeS")?.lowercase(),
-        departureAirportIata = departure.optJSONObject("airport")?.optNonBlankString("iata"),
+        departureAirportIata = departureAirport?.optNonBlankString("iata"),
         actualDepartureUtc = departure.utcInstant("runwayTime"),
-        arrivalAirportIata = arrival?.optJSONObject("airport")?.optNonBlankString("iata"),
+        arrivalAirportIata = arrivalAirport?.optNonBlankString("iata"),
         scheduledArrivalUtc = arrival?.utcInstant("scheduledTime"),
         estimatedArrivalUtc = arrival?.utcInstant("revisedTime") ?: arrival?.utcInstant("predictedTime"),
         actualArrivalUtc = arrival?.utcInstant("runwayTime"),
@@ -295,6 +305,21 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
         airlineIata = airline?.optNonBlankString("iata"),
         airlineIcao = airline?.optNonBlankString("icao"),
         aircraftModel = aircraft?.optNonBlankString("model"),
+        departureCity = departureAirport?.optNonBlankString("municipalityName"),
+        arrivalCity = arrivalAirport?.optNonBlankString("municipalityName"),
+        departureLat = departureAirport?.optJSONObject("location")?.optDoubleOrNull("lat"),
+        departureLon = departureAirport?.optJSONObject("location")?.optDoubleOrNull("lon"),
+        arrivalLat = arrivalAirport?.optJSONObject("location")?.optDoubleOrNull("lat"),
+        arrivalLon = arrivalAirport?.optJSONObject("location")?.optDoubleOrNull("lon"),
+        departureTimeZone = departureAirport?.optNonBlankString("timeZone"),
+        arrivalTimeZone = arrivalAirport?.optNonBlankString("timeZone"),
+        providerUpdatedAt = flight.optNonBlankString("lastUpdatedUtc")?.let(::parseAeroDataBoxUtc),
+        aircraftRegistration = aircraft?.optNonBlankString("reg"),
+        isCodeshare = flight.optNonBlankString("codeshareStatus")?.let { it != "IsOperator" } ?: false,
+        arrivalGate = arrival?.optNonBlankString("gate"),
+        arrivalTerminal = arrival?.optNonBlankString("terminal"),
+        arrivalBaggageBelt = arrival?.optNonBlankString("baggageBelt"),
+        hasLiveTracking = hasLiveTracking,
     )
 
     return FetchResult.Success(status)
@@ -341,6 +366,8 @@ private fun tryParse(text: String, formatter: DateTimeFormatter): Instant? =
     }
 
 private fun JSONObject.optNonBlankString(key: String): String? = optString(key).takeIf { it.isNotBlank() }
+
+private fun JSONObject.optDoubleOrNull(key: String): Double? = if (has(key)) optDouble(key).takeUnless { it.isNaN() } else null
 
 internal fun mapAeroDataBoxStatus(status: String): FlightPhase =
     mapAeroDataBoxStatusOrNull(status) ?: FlightPhase.SCHEDULED

@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.aeroglobe.AppContainer
 import com.riedel.aeroglobe.BuildConfig
 import com.riedel.aeroglobe.data.backup.TravelBackup
+import com.riedel.aeroglobe.data.flights.RefreshCadence
 import com.riedel.aeroglobe.settings.HomeTab
 import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.settings.MapHue
@@ -92,6 +94,8 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val aeroDataBoxApiKey by viewModel.aeroDataBoxApiKey.collectAsStateWithLifecycle()
     val flightRequestCount by viewModel.flightRequestCount.collectAsStateWithLifecycle()
     val quotaRemaining by viewModel.quotaRemaining.collectAsStateWithLifecycle()
+    val autoRefreshEnabled by viewModel.autoRefreshEnabled.collectAsStateWithLifecycle()
+    val refreshCadence by viewModel.refreshCadence.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(TravelBackup.MIME_TYPE)
@@ -193,6 +197,42 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 },
                 modifier = Modifier.padding(top = 6.dp),
             )
+        }
+
+        Section(
+            "Automatic refresh",
+            "Turning this off takes effect on the next scheduled check, or app launch " +
+                "if a chain has already died — a tracked flight's status just stops " +
+                "updating on its own until this is back on.",
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Refresh flight status automatically", style = MaterialTheme.typography.bodyMedium)
+                Switch(checked = autoRefreshEnabled, onCheckedChange = viewModel::setAutoRefreshEnabled)
+            }
+            if (autoRefreshEnabled) {
+                Text(
+                    "How often, once a flight is being tracked. Slower saves quota.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 6.dp),
+                )
+                ChoiceRow(
+                    options = RefreshCadence.entries,
+                    selected = refreshCadence,
+                    label = { cadence ->
+                        when (cadence) {
+                            RefreshCadence.FAST -> "Fast"
+                            RefreshCadence.NORMAL -> "Normal"
+                            RefreshCadence.SLOW -> "Slow"
+                        }
+                    },
+                    onSelect = viewModel::setRefreshCadence,
+                )
+            }
         }
 
         Section(

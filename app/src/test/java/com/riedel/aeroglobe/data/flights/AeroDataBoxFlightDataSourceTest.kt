@@ -138,6 +138,119 @@ class AeroDataBoxFlightDataSourceTest {
     }
 
     @Test
+    fun `city, coordinates, timezone, registration, codeshare and provider freshness all parse when present`() {
+        val body = """
+            [{
+                "status": "EnRoute",
+                "lastUpdatedUtc": "2026-08-13 09:30Z",
+                "codeshareStatus": "IsCodeshare",
+                "departure": {
+                    "airport": {
+                        "iata": "KRK",
+                        "municipalityName": "Krakow",
+                        "timeZone": "Europe/Warsaw",
+                        "location": { "lat": 50.0777, "lon": 19.7848 }
+                    },
+                    "scheduledTime": { "utc": "2026-08-13 06:00Z" }
+                },
+                "arrival": {
+                    "airport": {
+                        "iata": "HEL",
+                        "municipalityName": "Helsinki",
+                        "timeZone": "Europe/Helsinki",
+                        "location": { "lat": 60.3172, "lon": 24.9633 }
+                    },
+                    "scheduledTime": { "utc": "2026-08-13 08:00Z" },
+                    "gate": "29",
+                    "terminal": "2",
+                    "baggageBelt": "3"
+                },
+                "aircraft": { "modeS": "47A05E", "model": "A320neo", "reg": "OH-LXA" },
+                "quality": ["Basic", "Live"]
+            }]
+        """.trimIndent()
+
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertEquals("Krakow", status.departureCity)
+        assertEquals("Helsinki", status.arrivalCity)
+        assertEquals(50.0777, status.departureLat!!, 0.0001)
+        assertEquals(19.7848, status.departureLon!!, 0.0001)
+        assertEquals(60.3172, status.arrivalLat!!, 0.0001)
+        assertEquals(24.9633, status.arrivalLon!!, 0.0001)
+        assertEquals("Europe/Warsaw", status.departureTimeZone)
+        assertEquals("Europe/Helsinki", status.arrivalTimeZone)
+        assertEquals(Instant.parse("2026-08-13T09:30:00Z"), status.providerUpdatedAt)
+        assertEquals("OH-LXA", status.aircraftRegistration)
+        assertEquals(true, status.isCodeshare)
+        assertEquals("29", status.arrivalGate)
+        assertEquals("2", status.arrivalTerminal)
+        assertEquals("3", status.arrivalBaggageBelt)
+        assertEquals(true, status.hasLiveTracking)
+    }
+
+    @Test
+    fun `IsOperator codeshare status is not flagged as a codeshare`() {
+        val body = """
+            [{
+                "status": "EnRoute",
+                "codeshareStatus": "IsOperator",
+                "departure": { "scheduledTime": { "utc": "2026-08-13 06:00Z" } }
+            }]
+        """.trimIndent()
+
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+
+        assert(result is FetchResult.Success)
+        assertEquals(false, (result as FetchResult.Success).status.isCodeshare)
+    }
+
+    @Test
+    fun `a quality tag without Live means no live tracking, no coordinates, no registration`() {
+        val body = """
+            [{
+                "status": "Unknown",
+                "departure": { "scheduledTime": { "utc": "2026-08-13 06:00Z" } },
+                "arrival": { "terminal": "1" },
+                "aircraft": { "model": "A220" },
+                "quality": ["Basic"]
+            }]
+        """.trimIndent()
+
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertEquals(false, status.hasLiveTracking)
+        assertNull(status.aircraftRegistration)
+        assertEquals("1", status.arrivalTerminal)
+    }
+
+    @Test
+    fun `missing city, coordinates, timezone, registration and lastUpdatedUtc leave those fields null`() {
+        val body = """
+            [{
+                "status": "Expected",
+                "departure": { "scheduledTime": { "utc": "2026-08-13 12:00Z" } }
+            }]
+        """.trimIndent()
+
+        val result = parseAeroDataBoxResponse("flight-1", body, now)
+
+        assert(result is FetchResult.Success)
+        val status = (result as FetchResult.Success).status
+        assertNull(status.departureCity)
+        assertNull(status.departureLat)
+        assertNull(status.departureTimeZone)
+        assertNull(status.providerUpdatedAt)
+        assertNull(status.aircraftRegistration)
+        assertEquals(false, status.isCodeshare)
+        assertEquals(false, status.hasLiveTracking)
+    }
+
+    @Test
     fun `unrecognised statuses default to scheduled rather than failing`() {
         assertEquals(FlightPhase.SCHEDULED, mapAeroDataBoxStatus("SomeNewStatus"))
     }

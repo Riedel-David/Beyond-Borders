@@ -33,6 +33,24 @@ data class FlightStatus(
     val airlineIata: String? = null,
     val airlineIcao: String? = null,
     val aircraftModel: String? = null,
+    val departureCity: String? = null,
+    val arrivalCity: String? = null,
+    val departureLat: Double? = null,
+    val departureLon: Double? = null,
+    val arrivalLat: Double? = null,
+    val arrivalLon: Double? = null,
+    val departureTimeZone: String? = null,
+    val arrivalTimeZone: String? = null,
+    /** When AeroDataBox itself last refreshed this flight, distinct from [fetchedAt] (when we last asked). */
+    val providerUpdatedAt: Instant? = null,
+    val aircraftRegistration: String? = null,
+    /** True when the entered flight number is a marketed codeshare rather than the operator. */
+    val isCodeshare: Boolean = false,
+    val arrivalGate: String? = null,
+    val arrivalTerminal: String? = null,
+    val arrivalBaggageBelt: String? = null,
+    /** False when the provider's `quality` tag lacks `"Live"` — gate/position will never appear, not just "not yet". */
+    val hasLiveTracking: Boolean = false,
 )
 
 /** One field that changed between two [FlightStatus] snapshots, e.g. "gate" A15 -> B42. */

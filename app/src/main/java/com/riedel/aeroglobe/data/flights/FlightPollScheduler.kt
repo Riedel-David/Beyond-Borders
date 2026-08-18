@@ -7,6 +7,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.riedel.aeroglobe.settings.SettingsStore
 import java.util.concurrent.TimeUnit
 
 /**
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * WorkManager's 15-minute periodic floor. [FlightPollWorker] re-schedules itself on
  * every run with the next delay it computes.
  */
-class FlightPollScheduler(private val context: Context) {
+class FlightPollScheduler(private val context: Context, private val settings: SettingsStore) {
 
     /**
      * Schedules an immediate poll, replacing any existing work. Called when the user adds
@@ -51,6 +52,12 @@ class FlightPollScheduler(private val context: Context) {
     }
 
     private fun enqueue(flightId: String, delayMillis: Long, noStatusAttemptCount: Int, policy: ExistingWorkPolicy) {
+        // Covers all three callers in one place, rather than each of scheduleNow/
+        // scheduleAfter/rearmIfNeeded checking the setting itself.
+        if (!settings.autoRefreshEnabled.value) {
+            cancel(flightId)
+            return
+        }
         val request = OneTimeWorkRequestBuilder<FlightPollWorker>()
             .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(

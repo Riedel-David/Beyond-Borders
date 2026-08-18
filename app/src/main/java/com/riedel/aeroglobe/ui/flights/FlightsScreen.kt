@@ -8,9 +8,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -73,6 +76,7 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
     val selected = flights.find { it.flight.id == selectedFlightId }
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Without this, the system back gesture falls straight through to closing the
     // app: this screen has never had a NavHost to give it a route to pop.
@@ -80,6 +84,11 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
 
     Scaffold(
         modifier = modifier,
+        // AeroGlobeRoot's outer Scaffold already reserves the status-bar inset; without
+        // this override this Scaffold reserves it again, pushing FlightHeroScreen's own
+        // TopAppBar down by a second status-bar height.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (selected == null) {
                 FloatingActionButton(onClick = { showForm = true }) {
@@ -93,7 +102,29 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
             onRefresh = {
                 refreshing = true
                 scope.launch {
-                    if (selected != null) viewModel.refreshNow(selected.flight.id) else viewModel.refreshAll()
+                    // A refresh that fails while a cached status already exists otherwise shows
+                    // nothing: only the "no cached status yet" branch on the hero screen surfaces
+                    // a FetchResult reason. This is the one place a failure against existing data
+                    // needs to say why.
+                    val target = selected
+                    if (target != null) {
+                        viewModel.refreshNow(target.flight.id)
+                        val result = viewModel.lastFetchResults.value[target.flight.id]
+                        if (target.status != null && result != null && result !is FetchResult.Success) {
+                            snackbarHostState.showSnackbar(fetchResultMessage(result, target.flight.flightNumber, target.flight.date))
+                        }
+                    } else {
+                        viewModel.refreshAll()
+                        val message = flights.firstNotNullOfOrNull { entry ->
+                            val result = viewModel.lastFetchResults.value[entry.flight.id]
+                            if (entry.status != null && result != null && result !is FetchResult.Success) {
+                                fetchResultMessage(result, entry.flight.flightNumber, entry.flight.date)
+                            } else {
+                                null
+                            }
+                        }
+                        message?.let { snackbarHostState.showSnackbar(it) }
+                    }
                     refreshing = false
                 }
             },
@@ -119,9 +150,6 @@ fun FlightsScreen(viewModel: FlightsViewModel, modifier: Modifier = Modifier) {
                             selectedFlightId = null
                         },
                         onSeatChange = { seat -> viewModel.updateSeat(selected.flight.id, seat) },
-                        onRouteEdit = { departure, arrival, scheduledDeparture, scheduledArrival ->
-                            viewModel.setManualRoute(selected.flight.id, departure, arrival, scheduledDeparture, scheduledArrival)
-                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -224,15 +252,18 @@ private fun FlightHeroScreen(
     onBack: () -> Unit,
     onDelete: () -> Unit,
     onSeatChange: (String?) -> Unit,
-    onRouteEdit: (departureIata: String?, arrivalIata: String?, scheduledDepartureUtc: Instant, scheduledArrivalUtc: Instant?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var editingSeat by remember { mutableStateOf(false) }
-    var editingRoute by remember { mutableStateOf(false) }
     var confirmingDelete by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
+        // The status-bar inset is already reserved by AeroGlobeRoot's outer Scaffold
+        // (it has no topBar, but Scaffold still pads content for it). Without this,
+        // this inner Scaffold reserves it a second time and the TopAppBar floats in a
+        // blank strip below the real status bar.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(entry.flight.flightNumber) },
@@ -264,16 +295,47 @@ private fun FlightHeroScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            routeLabel(status.departureAirportIata, status.arrivalAirportIata),
+                            routeLabel(status.departureCity, status.departureAirportIata, status.arrivalCity, status.arrivalAirportIata),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
-                        InfoRow("Departs", localTimeLabel(status.actualDepartureUtc ?: status.estimatedDepartureUtc ?: status.scheduledDepartureUtc))
+                        InfoRow(
+                            "Departs",
+                            localTimeLabel(status.actualDepartureUtc ?: status.estimatedDepartureUtc ?: status.scheduledDepartureUtc, status.departureTimeZone),
+                        )
                         status.scheduledArrivalUtc?.let {
-                            InfoRow("Arrives", localTimeLabel(status.actualArrivalUtc ?: status.estimatedArrivalUtc ?: it))
+                            InfoRow(
+                                "Arrives",
+                                localTimeLabel(status.actualArrivalUtc ?: status.estimatedArrivalUtc ?: it, status.arrivalTimeZone),
+                            )
                         }
-                        listOfNotNull(status.airlineName, status.aircraftModel).takeIf { it.isNotEmpty() }?.let {
+                        listOfNotNull(
+                            status.airlineName,
+                            status.aircraftModel?.let { model -> status.aircraftRegistration?.let { reg -> "$model ($reg)" } ?: model },
+                        ).takeIf { it.isNotEmpty() }?.let {
                             InfoRow("Aircraft", it.joinToString(" · "))
+                        }
+                        if (status.isCodeshare) {
+                            Text(
+                                "Codeshare — check with the operating carrier",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        val departureLat = status.departureLat
+                        val departureLon = status.departureLon
+                        val arrivalLat = status.arrivalLat
+                        val arrivalLon = status.arrivalLon
+                        if (departureLat != null && departureLon != null && arrivalLat != null && arrivalLon != null) {
+                            RouteMapView(
+                                departureLat = departureLat,
+                                departureLon = departureLon,
+                                arrivalLat = arrivalLat,
+                                arrivalLon = arrivalLon,
+                                departureLabel = airportLabel(status.departureCity, status.departureAirportIata),
+                                arrivalLabel = airportLabel(status.arrivalCity, status.arrivalAirportIata),
+                                modifier = Modifier.fillMaxWidth().height(160.dp),
+                            )
                         }
                     }
                 }
@@ -286,58 +348,44 @@ private fun FlightHeroScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (status == null) {
                         // No cached status: show either "waiting" or the failure reason
-                        when (lastFetchResult) {
-                            null -> Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
-                            is FetchResult.Success -> Text("Waiting for the first status fetch…", style = MaterialTheme.typography.bodyMedium)
-                            is FetchResult.NotFound -> Text(
-                                "No flight ${entry.flight.flightNumber} found on ${entry.flight.date}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            is FetchResult.HttpError -> Text(
-                                "Lookup failed: ${lastFetchResult.code} — ${lastFetchResult.message}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            is FetchResult.NoKey -> Text(
-                                "No API key configured. Add one in settings.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            is FetchResult.Offline -> Text(
-                                "Network unavailable. Pull down to retry.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            is FetchResult.ParseError -> Text(
-                                "Parse error: ${lastFetchResult.reason}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            is FetchResult.RateLimited -> Text(
-                                if (lastFetchResult.transient) {
-                                    "Too many lookups at once. Pull down to retry."
-                                } else {
-                                    "Monthly API quota spent — no more lookups until the plan resets."
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                        TextButton(onClick = { editingRoute = true }) { Text("Enter route manually") }
+                        Text(
+                            lastFetchResult?.let { fetchResultMessage(it, entry.flight.flightNumber, entry.flight.date) }
+                                ?: "Waiting for the first status fetch…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (lastFetchResult == null || lastFetchResult is FetchResult.Success || lastFetchResult is FetchResult.NoKey) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                        )
                     } else {
                         Text(status.phase.label(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        InfoRow("Gate", status.departureGate ?: "Not yet assigned")
-                        InfoRow("Terminal", status.departureTerminal ?: "Not yet assigned")
+                        InfoRow("Gate", status.departureGate ?: noLiveDataLabel(status.hasLiveTracking))
+                        InfoRow("Terminal", status.departureTerminal ?: noLiveDataLabel(status.hasLiveTracking))
                         InfoRow("Delay", delayLabel(status))
                         if (status.phase == FlightPhase.IN_AIR) {
-                            InfoRow("Position", positionLabel(position))
+                            InfoRow("Position", positionLabel(position, status.hasLiveTracking))
+                        }
+                        val arrivalExtras = listOfNotNull(
+                            status.arrivalGate?.let { "Gate $it" },
+                            status.arrivalTerminal?.let { "Terminal $it" },
+                            status.arrivalBaggageBelt?.let { "Belt $it" },
+                        )
+                        if (arrivalExtras.isNotEmpty()) {
+                            InfoRow("On arrival", arrivalExtras.joinToString(" · "))
                         }
                         Text(
-                            freshnessLabel(status.fetchedAt),
+                            freshnessLabel(status.fetchedAt, "Updated"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        status.providerUpdatedAt?.let {
+                            Text(
+                                freshnessLabel(it, "Airline data updated"),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -377,17 +425,6 @@ private fun FlightHeroScreen(
         )
     }
 
-    if (editingRoute) {
-        RouteEditDialog(
-            date = entry.flight.date,
-            onDismiss = { editingRoute = false },
-            onConfirm = { departure, arrival, scheduledDeparture, scheduledArrival ->
-                onRouteEdit(departure, arrival, scheduledDeparture, scheduledArrival)
-                editingRoute = false
-            },
-        )
-    }
-
     if (confirmingDelete) {
         DeleteFlightConfirmDialog(
             flightNumber = entry.flight.flightNumber,
@@ -405,32 +442,61 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
+private fun fetchResultMessage(result: FetchResult, flightNumber: String, date: String): String = when (result) {
+    is FetchResult.Success -> "Waiting for the first status fetch…"
+    is FetchResult.NotFound -> "No flight $flightNumber found on $date"
+    is FetchResult.HttpError -> "Lookup failed: ${result.code} — ${result.message}"
+    is FetchResult.NoKey -> "No API key configured. Add one in settings."
+    is FetchResult.Offline -> "Network unavailable. Pull down to retry."
+    is FetchResult.ParseError -> "Parse error: ${result.reason}"
+    is FetchResult.RateLimited -> if (result.transient) {
+        "Too many lookups at once. Pull down to retry."
+    } else {
+        "Monthly API quota spent — no more lookups until the plan resets."
+    }
+}
+
 private fun delayLabel(status: FlightStatus): String {
     val minutes = delayMinutes(status) ?: return "No delay estimate yet"
     return if (minutes <= 0) "On time" else "Delayed $minutes min"
 }
 
-private fun positionLabel(position: AircraftPosition?): String {
-    if (position == null) return "Live position unavailable"
+/** "Not yet assigned" implies it's coming; that's false once there's no live tracking at all. */
+private fun noLiveDataLabel(hasLiveTracking: Boolean): String =
+    if (hasLiveTracking) "Not yet assigned" else "No live tracking for this flight"
+
+private fun positionLabel(position: AircraftPosition?, hasLiveTracking: Boolean): String {
+    if (position == null) return if (hasLiveTracking) "Live position unavailable" else "No live tracking for this flight"
     val altitude = position.altitudeMeters?.let { "%,.0f m".format(it) } ?: "altitude unknown"
     val speed = position.velocityMs?.let { "%.0f km/h".format(it * 3.6) } ?: "speed unknown"
     return "%.4f, %.4f · %s · %s".format(position.latitude, position.longitude, altitude, speed)
 }
 
-private fun routeLabel(departureIata: String?, arrivalIata: String?): String =
-    "${departureIata ?: "?"} → ${arrivalIata ?: "?"}"
+private fun airportLabel(city: String?, iata: String?): String = when {
+    city != null && iata != null -> "$city ($iata)"
+    iata != null -> iata
+    city != null -> city
+    else -> "?"
+}
+
+private fun routeLabel(departureCity: String?, departureIata: String?, arrivalCity: String?, arrivalIata: String?): String =
+    "${airportLabel(departureCity, departureIata)} → ${airportLabel(arrivalCity, arrivalIata)}"
 
 private val LOCAL_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM, HH:mm")
 
-private fun localTimeLabel(instant: Instant): String =
-    LOCAL_TIME_FORMATTER.withZone(ZoneId.systemDefault()).format(instant)
+/** Formats in [timeZone] (the airport's own zone), not the device's — "local time" means local to the airport. */
+private fun localTimeLabel(instant: Instant, timeZone: String?): String {
+    val zone = timeZone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
+    return LOCAL_TIME_FORMATTER.withZone(zone).format(instant)
+}
 
-private fun freshnessLabel(fetchedAt: Instant): String {
-    val minutes = Duration.between(fetchedAt, Instant.now()).toMinutes()
+private fun freshnessLabel(at: Instant, prefix: String): String {
+    val minutes = Duration.between(at, Instant.now()).toMinutes()
     return when {
-        minutes < 1 -> "Updated just now"
-        minutes < 60 -> "Updated $minutes min ago"
-        else -> "Updated ${minutes / 60} h ago"
+        minutes < 1 -> "$prefix just now"
+        minutes < 60 -> "$prefix $minutes min ago"
+        minutes < 60 * 24 -> "$prefix ${minutes / 60} h ago"
+        else -> "$prefix ${minutes / (60 * 24)} d ago"
     }
 }
 
@@ -463,86 +529,6 @@ private fun SeatEditDialog(initial: String?, onDismiss: () -> Unit, onConfirm: (
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(seat.trim().ifBlank { null }) }) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
-/**
- * For a flight added with no API access — everything here is overwritten the moment a
- * real status fetch succeeds, so this only ever needs to get the flight onto the screen,
- * not keep it perfectly in sync. [date] is the flight's own date; only a time-of-day is
- * asked for so a typo can't silently land the flight on the wrong day.
- */
-@Composable
-private fun RouteEditDialog(
-    date: String,
-    onDismiss: () -> Unit,
-    onConfirm: (departureIata: String?, arrivalIata: String?, scheduledDepartureUtc: Instant, scheduledArrivalUtc: Instant?) -> Unit,
-) {
-    var departureIata by remember { mutableStateOf("") }
-    var arrivalIata by remember { mutableStateOf("") }
-    var departureTime by remember { mutableStateOf("") }
-    var arrivalTime by remember { mutableStateOf("") }
-    var invalid by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Route") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    "For when there's no API access yet — a real status fetch always takes over once one succeeds.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = departureIata,
-                    onValueChange = { departureIata = it },
-                    label = { Text("From (IATA)") },
-                    placeholder = { Text("AMS") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = arrivalIata,
-                    onValueChange = { arrivalIata = it },
-                    label = { Text("To (IATA)") },
-                    placeholder = { Text("OSL") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = departureTime,
-                    onValueChange = { departureTime = it; invalid = false },
-                    label = { Text("Scheduled departure (UTC)") },
-                    placeholder = { Text("14:30") },
-                    isError = invalid,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = arrivalTime,
-                    onValueChange = { arrivalTime = it },
-                    label = { Text("Scheduled arrival (UTC, optional)") },
-                    placeholder = { Text("16:45") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val scheduledDeparture = parseScheduledUtc(date, departureTime)
-                if (scheduledDeparture == null) {
-                    invalid = true
-                } else {
-                    val scheduledArrival = parseScheduledUtc(date, arrivalTime)
-                        ?.let { candidate -> rollToNextDayIfBefore(candidate, scheduledDeparture) }
-                    onConfirm(
-                        departureIata.trim().uppercase().ifBlank { null },
-                        arrivalIata.trim().uppercase().ifBlank { null },
-                        scheduledDeparture,
-                        scheduledArrival,
-                    )
-                }
-            }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

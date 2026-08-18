@@ -41,7 +41,7 @@ class AppContainer(context: Context) {
         VisaRepository(registryLoader = { VisaRegistry.load(appContext.assets) })
     }
 
-    val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext) }
+    val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext, settings) }
 
     val flights: FlightRepository by lazy {
         FlightRepository(
@@ -69,6 +69,6 @@ class AppContainer(context: Context) {
     val aircraftPositions: OpenSkyAircraftPositionSource by lazy { OpenSkyAircraftPositionSource() }
 
     val flightWorkerFactory: FlightWorkerFactory by lazy {
-        FlightWorkerFactory(flights = flights, statuses = flightStatuses, scheduler = flightPollScheduler)
+        FlightWorkerFactory(flights = flights, statuses = flightStatuses, scheduler = flightPollScheduler, settings = settings)
     }
 }

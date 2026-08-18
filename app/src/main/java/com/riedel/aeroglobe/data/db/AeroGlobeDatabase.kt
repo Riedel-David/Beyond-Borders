@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         FlightStatusEntity::class,
         FlightStatusChangeEntity::class,
     ],
-    version = 7,
+    version = 8,
     // Schemas are committed under app/schemas so migrations can be tested against
     // the real previous version instead of a reconstruction of it.
     exportSchema = true,
@@ -170,13 +170,33 @@ abstract class AeroGlobeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `departureCity` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalCity` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `departureLat` REAL")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `departureLon` REAL")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalLat` REAL")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalLon` REAL")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `departureTimeZone` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalTimeZone` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `providerUpdatedAt` INTEGER")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `aircraftRegistration` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `isCodeshare` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalGate` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalTerminal` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `arrivalBaggageBelt` TEXT")
+                db.execSQL("ALTER TABLE `flight_status` ADD COLUMN `hasLiveTracking` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun open(context: Context): AeroGlobeDatabase =
             Room.databaseBuilder(context, AeroGlobeDatabase::class.java, NAME)
                 // No fallbackToDestructiveMigration: this database holds the one
                 // thing in the app that cannot be re-fetched from anywhere. A
                 // missing migration must fail the build's tests, not quietly wipe
                 // a decade of travel history on upgrade.
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
     }
 }

@@ -3,6 +3,7 @@ package com.riedel.aeroglobe.settings
 import android.content.Context
 import androidx.core.content.edit
 import com.riedel.aeroglobe.core.Uuid
+import com.riedel.aeroglobe.data.flights.RefreshCadence
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,6 +94,26 @@ class SettingsStore(context: Context) {
     )
     val quotaRemaining: StateFlow<Int?> = _quotaRemaining.asStateFlow()
 
+    /** Whether the background poll chain runs at all. Off means tracked flights never update themselves. */
+    private val _autoRefreshEnabled = MutableStateFlow(prefs.getBoolean(KEY_AUTO_REFRESH_ENABLED, true))
+    val autoRefreshEnabled: StateFlow<Boolean> = _autoRefreshEnabled.asStateFlow()
+
+    private val _refreshCadence = MutableStateFlow(
+        runCatching { RefreshCadence.valueOf(prefs.getString(KEY_REFRESH_CADENCE, null) ?: "") }
+            .getOrDefault(RefreshCadence.NORMAL)
+    )
+    val refreshCadence: StateFlow<RefreshCadence> = _refreshCadence.asStateFlow()
+
+    fun setAutoRefreshEnabled(enabled: Boolean) {
+        _autoRefreshEnabled.value = enabled
+        prefs.edit { putBoolean(KEY_AUTO_REFRESH_ENABLED, enabled) }
+    }
+
+    fun setRefreshCadence(cadence: RefreshCadence) {
+        _refreshCadence.value = cadence
+        prefs.edit { putString(KEY_REFRESH_CADENCE, cadence.name) }
+    }
+
     fun recordQuotaRemaining(remaining: Int) {
         _quotaRemaining.value = remaining
         prefs.edit { putInt(KEY_QUOTA_REMAINING, remaining) }
@@ -175,6 +196,8 @@ class SettingsStore(context: Context) {
         const val KEY_FLIGHT_REQUEST_MONTH = "flight_request_month"
         const val KEY_FLIGHT_REQUEST_COUNT = "flight_request_count"
         const val KEY_QUOTA_REMAINING = "aerodatabox_quota_remaining"
+        const val KEY_AUTO_REFRESH_ENABLED = "auto_refresh_enabled"
+        const val KEY_REFRESH_CADENCE = "refresh_cadence"
     }
 }
 

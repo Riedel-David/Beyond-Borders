@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.aeroglobe.data.backup.BackupMerge
 import com.riedel.aeroglobe.data.backup.TravelBackup
+import com.riedel.aeroglobe.data.flights.RefreshCadence
 import com.riedel.aeroglobe.data.place.PlaceRepository
 import com.riedel.aeroglobe.settings.HomeTab
 import com.riedel.aeroglobe.settings.MapColors
@@ -57,6 +58,8 @@ class SettingsViewModel(
     val aeroDataBoxApiKey: StateFlow<String?> = settings.aeroDataBoxApiKey
     val flightRequestCount: StateFlow<Int> = settings.flightRequestCount
     val quotaRemaining: StateFlow<Int?> = settings.quotaRemaining
+    val autoRefreshEnabled: StateFlow<Boolean> = settings.autoRefreshEnabled
+    val refreshCadence: StateFlow<RefreshCadence> = settings.refreshCadence
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
@@ -70,6 +73,10 @@ class SettingsViewModel(
     fun resetMapColors() = settings.resetMapColors()
 
     fun setAeroDataBoxApiKey(key: String) = settings.setAeroDataBoxApiKey(key)
+
+    fun setAutoRefreshEnabled(enabled: Boolean) = settings.setAutoRefreshEnabled(enabled)
+
+    fun setRefreshCadence(cadence: RefreshCadence) = settings.setRefreshCadence(cadence)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())

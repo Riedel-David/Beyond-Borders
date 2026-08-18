@@ -81,34 +81,6 @@ class FlightStatusRepository(
             }
         }
 
-    /**
-     * Hand-typed route and schedule, for a flight added with no API access yet. Only ever
-     * called when nothing has been fetched, so there's nothing to merge — an actual fetch
-     * later overwrites this row the normal way, through [refresh].
-     */
-    suspend fun setManualRoute(
-        flightId: String,
-        departureAirportIata: String?,
-        arrivalAirportIata: String?,
-        scheduledDepartureUtc: Instant,
-        scheduledArrivalUtc: Instant?,
-    ) = withContext(Dispatchers.IO) {
-        val now = clock()
-        val status = FlightStatus(
-            flightId = flightId,
-            scheduledDepartureUtc = scheduledDepartureUtc,
-            estimatedDepartureUtc = null,
-            departureGate = null,
-            departureTerminal = null,
-            phase = FlightPhase.SCHEDULED,
-            fetchedAt = Instant.ofEpochMilli(now),
-            departureAirportIata = departureAirportIata,
-            arrivalAirportIata = arrivalAirportIata,
-            scheduledArrivalUtc = scheduledArrivalUtc,
-        )
-        statusDao.upsert(status.toEntity(deviceId, now))
-    }
-
     private fun FlightStatusEntity.toDomain() = FlightStatus(
         flightId = flightId,
         scheduledDepartureUtc = Instant.ofEpochMilli(scheduledDepartureUtc),
@@ -128,6 +100,21 @@ class FlightStatusRepository(
         airlineIata = airlineIata,
         airlineIcao = airlineIcao,
         aircraftModel = aircraftModel,
+        departureCity = departureCity,
+        arrivalCity = arrivalCity,
+        departureLat = departureLat,
+        departureLon = departureLon,
+        arrivalLat = arrivalLat,
+        arrivalLon = arrivalLon,
+        departureTimeZone = departureTimeZone,
+        arrivalTimeZone = arrivalTimeZone,
+        providerUpdatedAt = providerUpdatedAt?.let(Instant::ofEpochMilli),
+        aircraftRegistration = aircraftRegistration,
+        isCodeshare = isCodeshare,
+        arrivalGate = arrivalGate,
+        arrivalTerminal = arrivalTerminal,
+        arrivalBaggageBelt = arrivalBaggageBelt,
+        hasLiveTracking = hasLiveTracking,
     )
 
     private fun FlightStatusChangeEntity.toDomain() = StatusChange(
@@ -158,6 +145,21 @@ class FlightStatusRepository(
         airlineIata = airlineIata,
         airlineIcao = airlineIcao,
         aircraftModel = aircraftModel,
+        departureCity = departureCity,
+        arrivalCity = arrivalCity,
+        departureLat = departureLat,
+        departureLon = departureLon,
+        arrivalLat = arrivalLat,
+        arrivalLon = arrivalLon,
+        departureTimeZone = departureTimeZone,
+        arrivalTimeZone = arrivalTimeZone,
+        providerUpdatedAt = providerUpdatedAt?.toEpochMilli(),
+        aircraftRegistration = aircraftRegistration,
+        isCodeshare = isCodeshare,
+        arrivalGate = arrivalGate,
+        arrivalTerminal = arrivalTerminal,
+        arrivalBaggageBelt = arrivalBaggageBelt,
+        hasLiveTracking = hasLiveTracking,
     )
 }
 

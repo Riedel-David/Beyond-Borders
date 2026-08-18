@@ -12,7 +12,6 @@ import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.StatusChange
-import java.time.Instant
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -60,18 +59,6 @@ class FlightsViewModel(
 
     fun updateSeat(id: String, seat: String?) {
         viewModelScope.launch { repo.updateSeat(id, seat?.trim()?.ifBlank { null }) }
-    }
-
-    fun setManualRoute(
-        flightId: String,
-        departureAirportIata: String?,
-        arrivalAirportIata: String?,
-        scheduledDepartureUtc: Instant,
-        scheduledArrivalUtc: Instant?,
-    ) {
-        viewModelScope.launch {
-            statuses.setManualRoute(flightId, departureAirportIata, arrivalAirportIata, scheduledDepartureUtc, scheduledArrivalUtc)
-        }
     }
 
     fun changesFor(flightId: String): Flow<List<StatusChange>> = statuses.observeChanges(flightId)
@@ -143,18 +130,3 @@ internal fun parseFlightNumber(raw: String): String? {
 // number's first digit into a 3-character carrier ("LH400" -> "LH4" + "00").
 private val FLIGHT_NUMBER_PATTERN = Regex("""([A-Z0-9]{2,3}?)\s*(\d{1,4})([A-Z]?)""")
 
-/** Combines the flight's own date with a typed "HH:mm" UTC time. Null on blank or malformed input. */
-internal fun parseScheduledUtc(isoDate: String, hhmm: String): Instant? {
-    if (hhmm.isBlank()) return null
-    return try {
-        java.time.LocalDate.parse(isoDate)
-            .atTime(java.time.LocalTime.parse(hhmm.trim()))
-            .toInstant(java.time.ZoneOffset.UTC)
-    } catch (e: java.time.format.DateTimeParseException) {
-        null
-    }
-}
-
-/** An arrival typed earlier than its departure is assumed to be the next day, not the past. */
-internal fun rollToNextDayIfBefore(candidate: Instant, reference: Instant): Instant =
-    if (candidate.isBefore(reference)) candidate.plus(1, java.time.temporal.ChronoUnit.DAYS) else candidate
