@@ -49,4 +49,22 @@ class PollScheduleLogicTest {
     fun `a cancelled flight has no next poll`() {
         assertNull(nextPollDelayMillis(now, now.plus(Duration.ofHours(5)), FlightPhase.CANCELLED))
     }
+
+    @Test
+    fun `slow cadence quadruples the pre-departure delay`() {
+        val departure = now.plus(Duration.ofHours(10))
+        assertEquals(
+            Duration.ofHours(4).toMillis(),
+            nextPollDelayMillis(now, departure, FlightPhase.SCHEDULED, multiplier = RefreshCadence.SLOW.multiplier),
+        )
+    }
+
+    @Test
+    fun `normal cadence doubles the in-flight delay`() {
+        val departure = now.minus(Duration.ofHours(1))
+        assertEquals(
+            Duration.ofHours(1).toMillis(),
+            nextPollDelayMillis(now, departure, FlightPhase.IN_AIR, multiplier = RefreshCadence.NORMAL.multiplier),
+        )
+    }
 }

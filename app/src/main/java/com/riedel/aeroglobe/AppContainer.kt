@@ -3,13 +3,11 @@ package com.riedel.aeroglobe
 import android.content.Context
 import com.riedel.aeroglobe.data.db.AeroGlobeDatabase
 import com.riedel.aeroglobe.data.flights.AeroDataBoxFlightDataSource
-import com.riedel.aeroglobe.data.flights.FakeFlightDataSource
 import com.riedel.aeroglobe.data.flights.FlightPollScheduler
 import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.FlightWorkerFactory
 import com.riedel.aeroglobe.data.flights.OpenSkyAircraftPositionSource
-import com.riedel.aeroglobe.data.flights.SwitchingFlightDataSource
 import com.riedel.aeroglobe.data.place.PlaceRegistry
 import com.riedel.aeroglobe.data.place.PlaceRepository
 import com.riedel.aeroglobe.data.visa.VisaRegistry
@@ -43,7 +41,7 @@ class AppContainer(context: Context) {
         VisaRepository(registryLoader = { VisaRegistry.load(appContext.assets) })
     }
 
-    val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext) }
+    val flightPollScheduler: FlightPollScheduler by lazy { FlightPollScheduler(appContext, settings) }
 
     val flights: FlightRepository by lazy {
         FlightRepository(
@@ -57,15 +55,12 @@ class AppContainer(context: Context) {
         FlightStatusRepository(
             statusDao = database.flightStatusDao(),
             changeDao = database.flightStatusChangeDao(),
-            // A real key can be dropped in later without a rebuild: the toggle and
-            // the switch itself both read settings on every call, not at construction.
-            dataSource = SwitchingFlightDataSource(
-                useReal = { settings.useRealFlightData.value },
-                real = AeroDataBoxFlightDataSource(
-                    apiKey = { settings.aeroDataBoxApiKey.value },
-                    onRequestMade = settings::recordFlightRequest,
-                ),
-                fake = FakeFlightDataSource(),
+            // A real key can be dropped in later without a rebuild: apiKey reads
+            // settings on every call, not at construction.
+            dataSource = AeroDataBoxFlightDataSource(
+                apiKey = { settings.aeroDataBoxApiKey.value },
+                onRequestMade = settings::recordFlightRequest,
+                onQuotaRemaining = settings::recordQuotaRemaining,
             ),
             deviceId = settings.deviceId,
         )
@@ -74,6 +69,6 @@ class AppContainer(context: Context) {
     val aircraftPositions: OpenSkyAircraftPositionSource by lazy { OpenSkyAircraftPositionSource() }
 
     val flightWorkerFactory: FlightWorkerFactory by lazy {
-        FlightWorkerFactory(flights = flights, statuses = flightStatuses, scheduler = flightPollScheduler)
+        FlightWorkerFactory(flights = flights, statuses = flightStatuses, scheduler = flightPollScheduler, settings = settings)
     }
 }

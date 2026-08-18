@@ -12,7 +12,6 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -25,19 +24,16 @@ import org.json.JSONObject
 /**
  * Real flight status from AeroDataBox (RapidAPI, "Flights by number" endpoint).
  *
- * Scaffolded ahead of a key per the 3d decision: with no key configured, [fetchStatus]
- * returns null exactly like a dead connection, so the cache-first repository behaves
- * against this the same way it does against [FakeFlightDataSource] with no signal —
- * nothing else has to know a key is missing.
+ * With no key configured, [fetchStatus] returns [FetchResult.NoKey] — nothing else has
+ * to know a key is missing.
  *
  * Field names in [parseAeroDataBoxResponse] are verified against a live response
  * (DY 2003, 2026-08-13): "utc" timestamps come back as "yyyy-MM-dd HH:mmZ", not
- * ISO-8601, and the aircraft's Mode-S/ICAO24 address is at `aircraft.modeS`.
- *
- * [parseInboundLeg] and [fetchInbound]'s "Flights by aircraft" endpoint are **not**
- * verified against a live response — built from AeroDataBox's documented shape only,
- * on the assumption it reuses the same departure/arrival/status fields as "Flights by
- * number". See the open question in STATUS.md.
+ * ISO-8601, and the aircraft's Mode-S/ICAO24 address is at `aircraft.modeS`. Arrival,
+ * airline and aircraft-model fields are verified against the same OpenAPI spec
+ * (`arrival.airport.iata`, `arrival.scheduledTime.utc`/`revisedTime.utc`,
+ * `arrival.runwayTime.utc`, `airline.name`/`iata`/`icao`, `aircraft.model`,
+ * `departure.runwayTime.utc`).
  *
  * Every request passes through [awaitRequestSlot] first. The Basic plan allows one request
  * per second, and the app has several callers that naturally fire together — pull-to-refresh
@@ -48,6 +44,7 @@ import org.json.JSONObject
 class AeroDataBoxFlightDataSource(
     private val apiKey: () -> String?,
     private val onRequestMade: () -> Unit = {},
+    private val onQuotaRemaining: (Int) -> Unit = {},
 ) : FlightDataSource {
 
     private val requestGate = Mutex()
@@ -62,13 +59,6 @@ class AeroDataBoxFlightDataSource(
             }
             awaitRequestSlot()
             fetch(key, flightId, flightNumber, date)
-        }
-
-    override suspend fun fetchInboundLeg(icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg? =
-        withContext(Dispatchers.IO) {
-            val key = apiKey()?.trim()?.takeIf { it.isNotEmpty() } ?: return@withContext null
-            awaitRequestSlot()
-            runCatching { fetchInbound(key, icao24, departureAirportIata, beforeUtc) }.getOrNull()
         }
 
     /**
@@ -112,6 +102,14 @@ class AeroDataBoxFlightDataSource(
             val responseCode = connection.responseCode
             Log.i(TAG, "Response code: $responseCode")
 
+            // RapidAPI stamps this on every response, refused or served, so it is read
+            // unconditionally — the provider's own count is always more trustworthy than
+            // ours, which only ever counted requests, not the 2-unit-per-call this endpoint
+            // actually bills. Specifically the API-units bucket, not X-RateLimit-Requests-*,
+            // which is a much larger, unrelated RapidAPI-wide request-count limit (a live
+            // response showed 2368/2400 there against 536/600 here — confirmed by inspection).
+            parseQuotaRemaining(connection.getHeaderField(QUOTA_REMAINING_HEADER))?.let(onQuotaRemaining)
+
             // Counted here rather than before the call: a request the gateway refused outright
             // isn't one the provider served, and counting it makes the settings figure drift
             // further from the truth every time we trip a limit.
@@ -154,34 +152,10 @@ class AeroDataBoxFlightDataSource(
         }
     }
 
-    /**
-     * Windowed to the 30 hours before [beforeUtc]: wide enough to cover the inbound leg on a
-     * long-haul aircraft turnaround without pulling the aircraft's entire recent history.
-     */
-    private fun fetchInbound(key: String, icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg? {
-        val from = INBOUND_WINDOW_FORMAT.format(beforeUtc.minus(INBOUND_WINDOW_HOURS, ChronoUnit.HOURS).atZone(ZoneOffset.UTC))
-        val to = INBOUND_WINDOW_FORMAT.format(beforeUtc.atZone(ZoneOffset.UTC))
-        val url = URL("https://$HOST/flights/aircraft/icao24/$icao24/$from/$to")
-        val connection = url.openConnection() as HttpURLConnection
-        connection.setRequestProperty("X-RapidAPI-Key", key)
-        connection.setRequestProperty("X-RapidAPI-Host", HOST)
-        connection.connectTimeout = TIMEOUT_MILLIS
-        connection.readTimeout = TIMEOUT_MILLIS
-        return try {
-            val responseCode = connection.responseCode
-            Log.i(TAG, "Inbound leg response code: $responseCode")
-            if (responseCode != HTTP_TOO_MANY_REQUESTS) onRequestMade()
-            if (responseCode != HttpURLConnection.HTTP_OK) return null
-            val body = connection.inputStream.bufferedReader().readText()
-            parseInboundLeg(departureAirportIata, body, beforeUtc)
-        } finally {
-            connection.disconnect()
-        }
-    }
-
     private companion object {
         const val HOST = "aerodatabox.p.rapidapi.com"
         const val TIMEOUT_MILLIS = 10_000
+        const val QUOTA_REMAINING_HEADER = "x-ratelimit-api-units-remaining"
 
         /**
          * 1.1s, not 1.0s: the plan's limit is one request per second measured at the provider,
@@ -192,8 +166,6 @@ class AeroDataBoxFlightDataSource(
 
         /** `HttpURLConnection` predates RFC 6585 and has no constant for it. */
         const val HTTP_TOO_MANY_REQUESTS = 429
-        const val INBOUND_WINDOW_HOURS = 30L
-        val INBOUND_WINDOW_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
     }
 }
 
@@ -266,6 +238,9 @@ internal fun isPerSecondRateLimit(message: String): Boolean {
     return normalized.contains("per second") || normalized.contains("per-second")
 }
 
+/** RapidAPI's header value, or null if the header was absent or not a plain integer. */
+internal fun parseQuotaRemaining(headerValue: String?): Int? = headerValue?.trim()?.toIntOrNull()
+
 internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Instant): FetchResult {
     val flights = try {
         JSONArray(body)
@@ -299,6 +274,18 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
     }
     val phase = mapped ?: FlightPhase.SCHEDULED
 
+    val arrival = flight.optJSONObject("arrival")
+    val airline = flight.optJSONObject("airline")
+    val aircraft = flight.optJSONObject("aircraft")
+    val departureAirport = departure.optJSONObject("airport")
+    val arrivalAirport = arrival?.optJSONObject("airport")
+
+    // "Live" in the quality tag is the only signal that this flight has any real-time
+    // tracking at all — its absence means gate/position will never appear, no matter
+    // when it's fetched, which is a different message than "not yet assigned".
+    val quality = flight.optJSONArray("quality")
+    val hasLiveTracking = quality?.let { array -> (0 until array.length()).any { array.optString(it) == "Live" } } ?: false
+
     val status = FlightStatus(
         flightId = flightId,
         scheduledDepartureUtc = scheduled,
@@ -307,43 +294,35 @@ internal fun parseAeroDataBoxResponse(flightId: String, body: String, now: Insta
         departureTerminal = departure.optNonBlankString("terminal"),
         phase = phase,
         fetchedAt = now,
-        aircraftIcao24 = flight.optJSONObject("aircraft")?.optNonBlankString("modeS")?.lowercase(),
-        departureAirportIata = departure.optJSONObject("airport")?.optNonBlankString("iata"),
+        aircraftIcao24 = aircraft?.optNonBlankString("modeS")?.lowercase(),
+        departureAirportIata = departureAirport?.optNonBlankString("iata"),
+        actualDepartureUtc = departure.utcInstant("runwayTime"),
+        arrivalAirportIata = arrivalAirport?.optNonBlankString("iata"),
+        scheduledArrivalUtc = arrival?.utcInstant("scheduledTime"),
+        estimatedArrivalUtc = arrival?.utcInstant("revisedTime") ?: arrival?.utcInstant("predictedTime"),
+        actualArrivalUtc = arrival?.utcInstant("runwayTime"),
+        airlineName = airline?.optNonBlankString("name"),
+        airlineIata = airline?.optNonBlankString("iata"),
+        airlineIcao = airline?.optNonBlankString("icao"),
+        aircraftModel = aircraft?.optNonBlankString("model"),
+        departureCity = departureAirport?.optNonBlankString("municipalityName"),
+        arrivalCity = arrivalAirport?.optNonBlankString("municipalityName"),
+        departureLat = departureAirport?.optJSONObject("location")?.optDoubleOrNull("lat"),
+        departureLon = departureAirport?.optJSONObject("location")?.optDoubleOrNull("lon"),
+        arrivalLat = arrivalAirport?.optJSONObject("location")?.optDoubleOrNull("lat"),
+        arrivalLon = arrivalAirport?.optJSONObject("location")?.optDoubleOrNull("lon"),
+        departureTimeZone = departureAirport?.optNonBlankString("timeZone"),
+        arrivalTimeZone = arrivalAirport?.optNonBlankString("timeZone"),
+        providerUpdatedAt = flight.optNonBlankString("lastUpdatedUtc")?.let(::parseAeroDataBoxUtc),
+        aircraftRegistration = aircraft?.optNonBlankString("reg"),
+        isCodeshare = flight.optNonBlankString("codeshareStatus")?.let { it != "IsOperator" } ?: false,
+        arrivalGate = arrival?.optNonBlankString("gate"),
+        arrivalTerminal = arrival?.optNonBlankString("terminal"),
+        arrivalBaggageBelt = arrival?.optNonBlankString("baggageBelt"),
+        hasLiveTracking = hasLiveTracking,
     )
 
     return FetchResult.Success(status)
-}
-
-/**
- * Picks the aircraft's most recent leg that landed at [departureAirportIata] no later than
- * [beforeUtc] — i.e. the leg this flight's own aircraft is flying in on. Unverified against a
- * live response: built from AeroDataBox's documented "Flights by aircraft" shape, which reuses
- * the same departure/arrival/status fields as "Flights by number".
- */
-internal fun parseInboundLeg(departureAirportIata: String, body: String, beforeUtc: Instant): InboundLeg? {
-    val flights = JSONArray(body)
-    var best: JSONObject? = null
-    var bestArrival: Instant? = null
-    for (i in 0 until flights.length()) {
-        val flight = flights.getJSONObject(i)
-        val arrival = flight.optJSONObject("arrival") ?: continue
-        if (arrival.optJSONObject("airport")?.optNonBlankString("iata") != departureAirportIata) continue
-        val arrivalTime = arrival.utcInstant("revisedTime") ?: arrival.utcInstant("scheduledTime") ?: continue
-        if (arrivalTime.isAfter(beforeUtc)) continue
-        if (bestArrival == null || arrivalTime.isAfter(bestArrival)) {
-            bestArrival = arrivalTime
-            best = flight
-        }
-    }
-    val flight = best ?: return null
-    val departure = flight.optJSONObject("departure") ?: return null
-    val arrival = flight.optJSONObject("arrival")
-    return InboundLeg(
-        originAirportIata = departure.optJSONObject("airport")?.optNonBlankString("iata"),
-        scheduledArrivalUtc = arrival?.utcInstant("scheduledTime"),
-        estimatedArrivalUtc = arrival?.utcInstant("revisedTime") ?: arrival?.utcInstant("predictedTime"),
-        phase = mapAeroDataBoxStatus(flight.optString("status")),
-    )
 }
 
 private fun JSONObject.utcInstant(key: String): Instant? =
@@ -387,6 +366,8 @@ private fun tryParse(text: String, formatter: DateTimeFormatter): Instant? =
     }
 
 private fun JSONObject.optNonBlankString(key: String): String? = optString(key).takeIf { it.isNotBlank() }
+
+private fun JSONObject.optDoubleOrNull(key: String): Double? = if (has(key)) optDouble(key).takeUnless { it.isNaN() } else null
 
 internal fun mapAeroDataBoxStatus(status: String): FlightPhase =
     mapAeroDataBoxStatusOrNull(status) ?: FlightPhase.SCHEDULED

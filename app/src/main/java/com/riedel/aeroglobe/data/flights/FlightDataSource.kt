@@ -1,11 +1,6 @@
 package com.riedel.aeroglobe.data.flights
 
-import java.time.Instant
-
-/**
- * A source of live flight status. Real providers arrive in 3d — this interface is the
- * seam that lets 3b-3c build and test against [FakeFlightDataSource] with no API key.
- */
+/** A source of live flight status. */
 interface FlightDataSource {
     /**
      * Fetches status, returning a [FetchResult] that distinguishes success from the
@@ -13,15 +8,6 @@ interface FlightDataSource {
      * whatever it last cached — a flight must survive a dead connection, not disappear.
      */
     suspend fun fetchStatus(flightId: String, flightNumber: String, date: String): FetchResult
-
-    /**
-     * The tracked aircraft's leg into [departureAirportIata] immediately before [beforeUtc].
-     * Called once per flight, right when [FlightStatus.aircraftIcao24] first becomes known —
-     * not polled, since a completed inbound leg's schedule rarely changes afterwards. Returns
-     * null on any failure or when no matching leg is found, same "no signal" convention as
-     * before.
-     */
-    suspend fun fetchInboundLeg(icao24: String, departureAirportIata: String, beforeUtc: Instant): InboundLeg?
 }
 
 /**

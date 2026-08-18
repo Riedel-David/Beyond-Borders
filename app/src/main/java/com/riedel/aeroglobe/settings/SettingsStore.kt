@@ -3,6 +3,7 @@ package com.riedel.aeroglobe.settings
 import android.content.Context
 import androidx.core.content.edit
 import com.riedel.aeroglobe.core.Uuid
+import com.riedel.aeroglobe.data.flights.RefreshCadence
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,10 +64,6 @@ class SettingsStore(context: Context) {
         prefs.edit { putString(KEY_DEVICE_ID, it) }
     }
 
-    /** Off by default: with no key entered this would just poll AeroDataBox into null responses. */
-    private val _useRealFlightData = MutableStateFlow(prefs.getBoolean(KEY_USE_REAL_FLIGHT_DATA, false))
-    val useRealFlightData: StateFlow<Boolean> = _useRealFlightData.asStateFlow()
-
     /** The RapidAPI key for AeroDataBox. Null until the user pastes one in. */
     private val _aeroDataBoxApiKey = MutableStateFlow(prefs.getString(KEY_AERODATABOX_API_KEY, null))
     val aeroDataBoxApiKey: StateFlow<String?> = _aeroDataBoxApiKey.asStateFlow()
@@ -85,9 +82,41 @@ class SettingsStore(context: Context) {
     )
     val flightRequestCount: StateFlow<Int> = _flightRequestCount.asStateFlow()
 
-    fun setUseRealFlightData(enabled: Boolean) {
-        _useRealFlightData.value = enabled
-        prefs.edit { putBoolean(KEY_USE_REAL_FLIGHT_DATA, enabled) }
+    /**
+     * The provider's own count of AeroDataBox units left this month, straight off
+     * `x-ratelimit-requests-remaining` — null until the first live lookup, since nothing
+     * local can derive it (flights-by-number is a Tier 2 endpoint at 2 units/call, so a
+     * count of *requests* undercounts spend by 2x). Resets itself the moment RapidAPI's
+     * own counter does; no month bookkeeping needed here.
+     */
+    private val _quotaRemaining = MutableStateFlow(
+        prefs.getInt(KEY_QUOTA_REMAINING, -1).takeIf { it >= 0 }
+    )
+    val quotaRemaining: StateFlow<Int?> = _quotaRemaining.asStateFlow()
+
+    /** Whether the background poll chain runs at all. Off means tracked flights never update themselves. */
+    private val _autoRefreshEnabled = MutableStateFlow(prefs.getBoolean(KEY_AUTO_REFRESH_ENABLED, true))
+    val autoRefreshEnabled: StateFlow<Boolean> = _autoRefreshEnabled.asStateFlow()
+
+    private val _refreshCadence = MutableStateFlow(
+        runCatching { RefreshCadence.valueOf(prefs.getString(KEY_REFRESH_CADENCE, null) ?: "") }
+            .getOrDefault(RefreshCadence.NORMAL)
+    )
+    val refreshCadence: StateFlow<RefreshCadence> = _refreshCadence.asStateFlow()
+
+    fun setAutoRefreshEnabled(enabled: Boolean) {
+        _autoRefreshEnabled.value = enabled
+        prefs.edit { putBoolean(KEY_AUTO_REFRESH_ENABLED, enabled) }
+    }
+
+    fun setRefreshCadence(cadence: RefreshCadence) {
+        _refreshCadence.value = cadence
+        prefs.edit { putString(KEY_REFRESH_CADENCE, cadence.name) }
+    }
+
+    fun recordQuotaRemaining(remaining: Int) {
+        _quotaRemaining.value = remaining
+        prefs.edit { putInt(KEY_QUOTA_REMAINING, remaining) }
     }
 
     fun setAeroDataBoxApiKey(key: String?) {
@@ -163,10 +192,12 @@ class SettingsStore(context: Context) {
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"
         const val KEY_HUE_WISHLIST = "map_hue_wishlist"
-        const val KEY_USE_REAL_FLIGHT_DATA = "use_real_flight_data"
         const val KEY_AERODATABOX_API_KEY = "aerodatabox_api_key"
         const val KEY_FLIGHT_REQUEST_MONTH = "flight_request_month"
         const val KEY_FLIGHT_REQUEST_COUNT = "flight_request_count"
+        const val KEY_QUOTA_REMAINING = "aerodatabox_quota_remaining"
+        const val KEY_AUTO_REFRESH_ENABLED = "auto_refresh_enabled"
+        const val KEY_REFRESH_CADENCE = "refresh_cadence"
     }
 }
 

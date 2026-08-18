@@ -24,17 +24,33 @@ data class FlightStatus(
     val fetchedAt: Instant,
     val aircraftIcao24: String? = null,
     val departureAirportIata: String? = null,
-    val inboundLeg: InboundLeg? = null,
-    /** Non-null once the one-time inbound-leg lookup has been attempted, success or not. */
-    val inboundLegCheckedAt: Instant? = null,
-)
-
-/** The tracked aircraft's leg into [FlightStatus.departureAirportIata] immediately before this flight. */
-data class InboundLeg(
-    val originAirportIata: String?,
-    val scheduledArrivalUtc: Instant?,
-    val estimatedArrivalUtc: Instant?,
-    val phase: FlightPhase,
+    val actualDepartureUtc: Instant? = null,
+    val arrivalAirportIata: String? = null,
+    val scheduledArrivalUtc: Instant? = null,
+    val estimatedArrivalUtc: Instant? = null,
+    val actualArrivalUtc: Instant? = null,
+    val airlineName: String? = null,
+    val airlineIata: String? = null,
+    val airlineIcao: String? = null,
+    val aircraftModel: String? = null,
+    val departureCity: String? = null,
+    val arrivalCity: String? = null,
+    val departureLat: Double? = null,
+    val departureLon: Double? = null,
+    val arrivalLat: Double? = null,
+    val arrivalLon: Double? = null,
+    val departureTimeZone: String? = null,
+    val arrivalTimeZone: String? = null,
+    /** When AeroDataBox itself last refreshed this flight, distinct from [fetchedAt] (when we last asked). */
+    val providerUpdatedAt: Instant? = null,
+    val aircraftRegistration: String? = null,
+    /** True when the entered flight number is a marketed codeshare rather than the operator. */
+    val isCodeshare: Boolean = false,
+    val arrivalGate: String? = null,
+    val arrivalTerminal: String? = null,
+    val arrivalBaggageBelt: String? = null,
+    /** False when the provider's `quality` tag lacks `"Live"` — gate/position will never appear, not just "not yet". */
+    val hasLiveTracking: Boolean = false,
 )
 
 /** One field that changed between two [FlightStatus] snapshots, e.g. "gate" A15 -> B42. */

@@ -3,6 +3,7 @@ package com.riedel.aeroglobe.data.flights
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.riedel.aeroglobe.settings.SettingsStore
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 
@@ -17,9 +18,15 @@ class FlightPollWorker(
     private val flights: FlightRepository,
     private val statuses: FlightStatusRepository,
     private val scheduler: FlightPollScheduler,
+    private val settings: SettingsStore,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        // Auto-refresh was switched off since this chain was scheduled: end it quietly
+        // rather than fight the setting. The settings screen's own toggle handles the
+        // opposite case (re-arming) when it's switched back on.
+        if (!settings.autoRefreshEnabled.value) return Result.success()
+
         val flightId = inputData.getString(KEY_FLIGHT_ID) ?: return Result.failure()
         val noStatusAttemptCount = inputData.getInt(KEY_NO_STATUS_ATTEMPTS, 0)
         val flight = flights.flights.first().find { it.id == flightId }
@@ -34,6 +41,7 @@ class FlightPollWorker(
                 Instant.now(),
                 noStatusAttemptCount,
                 statuses.lastFetchResults.value[flightId],
+                settings.refreshCadence.value.multiplier,
             )
             when (outcome) {
                 is PollOutcome.Reschedule -> {
@@ -97,6 +105,7 @@ internal fun determineOutcome(
     now: Instant,
     noStatusAttemptCount: Int,
     lastResult: FetchResult? = null,
+    cadenceMultiplier: Double = 1.0,
 ): PollOutcome {
     if (lastResult is FetchResult.RateLimited && !lastResult.transient) return PollOutcome.Done
     return if (status == null) {
@@ -111,7 +120,7 @@ internal fun determineOutcome(
         }
     } else {
         // Successful fetch: reset the no-status count to 0
-        val delay = nextPollDelayMillis(now, status.scheduledDepartureUtc, status.phase)
+        val delay = nextPollDelayMillis(now, status.scheduledDepartureUtc, status.phase, cadenceMultiplier)
         if (delay == null) PollOutcome.Done else PollOutcome.Reschedule(delay, nextAttemptCount = 0)
     }
 }

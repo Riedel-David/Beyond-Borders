@@ -12,7 +12,6 @@ import com.riedel.aeroglobe.data.flights.FlightRepository
 import com.riedel.aeroglobe.data.flights.FlightStatus
 import com.riedel.aeroglobe.data.flights.FlightStatusRepository
 import com.riedel.aeroglobe.data.flights.StatusChange
-import com.riedel.aeroglobe.settings.SettingsStore
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +33,6 @@ class FlightsViewModel(
     private val repo: FlightRepository,
     private val statuses: FlightStatusRepository,
     private val positions: AircraftPositionSource,
-    private val settings: SettingsStore,
 ) : ViewModel() {
 
     val flights: StateFlow<List<FlightWithStatus>> =
@@ -47,12 +45,6 @@ class FlightsViewModel(
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    /** True once a key is entered and the toggle is on — the same condition [SwitchingFlightDataSource] uses to pick real over fake. */
-    val isUsingRealData: StateFlow<Boolean> =
-        combine(settings.useRealFlightData, settings.aeroDataBoxApiKey) { useReal, key ->
-            useReal && !key.isNullOrBlank()
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Returns false, and adds nothing, if [rawNumber] does not look like a flight number. */
     fun addFlight(rawNumber: String, isoDate: String, seat: String? = null): Boolean {
@@ -111,12 +103,11 @@ class FlightsViewModel(
             repo: FlightRepository,
             statuses: FlightStatusRepository,
             positions: AircraftPositionSource,
-            settings: SettingsStore,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     @Suppress("UNCHECKED_CAST")
-                    return FlightsViewModel(repo, statuses, positions, settings) as T
+                    return FlightsViewModel(repo, statuses, positions) as T
                 }
             }
     }
@@ -138,3 +129,4 @@ internal fun parseFlightNumber(raw: String): String? {
 // The carrier group is non-greedy: a greedy {2,3} would happily absorb the
 // number's first digit into a 3-character carrier ("LH400" -> "LH4" + "00").
 private val FLIGHT_NUMBER_PATTERN = Regex("""([A-Z0-9]{2,3}?)\s*(\d{1,4})([A-Z]?)""")
+
