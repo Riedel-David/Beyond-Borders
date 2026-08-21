@@ -50,6 +50,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    sourceSets {
+        // MigrationTestHelper loads the exported schemas from the *test APK's* assets,
+        // and `room.schemaLocation` below only writes them to a directory in the
+        // source tree — nothing packages them. Without this line the migration test
+        // fails at runtime with "Cannot find the schema file in the assets folder"
+        // rather than at compile time.
+        getByName("androidTest") {
+            assets.srcDir("$projectDir/schemas")
+        }
+    }
     buildFeatures {
         compose = true
         // Off by default since AGP 8. On because the settings screen shows the
