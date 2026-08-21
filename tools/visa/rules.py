@@ -389,25 +389,29 @@ OVERRIDES = {
     "AI": ("VISA_FREE", 90, "medium", "aa",
            "British Overseas Territory with its own immigration rules. No visa "
            "for German nationals."),
-    "MS": ("VISA_FREE", 180, "low", "aa",
+    "MS": ("VISA_FREE", 180, "medium", "aa",
            "British Overseas Territory with its own immigration rules. No visa "
-           "for German nationals; the stay granted is generous but the number "
-           "here is not firmly sourced. Half the island is an exclusion zone "
+           "for German nationals; 180 days matches the UK government's own "
+           "Montserrat travel advice. Half the island is an exclusion zone "
            "around the volcano."),
-    "FK": ("VISA_FREE", 30, "low", "aa",
+    "FK": ("VISA_FREE", 30, "medium", "aa",
            "British Overseas Territory with its own immigration ordinance. No "
-           "visa for German nationals; a visitor permit is issued on arrival. "
-           "The day limit here is not firmly sourced."),
-    "SH": ("VISA_FREE", None, "low", "aa",
-           "Saint Helena, Ascension and Tristan da Cunha. No visa, but an entry "
-           "permit is issued on arrival for a fee and you must show "
-           "accommodation and a return booking. Ascension needs prior "
-           "clearance, and Tristan da Cunha needs the Island Council's consent "
-           "and a ship."),
-    "PN": ("VISA_FREE", 14, "low", "aa",
-           "No visa for a short visit, but landing needs a licence from the "
-           "Island Council and there is no airstrip — the only access is by "
-           "ship from Mangareva. Treat any planning here as bespoke."),
+           "visa for German nationals; a visitor permit for one month is "
+           "issued on arrival, matching the UK government's own Falklands "
+           "travel advice."),
+    "SH": ("VISA_FREE", 183, "medium", "aa",
+           "Saint Helena's short-term entry permit is issued on arrival for a "
+           "fee and is valid up to 183 days, per the UK government's own "
+           "travel advice — you must show accommodation and a return booking. "
+           "Ascension is separate and needs a 3-month visa arranged in "
+           "advance; Tristan da Cunha needs the Island Council's consent and "
+           "a ship, with no fixed day limit."),
+    "PN": ("VISA_FREE", 14, "medium", "aa",
+           "No visa for a short visit, capped at 14 days if you arrive and "
+           "depart on the same ship (matches the UK government's own Pitcairn "
+           "travel advice); a longer stay needs a Long-Term Visit Visa. "
+           "Landing also needs a licence from the Island Council and there is "
+           "no airstrip — the only access is by ship from Mangareva."),
 
     # --- US territories: mostly US immigration, with one exception ---------
     "PR": ("ETA", 90, "high", "esta",
@@ -441,9 +445,12 @@ OVERRIDES = {
            "Self-governing in free association with New Zealand. No visa for "
            "German nationals. Reached only via Auckland, which needs an NZeTA."),
     "TK": ("VISA_FREE", None, "low", "aa",
-           "No airport: access is by boat from Samoa, and visitors need the "
-           "Tokelau administration's approval plus a local sponsor. No visa as "
-           "such, but nobody arrives unannounced."),
+           "No airport: access is by boat from Samoa, and visitors need a "
+           "travel permit from the Tokelau Liaison Office in Apia, which can "
+           "take a month or two to process. No fixed day limit could be "
+           "confirmed for non-NZ visitors, and access has been reported closed "
+           "to visitors at times — check current status before planning any "
+           "trip here."),
 
     # --- Australian external territories: inside the migration zone -------
     "CX": ("ETA", 90, "medium", "evisitor",
