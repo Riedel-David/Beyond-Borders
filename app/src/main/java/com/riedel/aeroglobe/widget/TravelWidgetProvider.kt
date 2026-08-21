@@ -25,10 +25,22 @@ class TravelWidgetProvider : AppWidgetProvider() {
         val pending = goAsync()
         val places = (context.applicationContext as AeroGlobeApp).container.places
         CoroutineScope(Dispatchers.IO).launch {
-            val total = places.places().size
-            val been = places.statuses.first().values.count { it.isBeen }
-            appWidgetIds.forEach { id -> updateOne(context, manager, id, been, total) }
-            pending.finish()
+            // Both halves of this matter. finish() in a finally, because a throw
+            // between goAsync() and it leaves the broadcast open until the system
+            // times it out — and this receiver is also the ACTION_APPWIDGET_UPDATE
+            // target, so the leak costs every later update, not just this one. And
+            // the catch, because nothing above us handles it: an unhandled throw in
+            // a bare CoroutineScope reaches the thread's default handler and takes
+            // the app down over a home-screen count. The widget keeps the number it
+            // last drew instead, which is a stale count rather than a crash.
+            try {
+                val total = places.places().size
+                val been = places.statuses.first().values.count { it.isBeen }
+                appWidgetIds.forEach { id -> updateOne(context, manager, id, been, total) }
+            } catch (_: Exception) {
+            } finally {
+                pending.finish()
+            }
         }
     }
 

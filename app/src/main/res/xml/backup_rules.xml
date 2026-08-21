@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+   Auto Backup on API 26-30; data_extraction_rules.xml is the same decision for 31+.
+
+   Everything is backed up except where excluded, and that default is what we want
+   here: aeroglobe.db is the travel history, the one thing in the app that cannot be
+   re-fetched from anywhere, so a new phone should get it back.
+
+   aeroglobe.device.xml is the exception. It holds the per-install id that a future
+   sync uses to tell its own writes from another device's, and restoring it would
+   give two installs the same id — each ignoring the other's edits as an echo of its
+   own. Excluded, it is regenerated on first launch, which is the correct answer for
+   a new install.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="sharedpref" path="aeroglobe.device.xml"/>
 </full-backup-content>

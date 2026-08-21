@@ -18,7 +18,17 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
  * commits asynchronously. Revisit if settings ever grow beyond scalars.
  */
 class SettingsStore(context: Context) {
-    private val prefs = context.getSharedPreferences("aeroglobe.settings", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(SETTINGS_FILE, Context.MODE_PRIVATE)
+
+    /**
+     * A second file for one value, because Auto Backup excludes *files*, not keys.
+     *
+     * [deviceId] must not travel to a new phone (see below) while the theme and the
+     * map colours should, and one shared file cannot be both — so this one is named
+     * in `backup_rules.xml` and `data_extraction_rules.xml` as the only thing a
+     * backup leaves behind.
+     */
+    private val devicePrefs = context.getSharedPreferences(DEVICE_FILE, Context.MODE_PRIVATE)
 
     private val _themeMode = MutableStateFlow(
         runCatching { ThemeMode.valueOf(prefs.getString(KEY_THEME, null) ?: "") }
@@ -42,10 +52,25 @@ class SettingsStore(context: Context) {
      * edit" from "another device made this edit" without a user account, so the id
      * is generated on first launch and never leaves the device except inside sync
      * payloads. It is not tied to any hardware identifier.
+     *
+     * *Per install* is the whole point, so a restore onto a second phone has to land
+     * on a new one. Two installs sharing an id would each treat the other's writes as
+     * its own and skip them — every edit made on the new phone silently ignored by the
+     * old one, on the one table in the app that cannot be re-fetched.
+     *
+     * An upgrade from the build where this lived in the settings file deletes the old
+     * key rather than adopting its value, and gets a new id. Adopting it would read
+     * the same way on a restored phone as on an upgraded one — every backup taken so
+     * far has the old key in it, so the fallback that kept an upgrade's id stable
+     * would hand a restore the id it must not have, which is the whole bug. Losing
+     * continuity costs nothing today: the id is a stamp on rows we write, and nothing
+     * reads it back.
      */
-    val deviceId: String = prefs.getString(KEY_DEVICE_ID, null) ?: Uuid.v7().also {
-        prefs.edit { putString(KEY_DEVICE_ID, it) }
-    }
+    val deviceId: String = devicePrefs.getString(KEY_DEVICE_ID, null)
+        ?: Uuid.v7().also {
+            devicePrefs.edit { putString(KEY_DEVICE_ID, it) }
+            prefs.edit { remove(KEY_DEVICE_ID) }
+        }
 
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
@@ -88,6 +113,11 @@ class SettingsStore(context: Context) {
     }
 
     private companion object {
+        const val SETTINGS_FILE = "aeroglobe.settings"
+
+        /** Named in both backup rule files; renaming it here means renaming it there. */
+        const val DEVICE_FILE = "aeroglobe.device"
+
         const val KEY_THEME = "theme_mode"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"
