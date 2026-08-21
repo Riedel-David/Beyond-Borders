@@ -24,6 +24,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -351,6 +352,17 @@ private fun PlacesMapView(
     val context = LocalContext.current
     val slopPx = with(LocalDensity.current) { TAP_SLOP_DP.dp.toPx() }
 
+    // Style loading is asynchronous and can finish well after this composition —
+    // long enough, on a cold start, for the real statuses to have already arrived
+    // from Room. Read through rememberUpdatedState so the style-loaded callback
+    // below paints whatever is current *when it fires*, not a stale snapshot from
+    // whenever the effect was scheduled, which was painting the map blank until
+    // some unrelated recomposition came along to correct it.
+    val currentStatuses by rememberUpdatedState(statuses)
+    val currentVisaBands by rememberUpdatedState(visaBands)
+    val currentLens by rememberUpdatedState(lens)
+    val currentSelectedCode by rememberUpdatedState(selectedCode)
+
     val mapView = remember {
         // Must run before any MapView is constructed. No style URL and no
         // WellKnownTileServer: there is no tile server in this app.
@@ -406,9 +418,9 @@ private fun PlacesMapView(
             controller.attach(map)
             map.setStyle(PlacesMapStyle.builder(palette)) { style ->
                 controller.onStyleLoaded(style)
-                controller.applyStatuses(statuses, lens)
-                controller.applyVisa(visaBands)
-                controller.applySelection(selectedCode, lens)
+                controller.applyStatuses(currentStatuses, currentLens)
+                controller.applyVisa(currentVisaBands)
+                controller.applySelection(currentSelectedCode, currentLens)
             }
         }
         onDispose { }
