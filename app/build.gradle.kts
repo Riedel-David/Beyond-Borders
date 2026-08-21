@@ -29,6 +29,14 @@ android {
         versionName = "0.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Sideloaded onto real phones, never distributed through a store that would
+        // split by ABI itself — every real phone in use is arm64, so shipping the
+        // other three MapLibre native-lib copies (armeabi-v7a, x86, x86_64) only
+        // ever paid for emulator testing that this project doesn't do on-device.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
