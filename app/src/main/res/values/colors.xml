@@ -6,4 +6,11 @@
          composition, so it has to match AeroGlobeLight.background exactly or
          the app flashes on launch. values-night/colors.xml has the dark twin. -->
     <color name="window_background">#F7F9FC</color>
+
+    <!-- The widget can't read the Compose theme, so its surface/text/accent are
+         copied by hand from AeroGlobeLight in ui/theme/Color.kt. values-night
+         has the dark twin. -->
+    <color name="widget_surface">#F7F9FC</color>
+    <color name="widget_on_surface">#131A22</color>
+    <color name="widget_accent">#135CC9</color>
 </resources>
