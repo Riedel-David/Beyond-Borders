@@ -2,9 +2,10 @@
 <!--
     A wireframe globe with three places marked in the app's own status colours.
 
-    It shows what the app does rather than what it is called: no aeroplane, because
-    the flight half is a placeholder until phase 3 and an icon should not advertise a
-    screen that says "coming soon". Add one here when that screen becomes real.
+    It shows what the app does rather than what it is called: no aeroplane, since
+    flight tracking was built and then removed (PLAN.md revision 7) — the app is
+    the country tracker now, and the icon should not advertise a screen it doesn't
+    have.
 
     The three dots are azure, rose and teal — the shipped defaults for been, lived and
     want to. They will not follow a user's chosen palette: a launcher icon is baked

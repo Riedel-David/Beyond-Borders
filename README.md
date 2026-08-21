@@ -1,7 +1,7 @@
 # AeroGlobe
 
-A personal Android app for two things: tracking where I have been, and keeping an
-eye on a flight I am about to take.
+A personal Android app for tracking where I have been and where I can go without
+a visa.
 
 It exists because of one specific annoyance. Every travel tracker I tried selects
 more than you ask for — tap Denmark and you get Greenland, tap France and you get
@@ -18,13 +18,14 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 | Travel map | working — 252 places, tap to select, Been / Lived / Want, plus a visa lens |
 | Passport list | working — search, filters, per-continent stats |
 | Passport visas | working — where a German passport goes, 252 answers, offline |
-| Settings | working — theme, map colours, opening screen, JSON export / import |
-| Flights | not started (phase 3) |
+| Settings | working — theme, map colours, JSON export / import |
 
-Everything that works, works **offline**: the geometry is bundled in the APK and
-there is no basemap, no tile server and no API key.
+Everything works **offline**: the geometry is bundled in the APK and there is no
+basemap, no tile server and no API key. A flight tracker was built through phase
+3.6 and then removed — see "Changed in revision 7" in [PLAN.md](PLAN.md) for why.
 
-Phase 2 is closed (version `0.3.0`); flights are next, in phase 3.
+Phase 2 is closed (version `0.3.0`); next up is phase 5, verifying and finishing
+the country tracker.
 
 ## Choosing the map colours
 
@@ -157,32 +158,18 @@ The curation rules — what gets merged, dropped, renamed or given a private cod
 and why — live in [`tools/geo/rules.py`](tools/geo/rules.py). Read that file
 before changing anything about the place list.
 
-## A note on OneDrive
+## A note on OneDrive — historical
 
-The repo currently lives inside a OneDrive folder, which Gradle dislikes. Three
-workarounds in `gradle.properties` deal with it: file-system watching off,
-configuration cache off, and the project cache relocated outside the synced
-folder. Each is commented in place, and all three can be deleted if the repo moves
-to a local path.
+The repo used to live inside a OneDrive folder and no longer does. That removed
+three Gradle workarounds from `gradle.properties` (file-system watching off,
+configuration cache off, project cache relocated) along with two failure modes worth
+recognising if you ever see them again: sync-conflict forks named `Foo 2.kt` or
+`Foo-David's MacBook Air.kt` that Kotlin compiles while `git status` stays clean, and
+one tracked file silently truncated to 0 bytes (`notes.md`). Both were triggered by
+two edits to the same file in quick succession.
 
-OneDrive has also produced sync-conflict copies of source files after concurrent
-edits, in two shapes: `Foo-David's MacBook Air.kt` and `Foo 2.kt`. If Kotlin
-suddenly reports a redeclaration or an unresolved reference to something you just
-wrote, look for one of those before believing the error.
-
-The second shape is the nastier one. `.gitignore` has `* 2.*`, so `git status` stays
-clean while Kotlin compiles the copy anyway — and a fork made mid-edit can end up
-with *half* of two rapid changes, leaving the real file with the other half. Both
-files then look almost right. Two consequences worth knowing:
-
-```sh
-# Find them, since git will not.
-find . -name "* 2.*" -not -path "./build/*" -not -path "*/build/*"
-```
-
-Also: OneDrive has silently truncated a tracked file to 0 bytes here (`notes.md`).
-Two edits to the same file in quick succession are the trigger for both problems, so
-they are worth sequencing.
+`.gitignore` still carries `* 2.*` from that era. It is harmless and guards nothing
+now.
 
 ## Data and licences
 

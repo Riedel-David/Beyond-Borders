@@ -24,18 +24,15 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -48,8 +45,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.aeroglobe.AppContainer
 import com.riedel.aeroglobe.BuildConfig
 import com.riedel.aeroglobe.data.backup.TravelBackup
-import com.riedel.aeroglobe.data.flights.RefreshCadence
-import com.riedel.aeroglobe.settings.HomeTab
 import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.settings.MapHue
 import com.riedel.aeroglobe.settings.MapSlot
@@ -57,23 +52,12 @@ import com.riedel.aeroglobe.settings.ThemeMode
 import com.riedel.aeroglobe.ui.theme.LocalIsDarkTheme
 
 /**
- * Settings: how the app looks, where it starts, and how to get the data out.
+ * Settings: how the app looks, and how to get the data out.
  *
- * Both preferences were already wired up and persisted before this screen existed —
- * MainActivity reads the theme and AeroGlobeRoot reads the home tab — so everything
- * here is a control over state that already works.
+ * The theme preference was already wired up and persisted before this screen
+ * existed — MainActivity reads it — so this is a control over state that already
+ * works.
  */
-/** AeroDataBox's confirmed Basic/free-tier ceiling (STATUS.md). */
-private const val FREE_TIER_MONTHLY_UNITS = 600
-
-/**
- * Warn once what's left won't cover another full flight's lifecycle — STATUS.md puts
- * that at ~60 requests. Gated on requests *remaining*, not requests used: with a
- * 600-unit budget, "used" alone crosses any small absolute threshold almost
- * immediately without it meaning the month is actually running low.
- */
-private const val FREE_TIER_REMAINING_WARNING_THRESHOLD = 60
-
 @Composable
 fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -88,14 +72,8 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     )
 
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-    val homeTab by viewModel.homeTab.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
-    val aeroDataBoxApiKey by viewModel.aeroDataBoxApiKey.collectAsStateWithLifecycle()
-    val flightRequestCount by viewModel.flightRequestCount.collectAsStateWithLifecycle()
-    val quotaRemaining by viewModel.quotaRemaining.collectAsStateWithLifecycle()
-    val autoRefreshEnabled by viewModel.autoRefreshEnabled.collectAsStateWithLifecycle()
-    val refreshCadence by viewModel.refreshCadence.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(TravelBackup.MIME_TYPE)
@@ -146,92 +124,6 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             // Hidden at the default, where it would be a button that does nothing.
             if (mapColors != MapColors.DEFAULT) {
                 TextButton(onClick = viewModel::resetMapColors) { Text("Reset to default colours") }
-            }
-        }
-
-        Section(
-            "Opening screen",
-            // Spelling out what Smart does, because it is the default and it is the
-            // one option whose behaviour cannot be guessed from its name.
-            "Smart shows your flight while one is tracked, and the map when none is.",
-        ) {
-            ChoiceRow(
-                options = HomeTab.entries,
-                selected = homeTab,
-                label = { tab ->
-                    when (tab) {
-                        HomeTab.AUTO -> "Smart"
-                        HomeTab.MAP -> "Map"
-                        HomeTab.FLIGHTS -> "Flight"
-                    }
-                },
-                onSelect = viewModel::setHomeTab,
-            )
-        }
-
-        Section(
-            "Live flight data",
-            "AeroDataBox's free tier is only a handful of tracked flights a month, " +
-                "so this stays off until a key is entered, and never blocks on its own " +
-                "— just warns here when the month is running low.",
-        ) {
-            OutlinedTextField(
-                value = aeroDataBoxApiKey ?: "",
-                onValueChange = viewModel::setAeroDataBoxApiKey,
-                label = { Text("AeroDataBox API key") },
-                placeholder = { Text("RapidAPI key") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            )
-            val runningLow = (quotaRemaining ?: Int.MAX_VALUE) <= FREE_TIER_REMAINING_WARNING_THRESHOLD
-            Text(
-                quotaRemaining?.let { remaining ->
-                    "$remaining / $FREE_TIER_MONTHLY_UNITS units left this month" +
-                        if (runningLow) " — running low" else ""
-                } ?: "$flightRequestCount requests made this month — units left unknown until the next live lookup",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (runningLow) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
-
-        Section(
-            "Automatic refresh",
-            "Turning this off takes effect on the next scheduled check, or app launch " +
-                "if a chain has already died — a tracked flight's status just stops " +
-                "updating on its own until this is back on.",
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Refresh flight status automatically", style = MaterialTheme.typography.bodyMedium)
-                Switch(checked = autoRefreshEnabled, onCheckedChange = viewModel::setAutoRefreshEnabled)
-            }
-            if (autoRefreshEnabled) {
-                Text(
-                    "How often, once a flight is being tracked. Slower saves quota.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 10.dp, bottom = 6.dp),
-                )
-                ChoiceRow(
-                    options = RefreshCadence.entries,
-                    selected = refreshCadence,
-                    label = { cadence ->
-                        when (cadence) {
-                            RefreshCadence.FAST -> "Fast"
-                            RefreshCadence.NORMAL -> "Normal"
-                            RefreshCadence.SLOW -> "Slow"
-                        }
-                    },
-                    onSelect = viewModel::setRefreshCadence,
-                )
             }
         }
 

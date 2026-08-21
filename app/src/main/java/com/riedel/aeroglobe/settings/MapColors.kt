@@ -32,13 +32,7 @@ enum class MapHue(val lightArgb: Long, val darkArgb: Long) {
     ROSE(0xFFB0245C, 0xFFD9527F),
     VIOLET(0xFF7B2FBE, 0xFFB07BE8),
 
-    /**
-     * Offered, though the default palette deliberately avoids it: PLAN.md reserves
-     * warm amber for flight alerts. That reservation is about what the app chooses
-     * on the user's behalf, and phase 3's alerts live in the flight UI rather than
-     * as fills on this map — so holding the hue back from someone who asks for it
-     * by name would be protecting a convention they can already see is unused.
-     */
+    /** Offered, though the default palette deliberately avoids it as a status fill. */
     AMBER(0xFFB26B00, 0xFFE0A33A),
     ;
 

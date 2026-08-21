@@ -8,9 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.aeroglobe.data.backup.BackupMerge
 import com.riedel.aeroglobe.data.backup.TravelBackup
-import com.riedel.aeroglobe.data.flights.RefreshCadence
 import com.riedel.aeroglobe.data.place.PlaceRepository
-import com.riedel.aeroglobe.settings.HomeTab
 import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.settings.MapHue
 import com.riedel.aeroglobe.settings.MapSlot
@@ -53,30 +51,16 @@ class SettingsViewModel(
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
-    val homeTab: StateFlow<HomeTab> = settings.homeTab
     val mapColors: StateFlow<MapColors> = settings.mapColors
-    val aeroDataBoxApiKey: StateFlow<String?> = settings.aeroDataBoxApiKey
-    val flightRequestCount: StateFlow<Int> = settings.flightRequestCount
-    val quotaRemaining: StateFlow<Int?> = settings.quotaRemaining
-    val autoRefreshEnabled: StateFlow<Boolean> = settings.autoRefreshEnabled
-    val refreshCadence: StateFlow<RefreshCadence> = settings.refreshCadence
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) = settings.setThemeMode(mode)
 
-    fun setHomeTab(tab: HomeTab) = settings.setHomeTab(tab)
-
     fun setMapHue(slot: MapSlot, hue: MapHue) = settings.setMapHue(slot, hue)
 
     fun resetMapColors() = settings.resetMapColors()
-
-    fun setAeroDataBoxApiKey(key: String) = settings.setAeroDataBoxApiKey(key)
-
-    fun setAutoRefreshEnabled(enabled: Boolean) = settings.setAutoRefreshEnabled(enabled)
-
-    fun setRefreshCadence(cadence: RefreshCadence) = settings.setRefreshCadence(cadence)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())
