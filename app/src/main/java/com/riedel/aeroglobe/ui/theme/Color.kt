@@ -13,7 +13,7 @@ import com.riedel.aeroglobe.settings.MapColors
  * "wishlist" and "not yet" stay clearly distinguishable from each other and from
  * the ocean. Dynamic colour would re-tint those from the user's wallpaper and could
  * easily land on four shades of the same hue. So: fixed palette, deep azure for the
- * app, rose for lived, teal for wishlist, warm amber reserved for flight alerts.
+ * app, rose for lived, teal for wishlist.
  *
  * The three map statuses are repaintable from settings, but only from the vetted
  * list in [com.riedel.aeroglobe.settings.MapHue] — which keeps the guarantee
@@ -139,8 +139,8 @@ data class MapPalette(
  * where a hue path from blue to red does not.
  *
  * Violet because it is the one family left. Green and red are out — PLAN.md rules out
- * a green-to-red ramp for red/green CVD — amber is reserved for phase 3's flight
- * alerts, and cyan reads as water next to a blue ocean. Violet also shares no hue with
+ * a green-to-red ramp for red/green CVD — amber is reserved as a map-status hue, and
+ * cyan reads as water next to a blue ocean. Violet also shares no hue with
  * azure, rose or teal, so switching the lens on looks like a different question rather
  * than a recolour of the same one.
  *

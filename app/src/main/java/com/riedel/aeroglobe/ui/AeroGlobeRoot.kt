@@ -10,30 +10,23 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.aeroglobe.AppContainer
 import com.riedel.aeroglobe.R
-import com.riedel.aeroglobe.settings.HomeTab
-import com.riedel.aeroglobe.ui.flights.FlightsScreen
-import com.riedel.aeroglobe.ui.flights.FlightsViewModel
 import com.riedel.aeroglobe.ui.map.MapScreen
 import com.riedel.aeroglobe.ui.passport.PassportScreen
 import com.riedel.aeroglobe.ui.places.PlacesViewModel
 import com.riedel.aeroglobe.ui.settings.SettingsScreen
-import kotlinx.coroutines.flow.first
 
 enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
     MAP("Map", R.drawable.ic_tab_map),
     PASSPORT("Passport", R.drawable.ic_tab_passport),
-    FLIGHTS("Flights", R.drawable.ic_tab_flights),
 
     /**
      * A destination rather than the floating gear PLAN.md originally sketched: both
@@ -55,20 +48,8 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
  */
 @Composable
 fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
-    val homeTab by container.settings.homeTab.collectAsStateWithLifecycle()
-    var selected by rememberSaveable { mutableIntStateOf(startTab(homeTab).ordinal) }
+    var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
     val tab = Tab.entries[selected]
-
-    // Corrects a cold start's guess once the tracked-flights query actually resolves —
-    // it can't be known synchronously, so the initial value above always assumes false.
-    // Only overrides the untouched Smart-mode default (MAP), never a tab the user already
-    // navigated to or explicitly chose in Settings.
-    LaunchedEffect(homeTab) {
-        if (homeTab == HomeTab.AUTO && selected == Tab.MAP.ordinal) {
-            val hasTrackedFlight = container.flights.flights.first().isNotEmpty()
-            selected = startTab(homeTab, hasTrackedFlight).ordinal
-        }
-    }
 
     // Hoisted to the root so the map and the passport share one instance: marking
     // a country on one is instantly visible on the other, with no syncing.
@@ -97,31 +78,8 @@ fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
                 // and floats its controls above the system bars.
                 Tab.MAP -> MapScreen(placesViewModel)
                 Tab.PASSPORT -> PassportScreen(placesViewModel)
-                Tab.FLIGHTS -> {
-                    val flightsViewModel: FlightsViewModel = viewModel(
-                        factory = FlightsViewModel.factory(
-                            container.flights,
-                            container.flightStatuses,
-                            container.aircraftPositions,
-                        ),
-                    )
-                    FlightsScreen(flightsViewModel)
-                }
                 Tab.SETTINGS -> SettingsScreen(container)
             }
         }
     }
-}
-
-/**
- * Which tab a cold start lands on.
- *
- * [HomeTab.AUTO] is the setting the app ships with: the flight screen wins while a
- * flight is being tracked, the map wins when none is. Flight tracking arrives in
- * phase 3, so for now AUTO always resolves to the map.
- */
-internal fun startTab(homeTab: HomeTab, hasTrackedFlight: Boolean = false): Tab = when (homeTab) {
-    HomeTab.MAP -> Tab.MAP
-    HomeTab.FLIGHTS -> Tab.FLIGHTS
-    HomeTab.AUTO -> if (hasTrackedFlight) Tab.FLIGHTS else Tab.MAP
 }
