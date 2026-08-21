@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,7 @@ import com.riedel.aeroglobe.ui.theme.MapPalette
 import com.riedel.aeroglobe.ui.theme.VisaRamp
 import com.riedel.aeroglobe.ui.visa.asOfNotice
 import com.riedel.aeroglobe.ui.visa.requirementSummary
+import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -100,6 +102,8 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
 
     val controller = remember { PlacesMapController() }
     val selected = selectedCode?.let(viewModel::placeOf)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // Leaving the map drops the selection, so switching to the passport and back
     // does not present a card about a country the user has stopped thinking about.
@@ -164,6 +168,19 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             MapPill(onClick = controller::showWorld) {
                 Text(
                     "World",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            MapPill(
+                onClick = {
+                    controller.snapshot { bitmap ->
+                        scope.launch { shareMapSnapshot(context, bitmap) }
+                    }
+                },
+            ) {
+                Text(
+                    "Share",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -313,6 +330,11 @@ private class PlacesMapController {
     }
 
     fun screenLocationOf(latLng: LatLng): PointF? = map?.projection?.toScreenLocation(latLng)
+
+    /** The rendered frame, exactly as the user is currently looking at it. */
+    fun snapshot(onReady: (android.graphics.Bitmap) -> Unit) {
+        map?.snapshot { bitmap -> onReady(bitmap) }
+    }
 }
 
 @Composable

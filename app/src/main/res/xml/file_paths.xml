@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Only the one subdirectory the map snapshot is written into, so the
+         FileProvider cannot be asked to hand out a content:// Uri for
+         anything else under cacheDir. -->
+    <cache-path name="shared" path="shared/" />
+</paths>
