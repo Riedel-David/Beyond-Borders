@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.aeroglobe.ui.AeroGlobeRoot
 import com.riedel.aeroglobe.ui.theme.AeroGlobeTheme
+import com.riedel.aeroglobe.widget.TravelWidgetProvider
 
 /**
  * The only Activity.
@@ -30,5 +31,13 @@ class MainActivity : AppCompatActivity() {
                 AeroGlobeRoot(container)
             }
         }
+    }
+
+    // The widget's own updatePeriodMillis is capped at 30 minutes; leaving the app
+    // is the moment a count just changed on-screen is most likely to matter on the
+    // home screen too, so it gets a nudge here rather than waiting that out.
+    override fun onPause() {
+        super.onPause()
+        TravelWidgetProvider.requestUpdate(applicationContext)
     }
 }
