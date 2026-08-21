@@ -58,16 +58,6 @@ class PlaceRepository(
         else PlaceStatus.fromStorage(row.status)
     }
 
-    suspend fun setFirstVisitedOn(code: String, isoDate: String?) = withContext(Dispatchers.IO) {
-        dao.updateFirstVisitedOn(code, isoDate, clock(), deviceId)
-        Unit
-    }
-
-    suspend fun setNote(code: String, note: String?) = withContext(Dispatchers.IO) {
-        dao.updateNote(code, note?.takeIf { it.isNotBlank() }, clock(), deviceId)
-        Unit
-    }
-
     /**
      * Everything the user has decided, as a backup file's contents.
      *
@@ -82,8 +72,6 @@ class PlaceRepository(
                 TravelBackup.Entry(
                     code = row.code,
                     status = PlaceStatus.fromStorage(row.status),
-                    firstVisitedOn = row.firstVisitedOn,
-                    note = row.note,
                     updatedAt = row.updatedAt,
                     deletedAt = row.deletedAt,
                     deviceId = row.deviceId,
@@ -126,8 +114,6 @@ class PlaceRepository(
                     // un-mark writes look, and it means re-marking the place later
                     // does not lose what it used to be.
                     status = entry.status.storageValue,
-                    firstVisitedOn = entry.firstVisitedOn,
-                    note = entry.note,
                     updatedAt = entry.updatedAt,
                     deletedAt = entry.deletedAt,
                     // A file written before deviceId existed, or edited by hand, is

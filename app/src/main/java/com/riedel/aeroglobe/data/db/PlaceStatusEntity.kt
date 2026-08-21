@@ -35,9 +35,6 @@ data class PlaceStatusEntity(
     val code: String,
     /** PlaceStatus.storageValue. Never "none": that state is a tombstone. */
     val status: String,
-    /** ISO-8601 date, user-supplied and optional. Null means "sometime". */
-    val firstVisitedOn: String? = null,
-    val note: String? = null,
     /** Unix millis of the last write, from the writing device's clock. */
     val updatedAt: Long,
     /** Unix millis when the user un-marked the place; null while it is active. */

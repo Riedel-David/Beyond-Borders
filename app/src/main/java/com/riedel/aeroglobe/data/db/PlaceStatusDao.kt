@@ -55,12 +55,6 @@ interface PlaceStatusDao {
     )
     suspend fun tombstone(code: String, now: Long, deviceId: String): Int
 
-    @Query("UPDATE place_status SET firstVisitedOn = :date, updatedAt = :now, deviceId = :deviceId WHERE code = :code")
-    suspend fun updateFirstVisitedOn(code: String, date: String?, now: Long, deviceId: String): Int
-
-    @Query("UPDATE place_status SET note = :note, updatedAt = :now, deviceId = :deviceId WHERE code = :code")
-    suspend fun updateNote(code: String, note: String?, now: Long, deviceId: String): Int
-
     /**
      * Set a status whether or not a row exists yet.
      *
@@ -96,8 +90,6 @@ interface PlaceStatusDao {
         """
         UPDATE place_status
            SET status = :status,
-               firstVisitedOn = :firstVisitedOn,
-               note = :note,
                updatedAt = :updatedAt,
                deletedAt = :deletedAt,
                deviceId = :deviceId
@@ -107,8 +99,6 @@ interface PlaceStatusDao {
     suspend fun replaceByCode(
         code: String,
         status: String,
-        firstVisitedOn: String?,
-        note: String?,
         updatedAt: Long,
         deletedAt: Long?,
         deviceId: String,
@@ -128,8 +118,6 @@ interface PlaceStatusDao {
             val matched = replaceByCode(
                 code = row.code,
                 status = row.status,
-                firstVisitedOn = row.firstVisitedOn,
-                note = row.note,
                 updatedAt = row.updatedAt,
                 deletedAt = row.deletedAt,
                 deviceId = row.deviceId,

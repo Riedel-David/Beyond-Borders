@@ -21,8 +21,6 @@ class TravelBackupTest {
         TravelBackup.Entry(
             code = "GL",
             status = PlaceStatus.VISITED,
-            firstVisitedOn = "2019-07-14",
-            note = "Ilulissat",
             updatedAt = 1_700_000_000_000,
             deletedAt = null,
             deviceId = "device-a",
@@ -44,7 +42,6 @@ class TravelBackupTest {
         TravelBackup.Entry(
             code = "NO",
             status = PlaceStatus.LIVED,
-            firstVisitedOn = "2011-01-03",
             updatedAt = 1_700_000_003_000,
             deviceId = "device-b",
         ),
@@ -105,8 +102,6 @@ class TravelBackupTest {
         )
         val row = JSONObject(json).getJSONArray("places").getJSONObject(0)
         assertTrue(row.has("code"))
-        assertTrue("an unset note should be absent", !row.has("note"))
-        assertTrue("an unset firstVisitedOn should be absent", !row.has("firstVisitedOn"))
         assertTrue("an active row should carry no deletedAt", !row.has("deletedAt"))
     }
 

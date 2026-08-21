@@ -46,8 +46,6 @@ object TravelBackup {
     data class Entry(
         val code: String,
         val status: PlaceStatus,
-        val firstVisitedOn: String? = null,
-        val note: String? = null,
         val updatedAt: Long,
         val deletedAt: Long? = null,
         val deviceId: String? = null,
@@ -94,8 +92,6 @@ object TravelBackup {
             row.put("code", entry.code)
             names[entry.code]?.let { row.put("name", it) }
             row.put("status", entry.status.storageValue)
-            entry.firstVisitedOn?.let { row.put("firstVisitedOn", it) }
-            entry.note?.let { row.put("note", it) }
             row.put("updatedAt", entry.updatedAt)
             entry.deletedAt?.let { row.put("deletedAt", it) }
             entry.deviceId?.let { row.put("deviceId", it) }
@@ -166,8 +162,6 @@ object TravelBackup {
                 Entry(
                     code = code,
                     status = status,
-                    firstVisitedOn = row.optStringOrNull("firstVisitedOn"),
-                    note = row.optStringOrNull("note"),
                     updatedAt = updatedAt,
                     // A hand-written `"status": "none"` is how a person spells "not
                     // marked"; the app itself spells it as a tombstone with the old

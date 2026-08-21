@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         PlaceStatusEntity::class,
     ],
-    version = 9,
+    version = 10,
     // Schemas are committed under app/schemas so migrations can be tested against
     // the real previous version instead of a reconstruction of it.
     exportSchema = true,
@@ -36,13 +36,54 @@ abstract class AeroGlobeDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Drops `firstVisitedOn` and `note`: two columns no screen ever wrote to
+         * (see PLAN.md phase 5c). SQLite's ALTER TABLE cannot drop a column on
+         * the SQLite version Room targets here, so this rebuilds the table as
+         * MIGRATION_6_7 did for the same reason.
+         */
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE `place_status_new` (
+                        `id` TEXT NOT NULL,
+                        `code` TEXT NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        `deviceId` TEXT NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `place_status_new` (
+                        `id`, `code`, `status`, `updatedAt`, `deletedAt`, `deviceId`
+                    )
+                    SELECT `id`, `code`, `status`, `updatedAt`, `deletedAt`, `deviceId`
+                    FROM `place_status`
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE `place_status`")
+                db.execSQL("ALTER TABLE `place_status_new` RENAME TO `place_status`")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_place_status_code` ON `place_status` (`code`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_place_status_updatedAt` ON `place_status` (`updatedAt`)"
+                )
+            }
+        }
+
         fun open(context: Context): AeroGlobeDatabase =
             Room.databaseBuilder(context, AeroGlobeDatabase::class.java, NAME)
                 // No fallbackToDestructiveMigration: this database holds the one
                 // thing in the app that cannot be re-fetched from anywhere. A
                 // missing migration must fail the build's tests, not quietly wipe
                 // a decade of travel history on upgrade.
-                .addMigrations(MIGRATION_8_9)
+                .addMigrations(MIGRATION_8_9, MIGRATION_9_10)
                 .build()
     }
 }
