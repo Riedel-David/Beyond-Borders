@@ -42,6 +42,7 @@ import com.riedel.aeroglobe.ui.places.PassportMode
 import com.riedel.aeroglobe.ui.places.PlacesViewModel
 import com.riedel.aeroglobe.ui.places.StatusFilter
 import com.riedel.aeroglobe.ui.places.TravelStats
+import com.riedel.aeroglobe.ui.places.sectionHeader
 import com.riedel.aeroglobe.ui.places.visaFilters
 
 /**
@@ -172,10 +173,9 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         // an opt-in experimental API.
         var lastHeader: String? = null
         rows.forEach { row ->
-            val header = when (grouping) {
-                Grouping.CONTINENT -> row.place.continent
-                Grouping.ALPHABETICAL -> row.place.name.first().uppercase()
-            }
+            // Derived next to the sort rather than here: the header letter and the
+            // ordering have to be the same answer, and the key has to stay unique.
+            val header = sectionHeader(row.place, grouping)
             if (header != lastHeader) {
                 lastHeader = header
                 item("header-$header") { SectionHeader(header) }

@@ -31,6 +31,16 @@ data class Place(
 ) {
     /** Case- and diacritic-insensitive haystack for the passport search field. */
     val searchKey: String = "${name.foldForSearch()} ${code.lowercase()} ${sovereign.foldForSearch()}"
+
+    /**
+     * How the passport list orders and files this place.
+     *
+     * Sorting on [name] directly is UTF-16 code-unit order, which puts every accented
+     * initial past Z — Åland Islands landed after Zimbabwe, Türkiye after Tuvalu, São
+     * Tomé and Príncipe after Syria. Folding first fixes the order and the section
+     * letter together, since both now come off the same string.
+     */
+    val sortKey: String = name.foldForSearch()
 }
 
 data class Bounds(
