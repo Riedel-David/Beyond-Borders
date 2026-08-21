@@ -109,6 +109,36 @@ class PlacesLogicTest {
     }
 
     @Test
+    fun `an accented initial sorts by its unaccented letter rather than past Z`() {
+        val withAland = places + place("AX", "Åland Islands", sovereign = "Finland")
+        assertEquals(
+            listOf("AX", "DK", "FR", "GL", "RE", "BV"),
+            buildRows(withAland, emptyMap(), "", StatusFilter.ALL, Grouping.ALPHABETICAL)
+                .map { it.place.code },
+        )
+    }
+
+    @Test
+    fun `a section letter follows the sort, so Åland is filed under A`() {
+        assertEquals("A", sectionHeader(place("AX", "Åland Islands"), Grouping.ALPHABETICAL))
+        assertEquals("D", sectionHeader(place("DK", "Denmark"), Grouping.ALPHABETICAL))
+    }
+
+    /**
+     * The uninhabited block is one section rather than a second run of letters. Bouvet
+     * Island under its own "B" would collide with Belgium's, and two list items with
+     * one key is a crash rather than a cosmetic repeat.
+     */
+    @Test
+    fun `uninhabited places get their own header instead of a second alphabet`() {
+        val bouvet = places.first { it.code == "BV" }
+        assertEquals(UNINHABITED_HEADER, sectionHeader(bouvet, Grouping.ALPHABETICAL))
+        // Continent grouping keeps it where it belongs: there it sorts last inside
+        // Antarctica, so the header never repeats and never needs splitting.
+        assertEquals("Antarctica", sectionHeader(bouvet, Grouping.CONTINENT))
+    }
+
+    @Test
     fun `status filter narrows to one bucket`() {
         val statuses = mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.WISHLIST)
         assertEquals(

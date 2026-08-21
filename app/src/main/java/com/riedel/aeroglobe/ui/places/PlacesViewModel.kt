@@ -344,7 +344,7 @@ internal fun buildVisaRows(
             compareBy(
                 { it.requirement.category.ordinal },
                 { it.place.uninhabited },
-                { it.place.name },
+                { it.place.sortKey },
             )
         )
         .toList()
@@ -375,8 +375,34 @@ internal fun buildRows(
     // real places and stay selectable, but they should never be in the way of
     // finding Spain.
     val comparator: Comparator<PlaceRow> = when (grouping) {
-        Grouping.CONTINENT -> compareBy({ it.place.continent }, { it.place.uninhabited }, { it.place.name })
-        Grouping.ALPHABETICAL -> compareBy({ it.place.uninhabited }, { it.place.name })
+        Grouping.CONTINENT -> compareBy({ it.place.continent }, { it.place.uninhabited }, { it.place.sortKey })
+        Grouping.ALPHABETICAL -> compareBy({ it.place.uninhabited }, { it.place.sortKey })
     }
     return matching.sortedWith(comparator).toList()
+}
+
+/** The one header the uninhabited block sits under; see [sectionHeader]. */
+internal const val UNINHABITED_HEADER = "Uninhabited"
+
+/**
+ * Which section header a row belongs under.
+ *
+ * Two things here are not obvious. Letters come off [Place.sortKey], so a place is
+ * filed under the same letter the sort just ordered it by — Åland Islands under A
+ * rather than under its own Å at the bottom of the list.
+ *
+ * And the uninhabited places get one header of their own instead of a second run of
+ * letters. They sort last as a block, and all seven of them start with a letter some
+ * inhabited place already used, so per-letter headers there repeated the alphabet at
+ * the foot of the list *and* gave the LazyColumn two items with the same key — which
+ * throws ("Key header-S was used multiple times") the moment a filter or a search
+ * brings both runs on screen together, as searching "south" in A-Z order did.
+ *
+ * Continent grouping needs neither: the uninhabited places sort last inside their own
+ * continent, so every header stays one contiguous run.
+ */
+internal fun sectionHeader(place: Place, grouping: Grouping): String = when (grouping) {
+    Grouping.CONTINENT -> place.continent
+    Grouping.ALPHABETICAL ->
+        if (place.uninhabited) UNINHABITED_HEADER else place.sortKey.take(1).uppercase()
 }
