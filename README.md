@@ -22,10 +22,11 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 
 Everything works **offline**: the geometry is bundled in the APK and there is no
 basemap, no tile server and no API key. A flight tracker was built through phase
-3.6 and then removed — see "Changed in revision 7" in [PLAN.md](PLAN.md) for why.
+3.6 and then removed — see [PLAN.md](PLAN.md) §1 for why.
 
-Phase 2 is closed (version `0.3.0`); next up is phase 5, verifying and finishing
-the country tracker.
+Every scoped phase is done (version `0.7.0`). Nothing is currently planned; see
+[STATUS.md](STATUS.md) for what that means and [PLAN.md](PLAN.md) §6 for the
+ideas that aren't scheduled.
 
 ## Choosing the map colours
 
@@ -105,13 +106,14 @@ opinion forever.
 ## Build and run
 
 Requires Android Studio (for its bundled JDK 21) and an emulator or device with
-API 26+.
+API 30+.
 
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew :app:testDebugUnitTest    # 116 tests, no device needed
-./gradlew :app:installDebug         # build + install
+./gradlew :app:testDebugUnitTest        # 146 tests, no device needed
+./gradlew :app:connectedDebugAndroidTest # 9 tests, needs a device: DB migrations, deviceId storage
+./gradlew :app:installDebug              # build + install
 ```
 
 The unit tests are the useful ones to run first: they read the shipped geo and visa
