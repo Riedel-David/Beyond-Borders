@@ -1,6 +1,7 @@
 package com.riedel.aeroglobe
 
 import android.content.Context
+import com.riedel.aeroglobe.core.Haptics
 import com.riedel.aeroglobe.data.db.AeroGlobeDatabase
 import com.riedel.aeroglobe.data.place.PlaceRegistry
 import com.riedel.aeroglobe.data.place.PlaceRepository
@@ -20,6 +21,8 @@ class AppContainer(context: Context) {
     private val appContext: Context = context.applicationContext
 
     val settings: SettingsStore by lazy { SettingsStore(appContext) }
+
+    val haptics: Haptics by lazy { Haptics(appContext) }
 
     private val database: AeroGlobeDatabase by lazy { AeroGlobeDatabase.open(appContext) }
 

@@ -40,7 +40,7 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
 }
 
 /**
- * Four tabs, no navigation library.
+ * Three tabs, no navigation library.
  *
  * navigation-compose's current release is a beta, and this is a flat switch with no
  * deep links or back stack to model — a saved index is the whole requirement.
@@ -54,7 +54,7 @@ fun AeroGlobeRoot(container: AppContainer, modifier: Modifier = Modifier) {
     // Hoisted to the root so the map and the passport share one instance: marking
     // a country on one is instantly visible on the other, with no syncing.
     val placesViewModel: PlacesViewModel = viewModel(
-        factory = PlacesViewModel.factory(container.places, container.visa),
+        factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
     )
 
     Scaffold(

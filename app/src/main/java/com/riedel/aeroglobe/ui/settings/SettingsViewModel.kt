@@ -9,6 +9,8 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.aeroglobe.data.backup.BackupMerge
 import com.riedel.aeroglobe.data.backup.TravelBackup
 import com.riedel.aeroglobe.data.place.PlaceRepository
+import com.riedel.aeroglobe.settings.Denominator
+import com.riedel.aeroglobe.settings.MapBase
 import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.settings.MapHue
 import com.riedel.aeroglobe.settings.MapSlot
@@ -52,6 +54,9 @@ class SettingsViewModel(
 
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
     val mapColors: StateFlow<MapColors> = settings.mapColors
+    val mapBase: StateFlow<MapBase> = settings.mapBase
+    val denominator: StateFlow<Denominator> = settings.denominator
+    val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
@@ -61,6 +66,12 @@ class SettingsViewModel(
     fun setMapHue(slot: MapSlot, hue: MapHue) = settings.setMapHue(slot, hue)
 
     fun resetMapColors() = settings.resetMapColors()
+
+    fun setMapBase(base: MapBase) = settings.setMapBase(base)
+
+    fun setDenominator(value: Denominator) = settings.setDenominator(value)
+
+    fun setHapticsEnabled(enabled: Boolean) = settings.setHapticsEnabled(enabled)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())

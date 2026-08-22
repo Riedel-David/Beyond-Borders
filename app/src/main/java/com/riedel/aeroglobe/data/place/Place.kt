@@ -23,11 +23,20 @@ data class Place(
     val sovereign: String,
     /** True for Antarctica, Bouvet Island and friends. Sorted last in lists. */
     val uninhabited: Boolean,
+    /** One of the 193 UN member states, or one of the two permanent observers
+     * (Holy See, Palestine) — the "195" a traveller means, as opposed to the
+     * app's full 252. See `tools/geo/rules.py`'s `UN_MEMBER`. */
+    val unMember: Boolean = true,
     /** Label anchor: centroid of the largest polygon, not of the whole extent. */
     val lat: Double,
     val lon: Double,
     /** Where the camera should go when this place is picked. */
     val bounds: Bounds,
+    /** Land area in square km, holes (lakes, enclaves) subtracted. From Natural
+     * Earth's own polygon, not a separate dataset — see `tools/geo/build_geo.py`. */
+    val areaKm2: Long = 0,
+    /** Natural Earth's own population estimate, ~2019. */
+    val popEst: Long = 0,
 ) {
     /** Case- and diacritic-insensitive haystack for the passport search field. */
     val searchKey: String = "${name.foldForSearch()} ${code.lowercase()} ${sovereign.foldForSearch()}"

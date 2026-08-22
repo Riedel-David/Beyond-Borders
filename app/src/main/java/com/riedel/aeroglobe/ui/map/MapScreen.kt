@@ -2,6 +2,7 @@ package com.riedel.aeroglobe.ui.map
 
 import android.graphics.PointF
 import android.graphics.RectF
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -22,9 +24,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,18 +36,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.riedel.aeroglobe.ui.BounceFilterChip
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.riedel.aeroglobe.data.place.Bounds
 import com.riedel.aeroglobe.data.place.Place
 import com.riedel.aeroglobe.data.place.PlaceStatus
+import com.riedel.aeroglobe.data.place.foldForSearch
 import com.riedel.aeroglobe.data.visa.VisaBand
 import com.riedel.aeroglobe.data.visa.VisaConfidence
 import com.riedel.aeroglobe.data.visa.VisaRegistry
 import com.riedel.aeroglobe.data.visa.VisaRequirement
+import com.riedel.aeroglobe.ui.passport.SearchField
 import com.riedel.aeroglobe.ui.places.PlacesViewModel
 import com.riedel.aeroglobe.ui.theme.LocalMapPalette
 import com.riedel.aeroglobe.ui.theme.MapPalette
@@ -55,6 +64,7 @@ import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
@@ -83,6 +93,20 @@ private val WORLD = CameraPosition.Builder()
 private const val TAP_SLOP_DP = 16f
 
 /**
+ * How big a place's on-screen footprint has to be, in dp, before its name is
+ * drawn. There is no glyph server to paint text into the map tiles themselves
+ * (see [PlacesMapStyle]), so labels are a Compose overlay instead, and a fixed
+ * zoom cutoff would either hide Luxembourg forever or clutter the world view with
+ * every microstate at once. Sizing off the place's own bounding box scales the
+ * two together: Russia labels at world zoom, San Marino only once you have
+ * zoomed in far enough that it would otherwise go unnamed.
+ */
+private const val MIN_LABEL_FOOTPRINT_DP = 56f
+
+/** One place name and where to draw it, in screen pixels. */
+private data class PlaceLabel(val code: String, val name: String, val x: Float, val y: Float)
+
+/**
  * The world map: one tap marks exactly one place.
  *
  * That sentence is the whole product. Other trackers key their map off a
@@ -99,12 +123,25 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
     val lens by viewModel.visaLens.collectAsStateWithLifecycle()
+    val places by viewModel.places.collectAsStateWithLifecycle()
     val palette = LocalMapPalette.current
 
     val controller = remember { PlacesMapController() }
     val selected = selectedCode?.let(viewModel::placeOf)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var labels by remember { mutableStateOf<List<PlaceLabel>>(emptyList()) }
+    var counterLabeled by remember { mutableStateOf(false) }
+    var searchOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val searchMatches = remember(places, searchQuery) { searchMapMatches(places, searchQuery) }
+
+    fun pickFromSearch(place: Place) {
+        viewModel.select(place.code)
+        controller.flyTo(place.bounds)
+        searchOpen = false
+        searchQuery = ""
+    }
 
     // Leaving the map drops the selection, so switching to the passport and back
     // does not present a card about a country the user has stopped thinking about.
@@ -120,28 +157,71 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             visaBands = visaBands,
             lens = lens,
             selectedCode = selectedCode,
+            places = places,
+            onLabels = { labels = it },
             onTap = viewModel::select,
             modifier = Modifier.fillMaxSize(),
         )
 
+        // Drawn as plain Compose text, not a map layer: there is no glyph server to
+        // paint labels into the style itself (see PlacesMapStyle), so this overlay
+        // is the whole feature, repositioned every time the camera moves.
+        labels.forEach { label ->
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                shape = MaterialTheme.shapes.extraSmall,
+                // A tap on the label is a tap on the country it names — without this
+                // the label sits over the polygon and swallows the tap that would
+                // otherwise have reached the map underneath.
+                modifier = Modifier
+                    .offset { IntOffset(label.x.toInt(), label.y.toInt()) }
+                    // A small fixed nudge rather than measuring the text to centre
+                    // it exactly: the anchor is a country's centroid, which is
+                    // already an approximation, so a pixel-perfect centre on top of
+                    // it would be precision this feature does not need.
+                    .offset(x = (-24).dp, y = (-8).dp)
+                    .clickable { viewModel.select(label.code) },
+            ) {
+                Text(
+                    label.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                )
+            }
+        }
+
         // Overlays sit on top of the map surface, deliberately compact: the map is
         // the point, and chrome that covers the Mediterranean is chrome too much.
         MapPill(
+            // Only worth a toggle once there is something to spell out; the empty
+            // state's nudge and the visa lens' own legend both stay static.
+            onClick = if (!lens && (stats.been > 0 || stats.wishlist > 0)) {
+                { counterLabeled = !counterLabeled }
+            } else {
+                null
+            },
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(12.dp),
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (lens) {
-                    VisaLegend(palette.visa, visa)
-                } else if (stats.been == 0 && stats.wishlist == 0) {
-                    // Nothing marked yet, so the counter would say "0" and teach
-                    // nothing. Say what to do instead.
-                    Text("Tap a place to mark it", style = MaterialTheme.typography.labelLarge)
-                } else {
+            if (lens) {
+                VisaLegend(palette.visa, visa)
+            } else if (stats.been == 0 && stats.wishlist == 0) {
+                // Nothing marked yet, so the counter would say "0" and teach
+                // nothing. Say what to do instead.
+                Text("Tap a place to mark it", style = MaterialTheme.typography.labelLarge)
+            } else if (counterLabeled) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    CounterLegendRow(palette.visited, stats.visited, "visited")
+                    if (stats.lived > 0) CounterLegendRow(palette.lived, stats.lived, "lived")
+                    if (stats.wishlist > 0) CounterLegendRow(palette.wishlist, stats.wishlist, "wanted")
+                }
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     // One dot per map colour, and only for colours actually on the
                     // map: this is a legend, so it counts each status strictly rather
                     // than showing the combined "been" total the passport leads with.
@@ -166,6 +246,42 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Search is the passport's own search, on the map — the same reason
+            // both screens share the [PlacesViewModel] query, this just is not
+            // routed through it, since the map wants to fly the camera on a pick
+            // rather than filter a list.
+            MapPill(onClick = { searchOpen = !searchOpen }) {
+                Text(
+                    if (searchOpen) "Close" else "Search",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (searchOpen) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ),
+                ) {
+                    Column(Modifier.padding(8.dp)) {
+                        SearchField(
+                            query = searchQuery,
+                            onQuery = { searchQuery = it },
+                            label = "Find a place",
+                        )
+                        searchMatches.forEach { place ->
+                            Text(
+                                place.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { pickFromSearch(place) }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
             MapPill(onClick = controller::showWorld) {
                 Text(
                     "World",
@@ -175,8 +291,24 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             }
             MapPill(
                 onClick = {
-                    controller.snapshot { bitmap ->
-                        scope.launch { shareMapSnapshot(context, bitmap) }
+                    // The map's snapshot callback never fires while the style is still
+                    // loading, which otherwise left a tap doing nothing at all with no
+                    // sign anything was wrong.
+                    if (!controller.isReady()) {
+                        Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
+                    } else {
+                        controller.snapshot { bitmap ->
+                            scope.launch {
+                                runCatching { shareMapSnapshot(context, bitmap, stats) }
+                                    .onFailure {
+                                        Toast.makeText(
+                                            context,
+                                            "Couldn't share the map",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                            }
+                        }
                     }
                 },
             ) {
@@ -206,7 +338,10 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 // Carried into the card whenever the lens is on, so a tap answers the
                 // question the map is currently asking rather than the other one.
                 requirement = if (lens) viewModel.requirementOf(selected.code) else null,
-                onToggle = { target -> viewModel.toggle(selected.code, target) },
+                onToggle = { target ->
+                    viewModel.vibrate()
+                    viewModel.toggle(selected.code, target)
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(12.dp),
@@ -313,6 +448,13 @@ private class PlacesMapController {
         map?.animateCamera(CameraUpdateFactory.newCameraPosition(WORLD), 500)
     }
 
+    /** Where the camera goes when search picks a place — its own bounding box,
+     * padded so the outline is not flush against the screen edge. */
+    fun flyTo(bounds: Bounds) {
+        val latLngBounds = LatLngBounds.from(bounds.north, bounds.east, bounds.south, bounds.west)
+        map?.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 80), 500)
+    }
+
     /** Hit-test a tap, precise first and forgiving second. */
     fun placeCodeAt(point: PointF, slopPx: Float): String? {
         val map = map ?: return null
@@ -332,10 +474,46 @@ private class PlacesMapController {
 
     fun screenLocationOf(latLng: LatLng): PointF? = map?.projection?.toScreenLocation(latLng)
 
+    /**
+     * Which places are big enough on screen right now to name, and where. Uses
+     * [MapLibreMap.getProjection] directly rather than the style, so this works
+     * the instant the map is attached — it does not need to wait for the (async)
+     * style load the fill layers do.
+     */
+    fun labelsFor(
+        places: List<Place>,
+        minFootprintPx: Float,
+        viewportWidth: Float,
+        viewportHeight: Float,
+    ): List<PlaceLabel> {
+        val projection = map?.projection ?: return emptyList()
+        val labels = ArrayList<PlaceLabel>(places.size)
+        for (place in places) {
+            val sw = projection.toScreenLocation(LatLng(place.bounds.south, place.bounds.west))
+            val ne = projection.toScreenLocation(LatLng(place.bounds.north, place.bounds.east))
+            val footprint = maxOf(kotlin.math.abs(ne.x - sw.x), kotlin.math.abs(sw.y - ne.y))
+            if (footprint < minFootprintPx) continue
+            val center = projection.toScreenLocation(LatLng(place.lat, place.lon))
+            // Compose does not clip an offset child to its parent's bounds, so a
+            // centroid just above the visible map (which does not extend behind the
+            // status bar) would otherwise be drawn floating in that gap instead of
+            // disappearing with the rest of the map content up there.
+            if (center.x < 0f || center.x > viewportWidth || center.y < 0f || center.y > viewportHeight) {
+                continue
+            }
+            labels.add(PlaceLabel(place.code, place.name, center.x, center.y))
+        }
+        return labels
+    }
+
     /** The rendered frame, exactly as the user is currently looking at it. */
     fun snapshot(onReady: (android.graphics.Bitmap) -> Unit) {
         map?.snapshot { bitmap -> onReady(bitmap) }
     }
+
+    /** False before the map view has attached — a snapshot taken then would
+     * never call back at all, rather than fail visibly. */
+    fun isReady(): Boolean = map != null
 }
 
 @Composable
@@ -346,11 +524,14 @@ private fun PlacesMapView(
     visaBands: Map<VisaBand, Set<String>>,
     lens: Boolean,
     selectedCode: String?,
+    places: List<Place>,
+    onLabels: (List<PlaceLabel>) -> Unit,
     onTap: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val slopPx = with(LocalDensity.current) { TAP_SLOP_DP.dp.toPx() }
+    val minLabelFootprintPx = with(LocalDensity.current) { MIN_LABEL_FOOTPRINT_DP.dp.toPx() }
 
     // Style loading is asynchronous and can finish well after this composition —
     // long enough, on a cold start, for the real statuses to have already arrived
@@ -362,6 +543,8 @@ private fun PlacesMapView(
     val currentVisaBands by rememberUpdatedState(visaBands)
     val currentLens by rememberUpdatedState(lens)
     val currentSelectedCode by rememberUpdatedState(selectedCode)
+    val currentPlaces by rememberUpdatedState(places)
+    val currentOnLabels by rememberUpdatedState(onLabels)
 
     val mapView = remember {
         // Must run before any MapView is constructed. No style URL and no
@@ -422,6 +605,60 @@ private fun PlacesMapView(
                 controller.applyVisa(currentVisaBands)
                 controller.applySelection(currentSelectedCode, currentLens)
             }
+        }
+        onDispose { }
+    }
+
+    // Labels track the camera: recomputed on every move so a pan feels live rather
+    // than jumping into place once the gesture ends, and again on idle to settle
+    // the count once zoom is done changing which places clear the footprint bar.
+    DisposableEffect(mapView, minLabelFootprintPx) {
+        val moveListener = MapLibreMap.OnCameraMoveListener {
+            currentOnLabels(
+                controller.labelsFor(
+                    currentPlaces,
+                    minLabelFootprintPx,
+                    mapView.width.toFloat(),
+                    mapView.height.toFloat(),
+                ),
+            )
+        }
+        val idleListener = MapLibreMap.OnCameraIdleListener {
+            currentOnLabels(
+                controller.labelsFor(
+                    currentPlaces,
+                    minLabelFootprintPx,
+                    mapView.width.toFloat(),
+                    mapView.height.toFloat(),
+                ),
+            )
+        }
+        mapView.getMapAsync { map ->
+            map.addOnCameraMoveListener(moveListener)
+            map.addOnCameraIdleListener(idleListener)
+        }
+        onDispose {
+            if (!mapView.isDestroyed) {
+                mapView.getMapAsync { map ->
+                    map.removeOnCameraMoveListener(moveListener)
+                    map.removeOnCameraIdleListener(idleListener)
+                }
+            }
+        }
+    }
+
+    // The registry loads asynchronously and can arrive well after the map itself,
+    // so labels need their own trigger independent of camera movement.
+    DisposableEffect(mapView, places, minLabelFootprintPx) {
+        mapView.getMapAsync {
+            onLabels(
+                controller.labelsFor(
+                    places,
+                    minLabelFootprintPx,
+                    mapView.width.toFloat(),
+                    mapView.height.toFloat(),
+                ),
+            )
         }
         onDispose { }
     }
@@ -515,6 +752,17 @@ private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?) {
 }
 
 @Composable
+private fun CounterLegendRow(color: Color, count: Int, label: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LegendDot(color)
+        Text("$count $label", style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
 private fun LegendDot(color: Color) {
     Box(
         Modifier
@@ -603,22 +851,36 @@ private fun SelectedPlaceCard(
                 // "Been here / Lived here / Want to go" overflow a 360 dp phone once
                 // the card's padding is taken off, and a wrapped or scrolling row of
                 // three would hide one of the three answers behind a gesture.
-                FilterChip(
+                BounceFilterChip(
                     selected = status == PlaceStatus.VISITED,
+                    label = "Been",
                     onClick = { onToggle(PlaceStatus.VISITED) },
-                    label = { Text("Been") },
                 )
-                FilterChip(
+                BounceFilterChip(
                     selected = status == PlaceStatus.LIVED,
+                    label = "Lived",
                     onClick = { onToggle(PlaceStatus.LIVED) },
-                    label = { Text("Lived") },
                 )
-                FilterChip(
+                BounceFilterChip(
                     selected = status == PlaceStatus.WISHLIST,
+                    label = "Want",
                     onClick = { onToggle(PlaceStatus.WISHLIST) },
-                    label = { Text("Want") },
                 )
             }
         }
     }
+}
+
+/**
+ * The passport's own search, on the map: the same [Place.searchKey] match, capped
+ * at a handful of results because this is a picker, not a second passport list.
+ */
+private const val MAP_SEARCH_LIMIT = 5
+
+internal fun searchMapMatches(places: List<Place>, query: String): List<Place> {
+    val needle = query.trim().foldForSearch()
+    if (needle.isEmpty()) return emptyList()
+    return places.filter { it.searchKey.contains(needle) }
+        .sortedBy { it.sortKey }
+        .take(MAP_SEARCH_LIMIT)
 }

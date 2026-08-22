@@ -63,6 +63,36 @@ class GeoAssetTest {
         }
     }
 
+    /**
+     * `areaKm2` and `popEst` back the passport's "% of the world's land area,
+     * % of its population" line — a null or negative value there would silently
+     * zero out the whole coverage figure instead of failing a build.
+     */
+    @Test
+    fun `every place carries a plausible area and population`() {
+        registry.places.forEach { place ->
+            assertTrue("${place.code} has a negative area", place.areaKm2 >= 0)
+            assertTrue("${place.code} has a negative population", place.popEst >= 0)
+        }
+        val totalArea = registry.places.sumOf { it.areaKm2 }
+        val totalPop = registry.places.sumOf { it.popEst }
+        // Earth's land area is ~148.9M km^2 and 2019-era world population is
+        // ~7.7B; wide bands, since this only has to catch a broken pipeline,
+        // not validate the exact figure.
+        assertTrue("world land area is implausible: $totalArea", totalArea in 120_000_000..170_000_000)
+        assertTrue("world population is implausible: $totalPop", totalPop in 6_000_000_000..9_000_000_000)
+    }
+
+    /**
+     * The count behind the "which denominator" setting: 193 UN member states plus
+     * the two permanent observers, Holy See and Palestine, is the "195" a traveller
+     * means — a different, smaller number than the app's own 252 places.
+     */
+    @Test
+    fun `exactly 195 places are UN members or permanent observers`() {
+        assertEquals(195, registry.places.count { it.unMember })
+    }
+
     @Test
     fun `every feature has drawable geometry`() {
         features().forEach { feature ->

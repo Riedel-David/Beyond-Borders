@@ -4,6 +4,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import com.riedel.aeroglobe.data.visa.VisaBand
+import com.riedel.aeroglobe.settings.MapBase
 import com.riedel.aeroglobe.settings.MapColors
 
 /**
@@ -205,15 +206,16 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
 }
 
 /**
- * The palette the map draws with, for one theme and one set of chosen hues.
+ * The palette the map draws with, for one theme, one set of chosen hues and one
+ * chosen background.
  *
- * Ocean, land, border and selection are fixed here rather than in [MapColors]: they
- * are the backgrounds every hue was contrast-checked against, so they are part of
- * the check and not part of the choice.
+ * Border and selection stay fixed regardless of [base]: they were picked against
+ * the default background and every [MapBase] pair sits close enough in luminance
+ * that they hold up unchanged — see [MapBase].
  */
-fun mapPalette(dark: Boolean, colors: MapColors): MapPalette = MapPalette(
-    ocean = if (dark) Color(0xFF121A24) else Color(0xFFDCE6F2),
-    unvisited = if (dark) Color(0xFF2A323C) else Color(0xFFFBFCFE),
+fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT): MapPalette = MapPalette(
+    ocean = Color(base.oceanArgb(dark)),
+    unvisited = Color(base.landArgb(dark)),
     visited = Color(colors.visited.argb(dark)),
     lived = Color(colors.lived.argb(dark)),
     wishlist = Color(colors.wishlist.argb(dark)),

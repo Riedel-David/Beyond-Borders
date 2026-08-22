@@ -63,6 +63,31 @@ def ring_area(ring):
     return abs(a) / 2.0
 
 
+EARTH_RADIUS_KM = 6371.0088
+
+
+def ring_area_km2(ring):
+    """
+    Approximate area of a lon/lat ring on the sphere, in square km.
+
+    Square-degree area (see [ring_area]) is only good for comparing rings
+    against each other; a degree of longitude shrinks towards the poles, so
+    it would make Greenland look tiny and equatorial countries huge. This
+    integrates dA = R^2 * cos(lat) dlat dlon along each edge instead, which is
+    the standard closed-form area of a polygon with lon/lat straight edges
+    and accurate enough for a "% of the world's land" headline.
+    """
+    area = 0.0
+    n = len(ring)
+    for i in range(n):
+        lon1, lat1 = ring[i][0], ring[i][1]
+        lon2, lat2 = ring[(i + 1) % n][0], ring[(i + 1) % n][1]
+        area += math.radians(lon2 - lon1) * (
+            2 + math.sin(math.radians(lat1)) + math.sin(math.radians(lat2))
+        )
+    return abs(area) * EARTH_RADIUS_KM * EARTH_RADIUS_KM / 2.0
+
+
 def ring_centroid(ring):
     """Area-weighted centroid, falling back to the bbox centre for slivers."""
     a = cx = cy = 0.0
@@ -123,15 +148,116 @@ def simplify(ring, eps):
     return [ring[i] for i in range(n) if keep[i]]
 
 
-def quantize(ring, decimals):
-    """Round coordinates and drop points that collapse onto their predecessor."""
+def quantize_open(pts, decimals):
+    """Like quantize(), but for an open arc between two junctions - forcing
+    first == last here would draw a false edge closing the arc into a loop."""
     out = []
-    for x, y in ((round(p[0], decimals), round(p[1], decimals)) for p in ring):
+    for x, y in ((round(p[0], decimals), round(p[1], decimals)) for p in pts):
         if not out or out[-1][0] != x or out[-1][1] != y:
             out.append([x, y])
-    if out[0] != out[-1]:
-        out.append([out[0][0], out[0][1]])
     return out
+
+
+def _run_points(pts, start, end):
+    """The point run from start to end inclusive, walking forward and wrapping
+    past the end of the ring if needed. start == end means the whole ring."""
+    if start == end:
+        return pts[start:] + pts[: start + 1]
+    if start < end:
+        return pts[start : end + 1]
+    return pts[start:] + pts[: end + 1]
+
+
+def simplify_shared_borders(ring_infos):
+    """Simplify every ring, treating a border shared by two rings as one arc
+    simplified once, instead of each side independently.
+
+    Without this, a border between a large country and a small one gets two
+    different simplifications - each ring's epsilon is scaled to its own
+    bounding box - so the two lines drift apart and visibly cross instead of
+    coinciding. Natural Earth's shared borders are bit-identical coordinates
+    on both sides before simplification, which is what makes matching them
+    back up by point sequence reliable.
+
+    ring_infos: list of {"pts": open ring (no closing duplicate), "eps", "dec"}.
+    Returns closed, simplified rings in the same order.
+    """
+    # Every undirected edge and which ring indices use it. A shared border
+    # edge is used by exactly two rings; a coastline, by one.
+    edge_users: dict[tuple, set] = {}
+    for ridx, info in enumerate(ring_infos):
+        pts = info["pts"]
+        m = len(pts)
+        for i in range(m):
+            a, b = pts[i], pts[(i + 1) % m]
+            if a == b:
+                continue
+            key = (a, b) if a <= b else (b, a)
+            edge_users.setdefault(key, set()).add(ridx)
+
+    # A point is a junction where a ring's edge ownership changes - where a
+    # shared border starts or ends, or a third neighbour's edge begins.
+    runs_by_ring = []
+    for ridx, info in enumerate(ring_infos):
+        pts = info["pts"]
+        m = len(pts)
+
+        def users_at(i, pts=pts, m=m):
+            a, b = pts[i], pts[(i + 1) % m]
+            key = (a, b) if a <= b else (b, a)
+            return edge_users[key]
+
+        junctions = [i for i in range(m) if users_at((i - 1) % m) != users_at(i)]
+        if not junctions:
+            junctions = [0]
+        runs_by_ring.append(
+            [
+                (junctions[k], junctions[(k + 1) % len(junctions)])
+                for k in range(len(junctions))
+            ]
+        )
+
+    # Group runs into arcs by point sequence, forward or reversed - the same
+    # border walked from either neighbour collapses onto one arc.
+    arcs: dict[tuple, dict] = {}
+    entries_by_ring = []
+    for ridx, info in enumerate(ring_infos):
+        pts = info["pts"]
+        entries = []
+        for start, end in runs_by_ring[ridx]:
+            run = _run_points(pts, start, end)
+            fwd, rev = tuple(run), tuple(reversed(run))
+            key = fwd if fwd <= rev else rev
+            direction = "f" if key == fwd else "r"
+            arc = arcs.get(key)
+            if arc is None:
+                arcs[key] = {"pts": list(key), "eps": info["eps"], "dec": info["dec"]}
+            else:
+                arc["eps"] = min(arc["eps"], info["eps"])
+                arc["dec"] = max(arc["dec"], info["dec"])
+            entries.append((key, direction))
+        entries_by_ring.append(entries)
+
+    # Simplify each arc exactly once, at the finer of its owners' budgets, so
+    # both sides of a border end up with identical points.
+    simplified = {}
+    for key, arc in arcs.items():
+        simplified[key] = quantize_open(simplify(arc["pts"], arc["eps"]), arc["dec"])
+
+    # Reassemble each ring from its arcs in order, dropping the duplicate
+    # junction point between consecutive arcs and re-closing at the end.
+    result = []
+    for entries in entries_by_ring:
+        assembled = []
+        for key, direction in entries:
+            pts = simplified[key]
+            seq = pts if direction == "f" else list(reversed(pts))
+            assembled.extend(seq[:-1])
+        if not assembled:
+            assembled = [simplified[entries[0][0]][0]]
+        assembled.append(assembled[0])
+        result.append(assembled)
+    return result
 
 
 def polygons_of(geom):
@@ -178,6 +304,13 @@ def build(source: Path, eps_scale: float) -> int:
             print(f"  warning: MERGE source {gu} not present in source data")
             continue
         units[target].setdefault("_extra", []).extend(polygons_of(units[gu]["geometry"]))
+        # Each merged-away unit carries its own POP_EST (Scotland's, not the
+        # UK's), so the target's population has to add them up the same way
+        # the geometry does, or a merged place would report just its anchor's
+        # share of the population instead of the whole place.
+        units[target]["_extra_pop"] = (
+            units[target].get("_extra_pop", 0) + units[gu]["properties"].get("POP_EST", 0)
+        )
         merged.append(gu)
         del units[gu]
 
@@ -186,6 +319,12 @@ def build(source: Path, eps_scale: float) -> int:
     geo_features = []
     kept_rings = dropped_rings = pts_in = pts_out = 0
 
+    # Pass 3a: decide which polygons/rings survive MIN_RING_AREA, and each
+    # ring's simplification budget, without simplifying yet - that has to
+    # happen once, globally, so a border shared by two units simplifies to the
+    # same line on both sides (see simplify_shared_borders).
+    unit_data = []
+    ring_infos = []
     for gu, f in units.items():
         p = f["properties"]
         code = rules.CODE_OVERRIDE.get(gu) or str(p.get("ISO_A2_EH", "-99"))
@@ -206,7 +345,7 @@ def build(source: Path, eps_scale: float) -> int:
             scored.append((ring_area(outer), poly))
         scored.sort(key=lambda s: s[0], reverse=True)
 
-        out_polys = []
+        kept_polys = []  # list of {"eps", "dec", "ring_idx": [index into ring_infos, ...]}
         for idx, (area, poly) in enumerate(scored):
             if idx > 0 and area < MIN_RING_AREA:
                 dropped_rings += 1
@@ -215,15 +354,44 @@ def build(source: Path, eps_scale: float) -> int:
             x0, y0, x1, y1 = ring_bbox(outer)
             diag = math.hypot(x1 - x0, y1 - y0)
             # Epsilon scales with the feature so Malta and Monaco keep their
-            # shape while Russia's coastline is aggressively thinned.
+            # shape while Russia's coastline is aggressively thinned. Shared
+            # borders reconcile this against the neighbour's budget below.
             eps = min(0.05, max(1e-5, diag * 0.004)) * eps_scale
             dec = decimals_for(diag)
 
+            ring_idx = []
+            for ring in poly:
+                # Open: drop the closing duplicate, and any exact consecutive
+                # duplicates in the source data, which would otherwise be a
+                # zero-length "edge" with no entry in edge_users.
+                pts = []
+                for pt in ring[:-1]:
+                    t = tuple(pt)
+                    if not pts or pts[-1] != t:
+                        pts.append(t)
+                if len(pts) > 1 and pts[-1] == pts[0]:
+                    pts.pop()
+                ring_infos.append({"pts": pts, "eps": eps, "dec": dec})
+                ring_idx.append(len(ring_infos) - 1)
+            kept_polys.append({"ring_idx": ring_idx})
+
+        pop_est = int(p.get("POP_EST", 0)) + int(f.get("_extra_pop", 0))
+        unit_data.append((code, name, p, kept_polys, pop_est))
+
+    # Pass 3b: simplify once, globally.
+    simplified_rings = simplify_shared_borders(ring_infos)
+
+    # Pass 3c: reassemble polygons from their simplified rings, drop whatever
+    # collapsed below a valid ring, and build the place/feature records.
+    for code, name, p, kept_polys, pop_est in unit_data:
+        out_polys = []
+        for poly in kept_polys:
             new_rings = []
-            for ri, ring in enumerate(poly):
-                # Interior rings (lakes, enclaves) use the same epsilon; they are
-                # dropped if they collapse below a valid ring.
-                s = quantize(simplify(ring, eps), dec)
+            for ri, ring_idx in enumerate(poly["ring_idx"]):
+                s = simplified_rings[ring_idx]
+                # Interior rings (lakes, enclaves) are dropped individually if
+                # they collapse below a valid ring; the outer ring collapsing
+                # drops the whole polygon.
                 if len(s) >= 4:
                     new_rings.append(s)
                 elif ri == 0:
@@ -236,6 +404,14 @@ def build(source: Path, eps_scale: float) -> int:
 
         if not out_polys:
             raise SystemExit(f"{code} {name} simplified to nothing - lower MIN_RING_AREA")
+
+        # Land area, holes (lakes, enclaves) subtracted from their polygon's
+        # outer ring so a country is not credited with the water inside it.
+        area_km2 = 0.0
+        for new_rings in out_polys:
+            area_km2 += ring_area_km2(new_rings[0])
+            for hole in new_rings[1:]:
+                area_km2 -= ring_area_km2(hole)
 
         # Camera target, not the full extent. The full extent is useless here:
         # the United States reaches the antimeridian via the Aleutians, so its
@@ -275,10 +451,13 @@ def build(source: Path, eps_scale: float) -> int:
             "region": p.get("SUBREGION") or p.get("REGION_UN") or "Other",
             "sovereign": p.get("SOVEREIGNT") or name,
             "uninhabited": code in rules.UNINHABITED,
+            "unMember": code in rules.UN_MEMBER,
             "lat": round(clat, 5),
             "lon": round(clon, 5),
             # 5 decimals: 3 would round Vatican City's bbox into a single point.
             "bbox": [round(bx0, 5), round(by0, 5), round(bx1, 5), round(by1, 5)],
+            "areaKm2": round(area_km2),
+            "popEst": pop_est,
         })
 
     places.sort(key=lambda pl: pl["name"])
@@ -299,6 +478,9 @@ def build(source: Path, eps_scale: float) -> int:
     for gu in rules.MERGE_ASSERTIONS:
         if gu in units:
             problems.append(f"{gu} should have been merged away but is still a place")
+    unknown_un_member = rules.UN_MEMBER - codes
+    if unknown_un_member:
+        problems.append(f"UN_MEMBER has codes with no place: {sorted(unknown_un_member)}")
     for pl in places:
         if pl["continent"] not in rules.VALID_CONTINENTS:
             problems.append(
@@ -321,7 +503,8 @@ def build(source: Path, eps_scale: float) -> int:
     reg.write_text(json.dumps(places, separators=(",", ":"), ensure_ascii=False))
 
     print(f"dropped {len(dropped)} overlay/reef units, merged {len(merged)} units away")
-    print(f"places: {len(places)}  ({sum(1 for pl in places if pl['uninhabited'])} uninhabited)")
+    print(f"places: {len(places)}  ({sum(1 for pl in places if pl['uninhabited'])} uninhabited, "
+          f"{sum(1 for pl in places if pl['unMember'])} UN member/observer)")
     print(f"rings: {kept_rings} kept, {dropped_rings} tiny rings dropped")
     print(f"points: {pts_in:,} -> {pts_out:,}  ({100 * pts_out / pts_in:.1f}%)")
     print(f"{gj.relative_to(REPO)}  {gj.stat().st_size / 1e6:.2f} MB")

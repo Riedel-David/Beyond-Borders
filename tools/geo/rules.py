@@ -222,6 +222,45 @@ UNINHABITED = {
 }
 
 # ---------------------------------------------------------------------------
+# UN_MEMBER: the 193 UN member states plus the two permanent observers, Holy
+# See and Palestine — the "195" a traveller means when they say that number,
+# as opposed to the UN's own 193. Everything else in the app's 252 (Kosovo,
+# Taiwan, the dependencies, Somaliland, Northern Cyprus...) is real to travel
+# to but not a seat at the UN, which is the whole reason this list exists:
+# the passport tab lets a user count against whichever of those two numbers,
+# or against all 252, matters to them.
+# ---------------------------------------------------------------------------
+UN_MEMBER = {
+    "AF", "AL", "DZ", "AD", "AO", "AG", "AR", "AM", "AU", "AT", "AZ",
+    "BS", "BH", "BD", "BB", "BY", "BE", "BZ", "BJ", "BT", "BO", "BA", "BW", "BR", "BN", "BG", "BF", "BI",
+    "CV", "KH", "CM", "CA", "CF", "TD", "CL", "CN", "CO", "KM", "CG", "CD", "CR", "CI", "HR", "CU", "CY", "CZ",
+    "DK", "DJ", "DM", "DO",
+    "EC", "EG", "SV", "GQ", "ER", "EE", "SZ", "ET",
+    "FJ", "FI", "FR",
+    "GA", "GM", "GE", "DE", "GH", "GR", "GD", "GT", "GN", "GW", "GY",
+    "HT", "HN", "HU",
+    "IS", "IN", "ID", "IR", "IQ", "IE", "IL", "IT",
+    "JM", "JP", "JO",
+    "KZ", "KE", "KI", "KP", "KR", "KW", "KG",
+    "LA", "LV", "LB", "LS", "LR", "LY", "LI", "LT", "LU",
+    "MG", "MW", "MY", "MV", "ML", "MT", "MH", "MR", "MU", "MX", "FM", "MD", "MC", "MN", "ME", "MA", "MZ", "MM",
+    "NA", "NR", "NP", "NL", "NZ", "NI", "NE", "NG", "MK", "NO",
+    "OM",
+    "PK", "PW", "PA", "PG", "PY", "PE", "PH", "PL", "PT",
+    "QA",
+    "RO", "RU", "RW",
+    "KN", "LC", "VC", "WS", "SM", "ST", "SA", "SN", "RS", "SC", "SL", "SG", "SK", "SI", "SB", "SO",
+    "ZA", "SS", "ES", "LK", "SD", "SR", "SE", "CH", "SY",
+    "TJ", "TZ", "TH", "TL", "TG", "TO", "TT", "TN", "TR", "TM", "TV",
+    "UG", "UA", "AE", "GB", "US", "UY", "UZ",
+    "VU", "VE", "VN",
+    "YE",
+    "ZM", "ZW",
+    # Permanent observers, not members, but who a "195" count means to include.
+    "VA", "PS",
+}
+
+# ---------------------------------------------------------------------------
 # SPLIT_ASSERTIONS: the regression test from PLAN.md section 3.
 # Each tuple must come out as distinct, independently selectable places.
 # If a future Natural Earth release merges any of these, the build fails loudly

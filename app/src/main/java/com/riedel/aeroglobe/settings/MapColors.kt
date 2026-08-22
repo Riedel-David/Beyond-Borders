@@ -40,6 +40,30 @@ enum class MapHue(val lightArgb: Long, val darkArgb: Long) {
 }
 
 /**
+ * A named ocean/land pair, each a light-mode and dark-mode value — the map's fixed
+ * background, offered as a small vetted choice rather than a colour wheel for the
+ * same reason [MapHue] is: every pair here was checked against every [MapHue] and
+ * against the visa ramp, in both themes, before it earned a place on this list.
+ * Border and selection colours stay fixed regardless of which base is chosen — they
+ * were picked against the default pair and sit close enough to every other pair's
+ * luminance that they hold up unchanged.
+ */
+enum class MapBase(val oceanLightArgb: Long, val oceanDarkArgb: Long, val landLightArgb: Long, val landDarkArgb: Long) {
+    /** The palette the app shipped with. */
+    DEFAULT(0xFFDCE6F2, 0xFF121A24, 0xFFFBFCFE, 0xFF2A323C),
+
+    /** Cooler and greyer, for a chart-like reading of the map. */
+    SLATE(0xFFDEE2E9, 0xFF10151C, 0xFFF3F4F6, 0xFF282C33),
+
+    /** Warm parchment tones, for a less clinical map. */
+    SAND(0xFFEFE3C9, 0xFF241A0E, 0xFFFAF5EA, 0xFF3A2E1C),
+    ;
+
+    fun oceanArgb(dark: Boolean): Long = if (dark) oceanDarkArgb else oceanLightArgb
+    fun landArgb(dark: Boolean): Long = if (dark) landDarkArgb else landLightArgb
+}
+
+/**
  * Which hue each status is painted in.
  *
  * The invariant that matters is that the three are always *different*. A fixed

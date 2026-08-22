@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.riedel.aeroglobe.core.Haptics
 import com.riedel.aeroglobe.data.place.Place
 import com.riedel.aeroglobe.data.place.PlaceRepository
 import com.riedel.aeroglobe.data.place.PlaceStatus
@@ -14,6 +15,8 @@ import com.riedel.aeroglobe.data.visa.VisaRegistry
 import com.riedel.aeroglobe.data.visa.band
 import com.riedel.aeroglobe.data.visa.VisaRepository
 import com.riedel.aeroglobe.data.visa.VisaRequirement
+import com.riedel.aeroglobe.settings.Denominator
+import com.riedel.aeroglobe.settings.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +25,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** How the passport list is ordered. */
-enum class Grouping { CONTINENT, ALPHABETICAL }
+enum class Grouping { CONTINENT, REGION, ALPHABETICAL }
 
 /**
  * Which rows the passport list shows.
@@ -70,6 +73,17 @@ sealed interface VisaFilter {
         override val label = "No embassy"
     }
 
+    /** Wishlist places the visa asset says need no embassy — the join this app can
+     * do offline that nothing else can, because it already owns both datasets. */
+    data object WishlistEasy : VisaFilter {
+        override val label = "Wishlist, easy"
+    }
+
+    /** Visa-free with a stay of 90 days or more — long enough to actually live somewhere. */
+    data object LongStay : VisaFilter {
+        override val label = "90+ days"
+    }
+
     data class Category(val category: VisaCategory) : VisaFilter {
         override val label get() = category.label
     }
@@ -97,6 +111,9 @@ data class TravelStats(
     val wishlist: Int,
     val total: Int,
     val continents: List<ContinentStat>,
+    /** "11% of the world's land area, 47% of its population" — null while
+     * nothing is marked. See [worldCoverage]. */
+    val coverage: String? = null,
 ) {
     /** Places you have set foot in. The headline number, and never smaller than [visited]. */
     val been: Int = visited + lived
@@ -105,6 +122,10 @@ data class TravelStats(
 
     /** Continents with at least one visit — the "6 of 8 continents" headline. */
     val continentsTouched: Int = continents.count { it.been > 0 }
+
+    /** "2 places from finishing Europe" — null once every continent is either
+     * untouched or already finished. See [almostFinishedNudge]. */
+    val nudge: String? = almostFinishedNudge(continents)
 
     companion object {
         val EMPTY = TravelStats(0, 0, 0, 0, emptyList())
@@ -121,9 +142,14 @@ data class TravelStats(
 class PlacesViewModel(
     private val repo: PlaceRepository,
     private val visaRepo: VisaRepository,
+    private val settings: SettingsStore,
+    private val haptics: Haptics,
 ) : ViewModel() {
 
     private val allPlaces = MutableStateFlow<List<Place>>(emptyList())
+
+    /** The full registry, for surfaces that draw every place rather than a filtered list — the map's labels. */
+    val places: StateFlow<List<Place>> = allPlaces
 
     /**
      * Null until the asset is parsed, and null forever if it cannot be. Every
@@ -138,6 +164,27 @@ class PlacesViewModel(
 
     private val _grouping = MutableStateFlow(Grouping.CONTINENT)
     val grouping: StateFlow<Grouping> = _grouping
+
+    /**
+     * Prefixed with the grouping's name (e.g. "CONTINENT:Europe") so the same
+     * header string in two groupings does not share a collapsed/expanded state.
+     */
+    val collapsedHeaders: StateFlow<Set<String>> = settings.collapsedHeaders
+
+    /** Called by the map and passport screens on every mark. Goes straight to the
+     * platform Vibrator rather than Compose's performHapticFeedback, which many
+     * phones gate behind a separate, often-off "touch feedback" setting. */
+    fun vibrate() {
+        if (settings.hapticsEnabled.value) haptics.tap()
+    }
+
+    fun toggleHeaderCollapsed(grouping: Grouping, header: String) {
+        val key = "${grouping.name}:$header"
+        val current = settings.collapsedHeaders.value
+        settings.setCollapsedHeaders(
+            if (key in current) current - key else current + key
+        )
+    }
 
     private val _statusFilter = MutableStateFlow(StatusFilter.ALL)
     val statusFilter: StateFlow<StatusFilter> = _statusFilter
@@ -165,7 +212,7 @@ class PlacesViewModel(
         repo.statuses.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val stats: StateFlow<TravelStats> =
-        combine(allPlaces, statuses) { places, statuses -> computeStats(places, statuses) }
+        combine(allPlaces, statuses, settings.denominator) { places, statuses, denom -> computeStats(places, statuses, denom) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, TravelStats.EMPTY)
 
     /** The rows the passport list should render, already filtered and ordered. */
@@ -188,6 +235,12 @@ class PlacesViewModel(
         combine(allPlaces, _visa, statuses, _query, _visaFilter) { places, visa, st, q, filter ->
             buildVisaRows(places, visa, st, q, filter)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
+     * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
+    val wishlistEasyLine: StateFlow<String?> =
+        combine(allPlaces, statuses, _visa) { places, st, visa -> computeWishlistEasyLine(places, st, visa) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
         viewModelScope.launch { allPlaces.value = repo.places() }
@@ -220,17 +273,23 @@ class PlacesViewModel(
      */
     fun toggle(code: String, target: PlaceStatus) {
         viewModelScope.launch {
-            val next = if (statusOf(code) == target) PlaceStatus.NONE else target
+            val previous = statusOf(code)
+            val next = if (previous == target) PlaceStatus.NONE else target
             repo.setStatus(code, next)
         }
     }
 
     companion object {
-        fun factory(repo: PlaceRepository, visaRepo: VisaRepository): ViewModelProvider.Factory =
+        fun factory(
+            repo: PlaceRepository,
+            visaRepo: VisaRepository,
+            settings: SettingsStore,
+            haptics: Haptics,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                     @Suppress("UNCHECKED_CAST")
-                    return PlacesViewModel(repo, visaRepo) as T
+                    return PlacesViewModel(repo, visaRepo, settings, haptics) as T
                 }
             }
     }
@@ -238,11 +297,60 @@ class PlacesViewModel(
 
 // --- pure functions, unit-testable without Android ---------------------------
 
+/**
+ * "2 places from finishing Europe" — the continent closest to done that is not
+ * already done, ties broken alphabetically so the message is stable. Null if
+ * every continent is either untouched or already finished, since there is
+ * nothing left to nudge towards.
+ */
+internal fun almostFinishedNudge(continents: List<ContinentStat>): String? {
+    val candidate = continents
+        .filter { it.been > 0 && it.been < it.total }
+        .minWithOrNull(compareBy({ it.total - it.been }, { it.continent }))
+        ?: return null
+    val remaining = candidate.total - candidate.been
+    val noun = if (remaining == 1) "place" else "places"
+    return "$remaining $noun from finishing ${candidate.continent}"
+}
+
+/**
+ * "9 of your 12 wishlist places need no embassy" — the one line neither the
+ * travel history nor the visa asset can say alone. Null with nothing to join:
+ * no visa data, no wishlist, or a wishlist with nothing easy in it.
+ */
+internal fun computeWishlistEasyLine(
+    places: List<Place>,
+    statuses: Map<String, PlaceStatus>,
+    visa: VisaRegistry?,
+): String? {
+    if (visa == null) return null
+    val wishlistCodes = statuses.filterValues { it == PlaceStatus.WISHLIST }.keys
+    if (wishlistCodes.isEmpty()) return null
+    val easy = wishlistCodes.count { code -> visa[code]?.isEasy == true }
+    if (easy == 0) return null
+    return "$easy of your ${wishlistCodes.size} wishlist places need no embassy"
+}
+
+/** Whether [place] counts towards the chosen [Denominator]. */
+internal fun Denominator.includes(place: Place): Boolean = when (this) {
+    Denominator.ALL -> true
+    Denominator.UN_MEMBER -> place.unMember
+    Denominator.INHABITED -> !place.uninhabited
+}
+
 internal fun computeStats(
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
+    denominator: Denominator = Denominator.ALL,
 ): TravelStats {
-    val continents = places
+    // Filtered once, up front: the denominator changes what counts as "been" too,
+    // not only the total, so a place marked outside the chosen set (e.g. a
+    // dependency, while counting only UN members) contributes to neither side of
+    // the fraction rather than inflating "been" past a shrunken "total".
+    val counted = places.filter(denominator::includes)
+    val countedCodes = counted.map { it.code }.toSet()
+
+    val continents = counted
         .groupBy { it.continent }
         .map { (continent, group) ->
             ContinentStat(
@@ -254,13 +362,36 @@ internal fun computeStats(
         // Biggest achievement first, then alphabetically so the order is stable.
         .sortedWith(compareByDescending<ContinentStat> { it.been }.thenBy { it.continent })
 
+    val countedStatuses = statuses.filterKeys { it in countedCodes }
+
     return TravelStats(
-        visited = statuses.count { it.value == PlaceStatus.VISITED },
-        lived = statuses.count { it.value == PlaceStatus.LIVED },
-        wishlist = statuses.count { it.value == PlaceStatus.WISHLIST },
-        total = places.size,
+        visited = countedStatuses.count { it.value == PlaceStatus.VISITED },
+        lived = countedStatuses.count { it.value == PlaceStatus.LIVED },
+        wishlist = countedStatuses.count { it.value == PlaceStatus.WISHLIST },
+        total = counted.size,
         continents = continents,
+        coverage = worldCoverage(places, statuses),
     )
+}
+
+/**
+ * "11% of the world's land area, 47% of its population" — a number 40 of 252
+ * cannot say, because it distinguishes Russia from Monaco. Built entirely from
+ * fields the asset already carries (see `tools/geo/build_geo.py`), so this
+ * needs no new asset field or download, only the join. Null until at least one
+ * place with area or population behind it has been marked.
+ */
+internal fun worldCoverage(places: List<Place>, statuses: Map<String, PlaceStatus>): String? {
+    val totalArea = places.sumOf { it.areaKm2 }
+    val totalPop = places.sumOf { it.popEst }
+    if (totalArea == 0L || totalPop == 0L) return null
+    val been = places.filter { statuses[it.code]?.isBeen == true }
+    val beenArea = been.sumOf { it.areaKm2 }
+    val beenPop = been.sumOf { it.popEst }
+    if (beenArea == 0L && beenPop == 0L) return null
+    val areaPercent = (beenArea * 100 / totalArea).toInt()
+    val popPercent = (beenPop * 100 / totalPop).toInt()
+    return "$areaPercent% of the world's land area, $popPercent% of its population"
 }
 
 /**
@@ -296,6 +427,8 @@ internal fun visaFilters(visa: VisaRegistry?): List<VisaFilter> {
     return buildList {
         add(VisaFilter.All)
         add(VisaFilter.Easy)
+        add(VisaFilter.WishlistEasy)
+        add(VisaFilter.LongStay)
         VisaCategory.entries.forEach { category ->
             if (category == VisaCategory.HOME) return@forEach
             if ((visa.countByCategory[category] ?: 0) > 0) add(VisaFilter.Category(category))
@@ -337,6 +470,9 @@ internal fun buildVisaRows(
             when (filter) {
                 VisaFilter.All -> true
                 VisaFilter.Easy -> it.requirement.isEasy
+                VisaFilter.WishlistEasy -> it.status == PlaceStatus.WISHLIST && it.requirement.isEasy
+                VisaFilter.LongStay ->
+                    it.requirement.category == VisaCategory.VISA_FREE && (it.requirement.days ?: 0) >= 90
                 is VisaFilter.Category -> it.requirement.category == filter.category
             }
         }
@@ -376,6 +512,7 @@ internal fun buildRows(
     // finding Spain.
     val comparator: Comparator<PlaceRow> = when (grouping) {
         Grouping.CONTINENT -> compareBy({ it.place.continent }, { it.place.uninhabited }, { it.place.sortKey })
+        Grouping.REGION -> compareBy({ it.place.region }, { it.place.uninhabited }, { it.place.sortKey })
         Grouping.ALPHABETICAL -> compareBy({ it.place.uninhabited }, { it.place.sortKey })
     }
     return matching.sortedWith(comparator).toList()
@@ -398,11 +535,12 @@ internal const val UNINHABITED_HEADER = "Uninhabited"
  * throws ("Key header-S was used multiple times") the moment a filter or a search
  * brings both runs on screen together, as searching "south" in A-Z order did.
  *
- * Continent grouping needs neither: the uninhabited places sort last inside their own
- * continent, so every header stays one contiguous run.
+ * Continent and region grouping need neither: the uninhabited places sort last inside
+ * their own continent or region, so every header stays one contiguous run.
  */
 internal fun sectionHeader(place: Place, grouping: Grouping): String = when (grouping) {
     Grouping.CONTINENT -> place.continent
+    Grouping.REGION -> place.region
     Grouping.ALPHABETICAL ->
         if (place.uninhabited) UNINHABITED_HEADER else place.sortKey.take(1).uppercase()
 }

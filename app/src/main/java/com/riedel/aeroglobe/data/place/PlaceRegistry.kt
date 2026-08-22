@@ -44,6 +44,7 @@ class PlaceRegistry private constructor(val places: List<Place>) {
                     region = o.getString("region"),
                     sovereign = o.getString("sovereign"),
                     uninhabited = o.getBoolean("uninhabited"),
+                    unMember = o.getBoolean("unMember"),
                     lat = o.getDouble("lat"),
                     lon = o.getDouble("lon"),
                     bounds = Bounds(
@@ -52,6 +53,8 @@ class PlaceRegistry private constructor(val places: List<Place>) {
                         east = bbox.getDouble(2),
                         north = bbox.getDouble(3),
                     ),
+                    areaKm2 = o.getLong("areaKm2"),
+                    popEst = o.getLong("popEst"),
                 )
             }
             require(places.isNotEmpty()) { "$ASSET_NAME is empty" }

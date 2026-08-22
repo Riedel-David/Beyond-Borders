@@ -10,6 +10,14 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /**
+ * Which places count towards the passport's denominator — the most-argued number
+ * in this hobby, and the one people compare with friends. [Place.unMember] and
+ * [Place.uninhabited] already carry everything needed to answer it; this only
+ * picks which one, if any, to filter by.
+ */
+enum class Denominator { ALL, UN_MEMBER, INHABITED }
+
+/**
  * Preferences, on plain SharedPreferences.
  *
  * DataStore would be the modern choice, but the only stable release is behind an
@@ -45,6 +53,21 @@ class SettingsStore(context: Context) {
     )
     val mapColors: StateFlow<MapColors> = _mapColors.asStateFlow()
 
+    private val _mapBase = MutableStateFlow(
+        runCatching { MapBase.valueOf(prefs.getString(KEY_MAP_BASE, null) ?: "") }
+            .getOrDefault(MapBase.DEFAULT)
+    )
+    val mapBase: StateFlow<MapBase> = _mapBase.asStateFlow()
+
+    private val _denominator = MutableStateFlow(
+        runCatching { Denominator.valueOf(prefs.getString(KEY_DENOMINATOR, null) ?: "") }
+            .getOrDefault(Denominator.ALL)
+    )
+    val denominator: StateFlow<Denominator> = _denominator.asStateFlow()
+
+    private val _hapticsEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTICS, true))
+    val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
+
     /**
      * Stable per-install id, stamped onto every row we write.
      *
@@ -72,9 +95,41 @@ class SettingsStore(context: Context) {
             prefs.edit { remove(KEY_DEVICE_ID) }
         }
 
+    /**
+     * Collapsed passport section headers, e.g. "CONTINENT:Europe".
+     *
+     * Prefixed with the grouping's name so a header collapsed under "By continent"
+     * does not, by coincidence of the same string, also collapse under "By region"
+     * or "A-Z" — three groupings share one key rather than needing three.
+     */
+    private val _collapsedHeaders = MutableStateFlow(
+        prefs.getStringSet(KEY_COLLAPSED_HEADERS, emptySet()) ?: emptySet()
+    )
+    val collapsedHeaders: StateFlow<Set<String>> = _collapsedHeaders.asStateFlow()
+
+    fun setCollapsedHeaders(headers: Set<String>) {
+        _collapsedHeaders.value = headers
+        prefs.edit { putStringSet(KEY_COLLAPSED_HEADERS, headers) }
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
         prefs.edit { putString(KEY_THEME, mode.name) }
+    }
+
+    fun setMapBase(base: MapBase) {
+        _mapBase.value = base
+        prefs.edit { putString(KEY_MAP_BASE, base.name) }
+    }
+
+    fun setDenominator(value: Denominator) {
+        _denominator.value = value
+        prefs.edit { putString(KEY_DENOMINATOR, value.name) }
+    }
+
+    fun setHapticsEnabled(enabled: Boolean) {
+        _hapticsEnabled.value = enabled
+        prefs.edit { putBoolean(KEY_HAPTICS, enabled) }
     }
 
     /**
@@ -119,6 +174,10 @@ class SettingsStore(context: Context) {
         const val DEVICE_FILE = "aeroglobe.device"
 
         const val KEY_THEME = "theme_mode"
+        const val KEY_MAP_BASE = "map_base"
+        const val KEY_DENOMINATOR = "denominator"
+        const val KEY_HAPTICS = "haptics_enabled"
+        const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"

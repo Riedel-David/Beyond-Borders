@@ -124,22 +124,36 @@ class MapColorsTest {
      */
     @Test
     fun `every preset clears 3 to 1 against unmarked land and ocean in both themes`() {
-        listOf(false, true).forEach { dark ->
-            val palette = mapPalette(dark, MapColors.DEFAULT)
-            val land = palette.unvisited.rgb()
-            val ocean = palette.ocean.rgb()
-            MapHue.entries.forEach { hue ->
-                val fill = hue.argb(dark) and 0xFFFFFF
-                val theme = if (dark) "dark" else "light"
-                assertTrue(
-                    "$hue vs land in $theme: ${"%.2f".format(contrast(fill, land))}:1",
-                    contrast(fill, land) >= 3.0,
-                )
-                assertTrue(
-                    "$hue vs ocean in $theme: ${"%.2f".format(contrast(fill, ocean))}:1",
-                    contrast(fill, ocean) >= 3.0,
-                )
+        MapBase.entries.forEach { base ->
+            listOf(false, true).forEach { dark ->
+                val palette = mapPalette(dark, MapColors.DEFAULT, base)
+                val land = palette.unvisited.rgb()
+                val ocean = palette.ocean.rgb()
+                MapHue.entries.forEach { hue ->
+                    val fill = hue.argb(dark) and 0xFFFFFF
+                    val theme = if (dark) "dark" else "light"
+                    assertTrue(
+                        "$hue vs $base land in $theme: ${"%.2f".format(contrast(fill, land))}:1",
+                        contrast(fill, land) >= 3.0,
+                    )
+                    assertTrue(
+                        "$hue vs $base ocean in $theme: ${"%.2f".format(contrast(fill, ocean))}:1",
+                        contrast(fill, ocean) >= 3.0,
+                    )
+                }
             }
+        }
+    }
+
+    /**
+     * A base pair is a pair for the same reason a hue is: the same hex in both
+     * themes would mean one of the two was chosen for the other theme's background.
+     */
+    @Test
+    fun `every base's ocean and land are different in light and dark`() {
+        MapBase.entries.forEach { base ->
+            assertNotEquals(base.oceanLightArgb, base.oceanDarkArgb)
+            assertNotEquals(base.landLightArgb, base.landDarkArgb)
         }
     }
 

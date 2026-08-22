@@ -3,6 +3,7 @@ package com.riedel.aeroglobe.ui.theme
 import com.riedel.aeroglobe.data.visa.VisaBand
 import com.riedel.aeroglobe.data.visa.VisaCategory
 import com.riedel.aeroglobe.data.visa.band
+import com.riedel.aeroglobe.settings.MapBase
 import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.ui.theme.ColorMath.Cvd
 import com.riedel.aeroglobe.ui.theme.ColorMath.contrast
@@ -61,19 +62,21 @@ class VisaRampTest {
 
     @Test
     fun `every band clears 3 to 1 against unmarked land and ocean in both themes`() {
-        themes().forEach { dark ->
-            val palette = mapPalette(dark, MapColors.DEFAULT)
-            val land = palette.unvisited.rgb()
-            val ocean = palette.ocean.rgb()
-            bands(dark).forEach { (band, fill) ->
-                assertTrue(
-                    "$band vs land in ${name(dark)}: ${"%.2f".format(contrast(fill, land))}:1",
-                    contrast(fill, land) >= floorAgainstBackground,
-                )
-                assertTrue(
-                    "$band vs ocean in ${name(dark)}: ${"%.2f".format(contrast(fill, ocean))}:1",
-                    contrast(fill, ocean) >= floorAgainstBackground,
-                )
+        MapBase.entries.forEach { base ->
+            themes().forEach { dark ->
+                val palette = mapPalette(dark, MapColors.DEFAULT, base)
+                val land = palette.unvisited.rgb()
+                val ocean = palette.ocean.rgb()
+                bands(dark).forEach { (band, fill) ->
+                    assertTrue(
+                        "$band vs $base land in ${name(dark)}: ${"%.2f".format(contrast(fill, land))}:1",
+                        contrast(fill, land) >= floorAgainstBackground,
+                    )
+                    assertTrue(
+                        "$band vs $base ocean in ${name(dark)}: ${"%.2f".format(contrast(fill, ocean))}:1",
+                        contrast(fill, ocean) >= floorAgainstBackground,
+                    )
+                }
             }
         }
     }

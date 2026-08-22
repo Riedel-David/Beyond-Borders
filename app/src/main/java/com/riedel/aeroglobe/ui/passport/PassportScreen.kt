@@ -25,6 +25,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.aeroglobe.data.place.PlaceStatus
+import com.riedel.aeroglobe.ui.BounceFilterChip
 import com.riedel.aeroglobe.ui.places.ContinentStat
 import com.riedel.aeroglobe.ui.places.Grouping
 import com.riedel.aeroglobe.ui.places.PlaceRow
@@ -71,9 +73,14 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
+    val wishlistEasyLine by viewModel.wishlistEasyLine.collectAsStateWithLifecycle()
     // Derived from an asset that is read once, so a flow would be a subscription to
     // something that never changes twice.
     val filters = remember(visa) { visaFilters(visa) }
+    // Persisted, and prefixed with the grouping's name, so a header collapsed by
+    // continent survives closing the app but does not carry over, by coincidence
+    // of the same string, into region or A-Z grouping.
+    val collapsedHeaders by viewModel.collapsedHeaders.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -111,7 +118,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         }
 
         item("stats") {
-            StatsCard(stats, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+            StatsCard(stats, wishlistEasyLine, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
         }
 
         item("controls") {
@@ -140,13 +147,20 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     }
                 }
                 Row(
-                    Modifier.padding(top = 4.dp, bottom = 8.dp),
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(top = 4.dp, bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FilterChip(
                         selected = grouping == Grouping.CONTINENT,
                         onClick = { viewModel.setGrouping(Grouping.CONTINENT) },
                         label = { Text("By continent") },
+                    )
+                    FilterChip(
+                        selected = grouping == Grouping.REGION,
+                        onClick = { viewModel.setGrouping(Grouping.REGION) },
+                        label = { Text("By region") },
                     )
                     FilterChip(
                         selected = grouping == Grouping.ALPHABETICAL,
@@ -171,19 +185,35 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         // Headers are emitted inline rather than with stickyHeader: the list is
         // 252 rows at most, so there is nothing to gain and stickyHeader is still
         // an opt-in experimental API.
+        //
+        // A search that matches something inside a collapsed section would hide
+        // its own result, so a query in progress ignores the collapse state
+        // entirely rather than making the user remember to expand first.
+        val effectiveCollapsed = if (query.isBlank()) collapsedHeaders else emptySet()
         var lastHeader: String? = null
         rows.forEach { row ->
             // Derived next to the sort rather than here: the header letter and the
             // ordering have to be the same answer, and the key has to stay unique.
             val header = sectionHeader(row.place, grouping)
+            val collapseKey = "${grouping.name}:$header"
             if (header != lastHeader) {
                 lastHeader = header
-                item("header-$header") { SectionHeader(header) }
+                item("header-$header") {
+                    SectionHeader(
+                        text = header,
+                        collapsed = collapseKey in effectiveCollapsed,
+                        onClick = { viewModel.toggleHeaderCollapsed(grouping, header) },
+                    )
+                }
             }
+            if (collapseKey in effectiveCollapsed) return@forEach
             item(row.place.code) {
                 PlaceListRow(
                     row = row,
-                    onToggle = { target -> viewModel.toggle(row.place.code, target) },
+                    onToggle = { target ->
+                        viewModel.vibrate()
+                        viewModel.toggle(row.place.code, target)
+                    },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
@@ -246,16 +276,29 @@ private fun ModeToggle(
 }
 
 @Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = text.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        // A glyph rather than an icon: this row already carries no icon
+        // dependency, and ▸/▾ read as a disclosure triangle either way.
+        Text(
+            text = if (collapsed) "▸" else "▾",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 @Composable
@@ -285,27 +328,27 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
         // one tap away on this screen, and a hidden third option would push the
         // rarest answer onto the map only.
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(
+            BounceFilterChip(
                 selected = row.status == PlaceStatus.VISITED,
+                label = "Been",
                 onClick = { onToggle(PlaceStatus.VISITED) },
-                label = { Text("Been") },
             )
-            FilterChip(
+            BounceFilterChip(
                 selected = row.status == PlaceStatus.LIVED,
+                label = "Lived",
                 onClick = { onToggle(PlaceStatus.LIVED) },
-                label = { Text("Lived") },
             )
-            FilterChip(
+            BounceFilterChip(
                 selected = row.status == PlaceStatus.WISHLIST,
+                label = "Want",
                 onClick = { onToggle(PlaceStatus.WISHLIST) },
-                label = { Text("Want") },
             )
         }
     }
 }
 
 @Composable
-private fun StatsCard(stats: TravelStats, modifier: Modifier = Modifier) {
+private fun StatsCard(stats: TravelStats, wishlistEasyLine: String?, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -340,6 +383,32 @@ private fun StatsCard(stats: TravelStats, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // Two lines that only appear once they have something worth saying:
+            // the nudge needs a continent partway done, the join needs a wishlist.
+            if (stats.coverage != null) {
+                Text(
+                    stats.coverage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            if (stats.nudge != null) {
+                Text(
+                    stats.nudge,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            if (wishlistEasyLine != null) {
+                Text(
+                    wishlistEasyLine,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
             // Two columns: seven continents in four rows instead of seven, so the
             // card does not push the search field and the list off the screen.
             Column(

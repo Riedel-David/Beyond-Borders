@@ -160,6 +160,43 @@ class VisaLogicTest {
         assertTrue(greenland.status.isBeen)
     }
 
+    // --- the join: two datasets the app already owns ---------------------------
+
+    /** GL is visa-free (easy) and on the wishlist; IN is on the wishlist but only an e-visa. */
+    @Test
+    fun `the wishlist-easy filter needs both a wish and an easy answer`() {
+        assertEquals(
+            listOf("GL"),
+            rows(VisaFilter.WishlistEasy, statuses = mapOf("GL" to PlaceStatus.WISHLIST)),
+        )
+        assertEquals(
+            emptyList<String>(),
+            rows(VisaFilter.WishlistEasy, statuses = mapOf("IN" to PlaceStatus.WISHLIST)),
+        )
+    }
+
+    /** IN is visa-free-adjacent but only an e-visa with 30 days: not long-stay, not visa-free. */
+    @Test
+    fun `the long-stay filter is visa-free only, and needs 90 days or more`() {
+        assertEquals(emptyList<String>(), rows(VisaFilter.LongStay))
+    }
+
+    @Test
+    fun `the wishlist join line names the easy fraction of the whole wishlist`() {
+        val statuses = mapOf("GL" to PlaceStatus.WISHLIST, "RU" to PlaceStatus.WISHLIST)
+        assertEquals(
+            "1 of your 2 wishlist places need no embassy",
+            computeWishlistEasyLine(places, statuses, visa),
+        )
+    }
+
+    @Test
+    fun `the wishlist join line is null with no visa asset, no wishlist, or nothing easy on it`() {
+        assertEquals(null, computeWishlistEasyLine(places, mapOf("GL" to PlaceStatus.WISHLIST), null))
+        assertEquals(null, computeWishlistEasyLine(places, emptyMap(), visa))
+        assertEquals(null, computeWishlistEasyLine(places, mapOf("RU" to PlaceStatus.WISHLIST), visa))
+    }
+
     // --- the chips -------------------------------------------------------------
 
     @Test

@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +46,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.aeroglobe.AppContainer
 import com.riedel.aeroglobe.BuildConfig
 import com.riedel.aeroglobe.data.backup.TravelBackup
+import com.riedel.aeroglobe.settings.Denominator
+import com.riedel.aeroglobe.settings.MapBase
 import com.riedel.aeroglobe.settings.MapColors
 import com.riedel.aeroglobe.settings.MapHue
 import com.riedel.aeroglobe.settings.MapSlot
@@ -73,6 +76,9 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
+    val mapBase by viewModel.mapBase.collectAsStateWithLifecycle()
+    val denominator by viewModel.denominator.collectAsStateWithLifecycle()
+    val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -111,6 +117,17 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             )
         }
 
+        Section("Haptics", "A short vibration when you mark or clear a place.") {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Vibrate on marking", style = MaterialTheme.typography.bodyMedium)
+                Switch(checked = hapticsEnabled, onCheckedChange = viewModel::setHapticsEnabled)
+            }
+        }
+
         Section(
             "Map colours",
             // The swap is stated up front because it is the one thing about this
@@ -125,6 +142,33 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             if (mapColors != MapColors.DEFAULT) {
                 TextButton(onClick = viewModel::resetMapColors) { Text("Reset to default colours") }
             }
+        }
+
+        Section(
+            "Counting places",
+            "\"How many countries have you been to\" has no one answer. Pick which " +
+                "one the passport tab counts against.",
+        ) {
+            ChoiceRow(
+                options = Denominator.entries,
+                selected = denominator,
+                label = { d ->
+                    when (d) {
+                        Denominator.ALL -> "All 252"
+                        Denominator.UN_MEMBER -> "195 UN"
+                        Denominator.INHABITED -> "Inhabited"
+                    }
+                },
+                onSelect = viewModel::setDenominator,
+            )
+        }
+
+        Section(
+            "Map background",
+            "Ocean and unmarked land. A small, checked list rather than a colour " +
+                "wheel, so it stays readable against every status colour above.",
+        ) {
+            BaseRow(mapBase, viewModel::setMapBase)
         }
 
         Section(
@@ -262,6 +306,78 @@ private fun HueRow(label: String, selected: MapHue, onSelect: (MapHue) -> Unit) 
         }
     }
 }
+
+/**
+ * The three background choices, each shown as its own ocean/land pair rather than
+ * one dot, since a single colour could not stand in for two.
+ */
+@Composable
+private fun BaseRow(selected: MapBase, onSelect: (MapBase) -> Unit) {
+    val dark = LocalIsDarkTheme.current
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        MapBase.entries.forEach { base ->
+            BaseSwatch(
+                ocean = Color(base.oceanArgb(dark)),
+                land = Color(base.landArgb(dark)),
+                isSelected = base == selected,
+                name = base.displayName,
+                onClick = { onSelect(base) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaseSwatch(ocean: Color, land: Color, isSelected: Boolean, name: String, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .selectable(selected = isSelected, onClick = onClick)
+            .semantics { contentDescription = name }
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier.size(44.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isSelected) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                )
+            }
+            Row(
+                Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+            ) {
+                Box(Modifier.weight(1f).fillMaxSize().background(ocean))
+                Box(Modifier.weight(1f).fillMaxSize().background(land))
+            }
+        }
+        Text(
+            name,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+/**
+ * Display names, kept here with the other user-facing strings rather than on the
+ * enum, for the same reason as [MapHue.displayName].
+ */
+private val MapBase.displayName: String
+    get() = when (this) {
+        MapBase.DEFAULT -> "Default"
+        MapBase.SLATE -> "Slate"
+        MapBase.SAND -> "Sand"
+    }
 
 @Composable
 private fun Swatch(color: Color, isSelected: Boolean, name: String, onClick: () -> Unit) {

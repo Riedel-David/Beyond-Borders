@@ -27,7 +27,8 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val themeMode by container.settings.themeMode.collectAsStateWithLifecycle()
             val mapColors by container.settings.mapColors.collectAsStateWithLifecycle()
-            AeroGlobeTheme(themeMode, mapColors) {
+            val mapBase by container.settings.mapBase.collectAsStateWithLifecycle()
+            AeroGlobeTheme(themeMode, mapColors, mapBase) {
                 AeroGlobeRoot(container)
             }
         }
