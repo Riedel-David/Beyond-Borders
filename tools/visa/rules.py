@@ -1,9 +1,9 @@
-"""Curation rules that turn the Passport Index matrix into Borderline visa data.
+"""Curation rules that turn the Passport Index matrix into BeyondBorders visa data.
 
 Why this file exists
 --------------------
 The Passport Index matrix is 199 passports x 199 destinations. Those 199
-destinations are sovereign states. Borderline has 252 places, because the whole
+destinations are sovereign states. BeyondBorders has 252 places, because the whole
 point of the place registry (PLAN.md section 3) is that Greenland is not Denmark
 and French Guiana is not France.
 

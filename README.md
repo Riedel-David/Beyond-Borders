@@ -1,11 +1,11 @@
-# Borderline
+# Beyond Borders
 
 A personal Android app for tracking where I have been and where I can go without
 a visa.
 
 It exists because of one specific annoyance. Every travel tracker I tried selects
 more than you ask for — tap Denmark and you get Greenland, tap France and you get
-French Guiana. Borderline is built on a dataset where those are separate places
+French Guiana. Beyond Borders is built on a dataset where those are separate places
 and on a data model with no parent-child link at all, so a cascade is not a bug
 that was fixed, it is a thing the code cannot express.
 
@@ -45,7 +45,7 @@ Two things follow from that, both deliberate:
   the first evening you saw it.
 
 The palette's claim to be readable is a test rather than a promise:
-[`MapColorsTest`](app/src/test/java/com/riedel/borderline/settings/MapColorsTest.kt)
+[`MapColorsTest`](app/src/test/java/com/riedel/beyondborders/settings/MapColorsTest.kt)
 computes each preset's WCAG contrast against unmarked land and open water in both
 themes and fails below 3:1, and separately checks that no two presets sit within 40°
 of each other on the colour wheel — because contrast says a fill is *visible*, not
@@ -60,7 +60,7 @@ only. The map has a matching **Visa** toggle that repaints the same map by requi
 instead of by your own history.
 
 The interesting part is not the dataset — it is the 53 places the dataset does not
-cover. The Passport Index matrix is 199 sovereign states; Borderline has 252 places,
+cover. The Passport Index matrix is 199 sovereign states; Beyond Borders has 252 places,
 because the whole point of this app is that Greenland is not Denmark. So those 53 are
 hand-written in [`tools/visa/rules.py`](tools/visa/rules.py), one entry at a time, and
 they are exactly the ones other apps get wrong:
@@ -84,7 +84,7 @@ four intensities rather than a ramp through several hues. That is measured, not
 preferred: hue is the channel colour-vision deficiency takes away, so an ordered scale
 has to carry its order in intensity — and the dark theme's usable luminance range only
 fits four steps that survive simulated protanopia, deuteranopia and tritanopia.
-[`VisaRampTest`](app/src/test/java/com/riedel/borderline/ui/theme/VisaRampTest.kt)
+[`VisaRampTest`](app/src/test/java/com/riedel/beyondborders/ui/theme/VisaRampTest.kt)
 asserts all of that. The exact answer — "e-Visa · 30 days" — is text in the list, where
 an exact answer belongs; the map is for "roughly, where can I go".
 
@@ -135,7 +135,7 @@ than what is already on the phone, so importing an old backup cannot undo newer
 trips, and importing the same file twice does nothing. Un-markings travel as
 tombstones so they propagate too, and a place code this build does not know is
 skipped and named rather than stored. The rules are in
-[`data/backup/BackupMerge.kt`](app/src/main/java/com/riedel/borderline/data/backup/BackupMerge.kt)
+[`data/backup/BackupMerge.kt`](app/src/main/java/com/riedel/beyondborders/data/backup/BackupMerge.kt)
 as a pure function, and they are the same rules phase 5's optional sync will use.
 
 ## Regenerating the geo assets

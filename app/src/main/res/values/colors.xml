@@ -3,12 +3,12 @@
     <!-- The only colour the resource system needs. Everything else lives in
          ui/theme/Color.kt, because every screen is Compose. This one is the
          window background that shows for the frame or two before the first
-         composition, so it has to match BorderlineLight.background exactly or
+         composition, so it has to match BeyondBordersLight.background exactly or
          the app flashes on launch. values-night/colors.xml has the dark twin. -->
     <color name="window_background">#F7F9FC</color>
 
     <!-- The widget can't read the Compose theme, so its surface/text/accent are
-         copied by hand from BorderlineLight in ui/theme/Color.kt. values-night
+         copied by hand from BeyondBordersLight in ui/theme/Color.kt. values-night
          has the dark twin. -->
     <color name="widget_surface">#F7F9FC</color>
     <color name="widget_on_surface">#131A22</color>

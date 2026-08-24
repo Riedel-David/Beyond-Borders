@@ -5,14 +5,14 @@ plugins {
 }
 
 android {
-    namespace = "com.riedel.borderline"
+    namespace = "com.riedel.beyondborders"
     // 37 is required by androidx.lifecycle 2.11 and the Compose BOM 2026.06.
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.riedel.borderline"
+        applicationId = "com.riedel.beyondborders"
         // 30 (Android 11, 2020): only the author and a friend run this app, both
         // on recent phones, so there is no compatibility cost — and D8 refuses to
         // dex a class name with a space in it (which the backtick-sentence test

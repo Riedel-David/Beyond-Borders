@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Borderline's bundled visa asset from the Passport Index matrix.
+"""Build BeyondBorders's bundled visa asset from the Passport Index matrix.
 
     python3 tools/visa/build_visa.py [--source PATH]
 

@@ -6,7 +6,7 @@
          under a plain android:Theme. All real colour decisions are in
          ui/theme/Color.kt so that the in-app light/dark switch works without
          recreating the Activity. -->
-    <style name="Theme.Borderline" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.BeyondBorders" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
 </resources>
