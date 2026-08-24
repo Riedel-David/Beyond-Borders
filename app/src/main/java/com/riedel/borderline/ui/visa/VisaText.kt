@@ -1,0 +1,46 @@
+package com.riedel.borderline.ui.visa
+
+import com.riedel.borderline.data.visa.VisaRegistry
+import com.riedel.borderline.data.visa.VisaRequirement
+
+/**
+ * The words the map and the passport both use for a visa answer.
+ *
+ * Shared so the two surfaces cannot drift into describing the same requirement
+ * differently — which, for a screen whose only job is to be trusted, would be worse
+ * than either wording alone.
+ */
+
+/** "Visa-free · 90 days", or just the category where no day count is known. */
+fun requirementSummary(requirement: VisaRequirement): String = buildString {
+    append(requirement.category.label)
+    requirement.days?.let {
+        append(" · ")
+        append(it)
+        append(" days")
+    }
+}
+
+/**
+ * The disclaimer PLAN.md requires on every visa surface.
+ *
+ * One function rather than a string in each screen: the promise is that the app never
+ * shows a visa answer without saying how old it is, and a promise kept in two places
+ * is a promise that gets half-kept in the third.
+ */
+fun asOfNotice(visa: VisaRegistry): String =
+    "Data as of ${visa.asOf} — verify officially before booking"
+
+/**
+ * How the Auswärtiges Amt link should be labelled.
+ *
+ * Named for the country whose page it actually is. Greenland's advice lives on the
+ * Denmark page, and a link that said "Foreign Office: Greenland" while opening a page
+ * headed Dänemark would look like a bug in exactly the place this app claims to be
+ * careful about.
+ */
+fun officialLinkLabel(requirement: VisaRequirement, nameOf: (String) -> String?): String {
+    val parent = requirement.officialFor ?: return "Foreign Office advice"
+    val name = nameOf(parent) ?: parent
+    return "Foreign Office advice: $name"
+}

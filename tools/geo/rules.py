@@ -1,10 +1,10 @@
-"""Curation rules that turn Natural Earth map units into AeroGlobe places.
+"""Curation rules that turn Natural Earth map units into Borderline places.
 
 Why this file exists
 --------------------
 Natural Earth's `admin_0_map_units` layer is the only admin-0 layer that keeps
 Greenland separate from Denmark and French Guiana separate from France, which is
-the entire reason AeroGlobe uses it (see PLAN.md section 3).
+the entire reason Borderline uses it (see PLAN.md section 3).
 
 But it also splits things we do NOT want split: England/Scotland/Wales/Northern
 Ireland, Belgium's three regions, the Azores and Madeira, Zanzibar, Republika

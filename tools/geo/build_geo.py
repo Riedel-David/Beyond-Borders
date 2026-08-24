@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build AeroGlobe's bundled geo assets from Natural Earth map units.
+"""Build Borderline's bundled geo assets from Natural Earth map units.
 
     python3 tools/geo/build_geo.py [--source PATH] [--eps-scale 1.0]
 

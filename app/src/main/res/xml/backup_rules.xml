@@ -2,15 +2,15 @@
    Auto Backup on API 26-30; data_extraction_rules.xml is the same decision for 31+.
 
    Everything is backed up except where excluded, and that default is what we want
-   here: aeroglobe.db is the travel history, the one thing in the app that cannot be
+   here: borderline.db is the travel history, the one thing in the app that cannot be
    re-fetched from anywhere, so a new phone should get it back.
 
-   aeroglobe.device.xml is the exception. It holds the per-install id that a future
+   borderline.device.xml is the exception. It holds the per-install id that a future
    sync uses to tell its own writes from another device's, and restoring it would
    give two installs the same id — each ignoring the other's edits as an echo of its
    own. Excluded, it is regenerated on first launch, which is the correct answer for
    a new install.
 -->
 <full-backup-content>
-    <exclude domain="sharedpref" path="aeroglobe.device.xml"/>
+    <exclude domain="sharedpref" path="borderline.device.xml"/>
 </full-backup-content>

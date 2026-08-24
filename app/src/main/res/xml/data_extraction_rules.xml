@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?><!--
    Auto Backup and device-to-device transfer on API 31+; backup_rules.xml is the same
-   decision for 26-30. See there for why aeroglobe.db is deliberately left included
-   and aeroglobe.device.xml is not.
+   decision for 26-30. See there for why borderline.db is deliberately left included
+   and borderline.device.xml is not.
 
    device-transfer excludes it too. A direct transfer usually retires the old phone,
    so the clash is briefer, but "usually" is not an invariant and a fresh id costs
@@ -9,9 +9,9 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="sharedpref" path="aeroglobe.device.xml"/>
+        <exclude domain="sharedpref" path="borderline.device.xml"/>
     </cloud-backup>
     <device-transfer>
-        <exclude domain="sharedpref" path="aeroglobe.device.xml"/>
+        <exclude domain="sharedpref" path="borderline.device.xml"/>
     </device-transfer>
 </data-extraction-rules>

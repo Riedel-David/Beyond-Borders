@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AeroGlobe"
+rootProject.name = "Borderline"
 include(":app")
