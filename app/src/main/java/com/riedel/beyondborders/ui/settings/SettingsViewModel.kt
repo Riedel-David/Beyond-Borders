@@ -61,6 +61,12 @@ class SettingsViewModel(
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
 
+    // Separate from [transfer] even though it is the same shape: the two live under
+    // different sections, and sharing one flow would surface a delete's result (or an
+    // export's) under the wrong heading.
+    private val _reset = MutableStateFlow<TransferState>(TransferState.Idle)
+    val reset: StateFlow<TransferState> = _reset.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) = settings.setThemeMode(mode)
 
     fun setMapHue(slot: MapSlot, hue: MapHue) = settings.setMapHue(slot, hue)
@@ -78,6 +84,26 @@ class SettingsViewModel(
 
     fun dismissTransfer() {
         _transfer.value = TransferState.Idle
+    }
+
+    fun dismissReset() {
+        _reset.value = TransferState.Idle
+    }
+
+    /** The emergency reset. The screen is responsible for confirming first — this
+     * assumes that already happened and just does it. */
+    fun deleteEverything() {
+        if (_reset.value == TransferState.Busy) return
+        _reset.value = TransferState.Busy
+        viewModelScope.launch {
+            _reset.value = try {
+                places.deleteAll()
+                settings.resetHasSeenWelcome()
+                TransferState.Done("Everything deleted.")
+            } catch (e: Exception) {
+                TransferState.Failed(e.message ?: "Couldn't delete everything.")
+            }
+        }
     }
 
     /** Write the whole history to a location the user picked in the file picker. */

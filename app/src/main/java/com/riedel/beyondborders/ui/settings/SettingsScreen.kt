@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -32,6 +34,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +85,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val denominator by viewModel.denominator.collectAsStateWithLifecycle()
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
+    val reset by viewModel.reset.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(TravelBackup.MIME_TYPE)
@@ -199,6 +205,45 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 )
                 is TransferState.Done -> TransferResult(state.message, isError = false, viewModel::dismissTransfer)
                 is TransferState.Failed -> TransferResult(state.message, isError = true, viewModel::dismissTransfer)
+            }
+        }
+
+        Section(
+            "Danger zone",
+            "Clears every place you've marked as been, lived in or want to visit. " +
+                "Cannot be undone — export a backup first if there's any doubt.",
+        ) {
+            var showConfirm by remember { mutableStateOf(false) }
+            OutlinedButton(
+                onClick = { showConfirm = true },
+                enabled = reset !is TransferState.Busy,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) { Text("Delete everything") }
+
+            when (val state = reset) {
+                TransferState.Idle -> Unit
+                TransferState.Busy -> LinearProgressIndicator(
+                    Modifier.fillMaxWidth().padding(top = 12.dp)
+                )
+                is TransferState.Done -> TransferResult(state.message, isError = false, viewModel::dismissReset)
+                is TransferState.Failed -> TransferResult(state.message, isError = true, viewModel::dismissReset)
+            }
+
+            if (showConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showConfirm = false },
+                    title = { Text("Delete everything?") },
+                    text = { Text("Every place you've marked will be cleared. This cannot be undone.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showConfirm = false
+                            viewModel.deleteEverything()
+                        }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showConfirm = false }) { Text("Cancel") }
+                    },
+                )
             }
         }
 

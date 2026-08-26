@@ -36,6 +36,11 @@ interface PlaceStatusDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(row: PlaceStatusEntity)
 
+    /** The emergency reset in Settings. Every row, tombstones included — there is
+     * nothing left to import or undo from once this runs. */
+    @Query("DELETE FROM place_status")
+    suspend fun clearAll()
+
     /** Also clears any tombstone, which is what re-marking a place means. */
     @Query(
         """

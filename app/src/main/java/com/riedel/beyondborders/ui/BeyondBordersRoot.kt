@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.R
@@ -23,6 +24,7 @@ import com.riedel.beyondborders.ui.map.MapScreen
 import com.riedel.beyondborders.ui.passport.PassportScreen
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.settings.SettingsScreen
+import com.riedel.beyondborders.ui.welcome.WelcomeScreen
 
 enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
     MAP("Map", R.drawable.ic_tab_map),
@@ -48,6 +50,12 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
  */
 @Composable
 fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
+    val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
+    if (!hasSeenWelcome) {
+        WelcomeScreen(onGetStarted = container.settings::setHasSeenWelcome, modifier = modifier)
+        return
+    }
+
     var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
     val tab = Tab.entries[selected]
 

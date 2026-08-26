@@ -26,10 +26,12 @@ fun requirementSummary(requirement: VisaRequirement): String = buildString {
  *
  * One function rather than a string in each screen: the promise is that the app never
  * shows a visa answer without saying how old it is, and a promise kept in two places
- * is a promise that gets half-kept in the third.
+ * is a promise that gets half-kept in the third. Names the passport too — there is
+ * no switcher yet, and every answer on screen assumes German, which is exactly the
+ * kind of unstated assumption this notice exists to rule out.
  */
 fun asOfNotice(visa: VisaRegistry): String =
-    "Data as of ${visa.asOf} — verify officially before booking"
+    "Data as of ${visa.asOf} for a German passport — verify officially before booking"
 
 /**
  * How the Auswärtiges Amt link should be labelled.

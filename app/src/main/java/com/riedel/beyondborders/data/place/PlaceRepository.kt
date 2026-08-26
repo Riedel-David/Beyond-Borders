@@ -61,6 +61,10 @@ class PlaceRepository(
         else PlaceStatus.fromStorage(row.status)
     }
 
+    /** Wipe every place status. The emergency reset in Settings — irreversible, and
+     * meant to be: there is no undo for the one table this app cannot re-download. */
+    suspend fun deleteAll() = withContext(Dispatchers.IO) { dao.clearAll() }
+
     /**
      * Everything the user has decided, as a backup file's contents.
      *

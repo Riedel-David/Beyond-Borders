@@ -68,6 +68,22 @@ class SettingsStore(context: Context) {
     private val _hapticsEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTICS, true))
     val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
 
+    private val _hasSeenWelcome = MutableStateFlow(prefs.getBoolean(KEY_HAS_SEEN_WELCOME, false))
+    val hasSeenWelcome: StateFlow<Boolean> = _hasSeenWelcome.asStateFlow()
+
+    fun setHasSeenWelcome() {
+        _hasSeenWelcome.value = true
+        prefs.edit { putBoolean(KEY_HAS_SEEN_WELCOME, true) }
+    }
+
+    /** Part of the emergency reset: once the travel data is gone, the welcome
+     * screen's "nothing leaves this phone" pitch is true again from a blank slate,
+     * so it shows again rather than assuming this is still the same user's app. */
+    fun resetHasSeenWelcome() {
+        _hasSeenWelcome.value = false
+        prefs.edit { remove(KEY_HAS_SEEN_WELCOME) }
+    }
+
     /**
      * Stable per-install id, stamped onto every row we write.
      *
@@ -177,6 +193,7 @@ class SettingsStore(context: Context) {
         const val KEY_MAP_BASE = "map_base"
         const val KEY_DENOMINATOR = "denominator"
         const val KEY_HAPTICS = "haptics_enabled"
+        const val KEY_HAS_SEEN_WELCOME = "has_seen_welcome"
         const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"

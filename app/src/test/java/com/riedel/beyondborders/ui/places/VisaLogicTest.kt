@@ -279,6 +279,7 @@ class VisaLogicTest {
         val notice = asOfNotice(visa)
         assertTrue("the date has to be in it: $notice", notice.contains("2026-02-17"))
         assertTrue("and the warning: $notice", notice.contains("verify", ignoreCase = true))
+        assertTrue("and which passport: $notice", notice.contains("German"))
     }
 
     /**
