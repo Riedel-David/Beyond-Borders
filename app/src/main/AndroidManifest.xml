@@ -58,6 +58,17 @@
                 android:resource="@xml/travel_widget_info" />
         </receiver>
 
+        <!-- exported="true": the widget host (the home-screen launcher, a different
+             app) is what launches this, not this app's own code. -->
+        <activity
+            android:name=".widget.TravelWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BeyondBorders">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

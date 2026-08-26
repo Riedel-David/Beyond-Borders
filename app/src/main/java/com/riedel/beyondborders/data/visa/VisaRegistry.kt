@@ -85,7 +85,7 @@ class VisaRegistry private constructor(
                 out += VisaRequirement(
                     code = o.getString("code"),
                     category = category,
-                    days = if (o.has("days")) o.getInt("days") else null,
+                    days = if (o.has("days") && !o.isNull("days")) o.getInt("days") else null,
                     origin = origin,
                     note = o.optStringOrNull("note"),
                     confidence = o.optStringOrNull("confidence")

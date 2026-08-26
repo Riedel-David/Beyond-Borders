@@ -1,10 +1,12 @@
 package com.riedel.beyondborders.data.place
 
+import androidx.room.withTransaction
 import com.riedel.beyondborders.core.Uuid
 import com.riedel.beyondborders.data.backup.BackupExport
 import com.riedel.beyondborders.data.backup.BackupFormatException
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.TravelBackup
+import com.riedel.beyondborders.data.db.BeyondBordersDatabase
 import com.riedel.beyondborders.data.db.PlaceStatusDao
 import com.riedel.beyondborders.data.db.PlaceStatusEntity
 import kotlinx.coroutines.Dispatchers
@@ -18,10 +20,11 @@ import kotlinx.coroutines.withContext
  */
 class PlaceRepository(
     registryLoader: () -> PlaceRegistry,
-    private val dao: PlaceStatusDao,
+    private val database: BeyondBordersDatabase,
     private val deviceId: String,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
+    private val dao: PlaceStatusDao = database.placeStatusDao()
     // Thread-safe by default, and only ever touched from inside withContext(IO),
     // so the ~50 kB parse never runs on the main thread.
     private val registry: PlaceRegistry by lazy(registryLoader)
@@ -95,33 +98,38 @@ class PlaceRepository(
      */
     suspend fun importBackup(text: String): BackupMerge.Plan = withContext(Dispatchers.IO) {
         val payload = TravelBackup.decode(text)
-        val local = dao.allRows().associate { it.code to it.updatedAt }
-        val plan = BackupMerge.plan(
-            entries = payload.entries,
-            localUpdatedAt = local,
-            knownCodes = registry.places.mapTo(HashSet()) { it.code },
-            unknownStatuses = payload.unknownStatuses,
-        )
-        dao.applyAll(
-            plan.apply.map { entry ->
-                PlaceStatusEntity(
-                    // Only used if the place has no row yet. Seeding v7 with the
-                    // entry's own timestamp keeps ids time-ordered by when the
-                    // decision was made rather than by when it was imported.
-                    id = Uuid.v7(entry.updatedAt),
-                    code = entry.code,
-                    // Kept verbatim even for a tombstone: that is how the app's own
-                    // un-mark writes look, and it means re-marking the place later
-                    // does not lose what it used to be.
-                    status = entry.status.storageValue,
-                    updatedAt = entry.updatedAt,
-                    deletedAt = entry.deletedAt,
-                    // A file written before deviceId existed, or edited by hand, is
-                    // attributed to this device rather than to nobody.
-                    deviceId = entry.deviceId ?: deviceId,
-                )
-            }
-        )
-        plan
+        // Read and apply inside one transaction: a concurrent write landing between
+        // the two would otherwise be computed against and then overwritten by a
+        // stale plan.
+        database.withTransaction {
+            val local = dao.allRows().associate { it.code to it.updatedAt }
+            val plan = BackupMerge.plan(
+                entries = payload.entries,
+                localUpdatedAt = local,
+                knownCodes = registry.places.mapTo(HashSet()) { it.code },
+                unknownStatuses = payload.unknownStatuses,
+            )
+            dao.applyAll(
+                plan.apply.map { entry ->
+                    PlaceStatusEntity(
+                        // Only used if the place has no row yet. Seeding v7 with the
+                        // entry's own timestamp keeps ids time-ordered by when the
+                        // decision was made rather than by when it was imported.
+                        id = Uuid.v7(entry.updatedAt),
+                        code = entry.code,
+                        // Kept verbatim even for a tombstone: that is how the app's own
+                        // un-mark writes look, and it means re-marking the place later
+                        // does not lose what it used to be.
+                        status = entry.status.storageValue,
+                        updatedAt = entry.updatedAt,
+                        deletedAt = entry.deletedAt,
+                        // A file written before deviceId existed, or edited by hand, is
+                        // attributed to this device rather than to nobody.
+                        deviceId = entry.deviceId ?: deviceId,
+                    )
+                }
+            )
+            plan
+        }
     }
 }

@@ -294,21 +294,20 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     // The map's snapshot callback never fires while the style is still
                     // loading, which otherwise left a tap doing nothing at all with no
                     // sign anything was wrong.
-                    if (!controller.isReady()) {
-                        Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
-                    } else {
-                        controller.snapshot { bitmap ->
-                            scope.launch {
-                                runCatching { shareMapSnapshot(context, bitmap, stats) }
-                                    .onFailure {
-                                        Toast.makeText(
-                                            context,
-                                            "Couldn't share the map",
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    }
-                            }
+                    val started = controller.snapshot { bitmap ->
+                        scope.launch {
+                            runCatching { shareMapSnapshot(context, bitmap, stats) }
+                                .onFailure {
+                                    Toast.makeText(
+                                        context,
+                                        "Couldn't share the map",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
                         }
+                    }
+                    if (!started) {
+                        Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
                     }
                 },
             ) {
@@ -506,14 +505,20 @@ private class PlacesMapController {
         return labels
     }
 
-    /** The rendered frame, exactly as the user is currently looking at it. */
-    fun snapshot(onReady: (android.graphics.Bitmap) -> Unit) {
-        map?.snapshot { bitmap -> onReady(bitmap) }
+    /**
+     * The rendered frame, exactly as the user is currently looking at it.
+     *
+     * Returns false without calling [onReady] if the map hasn't attached yet — a
+     * snapshot taken then would never call back at all, rather than fail visibly.
+     * A single null-check here (instead of a separate isReady() the caller checks
+     * first) closes the gap where the map could detach between the check and the
+     * call.
+     */
+    fun snapshot(onReady: (android.graphics.Bitmap) -> Unit): Boolean {
+        val map = map ?: return false
+        map.snapshot { bitmap -> onReady(bitmap) }
+        return true
     }
-
-    /** False before the map view has attached — a snapshot taken then would
-     * never call back at all, rather than fail visibly. */
-    fun isReady(): Boolean = map != null
 }
 
 @Composable

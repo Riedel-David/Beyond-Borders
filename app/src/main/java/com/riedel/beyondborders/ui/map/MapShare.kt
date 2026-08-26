@@ -53,14 +53,16 @@ private fun withCaption(bitmap: Bitmap, caption: String): Bitmap {
  * Writes the map snapshot, captioned with [stats], to cacheDir/shared and opens
  * the system share sheet on it.
  *
- * Overwrites the same file every time rather than naming it uniquely: the file only
- * needs to survive long enough for the receiving app to read it out of the Uri, not
- * to persist, so there is nothing to clean up and nothing worth a timestamp.
+ * Named uniquely per call rather than reusing one fixed file: two taps of Share in
+ * quick succession, before the first chooser resolves, would otherwise let one
+ * write interleave with the other's read. Stale files from earlier shares are
+ * swept out first since nothing else in the app depends on them persisting.
  */
 suspend fun shareMapSnapshot(context: Context, bitmap: Bitmap, stats: TravelStats) {
     val file = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "shared").apply { mkdirs() }
-        val file = File(dir, "beyondborders-map.png")
+        dir.listFiles()?.forEach { it.delete() }
+        val file = File(dir, "beyondborders-map-${System.nanoTime()}.png")
         val captioned = withCaption(bitmap, mapShareCaption(stats))
         FileOutputStream(file).use { out -> captioned.compress(Bitmap.CompressFormat.PNG, 100, out) }
         file

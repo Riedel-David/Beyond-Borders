@@ -29,7 +29,7 @@ class AppContainer(context: Context) {
     val places: PlaceRepository by lazy {
         PlaceRepository(
             registryLoader = { PlaceRegistry.load(appContext.assets) },
-            dao = database.placeStatusDao(),
+            database = database,
             deviceId = settings.deviceId,
         )
     }

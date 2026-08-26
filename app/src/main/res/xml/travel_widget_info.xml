@@ -7,4 +7,5 @@
     android:initialLayout="@layout/travel_widget"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
+    android:configure="com.riedel.beyondborders.widget.TravelWidgetConfigActivity"
     android:updatePeriodMillis="1800000" />
