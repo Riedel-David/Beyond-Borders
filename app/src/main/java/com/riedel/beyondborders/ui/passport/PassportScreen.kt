@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.passport
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -108,6 +109,10 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     // rather than anything in SettingsStore.
     var showStatsDetail by rememberSaveable { mutableStateOf(false) }
     if (showStatsDetail) {
+        // Not a real back-stack entry — just this boolean — so without this the
+        // system back gesture has nothing here to intercept and falls through to
+        // exiting the app instead of closing the detail screen.
+        BackHandler { showStatsDetail = false }
         StatsDetailScreen(
             stats = stats,
             places = places,
