@@ -1,6 +1,8 @@
 package com.riedel.beyondborders.ui.passport
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,30 +16,43 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.BounceFilterChip
-import com.riedel.beyondborders.ui.places.ContinentStat
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
@@ -65,6 +80,12 @@ import com.riedel.beyondborders.ui.places.visaFilters
 fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    // The stats detail popup needs a name and a status per code in a bucket, and
+    // neither lives on [ContinentStat]/[RegionStat]/[NamedGroupStat] — just the
+    // code set. Looked up against the full registry rather than [rows], which is
+    // already filtered by query/status and would drop codes the popup still needs.
+    val places by viewModel.places.collectAsStateWithLifecycle()
+    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val grouping by viewModel.grouping.collectAsStateWithLifecycle()
     val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
@@ -81,6 +102,21 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     // continent survives closing the app but does not carry over, by coincidence
     // of the same string, into region or A-Z grouping.
     val collapsedHeaders by viewModel.collapsedHeaders.collectAsStateWithLifecycle()
+
+    // Transient: which continent/region a place belongs to never needs to survive
+    // a process death the way a preference would, so this is rememberSaveable
+    // rather than anything in SettingsStore.
+    var showStatsDetail by rememberSaveable { mutableStateOf(false) }
+    if (showStatsDetail) {
+        StatsDetailScreen(
+            stats = stats,
+            places = places,
+            statuses = statuses,
+            onBack = { showStatsDetail = false },
+            modifier = modifier,
+        )
+        return
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -118,7 +154,12 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         }
 
         item("stats") {
-            StatsCard(stats, wishlistEasyLine, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+            StatsCard(
+                stats = stats,
+                wishlistEasyLine = wishlistEasyLine,
+                onClick = { showStatsDetail = true },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
         }
 
         item("controls") {
@@ -348,8 +389,14 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
 }
 
 @Composable
-private fun StatsCard(stats: TravelStats, wishlistEasyLine: String?, modifier: Modifier = Modifier) {
+private fun StatsCard(
+    stats: TravelStats,
+    wishlistEasyLine: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -409,36 +456,130 @@ private fun StatsCard(stats: TravelStats, wishlistEasyLine: String?, modifier: M
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            // Two columns: seven continents in four rows instead of seven, so the
-            // card does not push the search field and the list off the screen.
-            Column(
-                Modifier.padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                stats.continents.chunked(2).forEach { pair ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        pair.forEach { ContinentBar(it, Modifier.weight(1f)) }
-                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+            // The continent/region grids live one tap away in StatsDetailScreen —
+            // gamification hidden behind the headline number, not in front of it.
+            Text(
+                "Tap for continents, regions, and more",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
+    }
+}
+
+/** One bar's worth of a completion grid, [codes] carried along so a long press
+ * can look up which places it covers without re-deriving membership from [Place]. */
+private data class Bucket(val label: String, val been: Int, val total: Int, val codes: Set<String>)
+
+/**
+ * One tap away from the passport list's headline number: every completion grid
+ * that would otherwise crowd the front page — continents, then the formal UN M49
+ * regions, then the informal named groupings people actually say out loud.
+ *
+ * A plain scrolling [Column] rather than [LazyColumn]: even all three sections
+ * together are around 45 short rows, nowhere near where laziness would matter.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StatsDetailScreen(
+    stats: TravelStats,
+    places: List<Place>,
+    statuses: Map<String, PlaceStatus>,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Which bar is long-pressed, if any. Plain remember rather than rememberSaveable:
+    // a Set<String> is not Parcelable-friendly, and a popup that closes on rotation
+    // is not a loss worth designing around.
+    var detail by remember { mutableStateOf<Bucket?>(null) }
+
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Stats") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Text(
+                "Hold a bar to see which places are still missing.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            CompletionGrid(
+                "Continents",
+                stats.continents.map { Bucket(it.continent, it.been, it.total, it.codes) },
+                onHold = { detail = it },
+            )
+            CompletionGrid(
+                "Regions",
+                stats.regions.map { Bucket(it.region, it.been, it.total, it.codes) },
+                onHold = { detail = it },
+            )
+            CompletionGrid(
+                "Named groupings",
+                stats.informalRegions.map { Bucket(it.name, it.been, it.total, it.codes) },
+                onHold = { detail = it },
+            )
+        }
+    }
+
+    detail?.let { bucket ->
+        BucketDetailDialog(bucket, places, statuses, onDismiss = { detail = null })
+    }
+}
+
+@Composable
+private fun CompletionGrid(title: String, bars: List<Bucket>, onHold: (Bucket) -> Unit) {
+    if (bars.isEmpty()) return
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+    )
+    // Two columns, same reasoning as the old continent grid: half the rows means
+    // the section does not dominate the screen it now has entirely to itself.
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        bars.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                pair.forEach { bucket -> CompletionBar(bucket, onHold, Modifier.weight(1f)) }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ContinentBar(stat: ContinentStat, modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+private fun CompletionBar(bucket: Bucket, onHold: (Bucket) -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier.combinedClickable(onClick = {}, onLongClick = { onHold(bucket) }),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
         Row {
             Text(
-                stat.continent,
+                bucket.label,
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )
             Text(
-                " ${stat.been}/${stat.total}",
+                " ${bucket.been}/${bucket.total}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -451,7 +592,7 @@ private fun ContinentBar(stat: ContinentStat, modifier: Modifier = Modifier) {
                 .height(5.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(3.dp))
         ) {
-            val fraction = if (stat.total == 0) 0f else stat.been.toFloat() / stat.total
+            val fraction = if (bucket.total == 0) 0f else bucket.been.toFloat() / bucket.total
             if (fraction > 0f) {
                 Box(
                     Modifier
@@ -462,4 +603,47 @@ private fun ContinentBar(stat: ContinentStat, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+/** What a long press on a bar answers: which of its places you have already been
+ * to, and which are still missing — the two lists a bar's fraction cannot show. */
+@Composable
+private fun BucketDetailDialog(
+    bucket: Bucket,
+    places: List<Place>,
+    statuses: Map<String, PlaceStatus>,
+    onDismiss: () -> Unit,
+) {
+    val members = remember(bucket, places) {
+        bucket.codes.mapNotNull { code -> places.firstOrNull { it.code == code } }
+            .sortedBy { it.sortKey }
+    }
+    val (been, missing) = members.partition { statuses[it.code]?.isBeen == true }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(bucket.label) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (been.isNotEmpty()) {
+                    Text(
+                        "Been (${been.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    been.forEach { Text(it.name, style = MaterialTheme.typography.bodyMedium) }
+                }
+                if (missing.isNotEmpty()) {
+                    Text(
+                        "Still to go (${missing.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = if (been.isNotEmpty()) 12.dp else 0.dp),
+                    )
+                    missing.forEach { Text(it.name, style = MaterialTheme.typography.bodyMedium) }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
 }

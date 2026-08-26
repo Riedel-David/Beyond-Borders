@@ -15,9 +15,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,8 +58,13 @@ import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.ui.passport.SearchField
 import com.riedel.beyondborders.ui.places.PlacesViewModel
+import com.riedel.beyondborders.ui.places.RegionBand
+import com.riedel.beyondborders.ui.places.RegionMode
+import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.nextRegionMode
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.MapPalette
+import com.riedel.beyondborders.ui.theme.RegionRamp
 import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.visa.asOfNotice
 import com.riedel.beyondborders.ui.visa.requirementSummary
@@ -123,6 +132,8 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
     val lens by viewModel.visaLens.collectAsStateWithLifecycle()
+    val regionMode by viewModel.regionMode.collectAsStateWithLifecycle()
+    val regionBands by viewModel.regionBands.collectAsStateWithLifecycle()
     val places by viewModel.places.collectAsStateWithLifecycle()
     val palette = LocalMapPalette.current
 
@@ -134,7 +145,12 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     var counterLabeled by remember { mutableStateOf(false) }
     var searchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    // Collapsed by default: Search/World/Share/Visa stacking up every time made
+    // the top-right corner read as clutter rather than controls. One icon expands
+    // the stack on demand instead of a fourth-and-growing always-visible pill.
+    var controlsExpanded by remember { mutableStateOf(false) }
     val searchMatches = remember(places, searchQuery) { searchMapMatches(places, searchQuery) }
+    val regionActive = regionMode != RegionMode.OFF
 
     fun pickFromSearch(place: Place) {
         viewModel.select(place.code)
@@ -156,6 +172,8 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             statuses = statuses,
             visaBands = visaBands,
             lens = lens,
+            regionBands = regionBands,
+            regionActive = regionActive,
             selectedCode = selectedCode,
             places = places,
             onLabels = { labels = it },
@@ -195,8 +213,9 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         // the point, and chrome that covers the Mediterranean is chrome too much.
         MapPill(
             // Only worth a toggle once there is something to spell out; the empty
-            // state's nudge and the visa lens' own legend both stay static.
-            onClick = if (!lens && (stats.been > 0 || stats.wishlist > 0)) {
+            // state's nudge and the visa lens' and region heatmap's own legends
+            // both stay static.
+            onClick = if (!lens && !regionActive && (stats.been > 0 || stats.wishlist > 0)) {
                 { counterLabeled = !counterLabeled }
             } else {
                 null
@@ -207,6 +226,8 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         ) {
             if (lens) {
                 VisaLegend(palette.visa, visa)
+            } else if (regionActive) {
+                RegionLegend(palette.region, regionMode, stats)
             } else if (stats.been == 0 && stats.wishlist == 0) {
                 // Nothing marked yet, so the counter would say "0" and teach
                 // nothing. Say what to do instead.
@@ -246,6 +267,22 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            MapPill(
+                onClick = {
+                    controlsExpanded = !controlsExpanded
+                    // Collapsing hides the search field along with everything else,
+                    // so leaving it open underneath would reopen it silently the
+                    // next time the stack expands.
+                    if (!controlsExpanded) searchOpen = false
+                },
+            ) {
+                Icon(
+                    if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
+                    contentDescription = if (controlsExpanded) "Hide map controls" else "Show map controls",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (!controlsExpanded) return@Column
             // Search is the passport's own search, on the map — the same reason
             // both screens share the [PlacesViewModel] query, this just is not
             // routed through it, since the map wants to fly the camera on a pick
@@ -328,6 +365,19 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     )
                 }
             }
+            // One pill cycles all three states rather than three pills for one
+            // choice — Off/Official/Informal is a single question, not three.
+            MapPill(onClick = { viewModel.setRegionMode(nextRegionMode(regionMode)) }) {
+                Text(
+                    when (regionMode) {
+                        RegionMode.OFF -> "Regions"
+                        RegionMode.OFFICIAL -> "Regions: UN"
+                        RegionMode.INFORMAL -> "Regions: named"
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
 
         if (selected != null) {
@@ -364,8 +414,10 @@ private class PlacesMapController {
     private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
     private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
+    private var appliedRegionBands: Map<RegionBand, Set<String>> = emptyMap()
     private var appliedSelection: String? = null
     private var appliedLens = false
+    private var appliedRegionActive = false
 
     fun attach(map: MapLibreMap) {
         this.map = map
@@ -378,8 +430,10 @@ private class PlacesMapController {
         appliedLived = emptySet()
         appliedWishlist = emptySet()
         appliedBands = emptyMap()
+        appliedRegionBands = emptyMap()
         appliedSelection = null
         appliedLens = false
+        appliedRegionActive = false
     }
 
     fun detach() {
@@ -388,15 +442,17 @@ private class PlacesMapController {
     }
 
     /**
-     * While [lens] is on the travel colours are cleared rather than merely covered.
-     * The visa fills do cover all 252 places today, so covering would look the same —
-     * but a place the asset had no answer for would then show its travel colour under
-     * a visa legend, and "I have been here" reading as a visa band is the one thing
-     * this map must never say.
+     * While [lens] or [regionActive] is on the travel colours are cleared rather
+     * than merely covered. The visa fills do cover all 252 places today, so
+     * covering would look the same — but a place the asset had no answer for
+     * would then show its travel colour under a visa legend, and "I have been
+     * here" reading as a visa band is the one thing this map must never say.
+     * The region heatmap has the same property for any place outside every
+     * named grouping.
      */
-    fun applyStatuses(statuses: Map<String, PlaceStatus>, lens: Boolean) {
+    fun applyStatuses(statuses: Map<String, PlaceStatus>, lens: Boolean, regionActive: Boolean) {
         val style = style ?: return
-        val effective = if (lens) emptyMap() else statuses
+        val effective = if (lens || regionActive) emptyMap() else statuses
         val visited = effective.filterValues { it == PlaceStatus.VISITED }.keys
         val lived = effective.filterValues { it == PlaceStatus.LIVED }.keys
         val wishlist = effective.filterValues { it == PlaceStatus.WISHLIST }.keys
@@ -428,19 +484,33 @@ private class PlacesMapController {
         }
     }
 
-    fun applySelection(code: String?, lens: Boolean) {
+    /** Which codes each region band paints. Empty map means the heatmap is off. */
+    fun applyRegion(bands: Map<RegionBand, Set<String>>) {
         val style = style ?: return
-        if (code == appliedSelection && lens == appliedLens) return
+        if (bands == appliedRegionBands) return
+        appliedRegionBands = bands
+        RegionBand.entries.forEach { band ->
+            style.getLayerAs<FillLayer>(PlacesMapStyle.regionLayerId(band))
+                ?.setFilter(PlacesMapStyle.onlyPlaces(bands[band].orEmpty()))
+        }
+    }
+
+    fun applySelection(code: String?, lens: Boolean, regionActive: Boolean) {
+        val style = style ?: return
+        if (code == appliedSelection && lens == appliedLens && regionActive == appliedRegionActive) return
         appliedSelection = code
         appliedLens = lens
+        appliedRegionActive = regionActive
         val outline =
             if (code == null) PlacesMapStyle.noPlaces() else PlacesMapStyle.onlyPlace(code)
-        // Exactly one of the two outlines is armed, so the lens' colour and the travel
-        // view's can never draw over each other.
+        // Exactly one of the three outlines is armed, so no two of the travel,
+        // visa and region views can ever draw over each other.
         style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_SELECTED)
-            ?.setFilter(if (lens) PlacesMapStyle.noPlaces() else outline)
+            ?.setFilter(if (lens || regionActive) PlacesMapStyle.noPlaces() else outline)
         style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_VISA_SELECTED)
             ?.setFilter(if (lens) outline else PlacesMapStyle.noPlaces())
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_REGION_SELECTED)
+            ?.setFilter(if (regionActive) outline else PlacesMapStyle.noPlaces())
     }
 
     fun showWorld() {
@@ -528,6 +598,8 @@ private fun PlacesMapView(
     statuses: Map<String, PlaceStatus>,
     visaBands: Map<VisaBand, Set<String>>,
     lens: Boolean,
+    regionBands: Map<RegionBand, Set<String>>,
+    regionActive: Boolean,
     selectedCode: String?,
     places: List<Place>,
     onLabels: (List<PlaceLabel>) -> Unit,
@@ -547,6 +619,8 @@ private fun PlacesMapView(
     val currentStatuses by rememberUpdatedState(statuses)
     val currentVisaBands by rememberUpdatedState(visaBands)
     val currentLens by rememberUpdatedState(lens)
+    val currentRegionBands by rememberUpdatedState(regionBands)
+    val currentRegionActive by rememberUpdatedState(regionActive)
     val currentSelectedCode by rememberUpdatedState(selectedCode)
     val currentPlaces by rememberUpdatedState(places)
     val currentOnLabels by rememberUpdatedState(onLabels)
@@ -606,9 +680,10 @@ private fun PlacesMapView(
             controller.attach(map)
             map.setStyle(PlacesMapStyle.builder(palette)) { style ->
                 controller.onStyleLoaded(style)
-                controller.applyStatuses(currentStatuses, currentLens)
+                controller.applyStatuses(currentStatuses, currentLens, currentRegionActive)
                 controller.applyVisa(currentVisaBands)
-                controller.applySelection(currentSelectedCode, currentLens)
+                controller.applyRegion(currentRegionBands)
+                controller.applySelection(currentSelectedCode, currentLens, currentRegionActive)
             }
         }
         onDispose { }
@@ -688,9 +763,10 @@ private fun PlacesMapView(
         factory = { mapView },
         modifier = modifier,
         update = {
-            controller.applyStatuses(statuses, lens)
+            controller.applyStatuses(statuses, lens, regionActive)
             controller.applyVisa(visaBands)
-            controller.applySelection(selectedCode, lens)
+            controller.applyRegion(regionBands)
+            controller.applySelection(selectedCode, lens, regionActive)
         },
     )
 }
@@ -753,6 +829,43 @@ private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * The heatmap's legend: the ramp itself and how many of the groupings it is
+ * currently painting are fully done.
+ *
+ * No date line, unlike [VisaLegend] — this is derived entirely from [Place.region]
+ * and the hand-curated informal sets already bundled with the app, not from a
+ * dated external asset, so there is nothing here that goes stale.
+ */
+@Composable
+private fun RegionLegend(ramp: RegionRamp, mode: RegionMode, stats: TravelStats) {
+    val totals = if (mode == RegionMode.OFFICIAL) {
+        stats.regions.map { it.been to it.total }
+    } else {
+        stats.informalRegions.map { it.been to it.total }
+    }
+    val done = totals.count { (been, total) -> been == total && total > 0 }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(Modifier.clip(MaterialTheme.shapes.extraSmall)) {
+            RegionBand.entries.forEach { band ->
+                Box(
+                    Modifier
+                        .size(width = 14.dp, height = 10.dp)
+                        .background(ramp.colorFor(band))
+                )
+            }
+        }
+        Text(
+            "$done of ${totals.size} " +
+                if (mode == RegionMode.OFFICIAL) "regions done" else "groupings done",
+            style = MaterialTheme.typography.labelLarge,
+        )
     }
 }
 

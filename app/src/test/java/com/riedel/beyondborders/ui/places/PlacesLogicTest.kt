@@ -92,6 +92,79 @@ class PlacesLogicTest {
     }
 
     @Test
+    fun `stats also group by UN M49 region, not just continent`() {
+        val stats = computeStats(places, mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.VISITED))
+        // Denmark and France are both "Europe", but different regions - the point
+        // of having both breakdowns rather than only the continent one.
+        assertEquals(1, stats.regions.first { it.region == "Northern Europe" }.been)
+        assertEquals(1, stats.regions.first { it.region == "Western Europe" }.been)
+    }
+
+    @Test
+    fun `the Stans stay the clean five, and the Balkans stay the nine-country core`() {
+        val stansAndNeighbours = listOf(
+            place("KZ", "Kazakhstan", region = "Central Asia"),
+            place("KG", "Kyrgyzstan", region = "Central Asia"),
+            place("TJ", "Tajikistan", region = "Central Asia"),
+            place("TM", "Turkmenistan", region = "Central Asia"),
+            place("UZ", "Uzbekistan", region = "Central Asia"),
+            place("AF", "Afghanistan", region = "Southern Asia"),
+            place("PK", "Pakistan", region = "Southern Asia"),
+        )
+        val everyoneVisited = stansAndNeighbours.associate { it.code to PlaceStatus.VISITED }
+        val stans = computeInformalRegionStats(everyoneVisited.keys, everyoneVisited)
+            .first { it.name == "The Stans" }
+        // Marking Afghanistan and Pakistan too must not grow the Stans' total past 5.
+        assertEquals(5, stans.total)
+        assertEquals(5, stans.been)
+
+        val balkansAndNeighbours = listOf(
+            place("AL", "Albania"), place("BA", "Bosnia and Herzegovina"), place("HR", "Croatia"),
+            place("GR", "Greece"), place("XK", "Kosovo"), place("ME", "Montenegro"),
+            place("MK", "North Macedonia"), place("RS", "Serbia"), place("SI", "Slovenia"),
+            place("RO", "Romania"), place("TR", "Türkiye"),
+        )
+        val allVisited = balkansAndNeighbours.associate { it.code to PlaceStatus.VISITED }
+        val balkans = computeInformalRegionStats(allVisited.keys, allVisited)
+            .first { it.name == "Balkans" }
+        assertEquals(9, balkans.total)
+        assertEquals(9, balkans.been)
+    }
+
+    @Test
+    fun `region bands bucket by completion, not by count`() {
+        assertEquals(emptyMap<RegionBand, Set<String>>(), regionBandCodes(RegionMode.OFF, TravelStats.EMPTY))
+
+        val stats = computeStats(places, mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.VISITED))
+        val official = regionBandCodes(RegionMode.OFFICIAL, stats)
+        // Northern Europe is DK alone, fully done; Western Europe is FR alone, also
+        // done; North America (Greenland), Africa (Réunion) and Antarctica (Bouvet
+        // Island) are each their own untouched one-place region.
+        assertEquals(setOf("DK", "FR"), official[RegionBand.DONE])
+        assertEquals(setOf("GL", "RE", "BV"), official[RegionBand.NONE])
+        assertEquals(null, official[RegionBand.SOME])
+        assertEquals(null, official[RegionBand.MOST])
+    }
+
+    @Test
+    fun `region bands split a half-done group into MOST, not SOME`() {
+        val benelux = listOf(
+            place("BE", "Belgium", region = "Western Europe"),
+            place("NL", "Netherlands", region = "Western Europe"),
+            place("LU", "Luxembourg", region = "Western Europe"),
+        )
+        val statuses = mapOf("BE" to PlaceStatus.VISITED)
+        val stats = computeStats(benelux, statuses)
+        val informal = regionBandCodes(RegionMode.INFORMAL, stats)
+        // 1 of 3 Benelux countries: rounds down to SOME, not MOST.
+        assertEquals(setOf("BE", "NL", "LU"), informal[RegionBand.SOME])
+
+        val twoOfThree = computeStats(benelux, mapOf("BE" to PlaceStatus.VISITED, "NL" to PlaceStatus.VISITED))
+        val mostlyDone = regionBandCodes(RegionMode.INFORMAL, twoOfThree)
+        assertEquals(setOf("BE", "NL", "LU"), mostlyDone[RegionBand.MOST])
+    }
+
+    @Test
     fun `wishlist is not a kind of been`() {
         val stats = computeStats(places, mapOf("DK" to PlaceStatus.WISHLIST))
         assertEquals(0, stats.been)

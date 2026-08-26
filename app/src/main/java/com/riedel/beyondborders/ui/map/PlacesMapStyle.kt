@@ -2,6 +2,7 @@ package com.riedel.beyondborders.ui.map
 
 import androidx.compose.ui.graphics.toArgb
 import com.riedel.beyondborders.data.visa.VisaBand
+import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.theme.MapPalette
 import java.net.URI
 import org.maplibre.android.maps.Style
@@ -35,6 +36,17 @@ internal object PlacesMapStyle {
     const val LAYER_BORDER = "places-border"
     const val LAYER_SELECTED = "places-selected"
     const val LAYER_VISA_SELECTED = "places-visa-selected"
+    const val LAYER_REGION_SELECTED = "places-region-selected"
+
+    /**
+     * The region heatmap's fills, one per completion band.
+     *
+     * Same trick as [visaLayerId]: a fixed, small layer set regardless of how many
+     * regions or named groupings exist, because MapLibre bakes a layer's colour in
+     * at style-build time. Toggling the heatmap on, or switching between official
+     * and informal groupings, is then only ever a setFilter call.
+     */
+    fun regionLayerId(band: RegionBand): String = "places-region-${band.name.lowercase()}"
 
     /**
      * The visa lens' fills, in ramp order and named by band.
@@ -109,6 +121,17 @@ internal object PlacesMapStyle {
             )
         }
 
+        // The region heatmap, one layer per completion band, above the visa lens
+        // and below the borders — the two lenses never carry a filter at once, so
+        // layer order between them is cosmetic, but a fixed spot keeps it simple.
+        RegionBand.entries.forEach { band ->
+            builder = builder.withLayer(
+                FillLayer(regionLayerId(band), SOURCE_ID)
+                    .withProperties(PropertyFactory.fillColor(palette.region.colorFor(band).toArgb()))
+                    .withFilter(noPlaces())
+            )
+        }
+
         return builder
             .withLayer(
                 LineLayer(LAYER_BORDER, SOURCE_ID).withProperties(
@@ -142,6 +165,14 @@ internal object PlacesMapStyle {
                 LineLayer(LAYER_VISA_SELECTED, SOURCE_ID)
                     .withProperties(
                         PropertyFactory.lineColor(palette.visa.selectedOutline.toArgb()),
+                        PropertyFactory.lineWidth(selectionWidth()),
+                    )
+                    .withFilter(noPlaces())
+            )
+            .withLayer(
+                LineLayer(LAYER_REGION_SELECTED, SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.lineColor(palette.region.selectedOutline.toArgb()),
                         PropertyFactory.lineWidth(selectionWidth()),
                     )
                     .withFilter(noPlaces())

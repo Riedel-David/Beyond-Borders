@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
+import com.riedel.beyondborders.ui.places.RegionBand
 
 /**
  * A hand-picked palette rather than Material You dynamic colour.
@@ -125,6 +126,8 @@ data class MapPalette(
     val selectedOutline: Color,
     /** The colours the visa lens paints with; see [VisaRamp]. */
     val visa: VisaRamp,
+    /** The colours the region heatmap paints with; see [RegionRamp]. */
+    val region: RegionRamp,
 )
 
 /**
@@ -206,6 +209,57 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
 }
 
 /**
+ * The region heatmap's colour ramp: one amber, four intensities of completion.
+ *
+ * The same sequential-scale reasoning as [VisaRamp], and deliberately the same
+ * shape — one hue, four bands, ordered by an intensity that reads the same way
+ * in both themes — because the design question is identical: this paints a
+ * region's own completion percentage, not an unordered category, so hue alone
+ * would carry no more information than a single colour would.
+ *
+ * Amber because it is the one status hue the default palette leaves unused (see
+ * [MapHue.AMBER]) and shares no hue with the travel colours, the visa ramp, or
+ * either map background, so switching this on cannot be mistaken for a recolour
+ * of something already on screen. [RegionRampTest] holds it to the same bars as
+ * [VisaRampTest]: 3:1 against land and ocean, 1.35:1 between neighbouring bands,
+ * and one consistent direction per theme.
+ */
+data class RegionRamp(
+    val none: Color,
+    val some: Color,
+    val most: Color,
+    val done: Color,
+    /** The heatmap's own selection outline; see [VisaRamp.selectedOutline] for
+     * why the fixed [MapPalette.selectedOutline] would not have done here either. */
+    val selectedOutline: Color,
+) {
+    fun colorFor(band: RegionBand): Color = when (band) {
+        RegionBand.NONE -> none
+        RegionBand.SOME -> some
+        RegionBand.MOST -> most
+        RegionBand.DONE -> done
+    }
+}
+
+private fun regionRamp(dark: Boolean): RegionRamp = if (dark) {
+    RegionRamp(
+        none = Color(0xFFA9802D),
+        some = Color(0xFFD2A956),
+        most = Color(0xFFE5CE9E),
+        done = Color(0xFFFCF9F3),
+        selectedOutline = Color(0xFF05080C),
+    )
+} else {
+    RegionRamp(
+        none = Color(0xFFA17A2B),
+        some = Color(0xFF75581F),
+        most = Color(0xFF493713),
+        done = Color(0xFF181206),
+        selectedOutline = Color(0xFFF7FAFF),
+    )
+}
+
+/**
  * The palette the map draws with, for one theme, one set of chosen hues and one
  * chosen background.
  *
@@ -222,6 +276,7 @@ fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT
     border = if (dark) Color(0xFF4C5663) else Color(0xFFA9B4C2),
     selectedOutline = if (dark) Color(0xFFDCE7FF) else Color(0xFF0B2C63),
     visa = visaRamp(dark),
+    region = regionRamp(dark),
 )
 
 // Derived from MapColors.DEFAULT rather than spelled out again, so the palette the

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.beyondborders.core.Haptics
+import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -26,6 +27,27 @@ import kotlinx.coroutines.launch
 
 /** How the passport list is ordered. */
 enum class Grouping { CONTINENT, REGION, ALPHABETICAL }
+
+/** Off, or which grouping the map's region heatmap should paint by. */
+enum class RegionMode { OFF, OFFICIAL, INFORMAL }
+
+/**
+ * A region's own completion, bucketed for the map heatmap.
+ *
+ * Four bands rather than a continuous shade for the same reason the visa lens is
+ * four bands and not a gradient: MapLibre bakes a layer's colour in at style-build
+ * time, so painting has to be "one pre-built layer per discrete value plus a
+ * setFilter", and that only stays cheap if the number of values stays small and
+ * fixed regardless of how many regions exist.
+ */
+enum class RegionBand { NONE, SOME, MOST, DONE }
+
+/** Off -> Official -> Informal -> Off, one tap at a time. */
+fun nextRegionMode(mode: RegionMode): RegionMode = when (mode) {
+    RegionMode.OFF -> RegionMode.OFFICIAL
+    RegionMode.OFFICIAL -> RegionMode.INFORMAL
+    RegionMode.INFORMAL -> RegionMode.OFF
+}
 
 /**
  * Which rows the passport list shows.
@@ -101,8 +123,19 @@ data class VisaRow(
     val status: PlaceStatus,
 )
 
-/** [been] counts visited and lived together; see [PlaceStatus.isBeen]. */
-data class ContinentStat(val continent: String, val been: Int, val total: Int)
+/** [been] counts visited and lived together; see [PlaceStatus.isBeen]. [codes] is
+ * every member place, for the "where have I been / still need to go" detail popup —
+ * default empty so the many existing call sites that only care about the count
+ * did not need to change. */
+data class ContinentStat(val continent: String, val been: Int, val total: Int, val codes: Set<String> = emptySet())
+
+/** Same shape as [ContinentStat], one per UN M49 region ("Northern Europe",
+ * "Western Africa") rather than per continent. */
+data class RegionStat(val region: String, val been: Int, val total: Int, val codes: Set<String> = emptySet())
+
+/** One of [INFORMAL_REGIONS] — "Balkans", "Benelux" — with how many of its member
+ * codes are been vs. how many exist in this build's 252, after the denominator. */
+data class NamedGroupStat(val name: String, val been: Int, val total: Int, val codes: Set<String> = emptySet())
 
 data class TravelStats(
     /** Strictly [PlaceStatus.VISITED]; for the map legend, which has a dot per colour. */
@@ -111,6 +144,8 @@ data class TravelStats(
     val wishlist: Int,
     val total: Int,
     val continents: List<ContinentStat>,
+    val regions: List<RegionStat> = emptyList(),
+    val informalRegions: List<NamedGroupStat> = emptyList(),
     /** "11% of the world's land area, 47% of its population" — null while
      * nothing is marked. See [worldCoverage]. */
     val coverage: String? = null,
@@ -199,6 +234,13 @@ class PlacesViewModel(
     private val _visaLens = MutableStateFlow(false)
     val visaLens: StateFlow<Boolean> = _visaLens
 
+    /** Whether, and by which grouping, the map paints region completion instead
+     * of your own history. Mutually exclusive with [visaLens] — both are ways
+     * of temporarily replacing the travel colours, and showing two answers to
+     * "what am I looking at" at once would just be confusing. */
+    private val _regionMode = MutableStateFlow(RegionMode.OFF)
+    val regionMode: StateFlow<RegionMode> = _regionMode
+
     /**
      * The place being looked at, if any: the map's card and the passport's expanded
      * visa row are two views of this one value rather than two selections. Opening
@@ -230,6 +272,13 @@ class PlacesViewModel(
         combine(_visa, _visaLens) { visa, lens -> bandCodes(visa, lens) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    /** Which place codes the map's region heatmap should paint in each band,
+     * empty while the mode is off. Computed here for the same reason [visaBands]
+     * is: panning the map should not re-bucket every region on every frame. */
+    val regionBands: StateFlow<Map<RegionBand, Set<String>>> =
+        combine(stats, _regionMode) { stats, mode -> regionBandCodes(mode, stats) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
     /** The rows the visa list should render, already filtered and ordered. */
     val visaRows: StateFlow<List<VisaRow>> =
         combine(allPlaces, _visa, statuses, _query, _visaFilter) { places, visa, st, q, filter ->
@@ -258,7 +307,16 @@ class PlacesViewModel(
     fun select(code: String?) { _selectedCode.value = code }
     fun setMode(value: PassportMode) { _mode.value = value }
     fun setVisaFilter(value: VisaFilter) { _visaFilter.value = value }
-    fun setVisaLens(value: Boolean) { _visaLens.value = value }
+
+    fun setVisaLens(value: Boolean) {
+        _visaLens.value = value
+        if (value) _regionMode.value = RegionMode.OFF
+    }
+
+    fun setRegionMode(value: RegionMode) {
+        _regionMode.value = value
+        if (value != RegionMode.OFF) _visaLens.value = false
+    }
 
     fun placeOf(code: String): Place? = allPlaces.value.firstOrNull { it.code == code }
 
@@ -357,10 +415,23 @@ internal fun computeStats(
                 continent = continent,
                 been = group.count { statuses[it.code]?.isBeen == true },
                 total = group.size,
+                codes = group.map { it.code }.toSet(),
             )
         }
         // Biggest achievement first, then alphabetically so the order is stable.
         .sortedWith(compareByDescending<ContinentStat> { it.been }.thenBy { it.continent })
+
+    val regions = counted
+        .groupBy { it.region }
+        .map { (region, group) ->
+            RegionStat(
+                region = region,
+                been = group.count { statuses[it.code]?.isBeen == true },
+                total = group.size,
+                codes = group.map { it.code }.toSet(),
+            )
+        }
+        .sortedWith(compareByDescending<RegionStat> { it.been }.thenBy { it.region })
 
     val countedStatuses = statuses.filterKeys { it in countedCodes }
 
@@ -370,9 +441,32 @@ internal fun computeStats(
         wishlist = countedStatuses.count { it.value == PlaceStatus.WISHLIST },
         total = counted.size,
         continents = continents,
+        regions = regions,
+        informalRegions = computeInformalRegionStats(countedCodes, statuses),
         coverage = worldCoverage(places, statuses),
     )
 }
+
+/**
+ * Membership, not a grouping: a place belongs to zero or one of [INFORMAL_REGIONS],
+ * unlike continent/region, which partition every place. [countedCodes] is already
+ * the denominator-filtered set, so a group's `total` shrinks the same way a
+ * continent's does when e.g. only UN members are counted.
+ */
+internal fun computeInformalRegionStats(
+    countedCodes: Set<String>,
+    statuses: Map<String, PlaceStatus>,
+): List<NamedGroupStat> = INFORMAL_REGIONS
+    .map { group ->
+        val codes = group.codes intersect countedCodes
+        NamedGroupStat(
+            name = group.name,
+            been = codes.count { statuses[it]?.isBeen == true },
+            total = codes.size,
+            codes = codes,
+        )
+    }
+    .sortedWith(compareByDescending<NamedGroupStat> { it.been }.thenBy { it.name })
 
 /**
  * "11% of the world's land area, 47% of its population" — a number 40 of 252
@@ -409,6 +503,33 @@ internal fun bandCodes(
     return visa.requirements
         .groupBy { it.category.band }
         .mapValues { (_, group) -> group.mapTo(mutableSetOf()) { it.code } }
+}
+
+/**
+ * Bucket every region (or, in [RegionMode.INFORMAL], every named grouping) into
+ * its completion band.
+ *
+ * Returns an empty map when the mode is off, which the map reads the same way it
+ * reads an empty visa-band map: paint nothing.
+ */
+internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionBand, Set<String>> {
+    val buckets = when (mode) {
+        RegionMode.OFF -> return emptyMap()
+        RegionMode.OFFICIAL -> stats.regions.map { Triple(it.been, it.total, it.codes) }
+        RegionMode.INFORMAL -> stats.informalRegions.map { Triple(it.been, it.total, it.codes) }
+    }
+    val result = mutableMapOf<RegionBand, MutableSet<String>>()
+    buckets.forEach { (been, total, codes) ->
+        if (total == 0) return@forEach
+        val band = when {
+            been == 0 -> RegionBand.NONE
+            been == total -> RegionBand.DONE
+            been * 2 >= total -> RegionBand.MOST
+            else -> RegionBand.SOME
+        }
+        result.getOrPut(band) { mutableSetOf() }.addAll(codes)
+    }
+    return result
 }
 
 /**
