@@ -209,20 +209,18 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
 }
 
 /**
- * The region heatmap's colour ramp: one amber, four intensities of completion.
+ * The region heatmap's colour ramp: two hue pairs, not one hue at four intensities.
  *
- * The same sequential-scale reasoning as [VisaRamp], and deliberately the same
- * shape — one hue, four bands, ordered by an intensity that reads the same way
- * in both themes — because the design question is identical: this paints a
- * region's own completion percentage, not an unordered category, so hue alone
- * would carry no more information than a single colour would.
- *
- * Amber because it is the one status hue the default palette leaves unused (see
- * [MapHue.AMBER]) and shares no hue with the travel colours, the visa ramp, or
- * either map background, so switching this on cannot be mistaken for a recolour
- * of something already on screen. [RegionRampTest] holds it to the same bars as
- * [VisaRampTest]: 3:1 against land and ocean, 1.35:1 between neighbouring bands,
- * and one consistent direction per theme.
+ * The single-amber version this started as turned out to not read as four steps on
+ * an actual phone screen — adjacent intensities of one hue are exactly the kind of
+ * difference that gets lost outdoors or on a dim display, even though it clears the
+ * same contrast maths [VisaRamp] does. A hue change per step is the fix, but it
+ * reopens the risk [VisaRampTest]'s own history warns about: a hue-ordered ramp can
+ * collapse under dichromacy in a way a single hue never does. So this is two hues,
+ * not four — teal/green for the low half, orange/near-black for the high half — with
+ * [RegionRampTest] checking every pair (not just neighbours) survives all three
+ * dichromacy simulations, on top of the same 3:1-background and monotonic-luminance
+ * bars [VisaRamp] holds.
  */
 data class RegionRamp(
     val none: Color,
@@ -243,18 +241,18 @@ data class RegionRamp(
 
 private fun regionRamp(dark: Boolean): RegionRamp = if (dark) {
     RegionRamp(
-        none = Color(0xFFA9802D),
-        some = Color(0xFFD2A956),
-        most = Color(0xFFE5CE9E),
-        done = Color(0xFFFCF9F3),
+        none = Color(0xFF2F8E8E),
+        some = Color(0xFF44C16D),
+        most = Color(0xFFF1C79D),
+        done = Color(0xFFFDF4F2),
         selectedOutline = Color(0xFF05080C),
     )
 } else {
     RegionRamp(
-        none = Color(0xFFA17A2B),
-        some = Color(0xFF75581F),
-        most = Color(0xFF493713),
-        done = Color(0xFF181206),
+        none = Color(0xFF1F7C7C),
+        some = Color(0xFF154826),
+        most = Color(0xFF3C2207),
+        done = Color(0xFF030100),
         selectedOutline = Color(0xFFF7FAFF),
     )
 }

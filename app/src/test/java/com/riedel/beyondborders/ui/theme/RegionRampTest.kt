@@ -15,12 +15,14 @@ import org.junit.Test
  * The region heatmap's ramp is held to the same bars as [VisaRampTest], for the
  * same reason: it paints an ordered scale (a region's own completion), not an
  * unordered category, so the checks that matter are "visible", "legible as a
- * sequence" and "legible without colour vision" rather than "distinct hues".
+ * sequence" and "legible without colour vision".
  *
- * A narrower set than [VisaRampTest] on purpose — this ramp reuses the exact same
- * one-hue-four-intensities shape that search already validated, so what is worth
- * asserting here is that *this* hue (amber) and *these* four steps clear the same
- * bars, not re-deriving why the shape itself works.
+ * Unlike [VisaRamp], this ramp is not one hue — a single-hue version shipped first
+ * and turned out illegible band-to-band on an actual screen. Changing hue per step
+ * reopens exactly the dichromacy risk [VisaRampTest] rejected hue-ordering for, so
+ * `no two bands collapse under dichromacy simulation` below is doing more work here
+ * than it does there: it is what proves this particular two-hue-pair split is safe,
+ * not a formality inherited from the visa ramp's shape.
  */
 class RegionRampTest {
 
