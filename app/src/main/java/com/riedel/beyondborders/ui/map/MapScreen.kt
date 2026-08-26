@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -151,6 +152,23 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     var controlsExpanded by remember { mutableStateOf(false) }
     val searchMatches = remember(places, searchQuery) { searchMapMatches(places, searchQuery) }
     val regionActive = regionMode != RegionMode.OFF
+    // A tap in region mode is asking "which region is this", not "mark this
+    // place" — the two questions don't share a card, so this stays local state
+    // rather than [PlacesViewModel.selectedCode], which the passport also reads.
+    var regionInfo by remember { mutableStateOf<RegionTapInfo?>(null) }
+
+    // Reads the ViewModel's StateFlow.value rather than the regionMode/stats
+    // collected above: this runs from a MapLibre click callback, which can fire
+    // from a closure captured several recompositions ago, and .value is always
+    // the live answer regardless of which composition captured this closure.
+    fun tap(code: String?) {
+        val liveMode = viewModel.regionMode.value
+        if (liveMode != RegionMode.OFF) {
+            regionInfo = code?.let { regionInfoFor(it, liveMode, viewModel.stats.value, viewModel::placeOf) }
+        } else {
+            viewModel.select(code)
+        }
+    }
 
     fun pickFromSearch(place: Place) {
         viewModel.select(place.code)
@@ -165,6 +183,12 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         onDispose { viewModel.select(null) }
     }
 
+    // Switching the heatmap on mid-selection would otherwise leave a marking card
+    // showing over a map that no longer means "tap to mark".
+    LaunchedEffect(regionActive) {
+        if (regionActive) viewModel.select(null) else regionInfo = null
+    }
+
     Box(modifier.fillMaxSize()) {
         PlacesMapView(
             controller = controller,
@@ -177,7 +201,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             selectedCode = selectedCode,
             places = places,
             onLabels = { labels = it },
-            onTap = viewModel::select,
+            onTap = ::tap,
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -198,7 +222,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     // already an approximation, so a pixel-perfect centre on top of
                     // it would be precision this feature does not need.
                     .offset(x = (-24).dp, y = (-8).dp)
-                    .clickable { viewModel.select(label.code) },
+                    .clickable { tap(label.code) },
             ) {
                 Text(
                     label.name,
@@ -380,7 +404,16 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             }
         }
 
-        if (selected != null) {
+        if (regionActive) {
+            if (regionInfo != null) {
+                RegionInfoCard(
+                    info = regionInfo!!,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(12.dp),
+                )
+            }
+        } else if (selected != null) {
             SelectedPlaceCard(
                 place = selected,
                 status = statuses[selected.code] ?: PlaceStatus.NONE,
@@ -396,6 +429,25 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     .padding(12.dp),
             )
         }
+    }
+}
+
+/** Which region/grouping a tapped place belongs to, in the mode that was active. */
+private data class RegionTapInfo(val place: Place, val name: String, val been: Int, val total: Int)
+
+private fun regionInfoFor(
+    code: String,
+    mode: RegionMode,
+    stats: TravelStats,
+    placeOf: (String) -> Place?,
+): RegionTapInfo? {
+    val place = placeOf(code) ?: return null
+    return when (mode) {
+        RegionMode.OFF -> null
+        RegionMode.OFFICIAL -> stats.regions.firstOrNull { code in it.codes }
+            ?.let { RegionTapInfo(place, it.region, it.been, it.total) }
+        RegionMode.INFORMAL -> stats.informalRegions.firstOrNull { code in it.codes }
+            ?.let { RegionTapInfo(place, it.name, it.been, it.total) }
     }
 }
 
@@ -624,6 +676,7 @@ private fun PlacesMapView(
     val currentSelectedCode by rememberUpdatedState(selectedCode)
     val currentPlaces by rememberUpdatedState(places)
     val currentOnLabels by rememberUpdatedState(onLabels)
+    val currentOnTap by rememberUpdatedState(onTap)
 
     val mapView = remember {
         // Must run before any MapView is constructed. No style URL and no
@@ -743,12 +796,18 @@ private fun PlacesMapView(
         onDispose { }
     }
 
-    DisposableEffect(mapView, onTap) {
+    // Keyed on mapView alone, through rememberUpdatedState like every other
+    // callback above: the listener is native (MapLibre), long-lived, and can
+    // fire minutes after it was registered, so it must always read whatever
+    // onTap is current *now* rather than whatever closure it happened to
+    // capture at registration time.
+    DisposableEffect(mapView) {
         val listener = MapLibreMap.OnMapClickListener { latLng ->
             val point = controller.screenLocationOf(latLng)
+            val code = point?.let { controller.placeCodeAt(it, slopPx) }
             // A tap on open ocean clears the selection rather than doing nothing,
             // which is the cheapest possible way to dismiss the detail card.
-            onTap(point?.let { controller.placeCodeAt(it, slopPx) })
+            currentOnTap(code)
             true
         }
         mapView.getMapAsync { it.addOnMapClickListener(listener) }
@@ -888,6 +947,42 @@ private fun LegendDot(color: Color) {
             .clip(CircleShape)
             .background(color)
     )
+}
+
+/**
+ * What a tap opens in region mode, in place of [SelectedPlaceCard].
+ *
+ * The heatmap is answering "how done is this region", not "mark this place" —
+ * so a tap here has nothing to toggle, only the region's name and completion
+ * for the place that was tapped.
+ */
+@Composable
+private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+    ) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(
+                info.place.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                info.name,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "${info.been} / ${info.total} done",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
 }
 
 /**
