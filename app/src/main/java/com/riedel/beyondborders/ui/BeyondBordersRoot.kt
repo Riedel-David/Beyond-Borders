@@ -52,7 +52,13 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
 fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
     if (!hasSeenWelcome) {
-        WelcomeScreen(onGetStarted = container.settings::setHasSeenWelcome, modifier = modifier)
+        val nationality by container.settings.nationality.collectAsStateWithLifecycle()
+        WelcomeScreen(
+            nationality = nationality,
+            onNationalityChange = container.settings::setNationality,
+            onGetStarted = container.settings::setHasSeenWelcome,
+            modifier = modifier,
+        )
         return
     }
 

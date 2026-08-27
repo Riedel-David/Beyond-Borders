@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
+import com.riedel.beyondborders.data.visa.Nationality
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -57,6 +58,7 @@ class SettingsViewModel(
     val mapBase: StateFlow<MapBase> = settings.mapBase
     val denominator: StateFlow<Denominator> = settings.denominator
     val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
+    val nationality: StateFlow<Nationality> = settings.nationality
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
@@ -78,6 +80,8 @@ class SettingsViewModel(
     fun setDenominator(value: Denominator) = settings.setDenominator(value)
 
     fun setHapticsEnabled(enabled: Boolean) = settings.setHapticsEnabled(enabled)
+
+    fun setNationality(value: Nationality) = settings.setNationality(value)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())

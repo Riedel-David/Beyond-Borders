@@ -3,6 +3,7 @@ package com.riedel.beyondborders.settings
 import android.content.Context
 import androidx.core.content.edit
 import com.riedel.beyondborders.core.Uuid
+import com.riedel.beyondborders.data.visa.Nationality
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,6 +71,17 @@ class SettingsStore(context: Context) {
 
     private val _hasSeenWelcome = MutableStateFlow(prefs.getBoolean(KEY_HAS_SEEN_WELCOME, false))
     val hasSeenWelcome: StateFlow<Boolean> = _hasSeenWelcome.asStateFlow()
+
+    private val _nationality = MutableStateFlow(
+        runCatching { Nationality.valueOf(prefs.getString(KEY_NATIONALITY, null) ?: "") }
+            .getOrDefault(Nationality.DE)
+    )
+    val nationality: StateFlow<Nationality> = _nationality.asStateFlow()
+
+    fun setNationality(value: Nationality) {
+        _nationality.value = value
+        prefs.edit { putString(KEY_NATIONALITY, value.name) }
+    }
 
     fun setHasSeenWelcome() {
         _hasSeenWelcome.value = true
@@ -194,6 +206,7 @@ class SettingsStore(context: Context) {
         const val KEY_DENOMINATOR = "denominator"
         const val KEY_HAPTICS = "haptics_enabled"
         const val KEY_HAS_SEEN_WELCOME = "has_seen_welcome"
+        const val KEY_NATIONALITY = "nationality"
         const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"

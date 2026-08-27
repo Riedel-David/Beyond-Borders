@@ -294,10 +294,16 @@ class PlacesViewModel(
     init {
         viewModelScope.launch { allPlaces.value = repo.places() }
         viewModelScope.launch {
-            // A malformed or missing asset must not take the travel map down with
-            // it, so this is caught rather than allowed to kill the scope. The
-            // build script is what stops it happening; this is the seatbelt.
-            _visa.value = runCatching { visaRepo.registry() }.getOrNull()
+            // A StateFlow re-emits its current value to a new collector, so this
+            // both loads the initial registry and reloads it on every nationality
+            // switch from Settings — one path, not an init load plus a separate
+            // reactor for later changes.
+            settings.nationality.collect { nationality ->
+                // A malformed or missing asset must not take the travel map down
+                // with it, so this is caught rather than allowed to kill the scope.
+                // The build script is what stops it happening; this is the seatbelt.
+                _visa.value = runCatching { visaRepo.registry(nationality) }.getOrNull()
+            }
         }
     }
 

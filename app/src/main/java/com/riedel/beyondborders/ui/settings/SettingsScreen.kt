@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
 import com.riedel.beyondborders.data.backup.TravelBackup
+import com.riedel.beyondborders.data.visa.Nationality
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -58,6 +59,7 @@ import com.riedel.beyondborders.settings.MapHue
 import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.ThemeMode
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
+import com.riedel.beyondborders.ui.visa.passportAdjective
 
 /**
  * Settings: how the app looks, and how to get the data out.
@@ -84,6 +86,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val mapBase by viewModel.mapBase.collectAsStateWithLifecycle()
     val denominator by viewModel.denominator.collectAsStateWithLifecycle()
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
+    val nationality by viewModel.nationality.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
 
@@ -120,6 +123,18 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     }
                 },
                 onSelect = viewModel::setThemeMode,
+            )
+        }
+
+        Section(
+            "Passport",
+            "Which passport's visa answers the map and passport tab show.",
+        ) {
+            ChoiceRow(
+                options = Nationality.entries,
+                selected = nationality,
+                label = { passportAdjective(it.name) },
+                onSelect = viewModel::setNationality,
             )
         }
 

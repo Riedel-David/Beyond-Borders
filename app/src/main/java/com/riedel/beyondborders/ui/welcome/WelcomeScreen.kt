@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,18 +22,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.data.visa.Nationality
+import com.riedel.beyondborders.ui.visa.passportAdjective
 
 /**
  * Shown once, before the first launch reaches the tabs. [com.riedel.beyondborders.settings.SettingsStore.hasSeenWelcome]
  * is what stops it coming back — see [com.riedel.beyondborders.ui.BeyondBordersRoot].
  *
  * States the two things a new user cannot infer from the tabs themselves: that
- * nothing here leaves the phone, and that the visa answers assume one specific
- * passport. Everything else — how marking works, what the colours mean — is
+ * nothing here leaves the phone, and that the visa answers are for one specific
+ * passport — which this screen is also where that passport gets picked, since a
+ * choice a user never makes defaults quietly to DE and never invites a second
+ * look. Everything else — how marking works, what the colours mean — is
  * discoverable from using the app, so it stays out of this screen.
  */
 @Composable
-fun WelcomeScreen(onGetStarted: () -> Unit, modifier: Modifier = Modifier) {
+fun WelcomeScreen(
+    nationality: Nationality,
+    onNationalityChange: (Nationality) -> Unit,
+    onGetStarted: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Scaffold(modifier) { padding ->
         Column(
             Modifier
@@ -67,13 +79,24 @@ fun WelcomeScreen(onGetStarted: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 16.dp),
             )
             Text(
-                "Visa requirements shown here assume a German passport — there is no " +
-                    "switcher yet.",
+                "Visa requirements are for one passport at a time. Pick yours — you " +
+                    "can change it later in Settings.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 8.dp),
             )
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 12.dp)) {
+                Nationality.entries.forEachIndexed { index, entry ->
+                    SegmentedButton(
+                        selected = entry == nationality,
+                        onClick = { onNationalityChange(entry) },
+                        shape = SegmentedButtonDefaults.itemShape(index, Nationality.entries.size),
+                    ) {
+                        Text(passportAdjective(entry.name))
+                    }
+                }
+            }
             FilledTonalButton(
                 onClick = onGetStarted,
                 modifier = Modifier.fillMaxWidth().padding(top = 32.dp),

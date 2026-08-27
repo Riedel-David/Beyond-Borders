@@ -63,13 +63,18 @@ class VisaRegistry private constructor(
     companion object {
         const val ASSET_NAME = "visa.json"
 
-        fun load(assets: AssetManager): VisaRegistry {
-            val json = assets.open(ASSET_NAME).use { it.readBytes().toString(Charsets.UTF_8) }
-            return parse(json)
+        /** DE keeps the historical bare filename; see build_visa.py's own naming rule. */
+        fun assetNameFor(nationality: Nationality): String =
+            if (nationality == Nationality.DE) ASSET_NAME else "visa_${nationality.name.lowercase()}.json"
+
+        fun load(assets: AssetManager, nationality: Nationality = Nationality.DE): VisaRegistry {
+            val name = assetNameFor(nationality)
+            val json = assets.open(name).use { it.readBytes().toString(Charsets.UTF_8) }
+            return parse(json, name)
         }
 
         /** Split out from [load] so unit tests can feed it a literal. */
-        fun parse(json: String): VisaRegistry {
+        fun parse(json: String, assetName: String = ASSET_NAME): VisaRegistry {
             val root = JSONObject(json)
             val dataset = root.getJSONObject("dataset")
             val array = root.getJSONArray("requirements")
@@ -96,7 +101,7 @@ class VisaRegistry private constructor(
                     officialFor = o.optStringOrNull("officialFor"),
                 )
             }
-            require(out.isNotEmpty()) { "$ASSET_NAME has no readable requirements" }
+            require(out.isNotEmpty()) { "$assetName has no readable requirements" }
             return VisaRegistry(
                 passport = root.getString("passport"),
                 asOf = root.getString("asOf"),

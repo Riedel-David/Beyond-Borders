@@ -11,10 +11,17 @@ import kotlinx.coroutines.withContext
  * user decisions layered on top and therefore no database, no writes and no
  * Flow. The only reason this class exists rather than the ViewModel touching
  * [VisaRegistry] directly is to keep the ~29 kB parse off the main thread.
+ *
+ * One registry per [Nationality], cached the first time it is asked for. A
+ * nationality switch is rare enough that re-parsing on the way back to a
+ * passport already seen this session would be wasted work, not a correctness
+ * risk — so past registries stay cached rather than being dropped.
  */
-class VisaRepository(registryLoader: () -> VisaRegistry) {
+class VisaRepository(private val registryLoader: (Nationality) -> VisaRegistry) {
 
-    private val registry: VisaRegistry by lazy(registryLoader)
+    private val cache = mutableMapOf<Nationality, VisaRegistry>()
 
-    suspend fun registry(): VisaRegistry = withContext(Dispatchers.IO) { registry }
+    suspend fun registry(nationality: Nationality): VisaRegistry = withContext(Dispatchers.IO) {
+        synchronized(cache) { cache.getOrPut(nationality) { registryLoader(nationality) } }
+    }
 }
