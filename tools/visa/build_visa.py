@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Build BeyondBorders's bundled visa asset from the Passport Index matrix.
 
-    python3 tools/visa/build_visa.py [--source PATH]
+    python3 tools/visa/build_visa.py [--passport DE|GB] [--source PATH]
 
 Output (committed, so the app builds without network access):
-    app/src/main/assets/visa.json   one entry per place in places.json
+    app/src/main/assets/visa.json        --passport DE (the shipped default)
+    app/src/main/assets/visa_gb.json     --passport GB
 
 The curation rules live in rules.py. Read that first; it explains why 53 of our
 252 places have no row in the dataset and what we say about them instead.
@@ -112,24 +113,35 @@ def fail(problems: list[str], hint: str) -> None:
     raise SystemExit(f"{len(problems)} problem(s) — {hint}")
 
 
-def build(source: Path, advice: Path) -> int:
+def build(passport: str, source: Path, advice: Path | None) -> int:
     places = json.loads(REGISTRY.read_text(encoding="utf-8"))
     codes = [p["code"] for p in places]
     names = {p["code"]: p["name"] for p in places}
     print(f"registry: {len(codes)} places from {REGISTRY.name}")
 
-    row = load_row(source, rules.PASSPORT)
-    print(f"dataset: {len(row)} destinations for the {rules.PASSPORT} passport")
+    row = load_row(source, passport)
+    print(f"dataset: {len(row)} destinations for the {passport} passport")
 
-    advice_links = load_advice_links(advice)
-    print(f"foreign office: {len(advice_links)} country pages from {advice.name}")
+    overrides = rules.overrides_for(passport)
+    print(f"programs: {len(overrides)} places resolved for {passport} from "
+          f"{sum(1 for p in rules.PROGRAMS.values() if passport in p['members'])} "
+          f"programs")
+
+    # The Foreign Office link-out is DE-only: it comes from the Auswärtiges
+    # Amt's own open data, and there is no equivalent feed wired up for any
+    # other passport (see PLAN.md §6 — the plan is only to link out for DE).
+    if passport == "DE":
+        advice_links = load_advice_links(advice)
+        print(f"foreign office: {len(advice_links)} country pages from {advice.name}")
+    else:
+        advice_links = {}
 
     problems: list[str] = []
 
     # ---------------- rule hygiene, before any resolving ----------------
     # Checked first and reported together, so a stale rules.py surfaces every
     # problem in one run rather than one per edit.
-    for table_name, table in (("OVERRIDES", rules.OVERRIDES),
+    for table_name, table in (("OVERRIDES", overrides),
                               ("CORRECTIONS", rules.CORRECTIONS)):
         for code, entry in table.items():
             if code not in names:
@@ -154,7 +166,7 @@ def build(source: Path, advice: Path) -> int:
 
     # An override that shadows a dataset row is a correction and must live in the
     # other table, where the build can notice once upstream agrees.
-    for code in rules.OVERRIDES:
+    for code in overrides:
         if code in row:
             problems.append(
                 f"OVERRIDES[{code}] shadows a dataset row ({row[code]!r}). Move it "
@@ -175,37 +187,38 @@ def build(source: Path, advice: Path) -> int:
                     f"({dataset_category}). Delete it; upstream has caught up."
                 )
 
-    # ---------------- the link-out table ----------------
+    # ---------------- the link-out table (DE only) ----------------
     # Every place must reach a Foreign Office page, whether its own or its
     # parent's, or be listed as deliberately having none. Silence here would mean
     # a destination screen with nowhere to send someone who needs the real answer.
-    for code, target in rules.AA_PAGE.items():
-        if code not in names:
-            problems.append(f"AA_PAGE[{code}] is not a place in the registry")
-        if target not in advice_links:
-            problems.append(
-                f"AA_PAGE[{code}] points at {target}, which has no Foreign Office "
-                f"page in the feed"
-            )
-        if code in advice_links:
-            problems.append(
-                f"AA_PAGE[{code}] is redundant — {code} has its own Foreign Office "
-                f"page now. Delete the entry."
-            )
-    for code in rules.AA_NONE:
-        if code not in names:
-            problems.append(f"AA_NONE has {code}, which is not a place")
-        elif code in advice_links:
-            problems.append(
-                f"AA_NONE has {code}, but the Foreign Office does have a page for "
-                f"it now. Delete the entry."
-            )
-    for code in codes:
-        if code not in advice_links and code not in rules.AA_PAGE and code not in rules.AA_NONE:
-            problems.append(
-                f"{code} {names[code]} has no Foreign Office link. Add it to "
-                f"AA_PAGE (whose page covers it) or AA_NONE in rules.py."
-            )
+    if passport == "DE":
+        for code, target in rules.AA_PAGE.items():
+            if code not in names:
+                problems.append(f"AA_PAGE[{code}] is not a place in the registry")
+            if target not in advice_links:
+                problems.append(
+                    f"AA_PAGE[{code}] points at {target}, which has no Foreign "
+                    f"Office page in the feed"
+                )
+            if code in advice_links:
+                problems.append(
+                    f"AA_PAGE[{code}] is redundant — {code} has its own Foreign "
+                    f"Office page now. Delete the entry."
+                )
+        for code in rules.AA_NONE:
+            if code not in names:
+                problems.append(f"AA_NONE has {code}, which is not a place")
+            elif code in advice_links:
+                problems.append(
+                    f"AA_NONE has {code}, but the Foreign Office does have a page "
+                    f"for it now. Delete the entry."
+                )
+        for code in codes:
+            if code not in advice_links and code not in rules.AA_PAGE and code not in rules.AA_NONE:
+                problems.append(
+                    f"{code} {names[code]} has no Foreign Office link. Add it to "
+                    f"AA_PAGE (whose page covers it) or AA_NONE in rules.py."
+                )
 
     # Stop here rather than collecting further: the resolve step below trusts
     # what the tables say, and there is no sense reporting that Greenland came
@@ -220,7 +233,7 @@ def build(source: Path, advice: Path) -> int:
     unresolved = []
 
     for code in codes:
-        curated = rules.CORRECTIONS.get(code) or rules.OVERRIDES.get(code)
+        curated = rules.CORRECTIONS.get(code) or overrides.get(code)
         if code in row and code not in rules.CORRECTIONS:
             category, days = classify(row[code])
             entry = {"code": code, "category": category, "source": "dataset"}
@@ -268,7 +281,7 @@ def build(source: Path, advice: Path) -> int:
 
     # ---------------- the promise in PLAN.md ----------------
     resolved = {e["code"]: e for e in entries}
-    for code, (expected, why) in rules.EXPECTED.items():
+    for code, (expected, why) in rules.EXPECTED[passport].items():
         if code not in resolved:
             # Either the code is not in the registry at all, or it is one of the
             # unresolved above — which is already reported, so say which.
@@ -290,7 +303,7 @@ def build(source: Path, advice: Path) -> int:
     # whatever the screen needs.
     entries.sort(key=lambda e: e["code"])
     asset = {
-        "passport": rules.PASSPORT,
+        "passport": passport,
         "asOf": rules.DATASET["as_of"],
         "dataset": {
             "name": rules.DATASET["name"],
@@ -303,7 +316,9 @@ def build(source: Path, advice: Path) -> int:
         "iataUrl": rules.IATA_TRAVEL_CENTRE,
         "requirements": entries,
     }
-    out = ASSETS / "visa.json"
+    # DE keeps the historical bare filename — it is still the sole passport the
+    # app loads until the Kotlin side of the switcher picks a nationality.
+    out = ASSETS / ("visa.json" if passport == "DE" else f"visa_{passport.lower()}.json")
     out.write_text(
         json.dumps(asset, separators=(",", ":"), ensure_ascii=False),
         encoding="utf-8",
@@ -338,24 +353,32 @@ def build(source: Path, advice: Path) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--passport", choices=rules.PASSPORTS, default=rules.PASSPORT,
+                    help="which passport to build (default: %(default)s)")
     ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE,
                     help="the Passport Index tidy CSV")
     ap.add_argument("--advice", type=Path, default=DEFAULT_ADVICE,
-                    help="the Auswärtiges Amt travelwarning JSON")
+                    help="the Auswärtiges Amt travelwarning JSON (DE only)")
     a = ap.parse_args()
-    missing = [p for p in (a.source, a.advice) if not p.exists()]
+    # The Foreign Office feed is only needed to build DE; a GB (or future
+    # non-DE) build should not fail over a file it never reads.
+    required = [a.source] if a.passport != "DE" else [a.source, a.advice]
+    missing = [p for p in required if not p.exists()]
     if missing:
         raise SystemExit(
             "missing " + ", ".join(str(p) for p in missing) + "\n"
-            "download both with:\n"
+            "download with:\n"
             f"  mkdir -p {CACHE.relative_to(REPO)}\n"
             f"  curl -sL -o {DEFAULT_SOURCE.relative_to(REPO)} \\\n"
             f"    {rules.DATASET['url'].replace('github.com', 'raw.githubusercontent.com')}"
             f"/main/{rules.DATASET['file']}\n"
-            f"  curl -sL -o {DEFAULT_ADVICE.relative_to(REPO)} \\\n"
-            f"    {rules.AA_OPENDATA['url']}"
+            + (
+                f"  curl -sL -o {DEFAULT_ADVICE.relative_to(REPO)} \\\n"
+                f"    {rules.AA_OPENDATA['url']}\n"
+                if a.passport == "DE" else ""
+            )
         )
-    return build(a.source, a.advice)
+    return build(a.passport, a.source, a.advice if a.passport == "DE" else None)
 
 
 if __name__ == "__main__":
