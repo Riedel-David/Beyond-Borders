@@ -49,10 +49,10 @@ internal object PlacesMapStyle {
     fun regionLayerId(band: RegionBand): String = "places-region-${band.name.lowercase()}"
 
     /**
-     * The visa lens' fills, in ramp order and named by band.
+     * The visa lens' fills, one per band.
      *
      * Added above the status fills so switching the lens on is a filter change rather
-     * than a style rebuild — the four layers cover all 252 places, so nothing of the
+     * than a style rebuild — the five layers cover all 252 places, so nothing of the
      * travel colours shows through. A place with no requirement is the one exception,
      * and it falls through to [LAYER_FILL]'s unmarked land, which reads as "no answer"
      * because that is what it is.

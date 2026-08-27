@@ -193,9 +193,9 @@ private fun VisaSummaryCard(visa: VisaRegistry, modifier: Modifier = Modifier) {
 }
 
 /**
- * The four bands, sized by how many places are in each.
+ * The five bands, sized by how many places are in each.
  *
- * A proportional bar rather than four numbers: "most of the world is one tap of
+ * A proportional bar rather than five numbers: "most of the world is one tap of
  * paperwork away" is a shape, not a figure.
  */
 @Composable

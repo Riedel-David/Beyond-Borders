@@ -85,21 +85,25 @@ there's no equivalent official feed wired up for GB. Every visa surface carries 
 as of <date> for a German/British passport — verify officially before booking"*. A
 bundled dataset is a navigation aid, not an authority.
 
-The map's lens uses **four** bands rather than all eight categories, and one violet at
-four intensities rather than a ramp through several hues. That is measured, not
-preferred: hue is the channel colour-vision deficiency takes away, so an ordered scale
-has to carry its order in intensity — and the dark theme's usable luminance range only
-fits four steps that survive simulated protanopia, deuteranopia and tritanopia.
+The map's lens uses **five** bands rather than all eight categories, coloured
+categorically — green for visa-free, blue for an ETA, orange for on arrival, red for
+apply-first, grey for closed — rather than one hue at several intensities. That pairing
+of green and red is exactly what an intensity-ordered scale would rule out, since hue
+is the channel colour-vision deficiency takes away; the fix is pushing every pair,
+green/red included, to opposite ends of the lightness range that still clears 3:1
+against land, so the pair stays tellable apart under simulated protanopia,
+deuteranopia and tritanopia even when hue collapses.
 [`VisaRampTest`](app/src/test/java/com/riedel/beyondborders/ui/theme/VisaRampTest.kt)
-asserts all of that. The exact answer — "e-Visa · 30 days" — is text in the list, where
-an exact answer belongs; the map is for "roughly, where can I go".
+asserts that pairwise, for every one of the ten band pairs. The exact answer —
+"e-Visa · 30 days" — is text in the list, where an exact answer belongs; the map is for
+"roughly, where can I go".
 
 The map's other lens is a **region heatmap**: tap to cycle through off, official
 continents, and informal named groupings, and every region repaints by how much of
 it you've been to — none, some, most, or all of it. It uses a two-hue ramp rather
 than one hue at four intensities, for the same colour-vision-deficiency reason as the
 visa lens. Region and named-group sets aren't known at style-build time the way the
-four visa bands are, so the map still only ever holds four heatmap layers — one per
+five visa bands are, so the map still only ever holds four heatmap layers — one per
 completion band — and switching grouping or region is a `setFilter` call, not a style
 rebuild.
 

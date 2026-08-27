@@ -131,79 +131,74 @@ data class MapPalette(
 )
 
 /**
- * The visa lens' colour ramp: one violet, four intensities.
+ * The visa lens' colour set: five named hues, one per band.
  *
- * A *sequential* scheme, where the three status fills are a *qualitative* one, and
- * the difference is the whole reason this is not another set of hues. Visited, lived
- * and wishlist are unordered answers, so they get unrelated hues and MapColorsTest
- * holds them 40° apart. Visa bands are ordered, so order is what the colour has to
- * carry — and one hue at four intensities carries it, while four hues would leave the
- * reader to memorise which hue means "harder". This is the standard cartographic split
- * and it is also the accessible one: intensity survives colour-vision deficiency,
- * where a hue path from blue to red does not.
+ * A *categorical* scheme now, not a sequential one — [VisaBand] stopped being an
+ * openness ramp when [VisaBand.ETA] and [VisaBand.VISA_ON_ARRIVAL] split apart, so
+ * there is no longer one "harder" direction for intensity to carry. Green for
+ * visa-free, blue for an ETA, orange for on-arrival, red for apply-first and a
+ * neutral grey for closed is the nameable, memorable set — deliberately including
+ * green and red together, which the ramp this replaced ruled out for exactly the
+ * red/green colour-vision-deficiency collision that risks.
  *
- * Violet because it is the one family left. Green and red are out — PLAN.md rules out
- * a green-to-red ramp for red/green CVD — amber is reserved as a map-status hue, and
- * cyan reads as water next to a blue ocean. Violet also shares no hue with
- * azure, rose or teal, so switching the lens on looks like a different question rather
- * than a recolour of the same one.
- *
- * The ramp runs by *openness*, not by difficulty: [visaFree] has the most contrast
- * against the background and [closed] the least that still clears 3:1. So the places
- * you can go are the strongest thing on the map and the rest recede — which is the
- * question the lens exists to answer. Because that is defined against the background
- * rather than as "darker" or "lighter", the direction is the same statement in both
- * themes even though the two backgrounds are inverted.
- *
- * Every value here is measured rather than eyeballed; VisaRampTest asserts 3:1 against
- * land and ocean, a monotonic ramp with 1.4:1 between neighbours, and that no two bands
- * collapse under protanopia, deuteranopia or tritanopia simulation.
+ * That risk is why every value here is tuned, not just picked: green and red survive
+ * simulated deuteranopia (the commonest dichromacy, and the one that confuses these
+ * two hues specifically) by being pushed to opposite ends of the *lightness* range
+ * that clears 3:1 against land — a bright, saturated green and a dark, desaturated
+ * red, rather than two mid-tone versions of each. Lightness is what dichromacy leaves
+ * alone, so two colours far enough apart in it stay tellable apart even when their
+ * hues collapse. VisaRampTest asserts the result rather than trusting the theory: 3:1
+ * against land and ocean, and no two bands closer than 1.15:1 apart under simulated
+ * protanopia, deuteranopia or tritanopia.
  */
 data class VisaRamp(
     val visaFree: Color,
-    val easy: Color,
-    val paperwork: Color,
+    val eta: Color,
+    val visaOnArrival: Color,
+    val visaRequired: Color,
     val closed: Color,
     /**
      * The selection outline while the lens is on.
      *
      * Its own value because [MapPalette.selectedOutline] was picked against the
-     * status fills: the light one is a near-navy that vanishes on [visaFree]'s deep
-     * violet, and the dark one is a near-white that vanishes on it in dark mode. The
-     * lens repaints every fill on the map, so it repaints this too.
+     * status fills, not this set — the lens repaints every fill on the map, so it
+     * repaints this too.
      */
     val selectedOutline: Color,
 ) {
     fun colorFor(band: VisaBand): Color = when (band) {
         VisaBand.VISA_FREE -> visaFree
-        VisaBand.EASY -> easy
-        VisaBand.PAPERWORK -> paperwork
+        VisaBand.ETA -> eta
+        VisaBand.VISA_ON_ARRIVAL -> visaOnArrival
+        VisaBand.VISA_REQUIRED -> visaRequired
         VisaBand.CLOSED -> closed
     }
 }
 
 /**
- * The ramp for one theme.
+ * The palette for one theme.
  *
- * Not user-repaintable, unlike the status fills. A sequential ramp is only readable
- * while its steps stay evenly spaced in contrast against a known background, which is
- * a property of the whole set and not of any one colour — so there is nothing here a
- * per-colour picker could safely offer.
+ * Not user-repaintable, unlike the status fills. A categorical set is only accessible
+ * while every pair in it — not just adjacent ones — clears the same contrast and CVD
+ * bars, which is a property of the whole set and not of any one colour, so there is
+ * nothing here a per-colour picker could safely offer.
  */
 private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
     VisaRamp(
-        visaFree = Color(0xFFEFD0F5),
-        easy = Color(0xFFDEA2EB),
-        paperwork = Color(0xFFCE75E0),
-        closed = Color(0xFFBC48D4),
+        visaFree = Color(0xFF308E47),
+        eta = Color(0xFF50AADF),
+        visaOnArrival = Color(0xFFF28B3C),
+        visaRequired = Color(0xFFD35E64),
+        closed = Color(0xFFCAC7CA),
         selectedOutline = Color(0xFF05080C),
     )
 } else {
     VisaRamp(
-        visaFree = Color(0xFF370D40),
-        easy = Color(0xFF6A1B7A),
-        paperwork = Color(0xFF9532A8),
-        closed = Color(0xFFB15FC2),
+        visaFree = Color(0xFF348731),
+        eta = Color(0xFF3C6997),
+        visaOnArrival = Color(0xFF463113),
+        visaRequired = Color(0xFF310B08),
+        closed = Color(0xFF4B4B49),
         selectedOutline = Color(0xFFF7FAFF),
     )
 }

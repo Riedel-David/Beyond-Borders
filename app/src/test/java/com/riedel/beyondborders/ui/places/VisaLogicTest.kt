@@ -238,15 +238,15 @@ class VisaLogicTest {
     }
 
     /**
-     * Four bands out of eight categories, and the grouping is the map's whole claim:
-     * "roughly, where can I go" is a picture, and eight shades of one hue is not one.
+     * Five bands out of eight categories, and the grouping is the map's whole claim:
+     * "roughly, where can I go" is a picture, and eight colours is a legend.
      */
     @Test
     fun `each band collects the categories the ramp merges`() {
         val bands = bandCodes(visa, lens = true)
         assertEquals(setOf("DE", "GL"), bands[VisaBand.VISA_FREE])
-        assertEquals(setOf("US"), bands[VisaBand.EASY])
-        assertEquals(setOf("IN", "RU"), bands[VisaBand.PAPERWORK])
+        assertEquals(setOf("US"), bands[VisaBand.ETA])
+        assertEquals(setOf("IN", "RU"), bands[VisaBand.VISA_REQUIRED])
         assertEquals(setOf("BV"), bands[VisaBand.CLOSED])
     }
 

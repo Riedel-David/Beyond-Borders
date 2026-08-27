@@ -864,14 +864,15 @@ private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Touching segments rather than the separated dots the travel legend uses:
-            // these four are an ordered scale, and a scale reads as one when its steps
-            // are adjacent.
-            Row(Modifier.clip(MaterialTheme.shapes.extraSmall)) {
+            // Separated dots, like the travel legend: the five bands are a
+            // categorical set now, not an ordered scale, so nothing here should
+            // read as a sequence of adjacent steps.
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 VisaBand.entries.forEach { band ->
                     Box(
                         Modifier
-                            .size(width = 14.dp, height = 10.dp)
+                            .size(10.dp)
+                            .clip(MaterialTheme.shapes.extraSmall)
                             .background(ramp.colorFor(band))
                     )
                 }
