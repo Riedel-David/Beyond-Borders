@@ -112,6 +112,26 @@ CODE_OVERRIDE = {
 }
 
 # ---------------------------------------------------------------------------
+# MOVE_POLYGON: cut specific polygons out of a map unit's own geometry and
+# fold them into a different place, identified by bounding box since Natural
+# Earth gives no stable id for one polygon within a unit's MultiPolygon.
+#
+# Crimea (with Sevastopol) ships as an isolated polygon inside Russia's
+# admin-0 shape - Natural Earth's ISO_A2_EH there reflects de facto control,
+# and there is no separate map unit to redirect with CODE_OVERRIDE. Moving the
+# polygon itself, rather than overlaying Ukraine's claim on top unchanged,
+# means selecting Russia on the map no longer highlights Crimea too.
+# ---------------------------------------------------------------------------
+MOVE_POLYGON = {
+    "RUS": [
+        # Crimean peninsula + Sevastopol; bbox padded past the polygon's own
+        # (32.48, 44.38)-(36.64, 46.22) so a future Natural Earth update
+        # nudging its coastline slightly still matches.
+        {"target": "UKR", "bbox": (31.5, 44.0, 37.2, 46.7)},
+    ],
+}
+
+# ---------------------------------------------------------------------------
 # CONTINENTS: Natural Earth files nine island places under the pseudo-continent
 # "Seven seas (open ocean)". That is fine for a cartographer and useless for a
 # traveller, who wants Seychelles counted somewhere they can be proud of. Keyed by

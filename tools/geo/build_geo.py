@@ -289,6 +289,33 @@ def build(source: Path, eps_scale: float) -> int:
             raise SystemExit(f"duplicate GU_A3 in source: {gu}")
         units[gu] = f
 
+    # Pass 1b: cut specific polygons out of a unit's own geometry into a
+    # different unit's geometry. See MOVE_POLYGON in rules.py.
+    for gu, moves in rules.MOVE_POLYGON.items():
+        if gu not in units:
+            raise SystemExit(f"MOVE_POLYGON source {gu} not present in source data")
+        kept = []
+        moved_any = [False] * len(moves)
+        for poly in polygons_of(units[gu]["geometry"]):
+            bx0, by0, bx1, by1 = ring_bbox(poly[0])
+            for i, move in enumerate(moves):
+                mx0, my0, mx1, my1 = move["bbox"]
+                if mx0 <= bx0 and bx1 <= mx1 and my0 <= by0 and by1 <= my1:
+                    target = move["target"]
+                    if target not in units:
+                        raise SystemExit(f"MOVE_POLYGON target {target} does not exist")
+                    units[target].setdefault("_extra", []).append(poly)
+                    moved_any[i] = True
+                    break
+            else:
+                kept.append(poly)
+        if not all(moved_any):
+            raise SystemExit(f"MOVE_POLYGON: no polygon in {gu} matched {moves}")
+        units[gu]["geometry"] = (
+            {"type": "Polygon", "coordinates": kept[0]} if len(kept) == 1
+            else {"type": "MultiPolygon", "coordinates": kept}
+        )
+
     # Pass 2: fold merged units into their target's geometry. Targets are
     # validated up front so a stale rules table reports every problem at once.
     bad_targets = sorted({t for t in rules.MERGE.values() if t not in units})
