@@ -132,6 +132,17 @@ MOVE_POLYGON = {
 }
 
 # ---------------------------------------------------------------------------
+# LABEL POINTS: build_geo.py's visual_center() (Polylabel) already finds the
+# point of maximum distance from a country's coastline, which is correct by
+# construction - but "furthest from any edge" and "where a human expects the
+# name" aren't always the same point for an oddly-shaped landmass. Keyed by
+# final place code, not GU_A3, same as CONTINENT_OVERRIDE. Populated only from
+# an actual on-screen look, never speculatively - if a place isn't here,
+# visual_center()'s answer is the label point.
+# ---------------------------------------------------------------------------
+LABEL_POINT_OVERRIDE: dict[str, tuple[float, float]] = {}
+
+# ---------------------------------------------------------------------------
 # CONTINENTS: Natural Earth files nine island places under the pseudo-continent
 # "Seven seas (open ocean)". That is fine for a cartographer and useless for a
 # traveller, who wants Seychelles counted somewhere they can be proud of. Keyed by
