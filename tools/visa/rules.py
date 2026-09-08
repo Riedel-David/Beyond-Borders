@@ -53,7 +53,18 @@ check-in desk that disagrees.
 # --passport to build a different one from PASSPORTS.
 # ---------------------------------------------------------------------------
 PASSPORT = "DE"
-PASSPORTS = ("DE", "GB")
+PASSPORTS = ("DE",)
+
+# Real-world memberships the generic tier (GENERIC_RULE, below overrides_for)
+# derives answers from. Not a config flag either: these are facts, not a
+# roster of who gets curated.
+EU_MEMBERS = (
+    "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR",
+    "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO",
+    "SE", "SI", "SK",
+)
+SCHENGEN_NON_EU = ("IS", "LI", "NO", "CH")
+CTA_MEMBERS = ("GB", "IE")
 
 # ---------------------------------------------------------------------------
 # The dataset.
@@ -280,6 +291,13 @@ SOURCES = {
         "UK government guidance on the 90/180-day Schengen visa-free allowance "
         "for British citizens",
     ),
+    "generic": (
+        IATA_TRAVEL_CENTRE,
+        "Derived from this passport's own dataset requirement for the "
+        "administering sovereign state, not independently confirmed for the "
+        "territory itself — the generic tier's honest low-confidence answer, "
+        "used for every passport but DE",
+    ),
 }
 
 # ---------------------------------------------------------------------------
@@ -326,154 +344,58 @@ PROGRAMS = {
     # low confidence with an explicit unverified note rather than borrowing
     # DE's high-confidence EU citation for a fact EU membership does not give.
     "eu_omr": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "GF": {
-                "DE": ("VISA_FREE", None, "high", "eu_omr",
-                       "EU outermost region. Freedom of movement, no visa, no "
-                       "time limit — but outside Schengen, so expect a "
-                       "passport check on arrival even on a domestic flight "
-                       "from mainland France."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "EU outermost region, but GB is not EU so freedom of "
-                       "movement does not apply here. French Guiana normally "
-                       "waives a visa for short-stay British visitors as it "
-                       "does for other non-EU tourists, but this is not "
-                       "independently confirmed for a British passport — "
-                       "check before booking."),
-            },
-            "GP": {
-                "DE": ("VISA_FREE", None, "high", "eu_omr",
-                       "EU outermost region. Freedom of movement, no visa — "
-                       "outside Schengen, so there is a border check on "
-                       "arrival."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "EU outermost region, but GB is not EU so freedom of "
-                       "movement does not apply here. Guadeloupe normally "
-                       "waives a visa for short-stay British visitors as it "
-                       "does for other non-EU tourists, but this is not "
-                       "independently confirmed for a British passport — "
-                       "check before booking."),
-            },
-            "MQ": {
-                "DE": ("VISA_FREE", None, "high", "eu_omr",
-                       "EU outermost region. Freedom of movement, no visa — "
-                       "outside Schengen, so there is a border check on "
-                       "arrival."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "EU outermost region, but GB is not EU so freedom of "
-                       "movement does not apply here. Martinique normally "
-                       "waives a visa for short-stay British visitors as it "
-                       "does for other non-EU tourists, but this is not "
-                       "independently confirmed for a British passport — "
-                       "check before booking."),
-            },
-            "RE": {
-                "DE": ("VISA_FREE", None, "high", "eu_omr",
-                       "EU outermost region. Freedom of movement, no visa — "
-                       "outside Schengen, so there is a border check on "
-                       "arrival."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "EU outermost region, but GB is not EU so freedom of "
-                       "movement does not apply here. Réunion normally "
-                       "waives a visa for short-stay British visitors as it "
-                       "does for other non-EU tourists, but this is not "
-                       "independently confirmed for a British passport — "
-                       "check before booking."),
-            },
-            "YT": {
-                "DE": ("VISA_FREE", None, "high", "eu_omr",
-                       "EU outermost region. Freedom of movement, no visa — "
-                       "outside Schengen, so there is a border check on "
-                       "arrival."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "EU outermost region, but GB is not EU so freedom of "
-                       "movement does not apply here. Mayotte normally waives "
-                       "a visa for short-stay British visitors as it does for "
-                       "other non-EU tourists, but this is not independently "
-                       "confirmed for a British passport — check before "
-                       "booking."),
-            },
+            "GF": ("VISA_FREE", None, "high", "eu_omr",
+                   "EU outermost region. Freedom of movement, no visa, no "
+                   "time limit — but outside Schengen, so expect a passport "
+                   "check on arrival even on a domestic flight from mainland "
+                   "France."),
+            "GP": ("VISA_FREE", None, "high", "eu_omr",
+                   "EU outermost region. Freedom of movement, no visa — "
+                   "outside Schengen, so there is a border check on "
+                   "arrival."),
+            "MQ": ("VISA_FREE", None, "high", "eu_omr",
+                   "EU outermost region. Freedom of movement, no visa — "
+                   "outside Schengen, so there is a border check on "
+                   "arrival."),
+            "RE": ("VISA_FREE", None, "high", "eu_omr",
+                   "EU outermost region. Freedom of movement, no visa — "
+                   "outside Schengen, so there is a border check on "
+                   "arrival."),
+            "YT": ("VISA_FREE", None, "high", "eu_omr",
+                   "EU outermost region. Freedom of movement, no visa — "
+                   "outside Schengen, so there is a border check on "
+                   "arrival."),
         },
     },
 
     # --- French overseas collectivities: EU-associated, not EU territory ----
     "eu_oct": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "PF": {
-                "DE": ("VISA_FREE", 90, "high", "eu_oct",
-                       "French collectivity outside the EU. EU nationals "
-                       "enter without a visa for up to three months."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "French collectivity outside the EU; EU-national "
-                       "freedom of movement does not apply to a British "
-                       "passport. Generally visa-free for tourism on the "
-                       "same terms as mainland France's third-country "
-                       "policy, but not independently confirmed — check "
-                       "before booking."),
-            },
-            "NC": {
-                "DE": ("VISA_FREE", 90, "high", "eu_oct",
-                       "French collectivity outside the EU. EU nationals "
-                       "enter without a visa for up to three months."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "French collectivity outside the EU; EU-national "
-                       "freedom of movement does not apply to a British "
-                       "passport. Generally visa-free for tourism on the "
-                       "same terms as mainland France's third-country "
-                       "policy, but not independently confirmed — check "
-                       "before booking."),
-            },
-            "BL": {
-                "DE": ("VISA_FREE", 90, "medium", "eu_oct",
-                       "French collectivity outside the EU. EU nationals "
-                       "enter without a visa; three months is the usual "
-                       "limit."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "French collectivity outside the EU; EU-national "
-                       "freedom of movement does not apply to a British "
-                       "passport. Generally visa-free for tourism, but not "
-                       "independently confirmed — check before booking."),
-            },
-            "MF": {
-                "DE": ("VISA_FREE", 90, "medium", "eu_oct",
-                       "French side of the island, a collectivity outside "
-                       "the EU. EU nationals enter without a visa. Sint "
-                       "Maarten next door is Dutch and listed separately; "
-                       "the land border is open."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "French side of the island, a collectivity outside "
-                       "the EU; EU-national freedom of movement does not "
-                       "apply to a British passport. Generally visa-free for "
-                       "tourism, but not independently confirmed — check "
-                       "before booking. Sint Maarten next door is Dutch and "
-                       "listed separately; the land border is open."),
-            },
-            "PM": {
-                "DE": ("VISA_FREE", 90, "medium", "eu_oct",
-                       "French collectivity off Newfoundland, outside the "
-                       "EU. EU nationals enter without a visa. Most routes "
-                       "go through Canada, which needs its own eTA."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "French collectivity off Newfoundland, outside the "
-                       "EU; EU-national freedom of movement does not apply "
-                       "to a British passport. Generally visa-free for "
-                       "tourism, but not independently confirmed. Most "
-                       "routes go through Canada, which needs its own eTA."),
-            },
-            "WF": {
-                "DE": ("VISA_FREE", 90, "medium", "eu_oct",
-                       "French collectivity outside the EU. EU nationals "
-                       "enter without a visa. Reached only via New Caledonia "
-                       "or Fiji."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "French collectivity outside the EU; EU-national "
-                       "freedom of movement does not apply to a British "
-                       "passport. Generally visa-free for tourism, but not "
-                       "independently confirmed. Reached only via New "
-                       "Caledonia or Fiji."),
-            },
+            "PF": ("VISA_FREE", 90, "high", "eu_oct",
+                   "French collectivity outside the EU. EU nationals enter "
+                   "without a visa for up to three months."),
+            "NC": ("VISA_FREE", 90, "high", "eu_oct",
+                   "French collectivity outside the EU. EU nationals enter "
+                   "without a visa for up to three months."),
+            "BL": ("VISA_FREE", 90, "medium", "eu_oct",
+                   "French collectivity outside the EU. EU nationals enter "
+                   "without a visa; three months is the usual limit."),
+            "MF": ("VISA_FREE", 90, "medium", "eu_oct",
+                   "French side of the island, a collectivity outside the "
+                   "EU. EU nationals enter without a visa. Sint Maarten next "
+                   "door is Dutch and listed separately; the land border is "
+                   "open."),
+            "PM": ("VISA_FREE", 90, "medium", "eu_oct",
+                   "French collectivity off Newfoundland, outside the EU. "
+                   "EU nationals enter without a visa. Most routes go "
+                   "through Canada, which needs its own eTA."),
+            "WF": ("VISA_FREE", 90, "medium", "eu_oct",
+                   "French collectivity outside the EU. EU nationals enter "
+                   "without a visa. Reached only via New Caledonia or "
+                   "Fiji."),
         },
     },
 
@@ -481,52 +403,23 @@ PROGRAMS = {
     # The day limits differ island to island and are the shakiest numbers in
     # this block, hence medium throughout.
     "nl_caribbean": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "AW": {
-                "DE": ("VISA_FREE", 30, "medium", "nl_caribbean",
-                       "Outside the EU. No visa for German nationals; entry "
-                       "is normally granted for 30 days and can be extended "
-                       "on the island."),
-                "GB": ("VISA_FREE", 30, "low", "fcdo",
-                       "Outside the EU. Generally visa-free for British "
-                       "tourists on the same short-stay terms as other "
-                       "non-EU nationals, but not independently confirmed — "
-                       "check before booking."),
-            },
-            "CW": {
-                "DE": ("VISA_FREE", 30, "medium", "nl_caribbean",
-                       "Outside the EU. No visa for German nationals; entry "
-                       "is normally granted for 30 days."),
-                "GB": ("VISA_FREE", 30, "low", "fcdo",
-                       "Outside the EU. Generally visa-free for British "
-                       "tourists on the same short-stay terms as other "
-                       "non-EU nationals, but not independently confirmed — "
-                       "check before booking."),
-            },
-            "SX": {
-                "DE": ("VISA_FREE", 90, "medium", "nl_caribbean",
-                       "Dutch side of the island, outside the EU. No visa "
-                       "for German nationals. Saint Martin next door is "
-                       "French and listed separately."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "Dutch side of the island, outside the EU. Generally "
-                       "visa-free for British tourists, but not "
-                       "independently confirmed — check before booking. "
-                       "Saint Martin next door is French and listed "
-                       "separately."),
-            },
-            "BQ": {
-                "DE": ("VISA_FREE", 90, "medium", "nl_caribbean",
-                       "Bonaire, Saba and Sint Eustatius — Dutch special "
-                       "municipalities, outside the EU. No visa for German "
-                       "nationals."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "Bonaire, Saba and Sint Eustatius — Dutch special "
-                       "municipalities, outside the EU. Generally visa-free "
-                       "for British tourists, but not independently "
-                       "confirmed — check before booking."),
-            },
+            "AW": ("VISA_FREE", 30, "medium", "nl_caribbean",
+                   "Outside the EU. No visa for German nationals; entry is "
+                   "normally granted for 30 days and can be extended on the "
+                   "island."),
+            "CW": ("VISA_FREE", 30, "medium", "nl_caribbean",
+                   "Outside the EU. No visa for German nationals; entry is "
+                   "normally granted for 30 days."),
+            "SX": ("VISA_FREE", 90, "medium", "nl_caribbean",
+                   "Dutch side of the island, outside the EU. No visa for "
+                   "German nationals. Saint Martin next door is French and "
+                   "listed separately."),
+            "BQ": ("VISA_FREE", 90, "medium", "nl_caribbean",
+                   "Bonaire, Saba and Sint Eustatius — Dutch special "
+                   "municipalities, outside the EU. No visa for German "
+                   "nationals."),
         },
     },
 
@@ -534,50 +427,27 @@ PROGRAMS = {
     # The other PLAN.md test case. The trap is the reverse of the usual one:
     # people assume a Schengen visa covers Greenland. It does not.
     "dk_realm": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "GL": {
-                "DE": ("VISA_FREE", 90, "high", "dk_realm",
-                       "Outside the EU and outside Schengen — a Schengen "
-                       "visa is not valid here. German nationals need no "
-                       "visa; take a passport, not an ID card."),
-                "GB": ("VISA_FREE", None, "medium", "fcdo",
-                       "Outside the EU and outside Schengen — a Schengen "
-                       "visa or the UK's own 90/180 Schengen allowance does "
-                       "not apply here. No visa needed for tourism; gov.uk "
-                       "does not state a specific day cap for British "
-                       "visitors, so confirm the length of stay with Danish "
-                       "authorities before a long trip."),
-            },
-            "FO": {
-                "DE": ("VISA_FREE", 90, "high", "dk_realm",
-                       "Outside the EU and outside Schengen — a Schengen "
-                       "visa is not valid here. German nationals need no "
-                       "visa; take a passport."),
-                "GB": ("VISA_FREE", None, "medium", "fcdo",
-                       "Outside the EU and outside Schengen. No visa needed "
-                       "for tourism; gov.uk does not state a specific day "
-                       "cap for British visitors, so confirm before a long "
-                       "trip."),
-            },
+            "GL": ("VISA_FREE", 90, "high", "dk_realm",
+                   "Outside the EU and outside Schengen — a Schengen visa "
+                   "is not valid here. German nationals need no visa; take "
+                   "a passport, not an ID card."),
+            "FO": ("VISA_FREE", 90, "high", "dk_realm",
+                   "Outside the EU and outside Schengen — a Schengen visa "
+                   "is not valid here. German nationals need no visa; take "
+                   "a passport."),
         },
     },
 
     # --- Nordic oddities ---------------------------------------------------
     "nordic": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "AX": {
-                "DE": ("VISA_FREE", None, "high", "eu_omr",
-                       "Part of Finland: EU and Schengen, so freedom of "
-                       "movement. The islands' own right of domicile affects "
-                       "buying property and working, not visiting."),
-                "GB": ("VISA_FREE", 90, "high", "uk_schengen",
-                       "Part of Finland: EU and Schengen, but GB is not EU. "
-                       "A British passport gets the ordinary 90-day-in-180 "
-                       "Schengen visa-free allowance here, the same as "
-                       "mainland Finland."),
-            },
+            "AX": ("VISA_FREE", None, "high", "eu_omr",
+                   "Part of Finland: EU and Schengen, so freedom of "
+                   "movement. The islands' own right of domicile affects "
+                   "buying property and working, not visiting."),
             # Passport-independent by treaty: visa-free for everyone, so this
             # entry is shared verbatim rather than split.
             "SJ": ("VISA_FREE", None, "high", "svalbard",
@@ -594,528 +464,424 @@ PROGRAMS = {
     # The distinction people get wrong: the UK ETA covers these three, but none
     # of the Overseas Territories below.
     "uk_eta": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "JE": {
-                "DE": ("ETA", None, "high", "uk_eta",
-                       "Inside the Common Travel Area, so the UK ETA applies "
-                       "to German nationals here just as it does in "
-                       "Britain."),
-                "GB": ("HOME", None, "high", "cta",
-                       "Inside the Common Travel Area: a British citizen has "
-                       "full right of entry here, the same as in Britain "
-                       "itself. No visa, no ETA — this is domestic travel."),
-            },
-            "GG": {
-                "DE": ("ETA", None, "high", "uk_eta",
-                       "Inside the Common Travel Area, so the UK ETA applies "
-                       "to German nationals here just as it does in "
-                       "Britain. Alderney and Sark are part of the "
-                       "Bailiwick."),
-                "GB": ("HOME", None, "high", "cta",
-                       "Inside the Common Travel Area: a British citizen has "
-                       "full right of entry here, the same as in Britain "
-                       "itself. No visa, no ETA. Alderney and Sark are part "
-                       "of the Bailiwick."),
-            },
-            "IM": {
-                "DE": ("ETA", None, "high", "uk_eta",
-                       "Inside the Common Travel Area, so the UK ETA applies "
-                       "to German nationals here just as it does in "
-                       "Britain."),
-                "GB": ("HOME", None, "high", "cta",
-                       "Inside the Common Travel Area: a British citizen has "
-                       "full right of entry here, the same as in Britain "
-                       "itself. No visa, no ETA — this is domestic travel."),
-            },
+            "JE": ("ETA", None, "high", "uk_eta",
+                   "Inside the Common Travel Area, so the UK ETA applies to "
+                   "German nationals here just as it does in Britain."),
+            "GG": ("ETA", None, "high", "uk_eta",
+                   "Inside the Common Travel Area, so the UK ETA applies to "
+                   "German nationals here just as it does in Britain. "
+                   "Alderney and Sark are part of the Bailiwick."),
+            "IM": ("ETA", None, "high", "uk_eta",
+                   "Inside the Common Travel Area, so the UK ETA applies to "
+                   "German nationals here just as it does in Britain."),
         },
     },
 
     # --- British Overseas Territories: own immigration, no UK ETA ----------
     "uk_ot": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "GI": {
-                "DE": ("VISA_FREE", 90, "medium", "aa",
-                       "British Overseas Territory with its own border "
-                       "control. No visa for German nationals, and the UK "
-                       "ETA does not apply. The land border with Spain is a "
-                       "Schengen external border."),
-                "GB": ("VISA_FREE", 90, "high", "fcdo",
-                       "British Overseas Territory with its own border "
-                       "control; no visa needed for a British citizen. "
-                       "Gibraltar is set to join the EU's border-free area "
-                       "under a 2026 UK-EU-Spain treaty, which brings EES and "
-                       "ETIAS to its land border with Spain — check gov.uk "
-                       "for the current state of that rollout before "
-                       "crossing overland."),
-            },
-            "BM": {
-                "DE": ("VISA_FREE", 90, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "rules. No visa for German nationals; the UK ETA does "
-                       "not apply."),
-                "GB": ("VISA_FREE", 180, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "rules; no visa needed for a British citizen. Entry "
-                       "is normally granted for up to 180 days, longer than "
-                       "the visa-waiver allowance most other nationalities "
-                       "get. Bring a return or onward ticket."),
-            },
-            "KY": {
-                "DE": ("VISA_FREE", 30, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "rules. No visa for German nationals; entry is "
-                       "normally granted for 30 days and can be extended "
-                       "locally."),
-                "GB": ("VISA_FREE", 180, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "rules; no visa needed for a British citizen. Entry "
-                       "is normally granted for up to 180 days, well beyond "
-                       "the 30 days most other nationalities get."),
-            },
-            "TC": {
-                "DE": ("VISA_FREE", 90, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "rules. No visa for German nationals."),
-                "GB": ("VISA_FREE", 90, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "rules; no visa needed for a British citizen."),
-            },
-            "VG": {
-                "DE": ("VISA_FREE", 30, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "rules. No visa for German nationals. Not the same "
-                       "place as the US Virgin Islands, which need an "
-                       "ESTA."),
-                "GB": ("VISA_FREE", 30, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "rules; no visa needed for a British citizen. Not the "
-                       "same place as the US Virgin Islands, which need an "
-                       "ESTA."),
-            },
-            "AI": {
-                "DE": ("VISA_FREE", 90, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "rules. No visa for German nationals."),
-                "GB": ("VISA_FREE", 90, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "rules; no visa needed for a British citizen."),
-            },
-            "MS": {
-                "DE": ("VISA_FREE", 180, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "rules. No visa for German nationals; 180 days "
-                       "matches the UK government's own Montserrat travel "
-                       "advice. Half the island is an exclusion zone around "
-                       "the volcano."),
-                "GB": ("VISA_FREE", 180, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "rules; no visa needed for a British citizen, "
-                       "normally granted for up to 180 days. Half the "
-                       "island is an exclusion zone around the volcano."),
-            },
-            "FK": {
-                "DE": ("VISA_FREE", 30, "medium", "aa",
-                       "British Overseas Territory with its own immigration "
-                       "ordinance. No visa for German nationals; a visitor "
-                       "permit for one month is issued on arrival, matching "
-                       "the UK government's own Falklands travel advice."),
-                "GB": ("VISA_FREE", 30, "high", "fcdo",
-                       "British Overseas Territory with its own immigration "
-                       "ordinance; no visa needed for a British citizen. A "
-                       "visitor permit for one month is issued on arrival."),
-            },
-            # Already written without naming a nationality — the entry
-            # process is the UK's own travel advice for a British territory,
-            # not a bilateral visa relationship — so the fact and note are
-            # shared; only the source link differs, so a GB build points at
-            # the English-language gov.uk page rather than the Auswärtiges
-            # Amt.
-            "SH": {
-                "DE": ("VISA_FREE", 183, "medium", "aa",
-                       "Saint Helena's short-term entry permit is issued on "
-                       "arrival for a fee and is valid up to 183 days, per "
-                       "the UK government's own travel advice — you must "
-                       "show accommodation and a return booking. Ascension "
-                       "is separate and needs a 3-month visa arranged in "
-                       "advance; Tristan da Cunha needs the Island "
-                       "Council's consent and a ship, with no fixed day "
-                       "limit."),
-                "GB": ("VISA_FREE", 183, "high", "fcdo",
-                       "Saint Helena's short-term entry permit is issued on "
-                       "arrival for a fee and is valid up to 183 days, per "
-                       "the UK government's own travel advice — you must "
-                       "show accommodation and a return booking. Ascension "
-                       "is separate and needs a 3-month visa arranged in "
-                       "advance; Tristan da Cunha needs the Island "
-                       "Council's consent and a ship, with no fixed day "
-                       "limit."),
-            },
-            "PN": {
-                "DE": ("VISA_FREE", 14, "medium", "aa",
-                       "No visa for a short visit, capped at 14 days if you "
-                       "arrive and depart on the same ship (matches the UK "
-                       "government's own Pitcairn travel advice); a longer "
-                       "stay needs a Long-Term Visit Visa. Landing also "
-                       "needs a licence from the Island Council and there "
-                       "is no airstrip — the only access is by ship from "
-                       "Mangareva."),
-                "GB": ("VISA_FREE", 14, "high", "fcdo",
-                       "No visa for a short visit, capped at 14 days if you "
-                       "arrive and depart on the same ship (matches the UK "
-                       "government's own Pitcairn travel advice); a longer "
-                       "stay needs a Long-Term Visit Visa. Landing also "
-                       "needs a licence from the Island Council and there "
-                       "is no airstrip — the only access is by ship from "
-                       "Mangareva."),
-            },
+            "GI": ("VISA_FREE", 90, "medium", "aa",
+                   "British Overseas Territory with its own border control. "
+                   "No visa for German nationals, and the UK ETA does not "
+                   "apply. The land border with Spain is a Schengen external "
+                   "border."),
+            "BM": ("VISA_FREE", 90, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "rules. No visa for German nationals; the UK ETA does "
+                   "not apply."),
+            "KY": ("VISA_FREE", 30, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "rules. No visa for German nationals; entry is normally "
+                   "granted for 30 days and can be extended locally."),
+            "TC": ("VISA_FREE", 90, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "rules. No visa for German nationals."),
+            "VG": ("VISA_FREE", 30, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "rules. No visa for German nationals. Not the same place "
+                   "as the US Virgin Islands, which need an ESTA."),
+            "AI": ("VISA_FREE", 90, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "rules. No visa for German nationals."),
+            "MS": ("VISA_FREE", 180, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "rules. No visa for German nationals; 180 days matches "
+                   "the UK government's own Montserrat travel advice. Half "
+                   "the island is an exclusion zone around the volcano."),
+            "FK": ("VISA_FREE", 30, "medium", "aa",
+                   "British Overseas Territory with its own immigration "
+                   "ordinance. No visa for German nationals; a visitor "
+                   "permit for one month is issued on arrival, matching the "
+                   "UK government's own Falklands travel advice."),
+            "SH": ("VISA_FREE", 183, "medium", "aa",
+                   "Saint Helena's short-term entry permit is issued on "
+                   "arrival for a fee and is valid up to 183 days, per the "
+                   "UK government's own travel advice — you must show "
+                   "accommodation and a return booking. Ascension is "
+                   "separate and needs a 3-month visa arranged in advance; "
+                   "Tristan da Cunha needs the Island Council's consent and "
+                   "a ship, with no fixed day limit."),
+            "PN": ("VISA_FREE", 14, "medium", "aa",
+                   "No visa for a short visit, capped at 14 days if you "
+                   "arrive and depart on the same ship (matches the UK "
+                   "government's own Pitcairn travel advice); a longer stay "
+                   "needs a Long-Term Visit Visa. Landing also needs a "
+                   "licence from the Island Council and there is no "
+                   "airstrip — the only access is by ship from Mangareva."),
         },
     },
 
     # --- US territories: mostly US immigration, with one exception ---------
     "us_territory": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "PR": {
-                "DE": ("ETA", 90, "high", "esta",
-                       "US immigration applies in full, so German nationals "
-                       "need an ESTA exactly as for the mainland."),
-                "GB": ("ETA", 90, "high", "esta",
-                       "US immigration applies in full, so British nationals "
-                       "need an ESTA exactly as for the mainland — the UK is "
-                       "a Visa Waiver Program country."),
-            },
-            "VI": {
-                "DE": ("ETA", 90, "high", "esta",
-                       "US immigration applies in full, so German nationals "
-                       "need an ESTA. Not the same place as the British "
-                       "Virgin Islands."),
-                "GB": ("ETA", 90, "high", "esta",
-                       "US immigration applies in full, so British nationals "
-                       "need an ESTA. Not the same place as the British "
-                       "Virgin Islands."),
-            },
-            "GU": {
-                "DE": ("ETA", 90, "high", "esta",
-                       "US immigration applies. Germany is a Visa Waiver "
-                       "Program country, so an ESTA is the route in — the "
-                       "separate Guam-CNMI waiver is for other "
-                       "nationalities."),
-                "GB": ("ETA", 90, "high", "esta",
-                       "US immigration applies. The UK is a Visa Waiver "
-                       "Program country, so an ESTA is the route in — the "
-                       "separate Guam-CNMI waiver is for other "
-                       "nationalities."),
-            },
-            "MP": {
-                "DE": ("ETA", 90, "high", "esta",
-                       "US immigration applies. Germany is a Visa Waiver "
-                       "Program country, so an ESTA is the route in."),
-                "GB": ("ETA", 90, "high", "esta",
-                       "US immigration applies. The UK is a Visa Waiver "
-                       "Program country, so an ESTA is the route in."),
-            },
-            # The one everybody gets wrong, including most visa maps. Already
-            # written generically ("visa-waiver nationals") rather than
-            # naming Germany, and the UK is a Visa Waiver Program country
-            # too, so the fact and the note are identical — only the source
-            # link differs, so the app sends a British user to an
-            # English-language page rather than the Auswärtiges Amt.
-            "AS": {
-                "DE": ("VISA_FREE", 30, "low", "aa",
-                       "American Samoa runs its own immigration and an ESTA "
-                       "is NOT valid here. Visa-waiver nationals are "
-                       "normally admitted for 30 days with a passport, "
-                       "onward ticket and proof of funds, but the rules are "
-                       "administered locally and change without notice. "
-                       "Verify before booking — this entry is the least "
-                       "certain in the app."),
-                "GB": ("VISA_FREE", 30, "low", "fcdo",
-                       "American Samoa runs its own immigration and an ESTA "
-                       "is NOT valid here. Visa-waiver nationals are "
-                       "normally admitted for 30 days with a passport, "
-                       "onward ticket and proof of funds, but the rules are "
-                       "administered locally and change without notice. "
-                       "Verify before booking — this entry is the least "
-                       "certain in the app."),
-            },
+            "PR": ("ETA", 90, "high", "esta",
+                   "US immigration applies in full, so German nationals "
+                   "need an ESTA exactly as for the mainland."),
+            "VI": ("ETA", 90, "high", "esta",
+                   "US immigration applies in full, so German nationals "
+                   "need an ESTA. Not the same place as the British Virgin "
+                   "Islands."),
+            "GU": ("ETA", 90, "high", "esta",
+                   "US immigration applies. Germany is a Visa Waiver "
+                   "Program country, so an ESTA is the route in — the "
+                   "separate Guam-CNMI waiver is for other nationalities."),
+            "MP": ("ETA", 90, "high", "esta",
+                   "US immigration applies. Germany is a Visa Waiver "
+                   "Program country, so an ESTA is the route in."),
+            # The one everybody gets wrong, including most visa maps.
+            "AS": ("VISA_FREE", 30, "low", "aa",
+                   "American Samoa runs its own immigration and an ESTA is "
+                   "NOT valid here. Visa-waiver nationals are normally "
+                   "admitted for 30 days with a passport, onward ticket and "
+                   "proof of funds, but the rules are administered locally "
+                   "and change without notice. Verify before booking — this "
+                   "entry is the least certain in the app."),
         },
     },
 
     # --- New Zealand realm -------------------------------------------------
     "nz_realm": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "CK": {
-                "DE": ("VISA_FREE", 31, "medium", "aa",
-                       "Self-governing in free association with New "
-                       "Zealand, with its own entry rules. No visa for "
-                       "German nationals; 31 days is the usual grant. A New "
-                       "Zealand NZeTA is needed for the transit through "
-                       "Auckland."),
-                "GB": ("VISA_FREE", 31, "low", "fcdo",
-                       "Self-governing in free association with New "
-                       "Zealand, with its own entry rules. Generally "
-                       "visa-free for British visitors with a 31-day grant, "
-                       "matching the general pattern, but not independently "
-                       "confirmed for a British passport. A New Zealand "
-                       "NZeTA is confirmed needed for the transit through "
-                       "Auckland."),
-            },
-            "NU": {
-                "DE": ("VISA_FREE", 30, "medium", "aa",
-                       "Self-governing in free association with New "
-                       "Zealand. No visa for German nationals. Reached only "
-                       "via Auckland, which needs an NZeTA."),
-                "GB": ("VISA_FREE", 30, "low", "fcdo",
-                       "Self-governing in free association with New "
-                       "Zealand. Generally visa-free for British visitors, "
-                       "but not independently confirmed for a British "
-                       "passport. Reached only via Auckland, which needs an "
-                       "NZeTA."),
-            },
-            # Already written without naming a nationality — "non-NZ
-            # visitors" covers a British passport as well as a German one —
-            # so the fact and note are shared; only the source link differs.
-            "TK": {
-                "DE": ("VISA_FREE", None, "low", "aa",
-                       "No airport: access is by boat from Samoa, and "
-                       "visitors need a travel permit from the Tokelau "
-                       "Liaison Office in Apia, which can take a month or "
-                       "two to process. No fixed day limit could be "
-                       "confirmed for non-NZ visitors, and access has been "
-                       "reported closed to visitors at times — check "
-                       "current status before planning any trip here."),
-                "GB": ("VISA_FREE", None, "low", "fcdo",
-                       "No airport: access is by boat from Samoa, and "
-                       "visitors need a travel permit from the Tokelau "
-                       "Liaison Office in Apia, which can take a month or "
-                       "two to process. No fixed day limit could be "
-                       "confirmed for non-NZ visitors, and access has been "
-                       "reported closed to visitors at times — check "
-                       "current status before planning any trip here."),
-            },
+            "CK": ("VISA_FREE", 31, "medium", "aa",
+                   "Self-governing in free association with New Zealand, "
+                   "with its own entry rules. No visa for German nationals; "
+                   "31 days is the usual grant. A New Zealand NZeTA is "
+                   "needed for the transit through Auckland."),
+            "NU": ("VISA_FREE", 30, "medium", "aa",
+                   "Self-governing in free association with New Zealand. "
+                   "No visa for German nationals. Reached only via "
+                   "Auckland, which needs an NZeTA."),
+            "TK": ("VISA_FREE", None, "low", "aa",
+                   "No airport: access is by boat from Samoa, and visitors "
+                   "need a travel permit from the Tokelau Liaison Office in "
+                   "Apia, which can take a month or two to process. No "
+                   "fixed day limit could be confirmed for non-NZ visitors, "
+                   "and access has been reported closed to visitors at "
+                   "times — check current status before planning any trip "
+                   "here."),
         },
     },
 
     # --- Australian external territories: inside the migration zone -------
     "au_external": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "CX": {
-                "DE": ("ETA", 90, "medium", "evisitor",
-                       "Inside the Australian migration zone, so German "
-                       "nationals need an eVisitor (subclass 651) just as "
-                       "for the mainland."),
-                "GB": ("ETA", 90, "medium", "evisitor",
-                       "Inside the Australian migration zone, so British "
-                       "nationals need an eVisitor (subclass 651) just as "
-                       "for the mainland — GB is eVisitor-eligible."),
-            },
-            "CC": {
-                "DE": ("ETA", 90, "medium", "evisitor",
-                       "Inside the Australian migration zone, so German "
-                       "nationals need an eVisitor (subclass 651) just as "
-                       "for the mainland."),
-                "GB": ("ETA", 90, "medium", "evisitor",
-                       "Inside the Australian migration zone, so British "
-                       "nationals need an eVisitor (subclass 651) just as "
-                       "for the mainland — GB is eVisitor-eligible."),
-            },
-            "NF": {
-                "DE": ("ETA", 90, "high", "evisitor",
-                       "Inside the Australian migration zone since 2016, so "
-                       "German nationals need an eVisitor (subclass 651) "
-                       "just as for the mainland."),
-                "GB": ("ETA", 90, "high", "evisitor",
-                       "Inside the Australian migration zone since 2016, so "
-                       "British nationals need an eVisitor (subclass 651) "
-                       "just as for the mainland — GB is eVisitor-eligible."),
-            },
+            "CX": ("ETA", 90, "medium", "evisitor",
+                   "Inside the Australian migration zone, so German "
+                   "nationals need an eVisitor (subclass 651) just as for "
+                   "the mainland."),
+            "CC": ("ETA", 90, "medium", "evisitor",
+                   "Inside the Australian migration zone, so German "
+                   "nationals need an eVisitor (subclass 651) just as for "
+                   "the mainland."),
+            "NF": ("ETA", 90, "high", "evisitor",
+                   "Inside the Australian migration zone since 2016, so "
+                   "German nationals need an eVisitor (subclass 651) just "
+                   "as for the mainland."),
         },
     },
 
     # --- Contested and de facto ------------------------------------------
     "contested": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            "EH": {
-                "DE": ("VISA_FREE", 90, "low", "aa",
-                       "Entry follows Morocco in practice, since Morocco "
-                       "controls the populated coast including Laâyoune and "
-                       "Dakhla — so no visa for German nationals, on "
-                       "Moroccan terms. The Polisario-administered interior "
-                       "is a different matter and not somewhere you arrive "
-                       "as a tourist."),
-                "GB": ("VISA_FREE", 90, "high", "fcdo",
-                       "Entry follows Morocco in practice, since Morocco "
-                       "controls the populated coast including Laâyoune and "
-                       "Dakhla — so no visa for British nationals, on "
-                       "Moroccan terms. Gov.uk specifically warns solo "
-                       "travellers have been refused entry or turned back "
-                       "here in the past, on top of the usual "
-                       "Polisario-administered-interior caveat."),
-            },
-            "XN": {
-                "DE": ("VISA_FREE", 90, "medium", "aa",
-                       "Northern Cyprus runs its own entry control and "
-                       "normally stamps a separate slip rather than the "
-                       "passport. No visa for German nationals. Arriving "
-                       "directly (via Türkiye) counts as an illegal entry in "
-                       "the Republic of Cyprus's view; crossing at Nicosia "
-                       "does not."),
-                "GB": ("VISA_FREE", 90, "low", "fcdo",
-                       "Northern Cyprus runs its own entry control and "
-                       "normally stamps a separate slip rather than the "
-                       "passport. Generally visa-free for British visitors "
-                       "as it is for other nationalities, but not "
-                       "independently confirmed — check before booking. "
-                       "Arriving directly (via Türkiye) counts as an "
-                       "illegal entry in the Republic of Cyprus's view; "
-                       "crossing at Nicosia does not."),
-            },
-            # Already written without naming a nationality — Somaliland's
-            # own visa-on-arrival process does not depend on it — so the
-            # fact and note are shared; only the source link differs.
-            "XS": {
-                "DE": ("VISA_ON_ARRIVAL", 30, "medium", "aa",
-                       "Somaliland issues its own visas and does not "
-                       "recognise Somali ones. A visa on arrival at "
-                       "Hargeisa is the usual route, or one of the liaison "
-                       "offices in advance. Somali visas are not valid here "
-                       "and vice versa."),
-                "GB": ("VISA_ON_ARRIVAL", 30, "medium", "fcdo",
-                       "Somaliland issues its own visas and does not "
-                       "recognise Somali ones. A visa on arrival at "
-                       "Hargeisa is the usual route, or one of the liaison "
-                       "offices in advance. Somali visas are not valid here "
-                       "and vice versa."),
-            },
+            "EH": ("VISA_FREE", 90, "low", "aa",
+                   "Entry follows Morocco in practice, since Morocco "
+                   "controls the populated coast including Laâyoune and "
+                   "Dakhla — so no visa for German nationals, on Moroccan "
+                   "terms. The Polisario-administered interior is a "
+                   "different matter and not somewhere you arrive as a "
+                   "tourist."),
+            "XN": ("VISA_FREE", 90, "medium", "aa",
+                   "Northern Cyprus runs its own entry control and normally "
+                   "stamps a separate slip rather than the passport. No "
+                   "visa for German nationals. Arriving directly (via "
+                   "Türkiye) counts as an illegal entry in the Republic of "
+                   "Cyprus's view; crossing at Nicosia does not."),
+            "XS": ("VISA_ON_ARRIVAL", 30, "medium", "aa",
+                   "Somaliland issues its own visas and does not recognise "
+                   "Somali ones. A visa on arrival at Hargeisa is the usual "
+                   "route, or one of the liaison offices in advance. Somali "
+                   "visas are not valid here and vice versa."),
         },
     },
 
     # --- Uninhabited: permission, not a visa ------------------------------
     "uninhabited": {
-        "members": ("DE", "GB"),
+        "members": ("DE",),
         "places": {
-            # The one place in this group where the authority genuinely is
-            # per-nationality: an Antarctic Treaty permit comes from your own
-            # treaty party, not the territory.
-            "AQ": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "antarctic",
-                       "No visa and no immigration control — nobody's "
-                       "sovereign territory. But German nationals "
-                       "organising any activity here need an "
-                       "Umweltbundesamt permit under the Antarctic Treaty's "
-                       "Environmental Protocol. Joining a licensed cruise "
-                       "means the operator holds it."),
-                "GB": ("PERMIT_REQUIRED", None, "medium", "fcdo",
-                       "No visa and no immigration control — nobody's "
-                       "sovereign territory. But British nationals "
-                       "organising any activity here need a permit under "
-                       "the Antarctic Act 1994, administered by the FCDO's "
-                       "Polar Regions Department, not a visa. Joining a "
-                       "licensed cruise means the operator holds it."),
-            },
-            # The rest are already written without naming a nationality —
-            # the administering authority is the territory's own, regardless
-            # of visitor passport — so the fact and note are shared; only
-            # the source link differs, since "aa" is a German-language page.
-            "GS": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "gsgssi",
-                       "A visit permit from the Commissioner is required in "
-                       "advance, and is normally arranged by an "
-                       "expedition-cruise operator. There is no scheduled "
-                       "transport and no visa."),
-                "GB": ("PERMIT_REQUIRED", None, "high", "gsgssi",
-                       "A visit permit from the Commissioner is required in "
-                       "advance, and is normally arranged by an "
-                       "expedition-cruise operator. There is no scheduled "
-                       "transport and no visa."),
-            },
-            "TF": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "aa",
-                       "Crozet, Kerguelen, Amsterdam, Saint-Paul and Adélie "
-                       "Land. Access needs the prefect's authorisation and "
-                       "a berth on the supply ship Marion Dufresne. Not a "
-                       "visa question."),
-                "GB": ("PERMIT_REQUIRED", None, "high", "fcdo",
-                       "Crozet, Kerguelen, Amsterdam, Saint-Paul and Adélie "
-                       "Land. Access needs the prefect's authorisation and "
-                       "a berth on the supply ship Marion Dufresne. Not a "
-                       "visa question."),
-            },
-            "HM": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "aa",
-                       "An Australian external territory and a strict "
-                       "nature reserve: entry needs an Australian Antarctic "
-                       "Division permit, granted essentially only for "
-                       "research."),
-                "GB": ("PERMIT_REQUIRED", None, "high", "fcdo",
-                       "An Australian external territory and a strict "
-                       "nature reserve: entry needs an Australian Antarctic "
-                       "Division permit, granted essentially only for "
-                       "research."),
-            },
-            "BV": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "aa",
-                       "A Norwegian nature reserve with no harbour and no "
-                       "airstrip. Landing needs Norwegian Polar Institute "
-                       "permission and happens only for research."),
-                "GB": ("PERMIT_REQUIRED", None, "high", "fcdo",
-                       "A Norwegian nature reserve with no harbour and no "
-                       "airstrip. Landing needs Norwegian Polar Institute "
-                       "permission and happens only for research."),
-            },
-            "IO": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "aa",
-                       "Diego Garcia is a joint UK-US military base and the "
-                       "rest of the Chagos Archipelago is a marine "
-                       "protected area. A permit from the British Indian "
-                       "Ocean Territory administration is required and "
-                       "tourism is not permitted. Sovereignty is being "
-                       "transferred to Mauritius, which may change all of "
-                       "this."),
-                "GB": ("PERMIT_REQUIRED", None, "high", "fcdo",
-                       "Diego Garcia is a joint UK-US military base and the "
-                       "rest of the Chagos Archipelago is a marine "
-                       "protected area. A permit from the British Indian "
-                       "Ocean Territory administration is required and "
-                       "tourism is not permitted. Sovereignty is being "
-                       "transferred to Mauritius, which may change all of "
-                       "this."),
-            },
-            "UM": {
-                "DE": ("PERMIT_REQUIRED", None, "high", "aa",
-                       "Nine scattered islands and atolls — Midway, Wake, "
-                       "Johnston, Palmyra and the rest. Most are National "
-                       "Wildlife Refuges needing a US Fish and Wildlife "
-                       "Service special-use permit; Wake is an air force "
-                       "installation. Not reachable as a visitor."),
-                "GB": ("PERMIT_REQUIRED", None, "high", "fcdo",
-                       "Nine scattered islands and atolls — Midway, Wake, "
-                       "Johnston, Palmyra and the rest. Most are National "
-                       "Wildlife Refuges needing a US Fish and Wildlife "
-                       "Service special-use permit; Wake is an air force "
-                       "installation. Not reachable as a visitor."),
-            },
+            "AQ": ("PERMIT_REQUIRED", None, "high", "antarctic",
+                   "No visa and no immigration control — nobody's sovereign "
+                   "territory. But German nationals organising any activity "
+                   "here need an Umweltbundesamt permit under the Antarctic "
+                   "Treaty's Environmental Protocol. Joining a licensed "
+                   "cruise means the operator holds it."),
+            "GS": ("PERMIT_REQUIRED", None, "high", "gsgssi",
+                   "A visit permit from the Commissioner is required in "
+                   "advance, and is normally arranged by an "
+                   "expedition-cruise operator. There is no scheduled "
+                   "transport and no visa."),
+            "TF": ("PERMIT_REQUIRED", None, "high", "aa",
+                   "Crozet, Kerguelen, Amsterdam, Saint-Paul and Adélie "
+                   "Land. Access needs the prefect's authorisation and a "
+                   "berth on the supply ship Marion Dufresne. Not a visa "
+                   "question."),
+            "HM": ("PERMIT_REQUIRED", None, "high", "aa",
+                   "An Australian external territory and a strict nature "
+                   "reserve: entry needs an Australian Antarctic Division "
+                   "permit, granted essentially only for research."),
+            "BV": ("PERMIT_REQUIRED", None, "high", "aa",
+                   "A Norwegian nature reserve with no harbour and no "
+                   "airstrip. Landing needs Norwegian Polar Institute "
+                   "permission and happens only for research."),
+            "IO": ("PERMIT_REQUIRED", None, "high", "aa",
+                   "Diego Garcia is a joint UK-US military base and the "
+                   "rest of the Chagos Archipelago is a marine protected "
+                   "area. A permit from the British Indian Ocean Territory "
+                   "administration is required and tourism is not "
+                   "permitted. Sovereignty is being transferred to "
+                   "Mauritius, which may change all of this."),
+            "UM": ("PERMIT_REQUIRED", None, "high", "aa",
+                   "Nine scattered islands and atolls — Midway, Wake, "
+                   "Johnston, Palmyra and the rest. Most are National "
+                   "Wildlife Refuges needing a US Fish and Wildlife Service "
+                   "special-use permit; Wake is an air force installation. "
+                   "Not reachable as a visitor."),
         },
     },
 }
 
 
-def overrides_for(passport: str) -> dict[str, tuple]:
+# ---------------------------------------------------------------------------
+# GENERIC_RULE: how any passport that is *not* in PASSPORTS gets an answer for
+# the 53 places PROGRAMS curates for DE.
+#
+# DE's curated answers above are real research — a person read gov documents
+# per place. There is no such budget for the other ~198 passports, so this is
+# a different, cheaper and honestly-labelled kind of answer: most of the 53
+# places are legally tied to a real sovereign state (French Guiana to France,
+# Greenland to Denmark, the Crown Dependencies to the UK, ...), so a
+# passport's own real dataset answer for *that* sovereign is a reasonable
+# stand-in for the territory — always at "low" confidence, always saying so.
+#
+# Two programs get a real rule instead of a borrowed one: "eu_membership" is
+# actual EU law (freedom of movement into the outermost regions), so it is
+# "high" confidence keyed on real EU membership, not a guess. "uk_eta" is a
+# structural fact (the UK ETA and the CTA are the same scheme for the Crown
+# Dependencies as for Britain) plus one borrowed lookup for everyone outside
+# the CTA.
+#
+# Everything else PROGRAMS curates for DE — uk_ot, contested, the Tokelau
+# entry in nz_realm, HM's Australian permit — has no generic entry at all. A
+# UK Overseas Territory's entry rules do not follow from any other country's
+# dataset row, and geopolitically contested places are not something to guess
+# at for 198 passports. Silence for these is intended, not a gap to fill.
+# ---------------------------------------------------------------------------
+GENERIC_RULE = {
+    "eu_membership": {
+        # eu_omr's five places, plus AX (nordic) — same EU-freedom-of-movement
+        # fact, just grouped differently in PROGRAMS.
+        "places": ("GF", "GP", "MQ", "RE", "YT", "AX"),
+        "members": EU_MEMBERS,
+        "answer": ("VISA_FREE", None, "high", "eu_omr",
+                   "EU/Schengen freedom of movement — no visa, no time "
+                   "limit."),
+    },
+    "reference": (
+        {
+            "reference": "FR",
+            "note": ("Inferred from this passport's own visa requirement "
+                     "for mainland France, since this is a French overseas "
+                     "collectivity associated with the EU rather than part "
+                     "of it — not independently confirmed for this "
+                     "territory."),
+            "places": {
+                "PF": None,
+                "NC": None,
+                "BL": None,
+                "MF": ("Sint Maarten next door is Dutch and listed "
+                       "separately; the land border is open."),
+                "PM": ("Most routes go through Canada, which needs its own "
+                       "eTA."),
+                "WF": "Reached only via New Caledonia or Fiji.",
+            },
+        },
+        {
+            "reference": "NL",
+            "note": ("Inferred from this passport's own visa requirement "
+                     "for the Netherlands, since these are Caribbean parts "
+                     "of the Kingdom outside the EU — not independently "
+                     "confirmed for this territory."),
+            "places": {
+                "AW": None,
+                "CW": None,
+                "SX": "Saint Martin next door is French and listed separately.",
+                "BQ": "Bonaire, Saba and Sint Eustatius.",
+            },
+        },
+        {
+            "reference": "DK",
+            "note": ("Inferred from this passport's own visa requirement "
+                     "for Denmark, since Greenland and the Faroe Islands "
+                     "are outside the EU and Schengen — a Schengen visa is "
+                     "not valid here, and this is not independently "
+                     "confirmed for this territory."),
+            "places": {"GL": None, "FO": None},
+        },
+        {
+            "reference": "US",
+            "note": ("Inferred from this passport's own visa requirement "
+                     "for the United States, since this territory is part "
+                     "of the US for immigration purposes — not "
+                     "independently confirmed for this territory "
+                     "specifically."),
+            "places": {
+                "PR": None,
+                "VI": "Not the same place as the British Virgin Islands.",
+                "GU": None,
+                "MP": None,
+                # AS is deliberately absent: American Samoa runs its own
+                # immigration and the US answer does not carry over — see
+                # PROGRAMS["us_territory"]["AS"] for DE's own researched
+                # entry. Inheriting it here would be exactly the "blind
+                # parent inheritance" this file exists to avoid.
+            },
+        },
+        {
+            "reference": "NZ",
+            "note": ("Inferred from this passport's own visa requirement "
+                     "for New Zealand, since this is self-governing in free "
+                     "association with New Zealand — not independently "
+                     "confirmed for this territory."),
+            "places": {
+                "CK": "A New Zealand NZeTA is needed for the transit through Auckland.",
+                "NU": "Reached only via Auckland, which needs an NZeTA.",
+                # TK is deliberately absent: its day limit is unresolved even
+                # for DE (STATUS.md), so there is nothing to borrow.
+            },
+        },
+        {
+            "reference": "AU",
+            "note": ("Inferred from this passport's own visa requirement "
+                     "for Australia, since this is inside the Australian "
+                     "migration zone — not independently confirmed for "
+                     "this territory."),
+            "places": {"CX": None, "CC": None, "NF": None},
+            # HM is deliberately absent: it is uninhabited and covered by
+            # GENERIC_RULE["uninhabited"] instead of the migration zone.
+        },
+    ),
+    "uk_eta": {
+        "places": ("JE", "GG", "IM"),
+        "cta_answer": ("HOME", None, "high", "cta",
+                        "Inside the Common Travel Area: full right of "
+                        "entry, the same as in Britain itself."),
+        "reference": "GB",
+        "note": ("Derived from this passport's own visa requirement for "
+                 "the United Kingdom: the UK ETA scheme covers the Crown "
+                 "Dependencies the same way it covers Britain — not "
+                 "independently confirmed for this territory."),
+    },
+    # Passport-independent by treaty, same as its bare-tuple entry in
+    # PROGRAMS["nordic"] — visa-free for everyone, so every passport gets it,
+    # not just the curated one.
+    "universal": {
+        "SJ": ("VISA_FREE", None, "high", "svalbard",
+               "The Svalbard Treaty makes the archipelago visa-free for "
+               "everyone, with no immigration control and no time limit. "
+               "But you fly via mainland Norway, so you leave and re-enter "
+               "Schengen — carry a passport. Jan Mayen shares the ISO code "
+               "and is a manned station with no visitor access."),
+    },
+    # Nobody's sovereign territory, so the same permit requirement holds for
+    # every passport rather than being derived from one.
+    "uninhabited": {
+        "AQ": ("PERMIT_REQUIRED", None, "low", "antarctic",
+               "No visa and no immigration control — nobody's sovereign "
+               "territory. Anyone organising an activity here needs a "
+               "permit under the Antarctic Treaty's Environmental "
+               "Protocol, issued by their own treaty party, not a visa."),
+        "GS": ("PERMIT_REQUIRED", None, "high", "gsgssi",
+               "A visit permit from the Commissioner is required in "
+               "advance, and is normally arranged by an expedition-cruise "
+               "operator. There is no scheduled transport and no visa."),
+        "TF": ("PERMIT_REQUIRED", None, "medium", "generic",
+               "Crozet, Kerguelen, Amsterdam, Saint-Paul and Adélie Land. "
+               "Access needs the French prefect's authorisation and a "
+               "berth on the supply ship Marion Dufresne. Not a visa "
+               "question."),
+        "HM": ("PERMIT_REQUIRED", None, "medium", "generic",
+               "An Australian external territory and a strict nature "
+               "reserve: entry needs an Australian Antarctic Division "
+               "permit, granted essentially only for research."),
+        "BV": ("PERMIT_REQUIRED", None, "medium", "generic",
+               "A Norwegian nature reserve with no harbour and no "
+               "airstrip. Landing needs Norwegian Polar Institute "
+               "permission and happens only for research."),
+        "IO": ("PERMIT_REQUIRED", None, "medium", "generic",
+               "Diego Garcia is a joint UK-US military base and the rest "
+               "of the Chagos Archipelago is a marine protected area. A "
+               "permit from the British Indian Ocean Territory "
+               "administration is required and tourism is not permitted."),
+        "UM": ("PERMIT_REQUIRED", None, "medium", "generic",
+               "Nine scattered islands and atolls — Midway, Wake, "
+               "Johnston, Palmyra and the rest. Most are National Wildlife "
+               "Refuges needing a US Fish and Wildlife Service special-use "
+               "permit; Wake is an air force installation. Not reachable "
+               "as a visitor."),
+    },
+}
+
+
+def overrides_for(
+    passport: str, dataset_row: dict[str, tuple] | None = None
+) -> dict[str, tuple]:
     """This passport's resolved OVERRIDES table: every program it is a member of,
     flattened into the old flat shape build_visa.py already knows how to check.
 
-    A place's value in PROGRAMS is either one 5-tuple shared by every member
-    (the fact and the wording both hold for all of them), or a dict of
+    `passport in PASSPORTS` (today, just DE) is the curated path: every
+    program it is a member of, flattened exactly as before. A place's value
+    in PROGRAMS is either one 5-tuple shared by every member, or a dict of
     {passport: 5-tuple} where members genuinely disagree. A member with no
     entry in that dict is a rules.py bug — a program that claims a passport as
     a member but has nothing to say for one of its places — so it is a hard
     error here, same as a place claimed by two programs.
+
+    Any other passport gets the generic tier from GENERIC_RULE, using
+    `dataset_row` — that passport's own destination -> (category, days)
+    lookup, the same shape build_visa.py already builds by running its
+    classify() over the raw CSV row. A place with no applicable generic rule
+    is silently omitted: that gap is the honest answer for the generic tier,
+    not a bug to fail the build over.
     """
+    if passport not in PASSPORTS:
+        return _generic_overrides_for(passport, dataset_row or {})
+
     result: dict[str, tuple] = {}
     for name, program in PROGRAMS.items():
         if passport not in program["members"]:
@@ -1136,6 +902,43 @@ def overrides_for(passport: str) -> dict[str, tuple]:
                     f"(one of them is {name!r})"
                 )
             result[code] = resolved
+    return result
+
+
+def _generic_overrides_for(
+    passport: str, dataset_row: dict[str, tuple]
+) -> dict[str, tuple]:
+    result: dict[str, tuple] = {}
+
+    membership = GENERIC_RULE["eu_membership"]
+    if passport in membership["members"]:
+        for code in membership["places"]:
+            result[code] = membership["answer"]
+
+    for group in GENERIC_RULE["reference"]:
+        looked_up = dataset_row.get(group["reference"])
+        if looked_up is None:
+            continue
+        category, days = looked_up
+        for code, detail in group["places"].items():
+            note = group["note"] if not detail else f"{group['note']} {detail}"
+            result[code] = (category, days, "low", "generic", note)
+
+    uk = GENERIC_RULE["uk_eta"]
+    if passport in CTA_MEMBERS:
+        for code in uk["places"]:
+            result[code] = uk["cta_answer"]
+    else:
+        looked_up = dataset_row.get(uk["reference"])
+        if looked_up is not None:
+            category, days = looked_up
+            if category == "VISA_FREE":
+                category = "ETA"
+            for code in uk["places"]:
+                result[code] = (category, days, "low", "generic", uk["note"])
+
+    result.update(GENERIC_RULE["universal"])
+    result.update(GENERIC_RULE["uninhabited"])
     return result
 
 # ---------------------------------------------------------------------------
@@ -1159,13 +962,16 @@ CORRECTIONS = {}
 # The rest are the traps that a naive parent-inherits rule would fall into: the
 # pairs below sit next to each other geographically and differ in the answer.
 #
-# Keyed by passport, because the traps and the sanity anchors genuinely differ
-# between them — GB's own Crown Dependencies are HOME, not ETA, which is the
-# exact reverse of DE's assertion for the same code. GB's set only asserts
-# what this session actually verified against gov.uk; it deliberately skips
-# the "sanity anchors from the dataset itself" DE has for CN/RU, since those
-# were never checked for a British passport and a wrong guess here would be
-# worse than no assertion at all.
+# Keyed by passport. DE's set is the full curated-tier check, unchanged. The
+# others pin the generic tier (GENERIC_RULE, above) for a handful of real
+# passports, picked because they exercise the traps a naive "just inherit the
+# parent's row" rule would fall into. A value of `(None, why)` asserts the
+# opposite of the usual check: this code must have no generic answer at all —
+# American Samoa despite Guam, the Overseas Territories, the contested places
+# — because a gap here is the honest generic-tier answer, not a bug.
+#
+# A passport with no key here (the other ~195) gets no generic-tier assertion
+# at all; build_visa.py only runs what a key provides.
 # ---------------------------------------------------------------------------
 EXPECTED = {
     "DE": {
@@ -1194,30 +1000,31 @@ EXPECTED = {
         "RU": ("E_VISA", "e-visa since 2023"),
         "AQ": ("PERMIT_REQUIRED", "a treaty permit, not a visa"),
     },
-    "GB": {
-        "GL": ("VISA_FREE", "not Schengen, but no visa for a Brit"),
-        # GB is not EU, so French Guiana is a low-confidence guess rather
-        # than a freedom-of-movement fact — asserted as VISA_FREE anyway to
-        # catch an accidental category swap, not as a claim of certainty.
-        "GF": ("VISA_FREE", "assumed third-country short-stay entry"),
-        "MF": ("VISA_FREE", "French half"),
-        "SX": ("VISA_FREE", "Dutch half"),
-        "VG": ("VISA_FREE", "British Virgin Islands need nothing"),
-        "VI": ("ETA", "US Virgin Islands need an ESTA — GB is VWP"),
-        "GU": ("ETA", "Guam is US immigration"),
-        "AS": ("VISA_FREE", "American Samoa is not"),
-        # The reverse of DE's trap: GB's own Crown Dependencies are home.
-        "JE": ("HOME", "Common Travel Area — domestic for a British citizen"),
-        "GI": ("VISA_FREE", "Overseas Territory, own border control"),
-        # Bermuda and Cayman grant GB longer than DE's visa-free days —
-        # asserted by category only; the day counts are checked in uk_ot.
-        "BM": ("VISA_FREE", "British Overseas Territory, own immigration"),
-        "KY": ("VISA_FREE", "British Overseas Territory, own immigration"),
-        # This build's own country.
-        "GB": ("HOME", "the passport's own country"),
-        # One sanity anchor from the dataset that is safe to assert: the UK
-        # is a Visa Waiver Program country just as Germany is.
-        "US": ("ETA", "ESTA — UK is a Visa Waiver Program country"),
-        "AQ": ("PERMIT_REQUIRED", "a treaty permit, not a visa"),
+    "FR": {
+        # EU membership: a real fact, not a borrowed lookup.
+        "GF": ("VISA_FREE", "EU outermost region — EU membership gives freedom of movement"),
+        # uk_eta's generic mapping: France is not in the CTA, so this comes
+        # from France's own (dataset) GB requirement, not from a CTA HOME.
+        "JE": ("ETA", "not in the CTA — derived from France's own UK requirement"),
+        # us_territory's generic reference: derived from France's own US row.
+        "GU": ("ETA", "US territory — derived from France's own US (ESTA) requirement"),
+        # The trap this whole generic tier exists to avoid: Guam gets an
+        # answer from the US reference, American Samoa deliberately does not.
+        "AS": (None, "American Samoa runs its own immigration; no generic answer even though Guam has one"),
+        # Overseas Territories and contested places get no generic answer
+        # for any passport but DE.
+        "EH": (None, "contested/de facto territory — too geopolitically sensitive for a generic answer"),
+    },
+    "US": {
+        # The US is neither an EU nor a Schengen member, so eu_membership
+        # gives it nothing here — the trap a blind "EU region" rule would
+        # miss.
+        "GF": (None, "the US is not an EU member, so no generic answer for an EU outermost region"),
+    },
+    "IE": {
+        # Ireland is in the CTA, so this is HOME even though Ireland's own
+        # dataset row for GB is merely "visa free" — CTA membership takes
+        # priority over the borrowed-GB-row mapping.
+        "JE": ("HOME", "Ireland is in the Common Travel Area"),
     },
 }

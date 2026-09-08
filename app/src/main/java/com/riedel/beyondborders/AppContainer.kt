@@ -35,6 +35,9 @@ class AppContainer(context: Context) {
     }
 
     val visa: VisaRepository by lazy {
-        VisaRepository(registryLoader = { nationality -> VisaRegistry.load(appContext.assets, nationality) })
+        VisaRepository(
+            registryLoader = { passport -> VisaRegistry.load(appContext.assets, passport) },
+            passportsLoader = { VisaRegistry.availablePassports(appContext.assets) },
+        )
     }
 }

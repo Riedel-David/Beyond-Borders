@@ -54,6 +54,23 @@ def load_row(source: Path, passport: str) -> dict[str, str]:
     return row
 
 
+def load_passports(source: Path) -> list[str]:
+    """Every passport code with at least one row in the matrix.
+
+    This, not rules.PASSPORTS, is what a full build iterates — PASSPORTS is
+    only the curated roster (today, just DE).
+    """
+    with source.open(newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        codes = sorted({r["Passport"] for r in reader})
+    if len(codes) < 150:
+        raise SystemExit(
+            f"only {len(codes)} passports in {source.name}; the dataset's "
+            f"shape has probably changed"
+        )
+    return codes
+
+
 def classify(raw: str) -> tuple[str, int | None]:
     """Turn one Requirement cell into (category, days).
 
@@ -121,11 +138,17 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
 
     row = load_row(source, passport)
     print(f"dataset: {len(row)} destinations for the {passport} passport")
+    classified_row = {code: classify(raw) for code, raw in row.items()}
 
-    overrides = rules.overrides_for(passport)
-    print(f"programs: {len(overrides)} places resolved for {passport} from "
-          f"{sum(1 for p in rules.PROGRAMS.values() if passport in p['members'])} "
-          f"programs")
+    curated = passport in rules.PASSPORTS
+    overrides = rules.overrides_for(passport, classified_row)
+    if curated:
+        print(f"programs: {len(overrides)} places resolved for {passport} from "
+              f"{sum(1 for p in rules.PROGRAMS.values() if passport in p['members'])} "
+              f"programs (curated)")
+    else:
+        print(f"generic tier: {len(overrides)} of the 53 non-dataset places "
+              f"resolved for {passport}")
 
     # The Foreign Office link-out is DE-only: it comes from the Auswärtiges
     # Amt's own open data, and there is no equivalent feed wired up for any
@@ -233,15 +256,15 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
     unresolved = []
 
     for code in codes:
-        curated = rules.CORRECTIONS.get(code) or overrides.get(code)
+        entry_override = rules.CORRECTIONS.get(code) or overrides.get(code)
         if code in row and code not in rules.CORRECTIONS:
             category, days = classify(row[code])
             entry = {"code": code, "category": category, "source": "dataset"}
             if days is not None:
                 entry["days"] = days
             from_dataset += 1
-        elif curated is not None:
-            category, days, confidence, src, note = curated
+        elif entry_override is not None:
+            category, days, confidence, src, note = entry_override
             entry = {
                 "code": code,
                 "category": category,
@@ -272,16 +295,32 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
 
         entries.append(entry)
 
-    if unresolved:
+    # Unresolved is only fatal for the curated tier. The generic tier's whole
+    # point is that most of the 53 places have no applicable rule for most
+    # passports — that is the honest answer, not a bug, so it is only
+    # reported below for visibility.
+    if unresolved and curated:
         for code in unresolved:
             problems.append(
                 f"{code} {names[code]} has no dataset row and no override. "
                 f"Add it to OVERRIDES in rules.py."
             )
+    elif unresolved:
+        print(f"generic tier: no answer for {len(unresolved)} places — "
+              f"{' '.join(sorted(unresolved))}")
 
     # ---------------- the promise in PLAN.md ----------------
     resolved = {e["code"]: e for e in entries}
-    for code, (expected, why) in rules.EXPECTED[passport].items():
+    for code, (expected, why) in rules.EXPECTED.get(passport, {}).items():
+        if expected is None:
+            # This assertion is about an intended gap, not an answer.
+            if code in resolved:
+                problems.append(
+                    f"{code} {names[code]} resolved to "
+                    f"{resolved[code]['category']}, but is expected to have "
+                    f"no generic answer ({why})"
+                )
+            continue
         if code not in resolved:
             # Either the code is not in the registry at all, or it is one of the
             # unresolved above — which is already reported, so say which.
@@ -353,16 +392,18 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--passport", choices=rules.PASSPORTS, default=rules.PASSPORT,
-                    help="which passport to build (default: %(default)s)")
+    ap.add_argument("--passport", default=None,
+                    help="which passport to build (default: every passport "
+                         "with a row in the dataset)")
     ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE,
                     help="the Passport Index tidy CSV")
     ap.add_argument("--advice", type=Path, default=DEFAULT_ADVICE,
                     help="the Auswärtiges Amt travelwarning JSON (DE only)")
     a = ap.parse_args()
-    # The Foreign Office feed is only needed to build DE; a GB (or future
-    # non-DE) build should not fail over a file it never reads.
-    required = [a.source] if a.passport != "DE" else [a.source, a.advice]
+    # The Foreign Office feed is only needed to build DE; a build that never
+    # touches DE should not fail over a file it never reads.
+    needs_advice = a.passport is None or a.passport == "DE"
+    required = [a.source, a.advice] if needs_advice else [a.source]
     missing = [p for p in required if not p.exists()]
     if missing:
         raise SystemExit(
@@ -375,10 +416,18 @@ def main() -> int:
             + (
                 f"  curl -sL -o {DEFAULT_ADVICE.relative_to(REPO)} \\\n"
                 f"    {rules.AA_OPENDATA['url']}\n"
-                if a.passport == "DE" else ""
+                if needs_advice else ""
             )
         )
-    return build(a.passport, a.source, a.advice if a.passport == "DE" else None)
+    if a.passport is not None:
+        return build(a.passport, a.source, a.advice if a.passport == "DE" else None)
+
+    codes = load_passports(a.source)
+    print(f"building {len(codes)} passports from {a.source.name}")
+    for code in codes:
+        build(code, a.source, a.advice if code == "DE" else None)
+        print()
+    return 0
 
 
 if __name__ == "__main__":

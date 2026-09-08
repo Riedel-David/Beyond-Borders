@@ -3,7 +3,7 @@ package com.riedel.beyondborders.settings
 import android.content.Context
 import androidx.core.content.edit
 import com.riedel.beyondborders.core.Uuid
-import com.riedel.beyondborders.data.visa.Nationality
+import com.riedel.beyondborders.data.visa.VisaRegistry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,14 +73,13 @@ class SettingsStore(context: Context) {
     val hasSeenWelcome: StateFlow<Boolean> = _hasSeenWelcome.asStateFlow()
 
     private val _nationality = MutableStateFlow(
-        runCatching { Nationality.valueOf(prefs.getString(KEY_NATIONALITY, null) ?: "") }
-            .getOrDefault(Nationality.DE)
+        prefs.getString(KEY_NATIONALITY, null) ?: VisaRegistry.DEFAULT_PASSPORT
     )
-    val nationality: StateFlow<Nationality> = _nationality.asStateFlow()
+    val nationality: StateFlow<String> = _nationality.asStateFlow()
 
-    fun setNationality(value: Nationality) {
+    fun setNationality(value: String) {
         _nationality.value = value
-        prefs.edit { putString(KEY_NATIONALITY, value.name) }
+        prefs.edit { putString(KEY_NATIONALITY, value) }
     }
 
     fun setHasSeenWelcome() {

@@ -11,13 +11,10 @@ import org.json.JSONObject
  * data, so it is not in Room. 252 entries and ~44 kB, parsed once with the
  * platform's org.json.
  *
- * One passport, not the whole 199 x 199 matrix. That is not a download-size
- * decision — it is because the 53 territory answers in tools/visa/rules.py are
- * specific to a German passport and do not generalise. "Guadeloupe is visa-free"
- * is true because of EU freedom of movement, which most passports do not have. A
- * passport switcher therefore needs 199 x 53 curated answers rather than a bigger
- * asset; shipping the matrix whole would buy a picker that is right about 199
- * places and silent about 53, which is the exact failure this app exists to avoid.
+ * One passport at a time, not the whole matrix in one asset: `visa.json` for DE
+ * (the curated one, with its 53 territory overrides) and one `visa_<code>.json`
+ * per other dataset passport (generic programme-based territory answers where a
+ * real rule applies, no answer where it doesn't — see tools/visa/rules.py).
  */
 class VisaRegistry private constructor(
     /** ISO 3166-1 alpha-2 of the passport these answers are for. */
@@ -62,15 +59,32 @@ class VisaRegistry private constructor(
 
     companion object {
         const val ASSET_NAME = "visa.json"
+        const val DEFAULT_PASSPORT = "DE"
 
         /** DE keeps the historical bare filename; see build_visa.py's own naming rule. */
-        fun assetNameFor(nationality: Nationality): String =
-            if (nationality == Nationality.DE) ASSET_NAME else "visa_${nationality.name.lowercase()}.json"
+        fun assetNameFor(passport: String): String =
+            if (passport == DEFAULT_PASSPORT) ASSET_NAME else "visa_${passport.lowercase()}.json"
 
-        fun load(assets: AssetManager, nationality: Nationality = Nationality.DE): VisaRegistry {
-            val name = assetNameFor(nationality)
+        fun load(assets: AssetManager, passport: String = DEFAULT_PASSPORT): VisaRegistry {
+            val name = assetNameFor(passport)
             val json = assets.open(name).use { it.readBytes().toString(Charsets.UTF_8) }
             return parse(json, name)
+        }
+
+        /**
+         * Every passport code the build actually shipped an asset for, sorted. Read
+         * from the assets directory itself rather than a separate manifest: the
+         * asset filenames are already the single source of truth for what exists.
+         */
+        fun availablePassports(assets: AssetManager): List<String> {
+            val names = assets.list("") ?: emptyArray()
+            val codes = sortedSetOf(DEFAULT_PASSPORT)
+            for (name in names) {
+                if (name.startsWith("visa_") && name.endsWith(".json")) {
+                    codes += name.removePrefix("visa_").removeSuffix(".json").uppercase()
+                }
+            }
+            return codes.toList()
         }
 
         /** Split out from [load] so unit tests can feed it a literal. */

@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
-import com.riedel.beyondborders.data.visa.Nationality
+import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -49,6 +49,7 @@ sealed interface TransferState {
 class SettingsViewModel(
     private val settings: SettingsStore,
     private val places: PlaceRepository,
+    private val visa: VisaRepository,
     private val resolver: ContentResolver,
     private val today: () -> LocalDate = LocalDate::now,
 ) : ViewModel() {
@@ -58,7 +59,19 @@ class SettingsViewModel(
     val mapBase: StateFlow<MapBase> = settings.mapBase
     val denominator: StateFlow<Denominator> = settings.denominator
     val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
-    val nationality: StateFlow<Nationality> = settings.nationality
+    val nationality: StateFlow<String> = settings.nationality
+
+    /** Every passport the picker can offer, with a real country name where one is
+     * known. Loaded once: the set of built passports never changes at runtime. */
+    private val _passportNames = MutableStateFlow<Map<String, String>>(emptyMap())
+    val passportNames: StateFlow<Map<String, String>> = _passportNames.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val codes = visa.availablePassports()
+            _passportNames.value = codes.associateWith { code -> places.place(code)?.name ?: code }
+        }
+    }
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
@@ -81,7 +94,7 @@ class SettingsViewModel(
 
     fun setHapticsEnabled(enabled: Boolean) = settings.setHapticsEnabled(enabled)
 
-    fun setNationality(value: Nationality) = settings.setNationality(value)
+    fun setNationality(value: String) = settings.setNationality(value)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())
@@ -182,11 +195,12 @@ class SettingsViewModel(
         fun factory(
             settings: SettingsStore,
             places: PlaceRepository,
+            visa: VisaRepository,
             resolver: ContentResolver,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(settings, places, resolver) as T
+                return SettingsViewModel(settings, places, visa, resolver) as T
             }
         }
     }
