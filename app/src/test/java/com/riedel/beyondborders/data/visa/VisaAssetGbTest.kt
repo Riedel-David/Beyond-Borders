@@ -9,16 +9,19 @@ import org.junit.Test
 
 /**
  * The GB visa asset, checked the same way [VisaAssetTest] checks DE's — shape, not
- * immigration law — plus the handful of facts that are the whole reason GB has its
- * own rules.py programs rather than sharing DE's tuples: the Common Travel Area,
- * and the total absence of a Foreign Office link-out, which is DE-only by design.
+ * immigration law — plus the handful of facts that are the whole reason the UK
+ * programs carry a GB-specific rule at all: the Common Travel Area, and the total
+ * absence of a Foreign Office link-out, which is DE-only by design. GB is on the
+ * generic tier like every other non-DE passport, so unlike DE it is allowed real
+ * gaps — territories no program has a confident rule for, same as any place with
+ * no data reads as "no answer" on the map.
  */
 class VisaAssetGbTest {
 
     private val visa: VisaRegistry by lazy {
-        val asset = File("src/main/assets/${VisaRegistry.assetNameFor(Nationality.GB)}")
+        val asset = File("src/main/assets/${VisaRegistry.assetNameFor("GB")}")
         assertTrue(
-            "missing ${asset.path} - run tools/visa/build_visa.py --passport GB",
+            "missing ${asset.path} - run tools/visa/build_visa.py",
             asset.exists(),
         )
         VisaRegistry.parse(asset.readText())
@@ -29,10 +32,9 @@ class VisaAssetGbTest {
     }
 
     @Test
-    fun `every place has exactly one GB visa answer`() {
+    fun `every GB visa answer is for a real place`() {
         val placeCodes = places.places.map { it.code }.toSet()
         val visaCodes = visa.requirements.map { it.code }.toSet()
-        assertEquals(emptySet<String>(), placeCodes - visaCodes)
         assertEquals(emptySet<String>(), visaCodes - placeCodes)
     }
 

@@ -10,8 +10,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -53,9 +56,15 @@ fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
+        var passportNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+        LaunchedEffect(Unit) {
+            val codes = container.visa.availablePassports()
+            passportNames = codes.associateWith { code -> container.places.place(code)?.name ?: code }
+        }
         WelcomeScreen(
             nationality = nationality,
             onNationalityChange = container.settings::setNationality,
+            passportNames = passportNames,
             onGetStarted = container.settings::setHasSeenWelcome,
             modifier = modifier,
         )

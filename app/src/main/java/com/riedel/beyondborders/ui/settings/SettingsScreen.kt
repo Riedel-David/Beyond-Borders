@@ -51,7 +51,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
 import com.riedel.beyondborders.data.backup.TravelBackup
-import com.riedel.beyondborders.data.visa.Nationality
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -59,7 +58,7 @@ import com.riedel.beyondborders.settings.MapHue
 import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.ThemeMode
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
-import com.riedel.beyondborders.ui.visa.passportAdjective
+import com.riedel.beyondborders.ui.visa.PassportPickerButton
 
 /**
  * Settings: how the app looks, and how to get the data out.
@@ -75,6 +74,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
         factory = SettingsViewModel.factory(
             settings = container.settings,
             places = container.places,
+            visa = container.visa,
             // The application context's resolver: the ViewModel outlives the
             // activity across a rotation, and holding the activity's would leak it.
             resolver = context.applicationContext.contentResolver,
@@ -87,6 +87,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val denominator by viewModel.denominator.collectAsStateWithLifecycle()
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
+    val passportNames by viewModel.passportNames.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
 
@@ -130,10 +131,9 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             "Passport",
             "Which passport's visa answers the map and passport tab show.",
         ) {
-            ChoiceRow(
-                options = Nationality.entries,
+            PassportPickerButton(
                 selected = nationality,
-                label = { passportAdjective(it.name) },
+                names = passportNames,
                 onSelect = viewModel::setNationality,
             )
         }

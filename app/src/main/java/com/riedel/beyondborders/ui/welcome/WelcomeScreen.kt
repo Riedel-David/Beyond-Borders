@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,8 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
-import com.riedel.beyondborders.data.visa.Nationality
-import com.riedel.beyondborders.ui.visa.passportAdjective
+import com.riedel.beyondborders.ui.visa.PassportPickerButton
 
 /**
  * Shown once, before the first launch reaches the tabs. [com.riedel.beyondborders.settings.SettingsStore.hasSeenWelcome]
@@ -38,8 +34,9 @@ import com.riedel.beyondborders.ui.visa.passportAdjective
  */
 @Composable
 fun WelcomeScreen(
-    nationality: Nationality,
-    onNationalityChange: (Nationality) -> Unit,
+    nationality: String,
+    onNationalityChange: (String) -> Unit,
+    passportNames: Map<String, String>,
     onGetStarted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,17 +83,12 @@ fun WelcomeScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 8.dp),
             )
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(top = 12.dp)) {
-                Nationality.entries.forEachIndexed { index, entry ->
-                    SegmentedButton(
-                        selected = entry == nationality,
-                        onClick = { onNationalityChange(entry) },
-                        shape = SegmentedButtonDefaults.itemShape(index, Nationality.entries.size),
-                    ) {
-                        Text(passportAdjective(entry.name))
-                    }
-                }
-            }
+            PassportPickerButton(
+                selected = nationality,
+                names = passportNames,
+                onSelect = onNationalityChange,
+                modifier = Modifier.padding(top = 12.dp),
+            )
             FilledTonalButton(
                 onClick = onGetStarted,
                 modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
