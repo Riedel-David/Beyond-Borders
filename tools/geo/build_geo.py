@@ -33,7 +33,13 @@ ASSETS = REPO / "app" / "src" / "main" / "assets"
 # shouldn't draw. Baked into a zoom threshold here, at style-build time, so
 # the SymbolLayer's visibility filter is a cheap zoom comparison rather than
 # a runtime screen-space computation.
-MIN_LABEL_FOOTPRINT_DP = 24.0
+MIN_LABEL_FOOTPRINT_DP = 10.0
+
+# Must track MapScreen.kt's maxZoomPreference. Without this cap, a tiny or
+# narrow place (Liechtenstein, Vatican City, most microstates) can compute a
+# min_label_zoom past the zoom the map can ever reach, so its label would
+# never draw at all rather than just draw late.
+MAX_LABEL_ZOOM = 9.0
 
 # Estimating whether a label's own text will fit inside its country, so
 # short countries with long names (or just short names that happen to be
@@ -45,7 +51,7 @@ AVG_GLYPH_WIDTH_EM = 0.58  # Noto Sans Regular's rough average advance width
 TEXT_SIZE_ZOOM_LO, TEXT_SIZE_SP_LO = 2.0, 8.0
 TEXT_SIZE_ZOOM_HI, TEXT_SIZE_SP_HI = 8.0, 15.0
 TEXT_MAX_WIDTH_EM = 8.0
-LABEL_WIDTH_MARGIN = 1.15  # headroom so text doesn't hug the coastline
+LABEL_WIDTH_MARGIN = 0.75  # headroom so text doesn't hug the coastline
 
 # Coordinate precision, chosen per feature from its bounding-box diagonal.
 # 3 decimals is ~110 m, which is invisible on a Russia-sized polygon but would
@@ -860,7 +866,7 @@ def build(source: Path, eps_scale: float) -> int:
         left, right = horizontal_clearance_deg(outline, clon, clat)
         available_width_deg = 2.0 * min(left, right) if left < float("inf") and right < float("inf") else span_deg
         text_zoom = label_zoom_for_width(name, available_width_deg)
-        min_label_zoom = round(max(footprint_zoom, text_zoom), 2)
+        min_label_zoom = round(min(max(footprint_zoom, text_zoom), MAX_LABEL_ZOOM), 2)
 
         geo_features.append({
             "type": "Feature",

@@ -162,6 +162,13 @@ data class VisaRamp(
     val visaRequired: Color,
     val closed: Color,
     /**
+     * Places this passport's dataset has no answer for at all — an "honest gap",
+     * not a sixth band: it never comes from a [VisaBand], only from a place absent
+     * from [com.riedel.beyondborders.data.visa.VisaRegistry] entirely, so it
+     * stays a plain field here rather than another [VisaBand.entries] case.
+     */
+    val noData: Color,
+    /**
      * The selection outline while the lens is on.
      *
      * Its own value because [MapPalette.selectedOutline] was picked against the
@@ -194,6 +201,7 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
         visaOnArrival = Color(0xFFF28B3C),
         visaRequired = Color(0xFFD35E64),
         closed = Color(0xFFCAC7CA),
+        noData = Color(0xFF9AA0A8),
         selectedOutline = Color(0xFF05080C),
     )
 } else {
@@ -203,6 +211,7 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
         visaOnArrival = Color(0xFF463113),
         visaRequired = Color(0xFF310B08),
         closed = Color(0xFF4B4B49),
+        noData = Color(0xFF6B6D70),
         selectedOutline = Color(0xFFF7FAFF),
     )
 }

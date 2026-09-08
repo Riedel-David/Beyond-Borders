@@ -264,6 +264,22 @@ class VisaLogicTest {
         assertEquals(visa.requirements.map { it.code }.toSet(), painted.toSet())
     }
 
+    /**
+     * Atlantis has no requirement at all — DE's dataset covers all 252 real places,
+     * but this hand-written registry deliberately leaves one place uncovered to
+     * stand in for a generic-tier passport's honest gaps.
+     */
+    @Test
+    fun `no-data collects exactly the places the registry has no answer for`() {
+        assertEquals(setOf("AA"), noDataCodes(places, visa, lens = true))
+    }
+
+    @Test
+    fun `no-data is empty while the lens is off, or with no visa asset`() {
+        assertEquals(emptySet<String>(), noDataCodes(places, visa, lens = false))
+        assertEquals(emptySet<String>(), noDataCodes(places, null, lens = true))
+    }
+
     // --- the words -------------------------------------------------------------
 
     @Test

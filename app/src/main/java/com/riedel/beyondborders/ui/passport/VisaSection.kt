@@ -56,6 +56,7 @@ import com.riedel.beyondborders.ui.visa.requirementSummary
  */
 internal fun LazyListScope.visaSection(
     visa: VisaRegistry?,
+    placesTotal: Int,
     rows: List<VisaRow>,
     filter: VisaFilter,
     filters: List<VisaFilter>,
@@ -72,7 +73,7 @@ internal fun LazyListScope.visaSection(
     }
 
     item("visa-summary") {
-        VisaSummaryCard(visa, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        VisaSummaryCard(visa, placesTotal, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
     }
 
     item("visa-search") {
@@ -149,7 +150,7 @@ internal fun LazyListScope.visaSection(
  * one.
  */
 @Composable
-private fun VisaSummaryCard(visa: VisaRegistry, modifier: Modifier = Modifier) {
+private fun VisaSummaryCard(visa: VisaRegistry, placesTotal: Int, modifier: Modifier = Modifier) {
     val ramp = LocalMapPalette.current.visa
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -177,7 +178,7 @@ private fun VisaSummaryCard(visa: VisaRegistry, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            BandBar(visa, ramp, Modifier.padding(top = 12.dp))
+            BandBar(visa, placesTotal, ramp, Modifier.padding(top = 12.dp))
             Text(
                 asOfNotice(visa),
                 style = MaterialTheme.typography.labelSmall,
@@ -193,13 +194,19 @@ private fun VisaSummaryCard(visa: VisaRegistry, modifier: Modifier = Modifier) {
 }
 
 /**
- * The five bands, sized by how many places are in each.
+ * The five bands, sized by how many places are in each, plus a grey segment for
+ * places this passport's dataset has no answer for at all.
  *
  * A proportional bar rather than five numbers: "most of the world is one tap of
- * paperwork away" is a shape, not a figure.
+ * paperwork away" is a shape, not a figure. [placesTotal] rather than
+ * [VisaRegistry.requirements].size for the bar's whole width, because DE's is the
+ * only dataset where those are the same number — every other passport has "honest
+ * gap" places, and a bar sized to the covered subset alone would silently claim
+ * to be the whole world.
  */
 @Composable
-private fun BandBar(visa: VisaRegistry, ramp: VisaRamp, modifier: Modifier = Modifier) {
+private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifier: Modifier = Modifier) {
+    val noDataCount = placesTotal - visa.requirements.size
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             Modifier
@@ -221,12 +228,26 @@ private fun BandBar(visa: VisaRegistry, ramp: VisaRamp, modifier: Modifier = Mod
                     )
                 }
             }
+            if (noDataCount > 0) {
+                Box(
+                    Modifier
+                        .weight(noDataCount.toFloat())
+                        .fillMaxHeight()
+                        .background(ramp.noData)
+                )
+            }
         }
         // Two per row, as the continent bars are: four labels side by side do not fit
         // across a 360 dp phone, and a colour with a number but no word is a riddle.
-        VisaBand.entries.filter { (visa.countByBand[it] ?: 0) > 0 }.chunked(2).forEach { pair ->
+        val legend = VisaBand.entries
+            .filter { (visa.countByBand[it] ?: 0) > 0 }
+            .map { band -> Triple(ramp.colorFor(band), band.label, visa.countByBand[band] ?: 0) } +
+            listOfNotNull(
+                if (noDataCount > 0) Triple(ramp.noData, "No data", noDataCount) else null,
+            )
+        legend.chunked(2).forEach { pair ->
             Row(Modifier.fillMaxWidth()) {
-                pair.forEach { band ->
+                pair.forEach { (color, label, count) ->
                     Row(
                         Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -236,10 +257,10 @@ private fun BandBar(visa: VisaRegistry, ramp: VisaRamp, modifier: Modifier = Mod
                             Modifier
                                 .size(8.dp)
                                 .clip(MaterialTheme.shapes.extraSmall)
-                                .background(ramp.colorFor(band))
+                                .background(color)
                         )
                         Text(
-                            "${band.label} ${visa.countByBand[band]}",
+                            "$label $count",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -403,9 +424,6 @@ private fun VisaDetail(
         // world, so calling it "IATA: Suriname" would promise a page that does not
         // exist.
         LinkText("IATA Travel Centre (search there)", visa.iataUrl)
-        requirement.sourceUrl?.let { url ->
-            LinkText("What this answer rests on", url)
-        }
     }
 }
 

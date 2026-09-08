@@ -17,7 +17,7 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 |---|---|
 | Travel map | working — 252 places, tap to select, Been / Lived / Want, a visa lens, and a region-completion heatmap |
 | Passport list | working — search, filters, per-continent stats |
-| Passport visas | working — where a German or British passport goes, 252 answers, offline |
+| Passport visas | working — where any of ~195 passports goes, offline; DE gets a full 252-place curated answer |
 | Home-screen widget | working — configurable per instance: headline metric and card background |
 | Settings | working — theme, map colours, JSON export / import, emergency full data reset |
 | First run | working — a welcome screen on first launch |
@@ -26,7 +26,7 @@ Everything works **offline**: the geometry is bundled in the APK and there is no
 basemap, no tile server and no API key. A flight tracker was built through phase
 3.6 and then removed — see [PLAN.md](PLAN.md) §1 for why.
 
-Every scoped phase is done (version `0.7.0`). Nothing is currently planned; see
+Every scoped phase is done (version `0.7.5`). Nothing is currently planned; see
 [STATUS.md](STATUS.md) for what that means and [PLAN.md](PLAN.md) §6 for the
 ideas that aren't scheduled.
 
@@ -56,11 +56,17 @@ it earns its place.
 
 ## Where the passport gets you
 
-Passport → **Where I can go** answers the other half of the question the map answers.
-252 destinations, one requirement each, entirely offline, for **either a German or a
-British passport** — pick one on first launch or switch it later in Settings. The map
-has a matching **Visa** toggle that repaints the same map by requirement instead of by
-your own history.
+Passport → **Where I can go** answers the other half of the question the map answers,
+entirely offline, for any passport in a searchable picker over all ~195 Passport Index
+passports — pick one on first launch or switch it later in Settings. A German passport
+gets the full, hand-curated 252-destination answer; every other passport gets a
+generic, programme-based answer (EU membership, the UK's Common Travel Area, and six
+reference-country groups) wherever a rule applies, and an honest gap where none does.
+Both the map and the list paint that gap grey and say so — a place this passport's
+dataset has no answer for is not the same thing as "visa-free" or "closed", and used to
+be indistinguishable from either. The map has a matching **Visa** toggle that repaints
+the same map by requirement instead of by your own history; tapping its legend expands
+the dots into one labelled row per band.
 
 The interesting part is not the dataset — it is the ~53 places per passport that the
 dataset does not cover. The Passport Index matrix is 199 sovereign states; Beyond
@@ -76,14 +82,15 @@ so on), one entry at a time, and they are exactly the ones other apps get wrong:
   freedom of movement does not have one.
 - **American Samoa** does not accept an ESTA even though Guam does.
 
-Every one of those carries a note written for a traveller, a source link, and a
-**confidence** the app displays — a handful per passport are marked *uncertain*, and
+Every one of those carries a note written for a traveller and a **confidence** the
+app displays — a handful per passport are marked *uncertain*, and
 the app says so on the row rather than presenting them all in the same authoritative
 voice. Every destination links to the IATA Travel Centre; a German passport's rows
 also link to their Auswärtiges Amt travel-advice page — that link-out is DE-only, since
-there's no equivalent official feed wired up for GB. Every visa surface carries *"data
-as of <date> for a German/British passport — verify officially before booking"*. A
-bundled dataset is a navigation aid, not an authority.
+there's no equivalent official feed wired up for anyone else. Every visa surface
+carries *"data as of <date> for a [passport] passport — verify officially before
+booking"*, whichever passport is currently chosen. A bundled dataset is a navigation
+aid, not an authority.
 
 The map's lens uses **five** bands rather than all eight categories, coloured
 categorically — green for visa-free, blue for an ETA, orange for on arrival, red for
@@ -94,9 +101,10 @@ green/red included, to opposite ends of the lightness range that still clears 3:
 against land, so the pair stays tellable apart under simulated protanopia,
 deuteranopia and tritanopia even when hue collapses.
 [`VisaRampTest`](app/src/test/java/com/riedel/beyondborders/ui/theme/VisaRampTest.kt)
-asserts that pairwise, for every one of the ten band pairs. The exact answer —
-"e-Visa · 30 days" — is text in the list, where an exact answer belongs; the map is for
-"roughly, where can I go".
+asserts that pairwise, for every one of the ten band pairs, plus the same bar for the
+grey used for the honest-gap places above. The exact answer — "e-Visa · 30 days" — is
+text in the list, where an exact answer belongs; the map is for "roughly, where can
+I go".
 
 The map's other lens is a **region heatmap**: tap to cycle through off, official
 continents, and informal named groupings, and every region repaints by how much of
@@ -131,7 +139,7 @@ API 30+.
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew :app:testDebugUnitTest        # 166 tests, no device needed
+./gradlew :app:testDebugUnitTest        # 167 tests, no device needed
 ./gradlew :app:connectedDebugAndroidTest # 9 tests, needs a device: DB migrations, deviceId storage
 ./gradlew :app:installDebug              # build + install
 ```

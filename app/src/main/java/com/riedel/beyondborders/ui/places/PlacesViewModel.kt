@@ -272,6 +272,12 @@ class PlacesViewModel(
         combine(_visa, _visaLens) { visa, lens -> bandCodes(visa, lens) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    /** Which place codes the visa lens should paint grey: this passport's dataset
+     * has no answer for them at all, an "honest gap" rather than a sixth band. */
+    val visaNoData: StateFlow<Set<String>> =
+        combine(allPlaces, _visa, _visaLens) { places, visa, lens -> noDataCodes(places, visa, lens) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     /** Which place codes the map's region heatmap should paint in each band,
      * empty while the mode is off. Computed here for the same reason [visaBands]
      * is: panning the map should not re-bucket every region on every frame. */
@@ -509,6 +515,24 @@ internal fun bandCodes(
     return visa.requirements
         .groupBy { it.category.band }
         .mapValues { (_, group) -> group.mapTo(mutableSetOf()) { it.code } }
+}
+
+/**
+ * Every place this passport's [VisaRegistry] has no requirement for at all.
+ *
+ * DE's dataset covers all 252 places, so this is always empty for it; every other
+ * passport is generic-tier and only has real answers where a specific programme
+ * rule applies — see STATUS.md's "honest gap" note. Returns empty when the lens is
+ * off or the asset failed to load, the same as [bandCodes].
+ */
+internal fun noDataCodes(
+    places: List<Place>,
+    visa: VisaRegistry?,
+    lens: Boolean,
+): Set<String> {
+    if (visa == null || !lens) return emptySet()
+    val covered = visa.requirements.mapTo(mutableSetOf()) { it.code }
+    return places.mapNotNullTo(mutableSetOf()) { it.code.takeUnless { code -> code in covered } }
 }
 
 /**

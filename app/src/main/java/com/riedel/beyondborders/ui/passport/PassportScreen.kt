@@ -142,6 +142,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         if (mode == PassportMode.VISA) {
             visaSection(
                 visa = visa,
+                placesTotal = places.size,
                 rows = visaRows,
                 filter = visaFilter,
                 filters = filters,

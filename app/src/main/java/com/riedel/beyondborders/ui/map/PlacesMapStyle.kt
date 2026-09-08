@@ -41,6 +41,7 @@ internal object PlacesMapStyle {
     const val LAYER_BORDER = "places-border"
     const val LAYER_SELECTED = "places-selected"
     const val LAYER_VISA_SELECTED = "places-visa-selected"
+    const val LAYER_VISA_NO_DATA = "places-visa-no-data"
     const val LAYER_REGION_SELECTED = "places-region-selected"
     const val LAYER_LABELS = "places-labels"
 
@@ -61,10 +62,10 @@ internal object PlacesMapStyle {
      * The visa lens' fills, one per band.
      *
      * Added above the status fills so switching the lens on is a filter change rather
-     * than a style rebuild — the five layers cover all 252 places, so nothing of the
-     * travel colours shows through. A place with no requirement is the one exception,
-     * and it falls through to [LAYER_FILL]'s unmarked land, which reads as "no answer"
-     * because that is what it is.
+     * than a style rebuild. DE covers all 252 places; every other passport has real
+     * "honest gap" places these five bands don't cover at all — see
+     * [LAYER_VISA_NO_DATA], the sixth layer that paints those grey instead of letting
+     * [LAYER_FILL]'s unmarked land show through unexplained.
      */
     fun visaLayerId(band: VisaBand): String = "places-visa-${band.name.lowercase()}"
 
@@ -154,6 +155,14 @@ internal object PlacesMapStyle {
                     .withFilter(noPlaces())
             )
         }
+        // The sixth visa layer: places this passport's dataset has no answer for at
+        // all, painted grey instead of falling through to LAYER_FILL's unmarked land
+        // — which looked identical to "not visited" and said nothing was wrong.
+        builder = builder.withLayer(
+            FillLayer(LAYER_VISA_NO_DATA, SOURCE_ID)
+                .withProperties(PropertyFactory.fillColor(palette.visa.noData.toArgb()))
+                .withFilter(noPlaces())
+        )
 
         // The region heatmap, one layer per completion band, above the visa lens
         // and below the borders — the two lenses never carry a filter at once, so

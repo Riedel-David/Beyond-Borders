@@ -117,6 +117,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
+    val visaNoData by viewModel.visaNoData.collectAsStateWithLifecycle()
     val lens by viewModel.visaLens.collectAsStateWithLifecycle()
     val regionMode by viewModel.regionMode.collectAsStateWithLifecycle()
     val regionBands by viewModel.regionBands.collectAsStateWithLifecycle()
@@ -128,6 +129,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var counterLabeled by remember { mutableStateOf(false) }
+    var visaLegendLabeled by remember { mutableStateOf(false) }
     var searchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     // Collapsed by default: Search/World/Share/Visa stacking up every time made
@@ -179,6 +181,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             palette = palette,
             statuses = statuses,
             visaBands = visaBands,
+            visaNoData = visaNoData,
             lens = lens,
             regionBands = regionBands,
             regionActive = regionActive,
@@ -192,19 +195,25 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         // the point, and chrome that covers the Mediterranean is chrome too much.
         MapPill(
             // Only worth a toggle once there is something to spell out; the empty
-            // state's nudge and the visa lens' and region heatmap's own legends
-            // both stay static.
-            onClick = if (!lens && !regionActive && (stats.been > 0 || stats.wishlist > 0)) {
-                { counterLabeled = !counterLabeled }
-            } else {
-                null
+            // state's nudge and the region heatmap's own legend both stay static.
+            onClick = when {
+                lens -> { { visaLegendLabeled = !visaLegendLabeled } }
+                !regionActive && (stats.been > 0 || stats.wishlist > 0) -> {
+                    { counterLabeled = !counterLabeled }
+                }
+                else -> null
             },
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(12.dp),
         ) {
             if (lens) {
-                VisaLegend(palette.visa, visa)
+                VisaLegend(
+                    palette.visa,
+                    visa,
+                    noDataCount = visaNoData.size,
+                    labeled = visaLegendLabeled,
+                )
             } else if (regionActive) {
                 RegionLegend(palette.region, regionMode, stats)
             } else if (stats.been == 0 && stats.wishlist == 0) {
@@ -375,6 +384,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 // Carried into the card whenever the lens is on, so a tap answers the
                 // question the map is currently asking rather than the other one.
                 requirement = if (lens) viewModel.requirementOf(selected.code) else null,
+                noVisaData = lens && selected.code in visaNoData,
                 onToggle = { target ->
                     viewModel.vibrate()
                     viewModel.toggle(selected.code, target)
@@ -421,6 +431,7 @@ private class PlacesMapController {
     private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
     private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
+    private var appliedNoData: Set<String> = emptySet()
     private var appliedRegionBands: Map<RegionBand, Set<String>> = emptyMap()
     private var appliedSelection: String? = null
     private var appliedLens = false
@@ -437,6 +448,7 @@ private class PlacesMapController {
         appliedLived = emptySet()
         appliedWishlist = emptySet()
         appliedBands = emptyMap()
+        appliedNoData = emptySet()
         appliedRegionBands = emptyMap()
         appliedSelection = null
         appliedLens = false
@@ -450,12 +462,12 @@ private class PlacesMapController {
 
     /**
      * While [lens] or [regionActive] is on the travel colours are cleared rather
-     * than merely covered. The visa fills do cover all 252 places today, so
-     * covering would look the same — but a place the asset had no answer for
-     * would then show its travel colour under a visa legend, and "I have been
-     * here" reading as a visa band is the one thing this map must never say.
-     * The region heatmap has the same property for any place outside every
-     * named grouping.
+     * than merely covered — a place the asset has no answer for would otherwise
+     * show its travel colour under a visa legend, and "I have been here" reading
+     * as a visa band is the one thing this map must never say. [applyVisa]'s own
+     * grey no-data layer is what actually covers those places once cleared. The
+     * region heatmap has the same property for any place outside every named
+     * grouping.
      */
     fun applyStatuses(statuses: Map<String, PlaceStatus>, lens: Boolean, regionActive: Boolean) {
         val style = style ?: return
@@ -480,14 +492,24 @@ private class PlacesMapController {
         }
     }
 
-    /** Which codes each visa band paints. Empty map means the lens is off. */
-    fun applyVisa(bands: Map<VisaBand, Set<String>>) {
+    /**
+     * Which codes each visa band paints, plus [noData]: places this passport's
+     * dataset has no answer for, painted grey instead of falling through to
+     * unmarked land. Empty means the lens is off.
+     */
+    fun applyVisa(bands: Map<VisaBand, Set<String>>, noData: Set<String>) {
         val style = style ?: return
-        if (bands == appliedBands) return
-        appliedBands = bands
-        VisaBand.entries.forEach { band ->
-            style.getLayerAs<FillLayer>(PlacesMapStyle.visaLayerId(band))
-                ?.setFilter(PlacesMapStyle.onlyPlaces(bands[band].orEmpty()))
+        if (bands != appliedBands) {
+            appliedBands = bands
+            VisaBand.entries.forEach { band ->
+                style.getLayerAs<FillLayer>(PlacesMapStyle.visaLayerId(band))
+                    ?.setFilter(PlacesMapStyle.onlyPlaces(bands[band].orEmpty()))
+            }
+        }
+        if (noData != appliedNoData) {
+            appliedNoData = noData
+            style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_VISA_NO_DATA)
+                ?.setFilter(PlacesMapStyle.onlyPlaces(noData))
         }
     }
 
@@ -581,6 +603,7 @@ private fun PlacesMapView(
     palette: MapPalette,
     statuses: Map<String, PlaceStatus>,
     visaBands: Map<VisaBand, Set<String>>,
+    visaNoData: Set<String>,
     lens: Boolean,
     regionBands: Map<RegionBand, Set<String>>,
     regionActive: Boolean,
@@ -600,6 +623,7 @@ private fun PlacesMapView(
     // some unrelated recomposition came along to correct it.
     val currentStatuses by rememberUpdatedState(statuses)
     val currentVisaBands by rememberUpdatedState(visaBands)
+    val currentVisaNoData by rememberUpdatedState(visaNoData)
     val currentLens by rememberUpdatedState(lens)
     val currentRegionBands by rememberUpdatedState(regionBands)
     val currentRegionActive by rememberUpdatedState(regionActive)
@@ -662,7 +686,7 @@ private fun PlacesMapView(
             map.setStyle(PlacesMapStyle.builder(palette)) { style ->
                 controller.onStyleLoaded(style)
                 controller.applyStatuses(currentStatuses, currentLens, currentRegionActive)
-                controller.applyVisa(currentVisaBands)
+                controller.applyVisa(currentVisaBands, currentVisaNoData)
                 controller.applyRegion(currentRegionBands)
                 controller.applySelection(currentSelectedCode, currentLens, currentRegionActive)
             }
@@ -697,7 +721,7 @@ private fun PlacesMapView(
         modifier = modifier,
         update = {
             controller.applyStatuses(statuses, lens, regionActive)
-            controller.applyVisa(visaBands)
+            controller.applyVisa(visaBands, visaNoData)
             controller.applyRegion(regionBands)
             controller.applySelection(selectedCode, lens, regionActive)
         },
@@ -730,31 +754,55 @@ private fun MapPill(
  * The date is not optional decoration. Visa rules change without notice and this asset
  * is a snapshot, so PLAN.md requires every visa surface to say how old it is and to
  * point at an official source — the map's share of that is this line.
+ *
+ * A tap expands the dot row into one labelled row per band, same trick as the travel
+ * legend's own [counterLabeled] toggle — a compact glance is the default, and the
+ * words are one tap away rather than always taking the space.
  */
 @Composable
-private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?) {
+private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?, noDataCount: Int, labeled: Boolean) {
     Column {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Separated dots, like the travel legend: the five bands are a
-            // categorical set now, not an ordered scale, so nothing here should
-            // read as a sequence of adjacent steps.
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        if (labeled && visa != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 VisaBand.entries.forEach { band ->
-                    Box(
-                        Modifier
-                            .size(10.dp)
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .background(ramp.colorFor(band))
-                    )
+                    val count = visa.countByBand[band] ?: 0
+                    if (count > 0) CounterLegendRow(ramp.colorFor(band), count, band.label)
                 }
+                // Only shown when it paints something: DE's dataset has no gaps, so
+                // a row for a colour this passport never uses would be a riddle.
+                if (noDataCount > 0) CounterLegendRow(ramp.noData, noDataCount, "no data")
             }
-            Text(
-                if (visa == null) "No visa data" else "${visa.visaFreeCount} visa-free",
-                style = MaterialTheme.typography.labelLarge,
-            )
+        } else {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Separated dots, like the travel legend: the five bands are a
+                // categorical set now, not an ordered scale, so nothing here should
+                // read as a sequence of adjacent steps.
+                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    VisaBand.entries.forEach { band ->
+                        Box(
+                            Modifier
+                                .size(10.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(ramp.colorFor(band))
+                        )
+                    }
+                    if (noDataCount > 0) {
+                        Box(
+                            Modifier
+                                .size(10.dp)
+                                .clip(MaterialTheme.shapes.extraSmall)
+                                .background(ramp.noData)
+                        )
+                    }
+                }
+                Text(
+                    if (visa == null) "No visa data" else "${visa.visaFreeCount} visa-free",
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
         }
         if (visa != null) {
             Text(
@@ -875,6 +923,7 @@ private fun SelectedPlaceCard(
     place: Place,
     status: PlaceStatus,
     requirement: VisaRequirement?,
+    noVisaData: Boolean,
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -929,6 +978,17 @@ private fun SelectedPlaceCard(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
+            } else if (noVisaData) {
+                // The generic-tier honest gap: this passport's dataset has no rule
+                // covering this place at all, so there is nothing to summarise —
+                // only a nudge to look it up, rather than the silent blank this
+                // used to leave on both the map and the card.
+                Text(
+                    "No data available for this passport — check official sources before travelling.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
             Row(
                 Modifier.padding(top = 8.dp),

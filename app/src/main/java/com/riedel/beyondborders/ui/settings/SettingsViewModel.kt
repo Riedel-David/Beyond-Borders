@@ -107,8 +107,15 @@ class SettingsViewModel(
         _reset.value = TransferState.Idle
     }
 
-    /** The emergency reset. The screen is responsible for confirming first — this
-     * assumes that already happened and just does it. */
+    /**
+     * The emergency reset. The screen is responsible for confirming first — this
+     * assumes that already happened and just does it.
+     *
+     * No [TransferState.Done] on success: [SettingsStore.resetHasSeenWelcome] sends
+     * the user straight to the welcome screen, which is confirmation enough. A
+     * "deleted" dialog on top of that would need its own dismissal before the
+     * welcome screen underneath became visible.
+     */
     fun deleteEverything() {
         if (_reset.value == TransferState.Busy) return
         _reset.value = TransferState.Busy
@@ -116,7 +123,7 @@ class SettingsViewModel(
             _reset.value = try {
                 places.deleteAll()
                 settings.resetHasSeenWelcome()
-                TransferState.Done("Everything deleted.")
+                TransferState.Idle
             } catch (e: Exception) {
                 TransferState.Failed(e.message ?: "Couldn't delete everything.")
             }

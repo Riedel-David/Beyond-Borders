@@ -76,6 +76,57 @@ class VisaRampTest {
         }
     }
 
+    /**
+     * [VisaRamp.noData] is not a [VisaBand] — it paints places absent from the
+     * dataset entirely, not a sixth category — so [bands] never exercises it. Same
+     * bar as every band gets, checked separately.
+     */
+    @Test
+    fun `no-data grey clears 3 to 1 against unmarked land and ocean in both themes`() {
+        MapBase.entries.forEach { base ->
+            themes().forEach { dark ->
+                val palette = mapPalette(dark, MapColors.DEFAULT, base)
+                val land = palette.unvisited.rgb()
+                val ocean = palette.ocean.rgb()
+                val noData = palette.visa.noData.rgb()
+                assertTrue(
+                    "no-data vs $base land in ${name(dark)}: ${"%.2f".format(contrast(noData, land))}:1",
+                    contrast(noData, land) >= floorAgainstBackground,
+                )
+                assertTrue(
+                    "no-data vs $base ocean in ${name(dark)}: ${"%.2f".format(contrast(noData, ocean))}:1",
+                    contrast(noData, ocean) >= floorAgainstBackground,
+                )
+            }
+        }
+    }
+
+    /**
+     * Both greys mean something different — "no answer" versus "closed" — so a
+     * traveller squinting at the legend needs to be able to tell them apart, not
+     * just tell either one apart from the land underneath it.
+     */
+    @Test
+    fun `no-data grey stays distinguishable from the closed band under dichromacy simulation`() {
+        themes().forEach { dark ->
+            val noData = ramp(dark).noData.rgb()
+            val closed = ramp(dark).closed.rgb()
+            Cvd.entries.forEach { cvd ->
+                val seen = contrast(cvd.simulate(noData), cvd.simulate(closed))
+                assertTrue(
+                    "no-data and closed are ${"%.2f".format(seen)}:1 apart under " +
+                        "${cvd.label} in ${name(dark)}",
+                    seen >= floorUnderCvd,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `the no-data grey is a different value in light and dark`() {
+        assertNotEquals(ramp(dark = false).noData, ramp(dark = true).noData)
+    }
+
     // --- legible without colour vision ---------------------------------------
 
     /**

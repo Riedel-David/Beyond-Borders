@@ -36,22 +36,22 @@ class MapColorsTest {
      */
     @Test
     fun `picking a colour another status holds swaps the two`() {
-        // DEFAULT is visited=AZURE, lived=ROSE, wishlist=TEAL.
-        val next = MapColors.DEFAULT.with(MapSlot.VISITED, MapHue.TEAL)
-        assertEquals(MapHue.TEAL, next.visited)
+        // DEFAULT is visited=AZURE, lived=GREEN, wishlist=AMBER.
+        val next = MapColors.DEFAULT.with(MapSlot.VISITED, MapHue.AMBER)
+        assertEquals(MapHue.AMBER, next.visited)
         assertEquals(MapHue.AZURE, next.wishlist)
-        assertEquals(MapHue.ROSE, next.lived)
+        assertEquals(MapHue.GREEN, next.lived)
     }
 
     @Test
     fun `a swap is its own undo`() {
-        val swapped = MapColors.DEFAULT.with(MapSlot.VISITED, MapHue.TEAL)
+        val swapped = MapColors.DEFAULT.with(MapSlot.VISITED, MapHue.AMBER)
         assertEquals(MapColors.DEFAULT, swapped.with(MapSlot.VISITED, MapHue.AZURE))
     }
 
     @Test
     fun `re-picking the colour a status already has changes nothing`() {
-        assertSame(MapColors.DEFAULT, MapColors.DEFAULT.with(MapSlot.LIVED, MapHue.ROSE))
+        assertSame(MapColors.DEFAULT, MapColors.DEFAULT.with(MapSlot.LIVED, MapHue.GREEN))
     }
 
     /**
@@ -193,7 +193,7 @@ class MapColorsTest {
     fun `the default palette is the one the map screen draws with`() {
         val light = mapPalette(dark = false, colors = MapColors.DEFAULT)
         assertEquals(MapHue.AZURE.lightArgb.toInt(), light.visited.toArgb())
-        assertEquals(MapHue.ROSE.lightArgb.toInt(), light.lived.toArgb())
-        assertEquals(MapHue.TEAL.lightArgb.toInt(), light.wishlist.toArgb())
+        assertEquals(MapHue.GREEN.lightArgb.toInt(), light.lived.toArgb())
+        assertEquals(MapHue.AMBER.lightArgb.toInt(), light.wishlist.toArgb())
     }
 }

@@ -31,8 +31,6 @@ enum class MapHue(val lightArgb: Long, val darkArgb: Long) {
     GREEN(0xFF2E7D32, 0xFF5BB55F),
     ROSE(0xFFB0245C, 0xFFD9527F),
     VIOLET(0xFF7B2FBE, 0xFFB07BE8),
-
-    /** Offered, though the default palette deliberately avoids it as a status fill. */
     AMBER(0xFFB26B00, 0xFFE0A33A),
     ;
 
@@ -114,8 +112,8 @@ data class MapColors(
         /** The palette the app shipped with, and what "reset" restores. */
         val DEFAULT = MapColors(
             visited = MapHue.AZURE,
-            lived = MapHue.ROSE,
-            wishlist = MapHue.TEAL,
+            lived = MapHue.GREEN,
+            wishlist = MapHue.AMBER,
         )
 
         /**
