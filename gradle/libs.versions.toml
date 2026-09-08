@@ -3,7 +3,7 @@
 # 2.2.10. The Compose compiler and KSP plugin versions must match that exactly,
 # so `kotlin` below is not a free choice - it tracks whatever AGP provides.
 # Check with: ./gradlew :app:dependencies --configuration debugCompileClasspath
-agp = "9.3.2"
+agp = "9.4.0"
 kotlin = "2.2.10"
 ksp = "2.3.6"
 
