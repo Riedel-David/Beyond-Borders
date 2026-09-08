@@ -124,6 +124,10 @@ data class MapPalette(
     val wishlist: Color,
     val border: Color,
     val selectedOutline: Color,
+    /** Country name labels; a halo instead of the Compose pill's background,
+     * since a SymbolLayer has no way to draw a rounded rect behind text. */
+    val labelText: Color,
+    val labelHalo: Color,
     /** The colours the visa lens paints with; see [VisaRamp]. */
     val visa: VisaRamp,
     /** The colours the region heatmap paints with; see [RegionRamp]. */
@@ -268,6 +272,8 @@ fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT
     wishlist = Color(colors.wishlist.argb(dark)),
     border = if (dark) Color(0xFF4C5663) else Color(0xFFA9B4C2),
     selectedOutline = if (dark) Color(0xFFDCE7FF) else Color(0xFF0B2C63),
+    labelText = if (dark) Color(0xFFF2F5FA) else Color(0xFF10151C),
+    labelHalo = if (dark) Color(0xFF10151C) else Color(0xFFF2F5FA),
     visa = visaRamp(dark),
     region = regionRamp(dark),
 )

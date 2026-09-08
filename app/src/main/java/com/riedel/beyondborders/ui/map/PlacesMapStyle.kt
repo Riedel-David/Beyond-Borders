@@ -10,7 +10,9 @@ import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.BackgroundLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 
 /**
@@ -21,13 +23,16 @@ import org.maplibre.android.style.sources.GeoJsonSource
  * the travel map work with the phone in flight mode, and it is why the app needs
  * no map API key and costs nothing to run.
  *
- * It also means there are no text labels. Labels would need a glyph endpoint, and
- * every glyph endpoint is a network call — so place names live in the card that
- * appears when you tap, not on the map itself.
+ * Labels used to be a Compose overlay for the same reason: a glyph endpoint is
+ * usually a network call. MapLibre resolves the `glyphs` URL through the same
+ * `asset://` scheme [GEOJSON_ASSET] already uses, though, so [LAYER_LABELS] reads
+ * SDF glyphs bundled at assets/glyphs instead — no server, no Compose
+ * recomposition on every camera move, just a real layer like the rest of these.
  */
 internal object PlacesMapStyle {
 
     const val SOURCE_ID = "places"
+    const val LABELS_SOURCE_ID = "places-labels-points"
     const val LAYER_BACKGROUND = "ocean"
     const val LAYER_FILL = "places-fill"
     const val LAYER_VISITED = "places-visited"
@@ -37,6 +42,10 @@ internal object PlacesMapStyle {
     const val LAYER_SELECTED = "places-selected"
     const val LAYER_VISA_SELECTED = "places-visa-selected"
     const val LAYER_REGION_SELECTED = "places-region-selected"
+    const val LAYER_LABELS = "places-labels"
+
+    /** Latin-only SDF ranges bundled at assets/glyphs; see [GLYPHS_ASSET]. */
+    private const val LABEL_FONT = "Noto Sans Regular"
 
     /**
      * The region heatmap's fills, one per completion band.
@@ -63,20 +72,45 @@ internal object PlacesMapStyle {
     private const val GEOJSON_ASSET = "asset://places.geojson"
 
     /**
+     * One Point per place, not the polygons [GEOJSON_ASSET] carries.
+     *
+     * A symbol layer anchors once per polygon *part*, so pointing [LAYER_LABELS] at
+     * the country outlines directly would draw one "Russia" per Siberian island and
+     * one "Canada" per Arctic fragment, while single-part countries competed for the
+     * same anchor as everything overlapping them. This source carries the one
+     * precomputed centroid per place (build_geo.py, the same point places.json uses)
+     * instead, so every place gets exactly one label, at its visual centre.
+     */
+    private const val LABELS_GEOJSON_ASSET = "asset://places_labels.geojson"
+
+    /**
+     * Bundled SDF glyph ranges (Noto Sans, Basic Latin + Latin-1 Supplement +
+     * Latin Extended-A - place names are English-only but some carry
+     * diacritics, e.g. "Côte d'Ivoire"), resolved via the same `asset://`
+     * scheme [GEOJSON_ASSET] uses. Confirmed working fully offline on-device
+     * (MapLibre 13.4.1): no glyph server needed, which is what let labels
+     * become a real SymbolLayer instead of a Compose overlay.
+     */
+    private const val GLYPHS_ASSET = "asset://glyphs/{fontstack}/{range}.pbf"
+
+    /**
      * A valid but empty style-spec document to hang our layers off. `sources` and
      * `layers` stay empty here and are added below so that the colours can come
      * from the Compose theme rather than being baked into a string.
      */
-    private const val EMPTY_STYLE = """{"version":8,"name":"BeyondBorders","sources":{},"layers":[]}"""
+    private const val EMPTY_STYLE =
+        """{"version":8,"name":"BeyondBorders","sources":{},"layers":[],"glyphs":"$GLYPHS_ASSET"}"""
 
     fun builder(palette: MapPalette): Style.Builder {
         // java.net.URI, not android.net.Uri: GeoJsonSource's String overload means
         // "raw JSON" and throws on anything that looks like a URL.
         val source = GeoJsonSource(SOURCE_ID, URI.create(GEOJSON_ASSET))
+        val labelsSource = GeoJsonSource(LABELS_SOURCE_ID, URI.create(LABELS_GEOJSON_ASSET))
 
         var builder = Style.Builder()
             .fromJson(EMPTY_STYLE)
             .withSource(source)
+            .withSource(labelsSource)
             .withLayer(
                 BackgroundLayer(LAYER_BACKGROUND).withProperties(
                     PropertyFactory.backgroundColor(palette.ocean.toArgb()),
@@ -176,6 +210,47 @@ internal object PlacesMapStyle {
                         PropertyFactory.lineWidth(selectionWidth()),
                     )
                     .withFilter(noPlaces())
+            )
+            // One layer for every place's name, not one per lens/status variant:
+            // unlike the fills above, label colour never depends on which lens is
+            // active, so there is nothing a setFilter would need to swap.
+            // minLabelZoom (baked in by tools/geo/build_geo.py from each place's
+            // camera-target bbox) stands in for the old per-frame screen-space
+            // footprint check - a country only gets a label once it would already
+            // read as more than a sliver at the current zoom.
+            .withLayer(
+                SymbolLayer(LAYER_LABELS, LABELS_SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.textField(Expression.get("name")),
+                        PropertyFactory.textFont(arrayOf(LABEL_FONT)),
+                        PropertyFactory.textSize(
+                            Expression.interpolate(
+                                Expression.linear(),
+                                Expression.zoom(),
+                                Expression.stop(2, 8f),
+                                Expression.stop(8, 15f),
+                            )
+                        ),
+                        PropertyFactory.textColor(palette.labelText.toArgb()),
+                        PropertyFactory.textHaloColor(palette.labelHalo.toArgb()),
+                        PropertyFactory.textHaloWidth(1.2f),
+                        // CENTER with no offset, not the old TOP+downward-offset
+                        // nudge: the anchor point is now build_geo.py's actual
+                        // visual center, so the text should sit on it, not below
+                        // and past it.
+                        PropertyFactory.textAnchor(Property.TEXT_ANCHOR_CENTER),
+                        // true, not MapLibre's collision-avoidance default: every place
+                        // now has exactly one label candidate (LABELS_SOURCE_ID, one
+                        // point per place), so the only thing collision-avoidance could
+                        // still do is hide a small country's name near a larger
+                        // neighbour - and a missing name reads as more broken than an
+                        // occasional overlap between two adjacent small countries.
+                        PropertyFactory.textAllowOverlap(true),
+                        PropertyFactory.textMaxWidth(8f),
+                    )
+                    .withFilter(
+                        Expression.gte(Expression.zoom(), Expression.get("minLabelZoom"))
+                    )
             )
     }
 

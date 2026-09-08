@@ -41,7 +41,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.riedel.beyondborders.ui.BounceFilterChip
@@ -103,20 +102,6 @@ private val WORLD = CameraPosition.Builder()
 private const val TAP_SLOP_DP = 16f
 
 /**
- * How big a place's on-screen footprint has to be, in dp, before its name is
- * drawn. There is no glyph server to paint text into the map tiles themselves
- * (see [PlacesMapStyle]), so labels are a Compose overlay instead, and a fixed
- * zoom cutoff would either hide Luxembourg forever or clutter the world view with
- * every microstate at once. Sizing off the place's own bounding box scales the
- * two together: Russia labels at world zoom, San Marino only once you have
- * zoomed in far enough that it would otherwise go unnamed.
- */
-private const val MIN_LABEL_FOOTPRINT_DP = 56f
-
-/** One place name and where to draw it, in screen pixels. */
-private data class PlaceLabel(val code: String, val name: String, val x: Float, val y: Float)
-
-/**
  * The world map: one tap marks exactly one place.
  *
  * That sentence is the whole product. Other trackers key their map off a
@@ -142,7 +127,6 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val selected = selectedCode?.let(viewModel::placeOf)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var labels by remember { mutableStateOf<List<PlaceLabel>>(emptyList()) }
     var counterLabeled by remember { mutableStateOf(false) }
     var searchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -200,38 +184,9 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             regionActive = regionActive,
             selectedCode = selectedCode,
             places = places,
-            onLabels = { labels = it },
             onTap = ::tap,
             modifier = Modifier.fillMaxSize(),
         )
-
-        // Drawn as plain Compose text, not a map layer: there is no glyph server to
-        // paint labels into the style itself (see PlacesMapStyle), so this overlay
-        // is the whole feature, repositioned every time the camera moves.
-        labels.forEach { label ->
-            Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
-                shape = MaterialTheme.shapes.extraSmall,
-                // A tap on the label is a tap on the country it names — without this
-                // the label sits over the polygon and swallows the tap that would
-                // otherwise have reached the map underneath.
-                modifier = Modifier
-                    .offset { IntOffset(label.x.toInt(), label.y.toInt()) }
-                    // A small fixed nudge rather than measuring the text to centre
-                    // it exactly: the anchor is a country's centroid, which is
-                    // already an approximation, so a pixel-perfect centre on top of
-                    // it would be precision this feature does not need.
-                    .offset(x = (-24).dp, y = (-8).dp)
-                    .clickable { tap(label.code) },
-            ) {
-                Text(
-                    label.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                )
-            }
-        }
 
         // Overlays sit on top of the map surface, deliberately compact: the map is
         // the point, and chrome that covers the Mediterranean is chrome too much.
@@ -576,10 +531,18 @@ private class PlacesMapController {
         map?.animateCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 80), 500)
     }
 
-    /** Hit-test a tap, precise first and forgiving second. */
+    /**
+     * Hit-test a tap, precise first and forgiving second.
+     *
+     * Queries the label layer alongside the fill: a long country name can
+     * overflow past its own polygon (small country, long name), so a tap that
+     * lands on the label glyphs rather than the shape must still resolve.
+     * Both layers key on the same `code` property, so it doesn't matter which
+     * one supplied the hit.
+     */
     fun placeCodeAt(point: PointF, slopPx: Float): String? {
         val map = map ?: return null
-        val exact = map.queryRenderedFeatures(point, PlacesMapStyle.LAYER_FILL)
+        val exact = map.queryRenderedFeatures(point, PlacesMapStyle.LAYER_FILL, PlacesMapStyle.LAYER_LABELS)
         val hit = exact.firstOrNull()
             ?: map.queryRenderedFeatures(
                 RectF(
@@ -589,43 +552,12 @@ private class PlacesMapController {
                     point.y + slopPx,
                 ),
                 PlacesMapStyle.LAYER_FILL,
+                PlacesMapStyle.LAYER_LABELS,
             ).firstOrNull()
         return hit?.getStringProperty("code")
     }
 
     fun screenLocationOf(latLng: LatLng): PointF? = map?.projection?.toScreenLocation(latLng)
-
-    /**
-     * Which places are big enough on screen right now to name, and where. Uses
-     * [MapLibreMap.getProjection] directly rather than the style, so this works
-     * the instant the map is attached — it does not need to wait for the (async)
-     * style load the fill layers do.
-     */
-    fun labelsFor(
-        places: List<Place>,
-        minFootprintPx: Float,
-        viewportWidth: Float,
-        viewportHeight: Float,
-    ): List<PlaceLabel> {
-        val projection = map?.projection ?: return emptyList()
-        val labels = ArrayList<PlaceLabel>(places.size)
-        for (place in places) {
-            val sw = projection.toScreenLocation(LatLng(place.bounds.south, place.bounds.west))
-            val ne = projection.toScreenLocation(LatLng(place.bounds.north, place.bounds.east))
-            val footprint = maxOf(kotlin.math.abs(ne.x - sw.x), kotlin.math.abs(sw.y - ne.y))
-            if (footprint < minFootprintPx) continue
-            val center = projection.toScreenLocation(LatLng(place.lat, place.lon))
-            // Compose does not clip an offset child to its parent's bounds, so a
-            // centroid just above the visible map (which does not extend behind the
-            // status bar) would otherwise be drawn floating in that gap instead of
-            // disappearing with the rest of the map content up there.
-            if (center.x < 0f || center.x > viewportWidth || center.y < 0f || center.y > viewportHeight) {
-                continue
-            }
-            labels.add(PlaceLabel(place.code, place.name, center.x, center.y))
-        }
-        return labels
-    }
 
     /**
      * The rendered frame, exactly as the user is currently looking at it.
@@ -654,13 +586,11 @@ private fun PlacesMapView(
     regionActive: Boolean,
     selectedCode: String?,
     places: List<Place>,
-    onLabels: (List<PlaceLabel>) -> Unit,
     onTap: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val slopPx = with(LocalDensity.current) { TAP_SLOP_DP.dp.toPx() }
-    val minLabelFootprintPx = with(LocalDensity.current) { MIN_LABEL_FOOTPRINT_DP.dp.toPx() }
 
     // Style loading is asynchronous and can finish well after this composition —
     // long enough, on a cold start, for the real statuses to have already arrived
@@ -674,8 +604,6 @@ private fun PlacesMapView(
     val currentRegionBands by rememberUpdatedState(regionBands)
     val currentRegionActive by rememberUpdatedState(regionActive)
     val currentSelectedCode by rememberUpdatedState(selectedCode)
-    val currentPlaces by rememberUpdatedState(places)
-    val currentOnLabels by rememberUpdatedState(onLabels)
     val currentOnTap by rememberUpdatedState(onTap)
 
     val mapView = remember {
@@ -738,60 +666,6 @@ private fun PlacesMapView(
                 controller.applyRegion(currentRegionBands)
                 controller.applySelection(currentSelectedCode, currentLens, currentRegionActive)
             }
-        }
-        onDispose { }
-    }
-
-    // Labels track the camera: recomputed on every move so a pan feels live rather
-    // than jumping into place once the gesture ends, and again on idle to settle
-    // the count once zoom is done changing which places clear the footprint bar.
-    DisposableEffect(mapView, minLabelFootprintPx) {
-        val moveListener = MapLibreMap.OnCameraMoveListener {
-            currentOnLabels(
-                controller.labelsFor(
-                    currentPlaces,
-                    minLabelFootprintPx,
-                    mapView.width.toFloat(),
-                    mapView.height.toFloat(),
-                ),
-            )
-        }
-        val idleListener = MapLibreMap.OnCameraIdleListener {
-            currentOnLabels(
-                controller.labelsFor(
-                    currentPlaces,
-                    minLabelFootprintPx,
-                    mapView.width.toFloat(),
-                    mapView.height.toFloat(),
-                ),
-            )
-        }
-        mapView.getMapAsync { map ->
-            map.addOnCameraMoveListener(moveListener)
-            map.addOnCameraIdleListener(idleListener)
-        }
-        onDispose {
-            if (!mapView.isDestroyed) {
-                mapView.getMapAsync { map ->
-                    map.removeOnCameraMoveListener(moveListener)
-                    map.removeOnCameraIdleListener(idleListener)
-                }
-            }
-        }
-    }
-
-    // The registry loads asynchronously and can arrive well after the map itself,
-    // so labels need their own trigger independent of camera movement.
-    DisposableEffect(mapView, places, minLabelFootprintPx) {
-        mapView.getMapAsync {
-            onLabels(
-                controller.labelsFor(
-                    places,
-                    minLabelFootprintPx,
-                    mapView.width.toFloat(),
-                    mapView.height.toFloat(),
-                ),
-            )
         }
         onDispose { }
     }
