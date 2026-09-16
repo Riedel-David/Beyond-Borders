@@ -120,7 +120,24 @@ class PlaceRepository(
     }
 
     /**
+     * What an import *would* do, without writing anything. Lets the UI show a
+     * confirmation before touching the database.
+     *
+     * @throws BackupFormatException if [text] is not a readable BeyondBorders backup.
+     */
+    suspend fun previewBackup(text: String): BackupMerge.Plan = withContext(Dispatchers.IO) {
+        val payload = TravelBackup.decode(text)
+        planAgainstCurrentRows(payload, registry.codes)
+    }
+
+    /**
      * Merge a backup file into the database and report what it did.
+     *
+     * The plan is recomputed here rather than accepting one from an earlier
+     * [previewBackup] call: the user could mark a place in the time between seeing
+     * the preview and confirming it, and a plan computed before that would then be
+     * stale. Recomputing inside the same transaction as the write is what makes
+     * that impossible rather than just unlikely.
      *
      * @throws BackupFormatException if [text] is not a readable BeyondBorders backup.
      */
@@ -134,13 +151,7 @@ class PlaceRepository(
         // the two would otherwise be computed against and then overwritten by a
         // stale plan.
         database.withTransaction {
-            val local = dao.allRows().associate { it.code to it.updatedAt }
-            val plan = BackupMerge.plan(
-                entries = payload.entries,
-                localUpdatedAt = local,
-                knownCodes = knownCodes,
-                unknownStatuses = payload.unknownStatuses,
-            )
+            val plan = planAgainstCurrentRows(payload, knownCodes)
             dao.applyAll(
                 plan.apply.map { entry ->
                     PlaceStatusEntity(
@@ -165,5 +176,20 @@ class PlaceRepository(
             )
             plan
         }
+    }
+
+    /** Shared by [previewBackup] and [importBackup]: reads the rows as they stand
+     * right now and plans against them. */
+    private suspend fun planAgainstCurrentRows(
+        payload: TravelBackup.Payload,
+        knownCodes: Set<String>,
+    ): BackupMerge.Plan {
+        val local = dao.allRows().associate { it.code to it.updatedAt }
+        return BackupMerge.plan(
+            entries = payload.entries,
+            localUpdatedAt = local,
+            knownCodes = knownCodes,
+            unknownStatuses = payload.unknownStatuses,
+        )
     }
 }
