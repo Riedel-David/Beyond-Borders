@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,9 +50,12 @@ fun DatabaseRecoveryScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var saved by remember { mutableStateOf<Boolean?>(null) }
-    var saveError by remember { mutableStateOf<String?>(null) }
-    var confirming by remember { mutableStateOf(false) }
+    // Saveable, not plain remember: this screen is the only route to the bytes, and
+    // a theme or font-scale change recreates the Activity. Losing "Saved." would tell
+    // someone their copy had not been written when it had.
+    var saved by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var saveError by rememberSaveable { mutableStateOf<String?>(null) }
+    var confirming by rememberSaveable { mutableStateOf(false) }
 
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")

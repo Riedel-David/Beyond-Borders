@@ -110,17 +110,26 @@ class TravelWidgetProvider : AppWidgetProvider() {
             // Activity.onPause, on the main thread, whether or not a widget is even
             // installed — so the whole thing goes to an IO thread. Nothing waits on it.
             CoroutineScope(Dispatchers.IO).launch {
-                val manager = AppWidgetManager.getInstance(context)
-                val ids = manager.getAppWidgetIds(
-                    android.content.ComponentName(context, TravelWidgetProvider::class.java)
-                )
-                if (ids.isNotEmpty()) {
-                    context.sendBroadcast(
-                        Intent(context, TravelWidgetProvider::class.java).apply {
-                            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
-                        }
+                // Caught for the same reason onUpdate catches, and it matters more
+                // here: this runs on every backgrounding, so a binder that is dead
+                // or busy — the launcher restarting, the widget host gone — would
+                // otherwise reach the thread's default handler and kill the process
+                // on the way out of the app. A widget left holding a stale count
+                // until its next update is the better failure.
+                try {
+                    val manager = AppWidgetManager.getInstance(context)
+                    val ids = manager.getAppWidgetIds(
+                        android.content.ComponentName(context, TravelWidgetProvider::class.java)
                     )
+                    if (ids.isNotEmpty()) {
+                        context.sendBroadcast(
+                            Intent(context, TravelWidgetProvider::class.java).apply {
+                                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                            }
+                        )
+                    }
+                } catch (_: Exception) {
                 }
             }
         }
