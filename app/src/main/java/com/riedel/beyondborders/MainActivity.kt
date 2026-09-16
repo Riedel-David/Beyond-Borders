@@ -64,8 +64,15 @@ class MainActivity : AppCompatActivity() {
     // The widget's own updatePeriodMillis is capped at 30 minutes; leaving the app
     // is the moment a count just changed on-screen is most likely to matter on the
     // home screen too, so it gets a nudge here rather than waiting that out.
+    //
+    // Backgrounding is also when Auto Backup becomes free to run, so the write-ahead
+    // log is folded back into the database file here for the same reason — see
+    // AppContainer.checkpointDatabase. On IO because it touches the disk, and on
+    // lifecycleScope because the checkpoint has no suspension point to cancel at.
     override fun onPause() {
         super.onPause()
         TravelWidgetProvider.requestUpdate(applicationContext)
+        val container = (application as BeyondBordersApp).container
+        lifecycleScope.launch(Dispatchers.IO) { container.checkpointDatabase() }
     }
 }

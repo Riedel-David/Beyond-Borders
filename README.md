@@ -164,7 +164,16 @@ trips, and importing the same file twice does nothing. Un-markings travel as
 tombstones so they propagate too, and a place code this build does not know is
 skipped and named rather than stored. The rules are in
 [`data/backup/BackupMerge.kt`](app/src/main/java/com/riedel/beyondborders/data/backup/BackupMerge.kt)
-as a pure function, and they are the same rules phase 5's optional sync will use.
+as a pure function.
+
+**Moving to a new phone needs no file.** Android's own Auto Backup is left on, so if
+you have backup enabled the marks, the theme and colours, the passport and the widget
+config come back when the app is installed on the new device. The app never uploads
+anything itself — it asks for no network permission at all — that copy is made by the
+system, to your own Google account, and Android's backup settings are where to switch
+it off. The one thing deliberately left out is the per-install id the merge uses to
+tell this device's writes from another's; restoring it would give two installs the
+same id, so it is regenerated instead.
 
 ## Regenerating the geo assets
 
