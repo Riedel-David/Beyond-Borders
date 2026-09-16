@@ -109,8 +109,10 @@ fun WelcomeScreen(
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    "Everything you mark stays on this phone. No account, no server, " +
-                        "no network — export a backup yourself whenever you want one.",
+                    "Nothing you mark is ever sent to us. No account, no server, " +
+                        "no network — export a backup yourself whenever you want one. " +
+                        "(Android's own device backup may still include it, if you " +
+                        "have that switched on.)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

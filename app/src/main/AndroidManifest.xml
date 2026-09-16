@@ -9,6 +9,18 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
 
+    <!-- MapLibre also declares INTERNET and ACCESS_WIFI_STATE for its HTTP tile/style
+         loader and telemetry heritage, neither of which this app exercises: the map
+         uses only a bundled style and local GeoJSON sources, and no Java class in the
+         SDK's classes.jar touches WifiManager. Strip both. ACCESS_NETWORK_STATE stays:
+         MapLibre's ConnectivityReceiver is wired into MapView.onStart/onStop
+         unconditionally (not gated by remote-source usage) and its onReceive calls
+         ConnectivityManager.getActiveNetworkInfo() with no permission check or
+         try/catch, so removing that one would crash the map tab the next time the
+         device's connectivity state changes while the map is open. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
+
     <application
         android:name=".BeyondBordersApp"
         android:allowBackup="true"
