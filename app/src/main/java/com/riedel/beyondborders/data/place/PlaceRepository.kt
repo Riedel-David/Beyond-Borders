@@ -55,11 +55,35 @@ class PlaceRepository(
         }
     }
 
-    suspend fun currentStatus(code: String): PlaceStatus = withContext(Dispatchers.IO) {
-        val row = dao.findByCode(code)
-        if (row == null || row.deletedAt != null) PlaceStatus.NONE
-        else PlaceStatus.fromStorage(row.status)
-    }
+    /**
+     * Flip one place between [target] and no status at all, returning what it ended
+     * up as.
+     *
+     * The current value has to be read here rather than by the caller. The UI's copy
+     * arrives over [statuses], which lags a write by an emission, so two quick taps
+     * on the same chip both saw the old value and both wrote [target] — losing the
+     * second tap, the one the user means as an undo. Reading and writing inside one
+     * transaction also serializes concurrent taps, which a read followed by a
+     * separate write does not.
+     */
+    suspend fun toggleStatus(code: String, target: PlaceStatus): PlaceStatus =
+        withContext(Dispatchers.IO) {
+            require(registry[code] != null) { "unknown place code: $code" }
+            database.withTransaction {
+                val row = dao.findByCode(code)
+                val previous =
+                    if (row == null || row.deletedAt != null) PlaceStatus.NONE
+                    else PlaceStatus.fromStorage(row.status)
+                val next = if (previous == target) PlaceStatus.NONE else target
+                val now = clock()
+                if (next == PlaceStatus.NONE) {
+                    dao.tombstone(code, now, deviceId)
+                } else {
+                    dao.setStatus(code, next.storageValue, now, deviceId, Uuid.v7(now))
+                }
+                next
+            }
+        }
 
     /** Wipe every place status. The emergency reset in Settings — irreversible, and
      * meant to be: there is no undo for the one table this app cannot re-download. */
@@ -102,6 +126,10 @@ class PlaceRepository(
      */
     suspend fun importBackup(text: String): BackupMerge.Plan = withContext(Dispatchers.IO) {
         val payload = TravelBackup.decode(text)
+        // Touched before the transaction opens, not inside it: the registry is lazy, so
+        // on the first import of a session dereferencing it here would hold the write
+        // transaction open across a ~50 kB JSON parse for no reason.
+        val knownCodes = registry.codes
         // Read and apply inside one transaction: a concurrent write landing between
         // the two would otherwise be computed against and then overwritten by a
         // stale plan.
@@ -110,7 +138,7 @@ class PlaceRepository(
             val plan = BackupMerge.plan(
                 entries = payload.entries,
                 localUpdatedAt = local,
-                knownCodes = registry.places.mapTo(HashSet()) { it.code },
+                knownCodes = knownCodes,
                 unknownStatuses = payload.unknownStatuses,
             )
             dao.applyAll(
@@ -121,9 +149,11 @@ class PlaceRepository(
                         // decision was made rather than by when it was imported.
                         id = Uuid.v7(entry.updatedAt),
                         code = entry.code,
-                        // Kept verbatim even for a tombstone: that is how the app's own
-                        // un-mark writes look, and it means re-marking the place later
-                        // does not lose what it used to be.
+                        // Passed through as decoded. For an un-marking that means
+                        // "none", which PlaceStatusDao.applyAll then declines to write
+                        // over an existing row's status — the app's own un-marks leave
+                        // the previous status in place and only set deletedAt, so a
+                        // merge has to as well.
                         status = entry.status.storageValue,
                         updatedAt = entry.updatedAt,
                         deletedAt = entry.deletedAt,

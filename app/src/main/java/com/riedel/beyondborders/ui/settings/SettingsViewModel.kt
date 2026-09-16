@@ -20,6 +20,7 @@ import com.riedel.beyondborders.settings.ThemeMode
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.time.LocalDate
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -164,8 +165,16 @@ class SettingsViewModel(
             _transfer.value = try {
                 val text = withContext(Dispatchers.IO) { readText(uri) }
                 TransferState.Done(importMessage(places.importBackup(text)))
-            } catch (e: Exception) {
-                TransferState.Failed(e.message ?: "The import failed.")
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                // Throwable rather than Exception on purpose. The two failures a
+                // picked file can actually cause here are Errors, not Exceptions:
+                // OutOfMemoryError from a large file and StackOverflowError from
+                // deeply nested JSON, which org.json parses recursively. [readText]'s
+                // cap is what makes both unlikely; this is what keeps either from
+                // being a crash instead of a sentence on screen.
+                TransferState.Failed(t.message ?: "The import failed.")
             }
         }
     }
@@ -173,10 +182,16 @@ class SettingsViewModel(
     /**
      * Read a picked file, refusing anything absurdly large.
      *
-     * A full export of all 252 places is around 50 kB, so the cap is three orders of
-     * magnitude of headroom. It exists because the picker can hand us any file at
-     * all, and reading a 2 GB video into a String would take the app down with an
-     * OutOfMemoryError that no catch block can turn into a friendly message.
+     * A full export of all 252 places is around 50 kB, so the cap is ten times the
+     * largest file this app can itself produce. It exists because the picker can hand
+     * us any file at all, and reading a 2 GB video into a String would take the app
+     * down with an OutOfMemoryError.
+     *
+     * The cap has to be this tight because the peak is several times the file: the
+     * bytes buffered here, then a String of them (UTF-16, so double), then org.json's
+     * object tree, which is larger again. An 8 MB cap — the previous value — could
+     * still reach a small device's heap ceiling with all three alive at once, which
+     * is the very thing the cap is for.
      */
     private fun readText(uri: Uri): String {
         val stream = resolver.openInputStream(uri)
@@ -197,7 +212,7 @@ class SettingsViewModel(
     }
 
     companion object {
-        private const val MAX_IMPORT_BYTES = 8 * 1024 * 1024
+        private const val MAX_IMPORT_BYTES = 512 * 1024
 
         fun factory(
             settings: SettingsStore,

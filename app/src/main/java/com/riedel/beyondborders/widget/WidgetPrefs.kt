@@ -23,6 +23,26 @@ object WidgetPrefs {
             .apply()
     }
 
+    /**
+     * Move one widget's choices from [oldId] to [newId], for
+     * [TravelWidgetProvider.onRestored].
+     *
+     * Reads the old values explicitly rather than defaulting, so a widget that was
+     * never configured stays unconfigured instead of being written out at the
+     * defaults under its new id.
+     */
+    fun rekey(context: Context, oldId: Int, newId: Int) {
+        val prefs = prefs(context)
+        val metric = prefs.getString(metricKey(oldId), null) ?: return
+        val filled = prefs.getBoolean(backgroundKey(oldId), true)
+        prefs.edit()
+            .putString(metricKey(newId), metric)
+            .putBoolean(backgroundKey(newId), filled)
+            .remove(metricKey(oldId))
+            .remove(backgroundKey(oldId))
+            .apply()
+    }
+
     /** Called from [TravelWidgetProvider.onDeleted] so a removed widget's choices
      * don't linger forever under an id nothing will ever read again. */
     fun clear(context: Context, widgetId: Int) {

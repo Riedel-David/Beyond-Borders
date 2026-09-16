@@ -7,6 +7,12 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * [com.riedel.beyondborders.data.place.PlaceStatus.NONE]'s storage value, which
+ * a row's `status` column is never allowed to hold — see [PlaceStatusEntity].
+ */
+private const val UNMARKED = "none"
+
 @Dao
 interface PlaceStatusDao {
 
@@ -110,6 +116,29 @@ interface PlaceStatusDao {
     ): Int
 
     /**
+     * As [replaceByCode], but leaves `status` alone.
+     *
+     * For an imported un-marking: the app's own un-marks keep the previous status and
+     * only set `deletedAt` (see [tombstone]), so a merge has to do the same or an
+     * export would not round-trip back to the row it came from.
+     */
+    @Query(
+        """
+        UPDATE place_status
+           SET updatedAt = :updatedAt,
+               deletedAt = :deletedAt,
+               deviceId = :deviceId
+         WHERE code = :code
+        """
+    )
+    suspend fun replaceByCodeKeepingStatus(
+        code: String,
+        updatedAt: Long,
+        deletedAt: Long?,
+        deviceId: String,
+    ): Int
+
+    /**
      * Apply an already-decided set of rows in one transaction.
      *
      * Which rows those are is not this method's business — see BackupMerge, which
@@ -120,13 +149,27 @@ interface PlaceStatusDao {
     @Transaction
     suspend fun applyAll(rows: List<PlaceStatusEntity>) {
         rows.forEach { row ->
-            val matched = replaceByCode(
-                code = row.code,
-                status = row.status,
-                updatedAt = row.updatedAt,
-                deletedAt = row.deletedAt,
-                deviceId = row.deviceId,
-            )
+            // A hand-written `"status": "none"` arrives here as a tombstone carrying no
+            // status worth keeping. Writing it verbatim would break the "never none"
+            // invariant on the column and throw away what the place used to be; the
+            // only case left with nothing to preserve is a place with no row at all,
+            // where the insert below records the tombstone as-is.
+            val matched = if (row.status == UNMARKED) {
+                replaceByCodeKeepingStatus(
+                    code = row.code,
+                    updatedAt = row.updatedAt,
+                    deletedAt = row.deletedAt,
+                    deviceId = row.deviceId,
+                )
+            } else {
+                replaceByCode(
+                    code = row.code,
+                    status = row.status,
+                    updatedAt = row.updatedAt,
+                    deletedAt = row.deletedAt,
+                    deviceId = row.deviceId,
+                )
+            }
             if (matched == 0) insert(row)
         }
     }

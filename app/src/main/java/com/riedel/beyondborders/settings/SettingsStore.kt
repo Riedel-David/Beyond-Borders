@@ -130,7 +130,9 @@ class SettingsStore(context: Context) {
      * or "A-Z" — three groupings share one key rather than needing three.
      */
     private val _collapsedHeaders = MutableStateFlow(
-        prefs.getStringSet(KEY_COLLAPSED_HEADERS, emptySet()) ?: emptySet()
+        // Copied: getStringSet's return value is documented as not safe to hold onto or
+        // mutate, because SharedPreferences may hand back its own instance.
+        prefs.getStringSet(KEY_COLLAPSED_HEADERS, emptySet())?.toSet() ?: emptySet()
     )
     val collapsedHeaders: StateFlow<Set<String>> = _collapsedHeaders.asStateFlow()
 

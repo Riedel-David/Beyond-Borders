@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.ui.map
 
+import android.content.ComponentCallbacks2
+import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
 import android.widget.Toast
@@ -57,6 +59,7 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.ui.passport.SearchField
+import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
@@ -92,6 +95,11 @@ import org.maplibre.android.style.layers.LineLayer
 private val WORLD = CameraPosition.Builder()
     .target(LatLng(18.0, 10.0))
     .zoom(0.0)
+    .build()
+
+private fun MapCamera.toCameraPosition(): CameraPosition = CameraPosition.Builder()
+    .target(LatLng(latitude, longitude))
+    .zoom(zoom)
     .build()
 
 /**
@@ -163,12 +171,6 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         searchQuery = ""
     }
 
-    // Leaving the map drops the selection, so switching to the passport and back
-    // does not present a card about a country the user has stopped thinking about.
-    DisposableEffect(Unit) {
-        onDispose { viewModel.select(null) }
-    }
-
     // Switching the heatmap on mid-selection would otherwise leave a marking card
     // showing over a map that no longer means "tap to mark".
     LaunchedEffect(regionActive) {
@@ -188,6 +190,8 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             selectedCode = selectedCode,
             places = places,
             onTap = ::tap,
+            initialCamera = viewModel.mapCamera,
+            onCameraIdle = { viewModel.mapCamera = it },
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -610,6 +614,8 @@ private fun PlacesMapView(
     selectedCode: String?,
     places: List<Place>,
     onTap: (String?) -> Unit,
+    initialCamera: MapCamera?,
+    onCameraIdle: (MapCamera) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -629,6 +635,7 @@ private fun PlacesMapView(
     val currentRegionActive by rememberUpdatedState(regionActive)
     val currentSelectedCode by rememberUpdatedState(selectedCode)
     val currentOnTap by rememberUpdatedState(onTap)
+    val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
 
     val mapView = remember {
         // Must run before any MapView is constructed. No style URL and no
@@ -637,7 +644,7 @@ private fun PlacesMapView(
         MapView(
             context,
             MapLibreMapOptions.createFromAttributes(context)
-                .camera(WORLD)
+                .camera(initialCamera?.toCameraPosition() ?: WORLD)
                 .minZoomPreference(0.0)
                 .maxZoomPreference(9.0)
                 // A flat political map gains nothing from pitch or bearing, and
@@ -678,12 +685,43 @@ private fun PlacesMapView(
         }
     }
 
+    // onLowMemory is the one call MapLibre needs that no lifecycle event carries — it
+    // drops cached glyph atlases and rasterised tiles. Without it the app held all of
+    // that under memory pressure and made itself a fatter target for the low-memory
+    // killer than it needed to be. Registered only while the map is composed, since
+    // that is the only time there is anything to drop.
+    DisposableEffect(mapView) {
+        val app = context.applicationContext
+        val callbacks = object : ComponentCallbacks2 {
+            override fun onTrimMemory(level: Int) {
+                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW && !mapView.isDestroyed) {
+                    mapView.onLowMemory()
+                }
+            }
+
+            override fun onLowMemory() {
+                if (!mapView.isDestroyed) mapView.onLowMemory()
+            }
+
+            override fun onConfigurationChanged(newConfig: Configuration) = Unit
+        }
+        app.registerComponentCallbacks(callbacks)
+        onDispose { app.unregisterComponentCallbacks(callbacks) }
+    }
+
     // The style is rebuilt when the palette changes so that switching to dark mode
     // recolours the map instead of leaving a light ocean under a dark UI.
     DisposableEffect(mapView, palette) {
+        // Style loading is asynchronous and nothing cancels it, so a tab switch or a
+        // dark-mode toggle mid-load used to let this callback land after detach() had
+        // already nulled the controller's style — repopulating it, and then running
+        // setFilter against a style belonging to a map that no longer exists.
+        var disposed = false
         mapView.getMapAsync { map ->
+            if (disposed) return@getMapAsync
             controller.attach(map)
             map.setStyle(PlacesMapStyle.builder(palette)) { style ->
+                if (disposed) return@setStyle
                 controller.onStyleLoaded(style)
                 controller.applyStatuses(currentStatuses, currentLens, currentRegionActive)
                 controller.applyVisa(currentVisaBands, currentVisaNoData)
@@ -691,7 +729,7 @@ private fun PlacesMapView(
                 controller.applySelection(currentSelectedCode, currentLens, currentRegionActive)
             }
         }
-        onDispose { }
+        onDispose { disposed = true }
     }
 
     // Keyed on mapView alone, through rememberUpdatedState like every other
@@ -712,6 +750,29 @@ private fun PlacesMapView(
         onDispose {
             if (!mapView.isDestroyed) {
                 mapView.getMapAsync { it.removeOnMapClickListener(listener) }
+            }
+        }
+    }
+
+    // Saved as the camera settles rather than on dispose: by the time this composable
+    // is disposed the MapView may already have been destroyed by the lifecycle
+    // observer above, and reading cameraPosition off a destroyed map is not something
+    // to rely on the two effects' teardown order to avoid.
+    DisposableEffect(mapView) {
+        var registered: MapLibreMap.OnCameraIdleListener? = null
+        mapView.getMapAsync { map ->
+            val listener = MapLibreMap.OnCameraIdleListener {
+                val position = map.cameraPosition
+                val target = position.target ?: return@OnCameraIdleListener
+                currentOnCameraIdle(MapCamera(target.latitude, target.longitude, position.zoom))
+            }
+            registered = listener
+            map.addOnCameraIdleListener(listener)
+        }
+        onDispose {
+            val listener = registered
+            if (listener != null && !mapView.isDestroyed) {
+                mapView.getMapAsync { it.removeOnCameraIdleListener(listener) }
             }
         }
     }

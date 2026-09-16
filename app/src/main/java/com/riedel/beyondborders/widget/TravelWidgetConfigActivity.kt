@@ -31,7 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Shown once, when the text widget is dropped on the home screen — what it counts
@@ -68,9 +70,14 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
     }
 
     private fun save(metric: WidgetMetric, filledBackground: Boolean) {
-        WidgetPrefs.save(this, widgetId, metric, filledBackground)
         lifecycleScope.launch {
-            TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, widgetId)
+            // Both the preferences write and the widget update read or touch disk and
+            // the AppWidget binder, so they belong off the main thread — this runs at
+            // the moment the user taps Done, which is the worst moment to stall.
+            withContext(Dispatchers.IO) {
+                WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground)
+                TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, widgetId)
+            }
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
             setResult(Activity.RESULT_OK, result)
             finish()
