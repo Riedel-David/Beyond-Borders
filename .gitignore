@@ -17,6 +17,7 @@ captures/
 .cxx/
 
 # Signing material must never be committed
+keystore.properties
 *.jks
 *.keystore
 
