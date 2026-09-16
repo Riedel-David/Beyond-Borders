@@ -159,10 +159,50 @@ class TravelBackupTest {
               {"code":"SE","status":"visited","updatedAt":1700000000000}
             ]}
         """.trimIndent()
-        val codes = TravelBackup.decode(json).entries.map { it.code }
+        val payload = TravelBackup.decode(json)
         // Dropped in order: no code, no timestamp, a timestamp that cannot be
         // compared against anything.
-        assertEquals(listOf("SE"), codes)
+        assertEquals(listOf("SE"), payload.entries.map { it.code })
+        assertEquals(3, payload.unreadableRows)
+    }
+
+    /**
+     * A non-object element, a blank code and a missing `updatedAt` are three
+     * different ways a row can carry nothing to merge, but from the report's side
+     * they are the same thing: a row this build could not read.
+     */
+    @Test
+    fun `a non-object element, a blank code and a missing timestamp are all counted as unreadable`() {
+        val json = """
+            {"format":"beyondborders.travel","version":1,"places":[
+              "not an object",
+              {"code":"","status":"visited","updatedAt":1700000000000},
+              {"code":"DK","status":"visited"},
+              {"code":"SE","status":"visited","updatedAt":1700000000000}
+            ]}
+        """.trimIndent()
+        val payload = TravelBackup.decode(json)
+        assertEquals(listOf("SE"), payload.entries.map { it.code })
+        assertEquals(3, payload.unreadableRows)
+    }
+
+    @Test
+    fun `a negative timestamp is counted as unreadable, not imported`() {
+        val json = """
+            {"format":"beyondborders.travel","version":1,"places":[
+              {"code":"DK","status":"visited","updatedAt":-1},
+              {"code":"SE","status":"visited","updatedAt":1700000000000}
+            ]}
+        """.trimIndent()
+        val payload = TravelBackup.decode(json)
+        assertEquals(listOf("SE"), payload.entries.map { it.code })
+        assertEquals(1, payload.unreadableRows)
+    }
+
+    @Test
+    fun `a readable file reports no unreadable rows`() {
+        val json = TravelBackup.encode(entries, exportedAt = 1L, deviceId = "device-a")
+        assertEquals(0, TravelBackup.decode(json).unreadableRows)
     }
 
     @Test

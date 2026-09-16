@@ -25,6 +25,10 @@ object BackupMerge {
      *   having a status this build does not know. Carried rather than computed here —
      *   those rows never reach [plan] — so that the import report can name them next
      *   to the unknown codes instead of staying silent about them.
+     * @property unreadableRows a count of rows [TravelBackup.decode] dropped for
+     *   having no code, no positive `updatedAt`, or not being an object at all.
+     *   Carried through for the same reason as [unknownStatuses], but as a count: none
+     *   of those rows has a name worth showing.
      */
     data class Plan(
         val apply: List<TravelBackup.Entry>,
@@ -33,8 +37,9 @@ object BackupMerge {
         val unchanged: Int,
         val unknownCodes: List<String>,
         val unknownStatuses: List<String> = emptyList(),
+        val unreadableRows: Int = 0,
     ) {
-        val skipped: Int get() = unchanged + unknownCodes.size + unknownStatuses.size
+        val skipped: Int get() = unchanged + unknownCodes.size + unknownStatuses.size + unreadableRows
     }
 
     /**
@@ -45,16 +50,21 @@ object BackupMerge {
      *   else is dropped rather than stored: it would be a row no screen can show
      *   and no tap can reach, and it would quietly inflate the visited count.
      * @param unknownStatuses passed straight through to [Plan.unknownStatuses].
+     * @param unreadableRows passed straight through to [Plan.unreadableRows].
      */
     fun plan(
         entries: List<TravelBackup.Entry>,
         localUpdatedAt: Map<String, Long>,
         knownCodes: Set<String>,
         unknownStatuses: List<String> = emptyList(),
+        unreadableRows: Int = 0,
     ): Plan {
         val unknown = sortedSetOf<String>()
         // A file can name the same place twice — hand-edited, or concatenated from
         // two exports. Keep the newest and treat the rest as if they were not there.
+        // On an equal timestamp the later row in the file wins: two rows for one
+        // place is usually two exports concatenated, and the newer export is the
+        // one that appears later.
         val newestPerCode = LinkedHashMap<String, TravelBackup.Entry>()
         for (entry in entries) {
             if (entry.code !in knownCodes) {
@@ -62,7 +72,7 @@ object BackupMerge {
                 continue
             }
             val seen = newestPerCode[entry.code]
-            if (seen == null || entry.updatedAt > seen.updatedAt) {
+            if (seen == null || entry.updatedAt >= seen.updatedAt) {
                 newestPerCode[entry.code] = entry
             }
         }
@@ -102,6 +112,7 @@ object BackupMerge {
             unchanged = unchanged,
             unknownCodes = unknown.toList(),
             unknownStatuses = unknownStatuses,
+            unreadableRows = unreadableRows,
         )
     }
 }

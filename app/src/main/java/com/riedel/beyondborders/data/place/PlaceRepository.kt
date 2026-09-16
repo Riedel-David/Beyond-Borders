@@ -190,6 +190,7 @@ class PlaceRepository(
             localUpdatedAt = local,
             knownCodes = knownCodes,
             unknownStatuses = payload.unknownStatuses,
+            unreadableRows = payload.unreadableRows,
         )
     }
 }

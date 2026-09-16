@@ -366,6 +366,11 @@ internal fun previewMessage(plan: BackupMerge.Plan, sampleNames: List<String>): 
             append(" entries have a status this build doesn't understand.")
         }
     }
+    if (plan.unreadableRows > 0) {
+        append(" ")
+        append(plan.unreadableRows)
+        append(if (plan.unreadableRows == 1) " row could not be read." else " rows could not be read.")
+    }
 }
 
 internal fun importMessage(plan: BackupMerge.Plan): String = buildString {
@@ -411,5 +416,12 @@ internal fun importMessage(plan: BackupMerge.Plan): String = buildString {
         append(names.take(5).joinToString(", "))
         if (names.size > 5) append(", …")
         append(".")
+    }
+    if (plan.unreadableRows > 0) {
+        // Nothing to name — a blank code or a missing timestamp carries no identity
+        // worth showing — so this stays a bare count, unlike the two clauses above.
+        append(" ")
+        append(plan.unreadableRows)
+        append(if (plan.unreadableRows == 1) " row could not be read." else " rows could not be read.")
     }
 }

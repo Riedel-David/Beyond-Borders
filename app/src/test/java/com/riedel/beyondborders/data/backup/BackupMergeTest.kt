@@ -130,6 +130,25 @@ class BackupMergeTest {
     }
 
     /**
+     * A file with two rows for one place at the same timestamp is usually two
+     * exports concatenated, and the newer export is the later one in the file — so
+     * on a tie, file position breaks it in the later row's favour.
+     */
+    @Test
+    fun `a code repeated with an equal timestamp is applied at the later row in the file`() {
+        val plan = BackupMerge.plan(
+            listOf(
+                entry("DK", 100, PlaceStatus.VISITED),
+                entry("DK", 100, PlaceStatus.WISHLIST),
+            ),
+            emptyMap(),
+            known,
+        )
+        assertEquals(1, plan.apply.size)
+        assertEquals(PlaceStatus.WISHLIST, plan.apply.single().status)
+    }
+
+    /**
      * The app's founding bug, in import form: a file that marks Denmark must not
      * bring Greenland with it, and there is nothing in the merge that could relate
      * the two — which is the point.
@@ -146,6 +165,23 @@ class BackupMergeTest {
         val plan = BackupMerge.plan(listOf(entry("GL", 200)), mapOf("GL" to 100L), known)
         assertEquals(1, plan.updated)
         assertEquals(null, plan.apply.single().deletedAt)
+    }
+
+    /**
+     * These rows never reach [BackupMerge.plan] either — [TravelBackup.decode]
+     * already dropped them — so, like [unknownStatuses], the count is carried in
+     * rather than computed here, and it still belongs in [BackupMerge.Plan.skipped].
+     */
+    @Test
+    fun `unreadable rows counted by the decoder are carried through and counted as skipped`() {
+        val plan = BackupMerge.plan(
+            listOf(entry("DK", 100)),
+            emptyMap(),
+            known,
+            unreadableRows = 3,
+        )
+        assertEquals(3, plan.unreadableRows)
+        assertEquals(3, plan.skipped)
     }
 
     @Test
