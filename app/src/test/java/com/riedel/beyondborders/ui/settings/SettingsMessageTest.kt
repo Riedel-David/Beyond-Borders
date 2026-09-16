@@ -97,4 +97,81 @@ class SettingsMessageTest {
         assertEquals("Saved 12 places and 2 removals.", exportMessage(places = 12, removals = 2))
         assertEquals("Saved 0 places and 1 removal.", exportMessage(places = 0, removals = 1))
     }
+
+    @Test
+    fun `a preview with nothing to change says so before anything is written`() {
+        val message = previewMessage(plan(unchanged = 12), sampleNames = emptyList())
+        assertTrue(message, message.startsWith("Nothing to change"))
+        // The reason is still worth stating: it is why confirming would be a no-op.
+        assertTrue(message, message.contains("12 entries ignored because what's already on this phone is newer"))
+    }
+
+    @Test
+    fun `a preview that changes everything names a sample and counts the rest`() {
+        val names = ('A'..'L').map { "$it$it land" } // twelve names, sample size ten
+        val message = previewMessage(plan(added = 8, updated = 4), sampleNames = names.take(10))
+        assertEquals(
+            "Will import 8 new and 4 updated places. " +
+                "AA land, BB land, CC land, DD land, EE land, FF land, GG land, HH land, " +
+                "II land, JJ land, and 2 more.",
+            message,
+        )
+    }
+
+    @Test
+    fun `a preview naming every affected place has no and-N-more tail`() {
+        val message = previewMessage(plan(added = 2), sampleNames = listOf("Denmark", "Greenland"))
+        assertEquals("Will import 2 new places. Denmark, Greenland.", message)
+    }
+
+    @Test
+    fun `a preview singles out one changed place`() {
+        assertEquals(
+            "Will import 1 new place. Andorra.",
+            previewMessage(plan(added = 1), sampleNames = listOf("Andorra")),
+        )
+        assertEquals(
+            "Will import 1 updated place. Andorra.",
+            previewMessage(plan(updated = 1), sampleNames = listOf("Andorra")),
+        )
+    }
+
+    @Test
+    fun `a preview reports unknown codes this build does not recognise`() {
+        val one = previewMessage(plan(added = 1, unknown = listOf("XX")), sampleNames = listOf("Andorra"))
+        assertTrue(one, one.endsWith("1 place code in the file isn't recognised by this build."))
+
+        val many = previewMessage(plan(added = 1, unknown = listOf("XX", "YY")), sampleNames = listOf("Andorra"))
+        assertTrue(many, many.endsWith("2 place codes in the file aren't recognised by this build."))
+    }
+
+    @Test
+    fun `a preview reports statuses this build does not understand`() {
+        val one = previewMessage(
+            plan(added = 1, unknownStatuses = listOf("worked")),
+            sampleNames = listOf("Andorra"),
+        )
+        assertTrue(one, one.endsWith("1 entry has a status this build doesn't understand."))
+
+        val many = previewMessage(
+            plan(added = 1, unknownStatuses = listOf("worked", "dreamt")),
+            sampleNames = listOf("Andorra"),
+        )
+        assertTrue(many, many.endsWith("2 entries have a status this build doesn't understand."))
+    }
+
+    @Test
+    fun `a preview can report every kind of exception at once`() {
+        val message = previewMessage(
+            plan(added = 1, unchanged = 3, unknown = listOf("XX"), unknownStatuses = listOf("worked")),
+            sampleNames = listOf("Andorra"),
+        )
+        assertEquals(
+            "Will import 1 new place. Andorra. " +
+                "3 entries ignored because what's already on this phone is newer. " +
+                "1 place code in the file isn't recognised by this build. " +
+                "1 entry has a status this build doesn't understand.",
+            message,
+        )
+    }
 }

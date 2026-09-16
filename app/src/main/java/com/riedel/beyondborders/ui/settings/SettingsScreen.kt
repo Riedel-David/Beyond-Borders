@@ -90,6 +90,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val passportNames by viewModel.passportNames.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
+    val importPreview by viewModel.importPreview.collectAsStateWithLifecycle()
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(TravelBackup.MIME_TYPE)
@@ -97,7 +98,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let(viewModel::import) }
+    ) { uri -> uri?.let(viewModel::previewImport) }
 
     Column(
         modifier
@@ -220,6 +221,23 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 )
                 is TransferState.Done -> TransferResult(state.message, isError = false, viewModel::dismissTransfer)
                 is TransferState.Failed -> TransferResult(state.message, isError = true, viewModel::dismissTransfer)
+            }
+
+            // Picking a file only plans; nothing is written until this is confirmed.
+            // Dismissing — including the back gesture, which onDismissRequest also
+            // catches — leaves the database exactly as it was.
+            importPreview?.let { preview ->
+                AlertDialog(
+                    onDismissRequest = viewModel::dismissImportPreview,
+                    title = { Text("Import this file?") },
+                    text = { Text(preview.message) },
+                    confirmButton = {
+                        TextButton(onClick = viewModel::confirmImportPreview) { Text("Import") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = viewModel::dismissImportPreview) { Text("Cancel") }
+                    },
+                )
             }
         }
 
