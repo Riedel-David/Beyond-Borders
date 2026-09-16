@@ -52,11 +52,27 @@ class DatabaseRecoveryTest {
     }
 
     @Test
-    fun `no database at all is usable and so is one at the current version`() {
+    fun `no database at all is usable and stays unopened`() {
         assertFalse(DatabaseRecovery.hasData(context, NAME))
         assertEquals(DatabaseHealth.Usable, DatabaseRecovery.probe(context, NAME))
 
-        // The probe above is what created it, at version 10.
+        // Probing a fresh install must not itself create the file - that is
+        // this test's whole point, see the comment on DatabaseRecovery.probe.
+        assertFalse(DatabaseRecovery.hasData(context, NAME))
+    }
+
+    @Test
+    fun `one at the current version is usable`() {
+        // Room defers the actual file open until first use, same as
+        // DatabaseRecovery.probe forcing it via openHelper.writableDatabase.
+        // RoomDatabase is not Closeable, so close it explicitly rather than via use {}.
+        val db = BeyondBordersDatabase.open(context, NAME)
+        try {
+            db.openHelper.writableDatabase
+        } finally {
+            runCatching { db.close() }
+        }
+
         assertTrue(DatabaseRecovery.hasData(context, NAME))
         assertEquals(DatabaseHealth.Usable, DatabaseRecovery.probe(context, NAME))
     }
