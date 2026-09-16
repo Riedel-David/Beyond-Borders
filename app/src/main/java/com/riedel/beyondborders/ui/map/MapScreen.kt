@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -234,6 +237,13 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    // TalkBack would otherwise read the dots and bare numbers as
+                    // separate nodes ("40 · 3 · 7") with nothing to say what each
+                    // one counts; clearAndSetSemantics replaces that with one
+                    // sentence and stops the numbers being announced twice.
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = travelLegendDescription(stats)
+                    },
                 ) {
                     // One dot per map colour, and only for colours actually on the
                     // map: this is a legend, so it counts each status strictly rather
@@ -305,6 +315,10 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { pickFromSearch(place) }
+                                    // The row's own padding only gets it to ~36 dp;
+                                    // this raises the touch target to 48 dp without
+                                    // adding visible space between rows.
+                                    .minimumInteractiveComponentSize()
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                             )
                         }
@@ -800,7 +814,16 @@ private fun MapPill(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = if (onClick == null) modifier else modifier.clickable(onClick = onClick),
+        // minimumInteractiveComponentSize pads the touch target out to 48 dp
+        // without growing the drawn chip: it centres the ~40 dp Surface inside the
+        // larger hit box instead of stretching it, which matters here because
+        // these pills float over the map and a visually bigger chip would cover
+        // more of it.
+        modifier = if (onClick == null) {
+            modifier
+        } else {
+            modifier.clickable(onClick = onClick).minimumInteractiveComponentSize()
+        },
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
         shadowElevation = 2.dp,
@@ -837,6 +860,13 @@ private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?, noDataCount: Int, la
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                // The band dots carry no number here, only colour, so without this
+                // TalkBack would skip straight past them to the aggregate count and
+                // never say a visa lens is even showing. The expanded, tap-labelled
+                // rows already speak for themselves via CounterLegendRow's own text.
+                modifier = Modifier.clearAndSetSemantics {
+                    contentDescription = visaLegendSummary(visa, noDataCount)
+                },
             ) {
                 // Separated dots, like the travel legend: the five bands are a
                 // categorical set now, not an ordered scale, so nothing here should
@@ -1092,4 +1122,29 @@ internal fun searchMapMatches(places: List<Place>, query: String): List<Place> {
     return places.filter { it.searchKey.contains(needle) }
         .sortedBy { it.sortKey }
         .take(MAP_SEARCH_LIMIT)
+}
+
+/**
+ * What the collapsed travel legend's dots and bare counts mean, spoken as one
+ * sentence rather than a run of numbers with no label. Only counts the bands the
+ * dot row actually draws, so the sentence never mentions a colour that is not on
+ * screen.
+ */
+internal fun travelLegendDescription(stats: TravelStats): String {
+    val parts = mutableListOf("${stats.visited} visited")
+    if (stats.lived > 0) parts.add("${stats.lived} lived")
+    if (stats.wishlist > 0) parts.add("${stats.wishlist} wishlisted")
+    return parts.joinToString(", ")
+}
+
+/**
+ * What the collapsed visa legend's band dots mean: since the dots carry no count
+ * of their own in that state, a screen reader would otherwise say nothing about
+ * the visa lens beyond the trailing aggregate.
+ */
+internal fun visaLegendSummary(visa: VisaRegistry?, noDataCount: Int): String {
+    if (visa == null) return "Visa lens: no visa data for this passport"
+    val bands = VisaBand.entries.count { (visa.countByBand[it] ?: 0) > 0 }
+    val withNoData = if (noDataCount > 0) bands + 1 else bands
+    return "Visa lens: $withNoData bands shown, ${visa.visaFreeCount} visa-free"
 }

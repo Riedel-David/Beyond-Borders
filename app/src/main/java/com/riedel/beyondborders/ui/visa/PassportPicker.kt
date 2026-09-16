@@ -1,12 +1,12 @@
 package com.riedel.beyondborders.ui.visa
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
@@ -96,9 +97,17 @@ private fun PassportPickerDialog(
                             headlineContent = { Text(names[code] ?: code) },
                             supportingContent = { Text(code) },
                             leadingContent = {
-                                RadioButton(selected = isSelected, onClick = { onSelect(code) })
+                                // Non-interactive: the row below is the single tap
+                                // target and carries the radio role, so a second
+                                // clickable here would give TalkBack two overlapping
+                                // targets for one choice.
+                                RadioButton(selected = isSelected, onClick = null)
                             },
-                            modifier = Modifier.clickable { onSelect(code) },
+                            modifier = Modifier.selectable(
+                                selected = isSelected,
+                                role = Role.RadioButton,
+                                onClick = { onSelect(code) },
+                            ),
                         )
                     }
                 }
