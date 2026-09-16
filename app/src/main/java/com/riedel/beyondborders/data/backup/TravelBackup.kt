@@ -57,6 +57,11 @@ object TravelBackup {
      * [unknownStatuses] holds one entry per *row* that was dropped because this build
      * does not know its status, so its size is a row count and its distinct values
      * name the statuses. See [decode] for why those rows are dropped rather than read.
+     *
+     * [unreadableRows] counts rows dropped for having no code, no positive
+     * `updatedAt`, or for not being an object at all. Unlike [unknownStatuses] there
+     * is nothing about such a row worth showing a user, so it is a count and not a
+     * list.
      */
     data class Payload(
         val version: Int,
@@ -64,6 +69,7 @@ object TravelBackup {
         val deviceId: String?,
         val entries: List<Entry>,
         val unknownStatuses: List<String> = emptyList(),
+        val unreadableRows: Int = 0,
     )
 
     /**
@@ -141,13 +147,16 @@ object TravelBackup {
 
         val entries = ArrayList<Entry>(array.length())
         val unknownStatuses = ArrayList<String>()
+        var unreadableRows = 0
         for (i in 0 until array.length()) {
-            val row = array.optJSONObject(i) ?: continue
-            val code = row.optString("code").takeIf { it.isNotBlank() } ?: continue
+            val row = array.optJSONObject(i) ?: run { unreadableRows++; continue }
+            val code = row.optString("code").takeIf { it.isNotBlank() }
+                ?: run { unreadableRows++; continue }
             // A row with no timestamp cannot be merged safely: last-write-wins has
             // nothing to compare, and defaulting to "now" would let a stale backup
             // silently overwrite newer local edits.
-            val updatedAt = row.optLong("updatedAt", 0L).takeIf { it > 0L } ?: continue
+            val updatedAt = row.optLong("updatedAt", 0L).takeIf { it > 0L }
+                ?: run { unreadableRows++; continue }
             val rawStatus = row.optString("status")
             // Strict, not PlaceStatus.fromStorage: falling back to NONE here would
             // read a status from a newer build as an *un-marking* and delete real
@@ -181,6 +190,7 @@ object TravelBackup {
             deviceId = root.optStringOrNull("deviceId"),
             entries = entries,
             unknownStatuses = unknownStatuses.sorted(),
+            unreadableRows = unreadableRows,
         )
     }
 

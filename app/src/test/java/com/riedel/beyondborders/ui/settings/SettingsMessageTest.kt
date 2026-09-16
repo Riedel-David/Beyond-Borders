@@ -19,6 +19,7 @@ class SettingsMessageTest {
         unchanged: Int = 0,
         unknown: List<String> = emptyList(),
         unknownStatuses: List<String> = emptyList(),
+        unreadableRows: Int = 0,
     ) = BackupMerge.Plan(
         apply = emptyList<TravelBackup.Entry>(),
         added = added,
@@ -26,6 +27,7 @@ class SettingsMessageTest {
         unchanged = unchanged,
         unknownCodes = unknown,
         unknownStatuses = unknownStatuses,
+        unreadableRows = unreadableRows,
     )
 
     @Test
@@ -76,6 +78,19 @@ class SettingsMessageTest {
 
         val mixed = importMessage(plan(added = 1, unknownStatuses = listOf("dreamt", "worked", "worked")))
         assertTrue(mixed, mixed.endsWith("Skipped 3 entries with unrecognised statuses: dreamt, worked."))
+    }
+
+    /**
+     * A blank code or a missing timestamp has nothing worth naming, unlike an
+     * unknown code or an unrecognised status, so this stays a bare count.
+     */
+    @Test
+    fun `rows the decoder could not read are reported as a bare count`() {
+        val one = importMessage(plan(added = 1, unreadableRows = 1))
+        assertTrue(one, one.endsWith("1 row could not be read."))
+
+        val many = importMessage(plan(added = 1, unreadableRows = 3))
+        assertTrue(many, many.endsWith("3 rows could not be read."))
     }
 
     @Test
@@ -161,16 +176,32 @@ class SettingsMessageTest {
     }
 
     @Test
+    fun `a preview reports rows the decoder could not read as a bare count`() {
+        val one = previewMessage(plan(added = 1, unreadableRows = 1), sampleNames = listOf("Andorra"))
+        assertTrue(one, one.endsWith("1 row could not be read."))
+
+        val many = previewMessage(plan(added = 1, unreadableRows = 2), sampleNames = listOf("Andorra"))
+        assertTrue(many, many.endsWith("2 rows could not be read."))
+    }
+
+    @Test
     fun `a preview can report every kind of exception at once`() {
         val message = previewMessage(
-            plan(added = 1, unchanged = 3, unknown = listOf("XX"), unknownStatuses = listOf("worked")),
+            plan(
+                added = 1,
+                unchanged = 3,
+                unknown = listOf("XX"),
+                unknownStatuses = listOf("worked"),
+                unreadableRows = 2,
+            ),
             sampleNames = listOf("Andorra"),
         )
         assertEquals(
             "Will import 1 new place. Andorra. " +
                 "3 entries ignored because what's already on this phone is newer. " +
                 "1 place code in the file isn't recognised by this build. " +
-                "1 entry has a status this build doesn't understand.",
+                "1 entry has a status this build doesn't understand. " +
+                "2 rows could not be read.",
             message,
         )
     }
