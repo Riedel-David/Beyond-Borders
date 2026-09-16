@@ -25,7 +25,14 @@ class VisaRepository(
     private val cache = mutableMapOf<String, VisaRegistry>()
 
     suspend fun registry(passport: String): VisaRegistry = withContext(Dispatchers.IO) {
-        synchronized(cache) { cache.getOrPut(passport) { registryLoader(passport) } }
+        synchronized(cache) { cache[passport] }?.let { return@withContext it }
+        // Parsed outside the lock. Holding it across the read made a passport switch
+        // wait out any other passport's parse — and wait by blocking an IO thread
+        // rather than suspending, since this is a monitor and not a Mutex. Two
+        // callers racing the same cold passport now both parse it: one redundant
+        // ~29 kB parse, and getOrPut still hands both of them the same instance.
+        val loaded = registryLoader(passport)
+        synchronized(cache) { cache.getOrPut(passport) { loaded } }
     }
 
     /** Every passport the picker can offer, sorted. */

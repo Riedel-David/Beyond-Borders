@@ -4,11 +4,20 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.riedel.beyondborders.data.db.DatabaseHealth
+import com.riedel.beyondborders.data.db.DatabaseRecovery
 import com.riedel.beyondborders.ui.BeyondBordersRoot
+import com.riedel.beyondborders.ui.recovery.DatabaseRecoveryScreen
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import com.riedel.beyondborders.widget.TravelWidgetProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * The only Activity.
@@ -28,8 +37,26 @@ class MainActivity : AppCompatActivity() {
             val themeMode by container.settings.themeMode.collectAsStateWithLifecycle()
             val mapColors by container.settings.mapColors.collectAsStateWithLifecycle()
             val mapBase by container.settings.mapBase.collectAsStateWithLifecycle()
+            val databaseHealth by container.databaseHealth.collectAsStateWithLifecycle()
             BeyondBordersTheme(themeMode, mapColors, mapBase) {
-                BeyondBordersRoot(container)
+                // Nothing may query the database before the probe has cleared it, or
+                // the crash this screen exists to replace happens first. Unknown is a
+                // themed blank: the probe starts in Application.onCreate, one file
+                // open ahead of this composition, so on a healthy database it has
+                // normally already resolved by the time the first frame is drawn.
+                when (val health = databaseHealth) {
+                    DatabaseHealth.Unknown -> Surface(Modifier.fillMaxSize()) {}
+                    DatabaseHealth.Usable -> BeyondBordersRoot(container)
+                    is DatabaseHealth.Unusable -> DatabaseRecoveryScreen(
+                        detail = health.detail,
+                        onWipe = {
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                DatabaseRecovery.wipe(this@MainActivity)
+                                container.refreshDatabaseHealth()
+                            }
+                        },
+                    )
+                }
             }
         }
     }

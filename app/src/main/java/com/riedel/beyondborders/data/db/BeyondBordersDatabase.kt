@@ -77,8 +77,9 @@ abstract class BeyondBordersDatabase : RoomDatabase() {
             }
         }
 
-        fun open(context: Context): BeyondBordersDatabase =
-            Room.databaseBuilder(context, BeyondBordersDatabase::class.java, NAME)
+        /** [name] is only ever overridden by tests, which must not open the real file. */
+        fun open(context: Context, name: String = NAME): BeyondBordersDatabase =
+            Room.databaseBuilder(context, BeyondBordersDatabase::class.java, name)
                 // No fallbackToDestructiveMigration: this database holds the one
                 // thing in the app that cannot be re-fetched from anywhere. A
                 // missing migration must fail the build's tests, not quietly wipe
