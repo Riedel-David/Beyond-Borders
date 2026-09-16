@@ -50,13 +50,36 @@ class TravelWidgetProvider : AppWidgetProvider() {
         appWidgetIds.forEach { id -> WidgetPrefs.clear(context, id) }
     }
 
+    /**
+     * Restoring a backup onto a new phone gives every widget a new id, and the system
+     * reports the mapping here exactly once.
+     *
+     * Without this the per-instance choices stayed filed under the old ids: every
+     * restored widget silently fell back to the defaults while the settings it should
+     * have used sat there under ids nothing would ever read again.
+     */
+    override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
+        oldWidgetIds.zip(newWidgetIds).forEach { (old, new) ->
+            WidgetPrefs.rekey(context, old, new)
+        }
+    }
+
     companion object {
         /** Shared by [onUpdate] and by the config activity's "Add widget", which
          * has to draw the just-chosen state immediately rather than wait out
          * [android.appwidget.AppWidgetProviderInfo.updatePeriodMillis]. */
         suspend fun updateOne(context: Context, widgetId: Int) {
-            val places = (context.applicationContext as BeyondBordersApp).container.places
-            val stats = computeStats(places.places(), places.statuses.first())
+            val container = (context.applicationContext as BeyondBordersApp).container
+            val places = container.places
+            // The denominator has to come along: it changes what counts as "been" as
+            // well as the total, so leaving computeStats on its ALL default made the
+            // home screen say "40 of 252" while the passport tab, with "195 UN"
+            // chosen, said "40 of 195" about the same data.
+            val stats = computeStats(
+                places.places(),
+                places.statuses.first(),
+                container.settings.denominator.value,
+            )
             val metric = WidgetPrefs.metric(context, widgetId)
             val filledBackground = WidgetPrefs.filledBackground(context, widgetId)
 
@@ -83,17 +106,22 @@ class TravelWidgetProvider : AppWidgetProvider() {
          * waits out the full [android.appwidget.AppWidgetProviderInfo.updatePeriodMillis]
          * to reflect it. */
         fun requestUpdate(context: Context) {
-            val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(
-                android.content.ComponentName(context, TravelWidgetProvider::class.java)
-            )
-            if (ids.isNotEmpty()) {
-                context.sendBroadcast(
-                    Intent(context, TravelWidgetProvider::class.java).apply {
-                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
-                    }
+            // getAppWidgetIds is a synchronous binder call and this is invoked from
+            // Activity.onPause, on the main thread, whether or not a widget is even
+            // installed — so the whole thing goes to an IO thread. Nothing waits on it.
+            CoroutineScope(Dispatchers.IO).launch {
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(
+                    android.content.ComponentName(context, TravelWidgetProvider::class.java)
                 )
+                if (ids.isNotEmpty()) {
+                    context.sendBroadcast(
+                        Intent(context, TravelWidgetProvider::class.java).apply {
+                            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                        }
+                    )
+                }
             }
         }
     }

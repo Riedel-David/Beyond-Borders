@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -33,12 +34,19 @@ fun BeyondBordersTheme(
     // Status- and navigation-bar icons have to follow the app's choice, not the
     // system's, otherwise forcing light mode on a dark-mode phone leaves white
     // icons on our white background.
+    // In a SideEffect rather than the composable body: this reaches outside Compose to
+    // mutate the window, which must not happen from a composition that might still be
+    // discarded, and needs to run once a change is committed rather than on every
+    // recomposition that passes through here.
     val view = LocalView.current
     if (!view.isInEditMode) {
         val window = (view.context as? android.app.Activity)?.window
         if (window != null) {
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !dark
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !dark
+            SideEffect {
+                val controller = WindowCompat.getInsetsController(window, view)
+                controller.isAppearanceLightStatusBars = !dark
+                controller.isAppearanceLightNavigationBars = !dark
+            }
         }
     }
 

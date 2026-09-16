@@ -15,6 +15,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
+ * How long a shared snapshot stays readable in the cache.
+ *
+ * Long enough for a mail sitting in drafts overnight to still find its attachment,
+ * short enough that the cache does not accumulate — and these are cache files, so the
+ * system is free to reclaim them sooner under pressure regardless.
+ */
+private const val SHARE_RETENTION_MS = 24L * 60 * 60 * 1000
+
+/**
  * What the shared image says about the map, so it is a claim rather than just a
  * picture. "been", not "visited": a place lived in must count here too, matching
  * every other count this app shows.
@@ -55,16 +64,31 @@ private fun withCaption(bitmap: Bitmap, caption: String): Bitmap {
  *
  * Named uniquely per call rather than reusing one fixed file: two taps of Share in
  * quick succession, before the first chooser resolves, would otherwise let one
- * write interleave with the other's read. Stale files from earlier shares are
- * swept out first since nothing else in the app depends on them persisting.
+ * write interleave with the other's read.
+ *
+ * Older files are swept by age rather than all at once. Deleting the whole directory
+ * on every share assumed the receiving app had already finished with the previous
+ * URI, and Gmail in particular has not: it keeps the content URI in a draft and only
+ * reads it when the mail is sent, so the earlier attachment quietly became a
+ * zero-byte failure the moment a second share started.
  */
 suspend fun shareMapSnapshot(context: Context, bitmap: Bitmap, stats: TravelStats) {
     val file = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "shared").apply { mkdirs() }
-        dir.listFiles()?.forEach { it.delete() }
+        val cutoff = System.currentTimeMillis() - SHARE_RETENTION_MS
+        dir.listFiles()?.forEach { if (it.lastModified() < cutoff) it.delete() }
         val file = File(dir, "beyondborders-map-${System.nanoTime()}.png")
         val captioned = withCaption(bitmap, mapShareCaption(stats))
-        FileOutputStream(file).use { out -> captioned.compress(Bitmap.CompressFormat.PNG, 100, out) }
+        try {
+            FileOutputStream(file).use { out ->
+                captioned.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+        } finally {
+            // withCaption copies the snapshot to draw on, so this is a second
+            // full-screen ARGB_8888 bitmap — several megabytes on a tall phone, and
+            // worth handing back rather than waiting for a GC to notice it.
+            captioned.recycle()
+        }
         file
     }
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)

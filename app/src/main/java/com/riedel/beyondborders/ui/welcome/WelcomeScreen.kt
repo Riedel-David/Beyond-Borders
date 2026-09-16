@@ -4,12 +4,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -58,66 +62,80 @@ fun WelcomeScreen(
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier) { padding ->
-        Column(
+        // Centred while it fits, scrollable once it doesn't. At a large font scale or
+        // in landscape this column is taller than the screen, and without somewhere
+        // to scroll "Get started" goes off the bottom edge — which strands the user
+        // on the one screen whose button is the only way past it. The minimum height
+        // is what keeps the centring: a plain scrolling column would sit at the top
+        // on the ordinary phone-sized case this is designed around.
+        BoxWithConstraints(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(padding),
         ) {
-            Box(
+            val viewport = maxHeight
+            Column(
                 Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(LauncherIconBackground),
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = viewport)
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
-                    contentDescription = null,
-                    modifier = Modifier.size(96.dp),
+                Box(
+                    Modifier
+                        .size(96.dp)
+                        .clip(CircleShape)
+                        .background(LauncherIconBackground),
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.size(96.dp),
+                    )
+                }
+                Text(
+                    "Beyond Borders",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 16.dp),
                 )
-            }
-            Text(
-                "Beyond Borders",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-            Text(
-                "Mark the places you've been, lived in, or want to go — on a map " +
-                    "of all 252, not just the 195 in the UN.",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-            Text(
-                "Everything you mark stays on this phone. No account, no server, " +
-                    "no network — export a backup yourself whenever you want one.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-            Text(
-                "Visa requirements are for one passport at a time. Pick yours — you " +
-                    "can change it later in Settings.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            PassportPickerButton(
-                selected = nationality,
-                names = passportNames,
-                onSelect = onNationalityChange,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            FilledTonalButton(
-                onClick = onGetStarted,
-                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
-            ) {
-                Text("Get started")
+                Text(
+                    "Mark the places you've been, lived in, or want to go — on a map " +
+                        "of all 252, not just the 195 in the UN.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                Text(
+                    "Everything you mark stays on this phone. No account, no server, " +
+                        "no network — export a backup yourself whenever you want one.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                Text(
+                    "Visa requirements are for one passport at a time. Pick yours — you " +
+                        "can change it later in Settings.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                PassportPickerButton(
+                    selected = nationality,
+                    names = passportNames,
+                    onSelect = onNationalityChange,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                FilledTonalButton(
+                    onClick = onGetStarted,
+                    modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                ) {
+                    Text("Get started")
+                }
             }
         }
     }

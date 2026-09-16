@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.places
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -168,6 +169,14 @@ data class TravelStats(
 }
 
 /**
+ * Where the map was last looking.
+ *
+ * Plain numbers rather than MapLibre's `CameraPosition`: this file is host-tested,
+ * and the ViewModel has no other reason to know which map SDK draws the thing.
+ */
+data class MapCamera(val latitude: Double, val longitude: Double, val zoom: Double)
+
+/**
  * The single source of truth for both the map and the passport list.
  *
  * Shared rather than one ViewModel per tab, so that marking a country on the map
@@ -180,6 +189,16 @@ class PlacesViewModel(
     private val settings: SettingsStore,
     private val haptics: Haptics,
 ) : ViewModel() {
+
+    /**
+     * Kept here because switching tabs destroys the MapView, and with it the camera:
+     * without this, zooming into the Balkans, glancing at the passport list and
+     * coming back put the user out over the Atlantic at world zoom.
+     *
+     * A plain var rather than a StateFlow — it is read once, when the map is built,
+     * and never observed. Emitting it would only cause recompositions on every pan.
+     */
+    var mapCamera: MapCamera? = null
 
     private val allPlaces = MutableStateFlow<List<Place>>(emptyList())
 
@@ -308,7 +327,15 @@ class PlacesViewModel(
                 // A malformed or missing asset must not take the travel map down
                 // with it, so this is caught rather than allowed to kill the scope.
                 // The build script is what stops it happening; this is the seatbelt.
-                _visa.value = runCatching { visaRepo.registry(nationality) }.getOrNull()
+                _visa.value = load(nationality)
+                    // A nationality that no longer has an asset is not hypothetical:
+                    // the key lives in the backed-up preferences file, so a restore
+                    // onto a build with a different asset set brings one along. Before
+                    // this fell back, the result was a permanently blank visa tab with
+                    // nothing logged to explain it.
+                    ?: load(VisaRegistry.DEFAULT_PASSPORT)?.also {
+                        settings.setNationality(VisaRegistry.DEFAULT_PASSPORT)
+                    }
             }
         }
     }
@@ -330,6 +357,21 @@ class PlacesViewModel(
         if (value != RegionMode.OFF) _visaLens.value = false
     }
 
+    /**
+     * Load one passport's registry, or null if its asset is missing or unreadable.
+     *
+     * Logged rather than swallowed: this is the failure that presents as "the visa
+     * tab is empty and I don't know why", so the reason belongs somewhere a bug
+     * report can reach even though the UI has nothing useful to say about it.
+     */
+    private suspend fun load(passport: String): VisaRegistry? =
+        try {
+            visaRepo.registry(passport)
+        } catch (e: Exception) {
+            Log.w(TAG, "No usable visa data for passport $passport", e)
+            null
+        }
+
     fun placeOf(code: String): Place? = allPlaces.value.firstOrNull { it.code == code }
 
     fun statusOf(code: String): PlaceStatus = statuses.value[code] ?: PlaceStatus.NONE
@@ -340,16 +382,18 @@ class PlacesViewModel(
      * Set one place's status. One place: no cascade, ever. If the user asks for
      * the status it already has, clear it — that makes a second tap on "Been" an
      * undo, which is what people expect from a toggle.
+     *
+     * Deciding which of the two it is belongs to [PlaceRepository.toggleStatus], not
+     * here: [statuses] is a frame or two behind the database, which is close enough
+     * to paint with and not close enough to compare against.
      */
     fun toggle(code: String, target: PlaceStatus) {
-        viewModelScope.launch {
-            val previous = statusOf(code)
-            val next = if (previous == target) PlaceStatus.NONE else target
-            repo.setStatus(code, next)
-        }
+        viewModelScope.launch { repo.toggleStatus(code, target) }
     }
 
     companion object {
+        private const val TAG = "PlacesViewModel"
+
         fun factory(
             repo: PlaceRepository,
             visaRepo: VisaRepository,
