@@ -197,7 +197,11 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             "Your travel data",
             "Everything you have marked, as a JSON file you can keep anywhere. " +
                 "Importing merges: an entry only wins if it is newer than what is " +
-                "already on this phone, and nothing gets deleted.",
+                "already on this phone, and nothing gets deleted.\n\n" +
+                "Android's own backup includes this data too, so a new phone can " +
+                "restore it without a file. The app never uploads anything itself — " +
+                "that copy is made by the system, to your Google account. Switch it " +
+                "off in Android's backup settings if you would rather it did not.",
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(
