@@ -17,7 +17,8 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 |---|---|
 | Travel map | working — 252 places, tap to select, Been / Lived / Want, a visa lens, and a region-completion heatmap |
 | Passport list | working — search, filters, per-continent stats |
-| Passport visas | working — where any of ~195 passports goes, offline; DE gets a full 252-place curated answer |
+| Passport visas | working — where any of ~195 passports goes, offline; DE gets a full 252-place curated answer; a second passport is optional, and the easier of its two answers wins |
+| Share | working — the map as an image, captioned with your numbers in one of three styles |
 | Home-screen widget | working — configurable per instance: headline metric and card background |
 | Settings | working — theme, map colours, JSON export / import, emergency full data reset |
 | First run | working — a welcome screen on first launch |
@@ -58,7 +59,10 @@ it earns its place.
 
 Passport → **Where I can go** answers the other half of the question the map answers,
 entirely offline, for any passport in a searchable picker over all ~195 Passport Index
-passports — pick one on first launch or switch it later in Settings. A German passport
+passports — pick one on first launch or switch it later in Settings. Hold two, and
+Settings takes a second one: every answer is then whichever of the two passports asks
+less of you, attributed to the passport it came from, and the freshness notice falls
+back to the older of the two datasets. A German passport
 gets the full, hand-curated 252-destination answer; every other passport gets a
 generic, programme-based answer (EU membership, the UK's Common Travel Area, and six
 reference-country groups) wherever a rule applies, and an honest gap where none does.
