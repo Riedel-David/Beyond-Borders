@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -293,7 +294,13 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(contentPadding)
-                .padding(12.dp),
+                .padding(12.dp)
+                // The asOf notice is a full sentence with no line break of its own,
+                // and this pill sits in the same unbounded Box as the ⋮ stack on
+                // the opposite corner — without a cap, a long enough sentence (two
+                // passports named instead of one) renders on one line right across
+                // the screen and under the ⋮ button instead of wrapping under itself.
+                .widthIn(max = 240.dp),
         ) {
             // AnimatedContent, not animateContentSize on the pill: the pill's size
             // animated while its content swapped in a single frame, so expanding read
@@ -417,6 +424,11 @@ fun MapScreen(
             }
             if (searchOpen) {
                 Card(
+                    // Same reason as the visa legend's cap: nothing between this
+                    // Card and the screen-filling Box constrains its width, and
+                    // SearchField's own fillMaxWidth() would otherwise stretch it
+                    // to the full screen instead of staying a corner control.
+                    modifier = Modifier.widthIn(max = 280.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     ),
@@ -510,7 +522,10 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding)
-                .padding(12.dp),
+                // The share FAB sits at BottomEnd over this same row; without a
+                // matching end inset this card's fillMaxWidth() runs full-width
+                // straight under it.
+                .padding(start = 12.dp, top = 12.dp, end = 88.dp, bottom = 12.dp),
         ) {
             (regionInfo ?: lastRegionInfo)?.let { info -> RegionInfoCard(info = info) }
         }
@@ -521,7 +536,8 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding)
-                .padding(12.dp),
+                // Same FAB-clearance reasoning as the region card above.
+                .padding(start = 12.dp, top = 12.dp, end = 88.dp, bottom = 12.dp),
         ) {
             (selected ?: lastSelected)?.let { place ->
                 // Carried into the card whenever the lens is on, so a tap answers
@@ -542,6 +558,10 @@ fun MapScreen(
                     attributeTo = attributeTo,
                     noVisaData = lens && place.code in visaNoData,
                     hasSecondPassport = secondVisa != null,
+                    // The visa lens is answering "can I go", not "have I been" — the
+                    // travel-status chips are the other lens's question, and showing
+                    // both on the same tap reads as if they're related.
+                    showStatusToggle = !lens,
                     onToggle = { target ->
                         viewModel.vibrate()
                         viewModel.toggle(place.code, target)
@@ -550,9 +570,8 @@ fun MapScreen(
             }
         }
 
-        // Bottom-end is otherwise empty: the region/selection cards above anchor
-        // to BottomCenter, so a small FAB here shares a corner with nothing else
-        // on the map.
+        // The region/selection cards above anchor to BottomCenter and reserve an
+        // end inset (see their modifiers) so this FAB's corner stays clear of them.
         FloatingActionButton(
             onClick = { showShareStyleDialog = true },
             modifier = Modifier
@@ -1126,7 +1145,7 @@ private fun VisaLegend(
         }
         if (visa != null) {
             Text(
-                asOfNotice(visa),
+                if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1246,6 +1265,7 @@ private fun SelectedPlaceCard(
     attributeTo: String?,
     noVisaData: Boolean,
     hasSecondPassport: Boolean,
+    showStatusToggle: Boolean,
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1316,30 +1336,33 @@ private fun SelectedPlaceCard(
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
-            Row(
-                Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Short labels, matching the passport rows. Three chips reading
-                // "Been here / Lived here / Want to go" overflow a 360 dp phone once
-                // the card's padding is taken off, and a wrapped or scrolling row of
-                // three would hide one of the three answers behind a gesture.
-                BounceFilterChip(
-                    selected = status == PlaceStatus.VISITED,
-                    label = "Been",
-                    onClick = { onToggle(PlaceStatus.VISITED) },
-                )
-                BounceFilterChip(
-                    selected = status == PlaceStatus.LIVED,
-                    label = "Lived",
-                    onClick = { onToggle(PlaceStatus.LIVED) },
-                )
-                BounceFilterChip(
-                    selected = status == PlaceStatus.WISHLIST,
-                    label = "Want",
-                    onClick = { onToggle(PlaceStatus.WISHLIST) },
-                )
+            if (showStatusToggle) {
+                Row(
+                    Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Short labels, matching the passport rows. Three chips reading
+                    // "Been here / Lived here / Want to go" overflow a 360 dp phone
+                    // once the card's padding is taken off, and a wrapped or
+                    // scrolling row of three would hide one of the three answers
+                    // behind a gesture.
+                    BounceFilterChip(
+                        selected = status == PlaceStatus.VISITED,
+                        label = "Been",
+                        onClick = { onToggle(PlaceStatus.VISITED) },
+                    )
+                    BounceFilterChip(
+                        selected = status == PlaceStatus.LIVED,
+                        label = "Lived",
+                        onClick = { onToggle(PlaceStatus.LIVED) },
+                    )
+                    BounceFilterChip(
+                        selected = status == PlaceStatus.WISHLIST,
+                        label = "Want",
+                        onClick = { onToggle(PlaceStatus.WISHLIST) },
+                    )
+                }
             }
         }
     }
