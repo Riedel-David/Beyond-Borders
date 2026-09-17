@@ -295,6 +295,54 @@ class PlacesLogicTest {
     }
 
     @Test
+    fun `least covered picks the lowest ratio not the biggest gap`() {
+        val continents = listOf(
+            ContinentStat("Europe", been = 40, total = 44),
+            ContinentStat("Africa", been = 1, total = 54),
+        )
+        // Africa is 1/54, a far worse ratio than Europe's 40/44.
+        assertEquals("Africa — 1 of 54", leastCoveredContinent(continents))
+    }
+
+    @Test
+    fun `least covered breaks a ratio tie by the smaller been then by name`() {
+        val continents = listOf(
+            ContinentStat("Europe", been = 2, total = 4),
+            ContinentStat("Africa", been = 2, total = 4),
+            ContinentStat("Antarctica", been = 1, total = 2),
+        )
+        // All three are 50% - Antarctica wins on the smaller been count.
+        assertEquals("Antarctica — 1 of 2", leastCoveredContinent(continents))
+    }
+
+    @Test
+    fun `least covered ignores a continent with no places at all`() {
+        val continents = listOf(
+            ContinentStat("Europe", been = 1, total = 44),
+            ContinentStat("Antarctica", been = 0, total = 0),
+        )
+        assertEquals("Europe — 1 of 44", leastCoveredContinent(continents))
+    }
+
+    @Test
+    fun `least covered is null with nothing marked on a fresh install`() {
+        val continents = listOf(
+            ContinentStat("Europe", been = 0, total = 44),
+            ContinentStat("Africa", been = 0, total = 54),
+        )
+        assertEquals(null, leastCoveredContinent(continents))
+    }
+
+    @Test
+    fun `least covered is null once every continent is finished`() {
+        val continents = listOf(
+            ContinentStat("Europe", been = 44, total = 44),
+            ContinentStat("Oceania", been = 14, total = 14),
+        )
+        assertEquals(null, leastCoveredContinent(continents))
+    }
+
+    @Test
     fun `coverage joins been status against area and population already on the asset`() {
         val withGeo = listOf(
             place("DK", "Denmark", areaKm2 = 43_000, popEst = 6_000_000),

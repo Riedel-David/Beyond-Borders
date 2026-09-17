@@ -465,6 +465,26 @@ internal fun almostFinishedNudge(continents: List<ContinentStat>): String? {
 }
 
 /**
+ * "Oceania — 2 of 25" — the continent furthest from done, for the stats screen's
+ * "Least covered" line. Ties broken by the smaller [ContinentStat.been], then by
+ * name, so the result never flickers between two continents with the same ratio.
+ * Null with nothing marked at all (every continent 0/total says nothing worth a
+ * line) and null once every continent is finished (nothing left to point at).
+ */
+internal fun leastCoveredContinent(continents: List<ContinentStat>): String? {
+    if (continents.all { it.been == 0 }) return null
+    val worst = continents
+        .filter { it.total > 0 && it.been < it.total }
+        .minWithOrNull(compareBy(
+            { it.been.toDouble() / it.total },
+            { it.been },
+            { it.continent },
+        ))
+        ?: return null
+    return "${worst.continent} — ${worst.been} of ${worst.total}"
+}
+
+/**
  * "9 of your 12 wishlist places need no embassy" — the one line neither the
  * travel history nor the visa asset can say alone. Null with nothing to join:
  * no visa data, no wishlist, or a wishlist with nothing easy in it.
