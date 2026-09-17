@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,31 +60,41 @@ fun DatabaseRecoveryScreen(
     var saved by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var saveError by rememberSaveable { mutableStateOf<String?>(null) }
     var confirming by rememberSaveable { mutableStateOf(false) }
+    // Plain remember, not saveable: a save in flight cannot survive process death
+    // anyway, since the launcher callback would be gone with it. All this guards
+    // against is a second tap while the coroutine above is still running.
+    var saving by remember { mutableStateOf(false) }
 
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
+        saving = true
         scope.launch {
-            val error = withContext(Dispatchers.IO) {
-                try {
+            val error = try {
+                withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)
                         ?.use { DatabaseRecovery.exportTo(context, it) }
                         ?: return@withContext "Couldn't open the file you chose."
                     null
-                } catch (t: Throwable) {
-                    t.message ?: t.javaClass.simpleName
                 }
+            } catch (t: Throwable) {
+                t.message ?: t.javaClass.simpleName
+            } finally {
+                saving = false
             }
             saved = error == null
             saveError = error
         }
     }
 
-    Surface(modifier.fillMaxSize()) {
+    val hasData = DatabaseRecovery.hasData(context)
+
+    Scaffold(modifier.fillMaxSize()) { insets ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(insets)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -121,9 +135,24 @@ fun DatabaseRecoveryScreen(
             Button(
                 onClick = { saveLauncher.launch("beyondborders-data-${LocalDate.now()}.zip") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = DatabaseRecovery.hasData(context),
+                enabled = hasData && !saving,
             ) {
-                Text("Save a copy")
+                if (saving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = LocalContentColor.current,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text("Save a copy")
+                }
+            }
+            if (!hasData) {
+                Text(
+                    "There's no database file to copy.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             when {
