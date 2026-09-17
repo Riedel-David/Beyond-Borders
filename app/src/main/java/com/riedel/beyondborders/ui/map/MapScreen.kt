@@ -4,7 +4,10 @@ import android.content.ComponentCallbacks2
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -168,9 +171,11 @@ fun MapScreen(
     var visaLegendLabeled by remember { mutableStateOf(false) }
     var searchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    // Collapsed by default: Search/World/Share/Visa stacking up every time made
-    // the top-right corner read as clutter rather than controls. One icon expands
-    // the stack on demand instead of a fourth-and-growing always-visible pill.
+    // Collapsed by default: Search/Visa/Regions stacking up every time made the
+    // top-right corner read as clutter rather than controls. One icon expands the
+    // stack on demand instead of a third-and-growing always-visible pill. A "World"
+    // pill used to live here too and was dropped: pinching back out is the gesture
+    // everyone already knows, so the button only cost space.
     var controlsExpanded by remember { mutableStateOf(false) }
     var showShareStyleDialog by remember { mutableStateOf(false) }
     // Local to this screen rather than hoisted: a failed share is a map-only
@@ -287,55 +292,84 @@ fun MapScreen(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(contentPadding)
-                .padding(12.dp)
-                // The legend's content swaps between a compact dot row and a
-                // labelled column on tap; without this the pill snaps to its new
-                // size in one frame instead of growing into it.
-                .animateContentSize(animationSpec = tween(180)),
+                .padding(12.dp),
         ) {
-            if (lens) {
-                VisaLegend(
-                    palette.visa,
-                    visa,
-                    noDataCount = visaNoData.size,
-                    labeled = visaLegendLabeled,
-                )
-            } else if (regionActive) {
-                RegionLegend(palette.region, regionMode, stats)
-            } else if (stats.been == 0 && stats.wishlist == 0) {
-                // Nothing marked yet, so the counter would say "0" and teach
-                // nothing. Say what to do instead.
-                Text("Tap a place to mark it", style = MaterialTheme.typography.labelLarge)
-            } else if (counterLabeled) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    CounterLegendRow(palette.visited, stats.visited, "visited")
-                    if (stats.lived > 0) CounterLegendRow(palette.lived, stats.lived, "lived")
-                    if (stats.wishlist > 0) CounterLegendRow(palette.wishlist, stats.wishlist, "wanted")
-                }
-            } else {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    // TalkBack would otherwise read the dots and bare numbers as
-                    // separate nodes ("40 · 3 · 7") with nothing to say what each
-                    // one counts; clearAndSetSemantics replaces that with one
-                    // sentence and stops the numbers being announced twice.
-                    modifier = Modifier.clearAndSetSemantics {
-                        contentDescription = travelLegendDescription(stats)
-                    },
-                ) {
-                    // One dot per map colour, and only for colours actually on the
-                    // map: this is a legend, so it counts each status strictly rather
-                    // than showing the combined "been" total the passport leads with.
-                    LegendDot(palette.visited)
-                    Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
-                    if (stats.lived > 0) {
-                        LegendDot(palette.lived)
-                        Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
+            // AnimatedContent, not animateContentSize on the pill: the pill's size
+            // animated while its content swapped in a single frame, so expanding read
+            // as smooth growth and collapsing read as the labels vanishing instantly.
+            // Crossfading the content and animating the size in one transition makes
+            // the two directions symmetric. The kind is what the transition keys on,
+            // so the outgoing content keeps drawing its own labelled or compact form
+            // while it fades out instead of jumping to the incoming one.
+            AnimatedContent(
+                targetState = mapLegendKind(
+                    lens = lens,
+                    visaLabeled = visaLegendLabeled,
+                    regionMode = regionMode,
+                    counterLabeled = counterLabeled,
+                    been = stats.been,
+                    wishlist = stats.wishlist,
+                ),
+                label = "legend",
+                transitionSpec = {
+                    ContentTransform(
+                        targetContentEnter = fadeIn(tween(180)),
+                        initialContentExit = fadeOut(tween(120)),
+                        sizeTransform = SizeTransform(clip = false) { _, _ -> tween(180) },
+                    )
+                },
+            ) { kind ->
+                when (kind) {
+                    MapLegendKind.VISA_DOTS, MapLegendKind.VISA_LABELED -> VisaLegend(
+                        palette.visa,
+                        visa,
+                        noDataCount = visaNoData.size,
+                        labeled = kind == MapLegendKind.VISA_LABELED,
+                    )
+                    MapLegendKind.REGION_OFFICIAL ->
+                        RegionLegend(palette.region, RegionMode.OFFICIAL, stats)
+                    MapLegendKind.REGION_INFORMAL ->
+                        RegionLegend(palette.region, RegionMode.INFORMAL, stats)
+                    // Nothing marked yet, so the counter would say "0" and teach
+                    // nothing. Say what to do instead.
+                    MapLegendKind.NUDGE -> Text(
+                        "Tap a place to mark it",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    MapLegendKind.COUNTER_LABELED -> Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        CounterLegendRow(palette.visited, stats.visited, "visited")
+                        if (stats.lived > 0) CounterLegendRow(palette.lived, stats.lived, "lived")
+                        if (stats.wishlist > 0) {
+                            CounterLegendRow(palette.wishlist, stats.wishlist, "wanted")
+                        }
                     }
-                    if (stats.wishlist > 0) {
-                        LegendDot(palette.wishlist)
-                        Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                    MapLegendKind.COUNTER_DOTS -> Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        // TalkBack would otherwise read the dots and bare numbers as
+                        // separate nodes ("40 · 3 · 7") with nothing to say what each
+                        // one counts; clearAndSetSemantics replaces that with one
+                        // sentence and stops the numbers being announced twice.
+                        modifier = Modifier.clearAndSetSemantics {
+                            contentDescription = travelLegendDescription(stats)
+                        },
+                    ) {
+                        // One dot per map colour, and only for colours actually on the
+                        // map: this is a legend, so it counts each status strictly
+                        // rather than showing the combined "been" total the passport
+                        // leads with.
+                        LegendDot(palette.visited)
+                        Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
+                        if (stats.lived > 0) {
+                            LegendDot(palette.lived)
+                            Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
+                        }
+                        if (stats.wishlist > 0) {
+                            LegendDot(palette.wishlist)
+                            Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
             }
@@ -347,7 +381,7 @@ fun MapScreen(
                 .padding(contentPadding)
                 .padding(12.dp)
                 // The stack grows by a pill's height each time one more control
-                // (search, world, visa, regions) is revealed on expand.
+                // (search, visa, regions) is revealed on expand.
                 .animateContentSize(animationSpec = tween(180)),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -426,13 +460,6 @@ fun MapScreen(
                     }
                 }
             }
-            MapPill(onClick = controller::showWorld) {
-                Text(
-                    "World",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
             // Offered only once the asset is known to have loaded: a toggle that
             // silently paints nothing would be worse than no toggle.
             if (visa != null) {
@@ -463,6 +490,12 @@ fun MapScreen(
         // the last non-null place/region is held here a beat after the live state
         // clears — otherwise the card's content would go blank on the same frame
         // the fade starts, and the fade would have nothing to show.
+        //
+        // Both cards read the live value *first* and fall back to the held one. Held
+        // alone was wrong: it is written during composition, so on the frame a place
+        // is first selected the card could compose with nothing in it — and an empty
+        // surfaceContainerHigh card is a light grey box, which is exactly what showed
+        // up on the device for a frame before the name appeared.
         var lastRegionInfo by remember { mutableStateOf(regionInfo) }
         if (regionInfo != null) lastRegionInfo = regionInfo
         var lastSelected by remember { mutableStateOf(selected) }
@@ -470,25 +503,25 @@ fun MapScreen(
 
         AnimatedVisibility(
             visible = regionActive && regionInfo != null,
-            enter = fadeIn(tween(160)),
+            enter = fadeIn(tween(120)),
             exit = fadeOut(tween(140)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding)
                 .padding(12.dp),
         ) {
-            lastRegionInfo?.let { info -> RegionInfoCard(info = info) }
+            (regionInfo ?: lastRegionInfo)?.let { info -> RegionInfoCard(info = info) }
         }
         AnimatedVisibility(
             visible = !regionActive && selected != null,
-            enter = fadeIn(tween(160)),
+            enter = fadeIn(tween(120)),
             exit = fadeOut(tween(140)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding)
                 .padding(12.dp),
         ) {
-            lastSelected?.let { place ->
+            (selected ?: lastSelected)?.let { place ->
                 SelectedPlaceCard(
                     place = place,
                     status = statuses[place.code] ?: PlaceStatus.NONE,
@@ -733,10 +766,6 @@ private class PlacesMapController {
             ?.setFilter(if (lens) outline else PlacesMapStyle.noPlaces())
         style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_REGION_SELECTED)
             ?.setFilter(if (regionActive) outline else PlacesMapStyle.noPlaces())
-    }
-
-    fun showWorld() {
-        map?.animateCamera(CameraUpdateFactory.newCameraPosition(WORLD), 500)
     }
 
     /** Where the camera goes when search picks a place — its own bounding box,
@@ -988,22 +1017,29 @@ private fun MapPill(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    Surface(
-        // minimumInteractiveComponentSize pads the touch target out to 48 dp
-        // without growing the drawn chip: it centres the ~40 dp Surface inside the
-        // larger hit box instead of stretching it, which matters here because
-        // these pills float over the map and a visually bigger chip would cover
-        // more of it.
-        modifier = if (onClick == null) {
-            modifier
-        } else {
-            modifier.clickable(onClick = onClick).minimumInteractiveComponentSize()
-        },
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-        shadowElevation = 2.dp,
-    ) {
-        Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
+    val shape = MaterialTheme.shapes.large
+    val color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+    if (onClick == null) {
+        Surface(modifier = modifier, shape = shape, color = color, shadowElevation = 2.dp) {
+            Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
+        }
+    } else {
+        // Surface's own onClick, not Modifier.clickable wrapped around it. Clickable
+        // sat above the Surface, so its ripple was drawn against the 48 dp touch box
+        // rather than inside the pill's rounded shape — a light grey rectangle
+        // flashing around the legend and the ⋮ on every tap. Surface clips the ripple
+        // to its own shape and keeps the touch target, which is what these pills
+        // needed: they float over the map, so the drawn chip stays ~40 dp while the
+        // hit box is 48.
+        Surface(
+            onClick = onClick,
+            modifier = modifier.minimumInteractiveComponentSize(),
+            shape = shape,
+            color = color,
+            shadowElevation = 2.dp,
+        ) {
+            Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
+        }
     }
 }
 
@@ -1286,10 +1322,15 @@ private fun SelectedPlaceCard(
 }
 
 /**
- * The passport's own search, on the map: the same [Place.searchKey] match, capped
- * at a handful of results because this is a picker, not a second passport list.
+ * The passport's own search, on the map: the same [Place.searchKey] match, capped so
+ * the floating card stays a picker rather than becoming a second passport list.
+ *
+ * Twelve, not the five it started at: five results all fit inside the card's height
+ * cap, so the cap and its scroll could never engage and a search for something broad
+ * like "island" silently hid everything after the fifth match. Twelve overflows the
+ * cap, which is the point — the list scrolls and the card's height stays fixed.
  */
-private const val MAP_SEARCH_LIMIT = 5
+private const val MAP_SEARCH_LIMIT = 12
 
 internal fun searchMapMatches(places: List<Place>, query: String): List<Place> {
     val needle = query.trim().foldForSearch()
@@ -1297,6 +1338,45 @@ internal fun searchMapMatches(places: List<Place>, query: String): List<Place> {
     return places.filter { it.searchKey.contains(needle) }
         .sortedBy { it.sortKey }
         .take(MAP_SEARCH_LIMIT)
+}
+
+/**
+ * Which legend the map's top-left pill is currently showing.
+ *
+ * A named kind rather than the `if/else` chain it replaced, because the pill's
+ * transition keys on it: the content fading *out* has to keep drawing its own form
+ * while it goes, which it cannot do if it reads the same live flags the incoming
+ * content reads.
+ */
+internal enum class MapLegendKind {
+    VISA_DOTS,
+    VISA_LABELED,
+    REGION_OFFICIAL,
+    REGION_INFORMAL,
+    NUDGE,
+    COUNTER_DOTS,
+    COUNTER_LABELED,
+}
+
+/**
+ * The order is the map's own precedence and is not arbitrary: the visa lens owns the
+ * legend whenever it is on, the region heatmap owns it next, and only then does the
+ * travel counter get a say — which starts as a nudge while there is nothing to count.
+ */
+internal fun mapLegendKind(
+    lens: Boolean,
+    visaLabeled: Boolean,
+    regionMode: RegionMode,
+    counterLabeled: Boolean,
+    been: Int,
+    wishlist: Int,
+): MapLegendKind = when {
+    lens -> if (visaLabeled) MapLegendKind.VISA_LABELED else MapLegendKind.VISA_DOTS
+    regionMode == RegionMode.OFFICIAL -> MapLegendKind.REGION_OFFICIAL
+    regionMode == RegionMode.INFORMAL -> MapLegendKind.REGION_INFORMAL
+    been == 0 && wishlist == 0 -> MapLegendKind.NUDGE
+    counterLabeled -> MapLegendKind.COUNTER_LABELED
+    else -> MapLegendKind.COUNTER_DOTS
 }
 
 /**

@@ -44,7 +44,9 @@ class MapSearchTest {
 
     @Test
     fun `results are capped so this stays a picker, not a second passport list`() {
-        val many = (1..10).map { place("C$it", "Country $it") }
-        assertEquals(5, searchMapMatches(many, "country").size)
+        val many = (1..30).map { place("C$it", "Country $it") }
+        // Twelve rather than five: five fitted inside the card's height cap, so the
+        // cap and its scroll could never engage.
+        assertEquals(12, searchMapMatches(many, "country").size)
     }
 }
