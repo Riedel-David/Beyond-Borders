@@ -14,11 +14,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -45,15 +50,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -331,6 +339,19 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         headerSlots = headerSlots,
         modifier = Modifier.align(Alignment.TopEnd),
     )
+
+    // Continent and Region sections aren't addressable by a letter, so the rail is
+    // absent rather than disabled outside A-Z grouping. Visa mode has no grouping of
+    // its own at all — its headers are requirement categories, not letters — so this
+    // reads as "grouping is ALPHABETICAL" being a travel-list-only state in practice,
+    // even though the check below is the same [grouping] both modes share.
+    if (mode != PassportMode.VISA && grouping == Grouping.ALPHABETICAL) {
+        AzRail(
+            listState = listState,
+            headerSlots = headerSlots,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
+    }
     }
 }
 
@@ -472,6 +493,106 @@ private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
         )
+    }
+}
+
+/**
+ * The A-Z index rail: a letter per distinct header the alphabetically-grouped list
+ * actually emits (see [railLabels]), tap or drag to jump there. Shared between the
+ * travel list and the visa list through [headerSlots] the same way [FastScrollOverlay]
+ * is — this composable does not know or care which list is on screen.
+ *
+ * Scrubbing moves [listState] with [LazyListState.scrollToItem], not the animated
+ * version: an animation per finger movement would fight the gesture and lag behind it,
+ * where a jump is supposed to read as instant. The letter-under-finger pill is
+ * [FastScrollOverlay] itself — every `scrollToItem` call lands `firstVisibleItemIndex`
+ * exactly on the target header's own slot, so that composable's existing
+ * `derivedStateOf` reports the right letter without this one saying so a second time.
+ *
+ * Every read of [listState] and every bit of scrub state (the finger's row, the
+ * touched letter, the target index) lives in `remember`/`mutableStateOf` local to this
+ * composable, not in [PassportScreen]'s scope — for the same reason [FastScrollOverlay]
+ * moved its own read down here first: a state read up in [PassportScreen] would
+ * recompose the whole screen, re-running the `LazyColumn` content lambda over all 252
+ * rows, on every frame a finger moves across the rail.
+ *
+ * Excluded from TalkBack ([clearAndSetSemantics]) on purpose: 26 letters cannot each
+ * carry a 48 dp touch target the way the rest of this screen does, and a rail TalkBack
+ * can reach only as 26 sub-minimum nodes is worse than one it cannot reach at all. A
+ * TalkBack user still has the pinned section headers, which are already announced and
+ * already work — don't "fix" this by giving the rail real semantics.
+ */
+@Composable
+private fun AzRail(
+    listState: LazyListState,
+    headerSlots: List<String?>,
+    modifier: Modifier = Modifier,
+) {
+    val labels = remember(headerSlots) { railLabels(headerSlots) }
+    if (labels.isEmpty()) return
+
+    // -1 means "no scrub has requested a jump yet"; the effect below only runs again
+    // when this actually changes, so a finger dwelling inside one letter's band does
+    // not re-issue the same scrollToItem every frame.
+    var targetIndex by remember { mutableIntStateOf(-1) }
+    var touchedLabel by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(targetIndex) {
+        if (targetIndex >= 0) listState.scrollToItem(targetIndex)
+    }
+
+    Column(
+        modifier = modifier
+            .width(20.dp)
+            .clearAndSetSemantics {}
+            .pointerInput(labels, headerSlots) {
+                fun letterAt(y: Float): String {
+                    val i = (y / size.height * labels.size)
+                        .toInt()
+                        .coerceIn(0, labels.size - 1)
+                    return labels[i]
+                }
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    val pointerId = down.id
+                    var pressed = true
+                    var label = letterAt(down.position.y)
+                    touchedLabel = label
+                    railTargetIndex(headerSlots, label)?.let { targetIndex = it }
+                    while (pressed) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointerId }
+                        if (change == null) break
+                        pressed = change.pressed
+                        if (pressed) {
+                            label = letterAt(change.position.y)
+                            touchedLabel = label
+                            railTargetIndex(headerSlots, label)?.let { targetIndex = it }
+                            change.consume()
+                        }
+                    }
+                    touchedLabel = null
+                }
+            },
+        verticalArrangement = Arrangement.Center,
+    ) {
+        labels.forEach { label ->
+            val touched = label == touchedLabel
+            Text(
+                text = label.take(1).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (touched) FontWeight.Bold else FontWeight.Normal,
+                color = if (touched) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(16.dp),
+            )
+        }
     }
 }
 
@@ -692,3 +813,22 @@ internal fun passportEmptyMessage(loading: Boolean, query: String, statusFilter:
 /** A "Clear" affordance only makes sense once there is something to clear. */
 internal fun canClearPassportFilter(query: String, statusFilter: StatusFilter): Boolean =
     query.isNotBlank() || statusFilter != StatusFilter.ALL
+
+/**
+ * The [AzRail]'s own letters: every distinct, non-null header in [headerSlots], in
+ * the order the list emits them. Read back out of the same slots [FastScrollOverlay]
+ * already builds rather than a hardcoded A-Z, so a letter with no places — there are
+ * none among the 252, but a filtered-down list could still leave one empty — never
+ * appears on the rail with nowhere to jump to.
+ */
+internal fun railLabels(headerSlots: List<String?>): List<String> =
+    headerSlots.filterNotNull().distinct()
+
+/**
+ * The row [listState] should land on for a tap or a scrub over [label] — the first
+ * slot in [headerSlots] carrying that header, which is the sticky header's own item,
+ * not one of its rows. `null` when [label] names a section the list no longer has
+ * (a stale label mid-recomposition, or one that was never really there).
+ */
+internal fun railTargetIndex(headerSlots: List<String?>, label: String): Int? =
+    headerSlots.indexOf(label).takeIf { it >= 0 }
