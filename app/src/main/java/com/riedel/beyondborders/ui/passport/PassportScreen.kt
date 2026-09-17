@@ -51,7 +51,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -593,13 +593,12 @@ private fun StatsCard(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            // The removed "Tap for continents..." line was the accessible name as
-            // much as the affordance, so replacing it with a wordless chevron needs
-            // this to stand in for both: one merged description for the action
-            // rather than TalkBack reading every stat line in sequence.
-            .semantics(mergeDescendants = true) {
-                contentDescription =
-                    "${stats.been} of ${stats.total} places. View continents, regions, and groupings."
+            // A click label rather than a contentDescription override: the card's
+            // own lines (the continent count, coverage, nudge...) still need to be
+            // heard, this only names what the tap does, in place of the removed
+            // "Tap for continents..." caption.
+            .semantics {
+                onClick(label = "View continents, regions and groupings") { false }
             },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,

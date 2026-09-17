@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -124,21 +125,21 @@ fun StatsScreen(
 
             val leastCovered = remember(stats.continents) { leastCoveredContinent(stats.continents) }
             if (leastCovered != null) {
-                Text(
-                    "Least covered: $leastCovered",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                LabeledStat(
+                    label = "Least covered",
+                    value = leastCovered,
+                    valueColor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
             // stats.nudge is already computed on TravelStats — recomputing it here
             // from continents would be the same string built twice.
             if (stats.nudge != null) {
-                Text(
-                    "Next up: ${stats.nudge}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 4.dp),
+                LabeledStat(
+                    label = "Next up",
+                    value = stats.nudge!!,
+                    valueColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = if (leastCovered != null) 12.dp else 16.dp),
                 )
             }
 
@@ -227,6 +228,21 @@ private fun StatsRing(stats: TravelStats, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
         )
+    }
+}
+
+/** A quiet section label with its value beneath it in the stronger style — the
+ * shape "Least covered" and "Next up" share, so a pair with nothing to show
+ * (the null case) never renders a label over a blank line. */
+@Composable
+private fun LabeledStat(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = valueColor)
     }
 }
 
