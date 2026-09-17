@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -27,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -147,6 +150,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     // the top-right corner read as clutter rather than controls. One icon expands
     // the stack on demand instead of a fourth-and-growing always-visible pill.
     var controlsExpanded by remember { mutableStateOf(false) }
+    var showShareStyleDialog by remember { mutableStateOf(false) }
     val searchMatches = remember(places, searchQuery) { searchMapMatches(places, searchQuery) }
     val regionActive = regionMode != RegionMode.OFF
     // A tap in region mode is asking "which region is this", not "mark this
@@ -332,28 +336,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            MapPill(
-                onClick = {
-                    // The map's snapshot callback never fires while the style is still
-                    // loading, which otherwise left a tap doing nothing at all with no
-                    // sign anything was wrong.
-                    val started = controller.snapshot { bitmap ->
-                        scope.launch {
-                            runCatching { shareMapSnapshot(context, bitmap, stats) }
-                                .onFailure {
-                                    Toast.makeText(
-                                        context,
-                                        "Couldn't share the map",
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                }
-                        }
-                    }
-                    if (!started) {
-                        Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
-                    }
-                },
-            ) {
+            MapPill(onClick = { showShareStyleDialog = true }) {
                 Text(
                     "Share",
                     style = MaterialTheme.typography.labelLarge,
@@ -412,7 +395,80 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     .padding(12.dp),
             )
         }
+
+        if (showShareStyleDialog) {
+            ShareStyleDialog(
+                onDismiss = { showShareStyleDialog = false },
+                onStylePicked = { style ->
+                    showShareStyleDialog = false
+                    // The map's snapshot callback never fires while the style is still
+                    // loading, which otherwise left a tap doing nothing at all with no
+                    // sign anything was wrong.
+                    val started = controller.snapshot { bitmap ->
+                        scope.launch {
+                            runCatching { shareMapSnapshot(context, bitmap, stats, style) }
+                                .onFailure {
+                                    Toast.makeText(
+                                        context,
+                                        "Couldn't share the map",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                        }
+                    }
+                    if (!started) {
+                        Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
+                    }
+                },
+            )
+        }
     }
+}
+
+/**
+ * Lets the user choose one of three share styles. Each row is a single clickable
+ * target with label and blurb, meeting the 48 dp minimum without nested clicks.
+ */
+@Composable
+private fun ShareStyleDialog(
+    onDismiss: () -> Unit,
+    onStylePicked: (ShareCardStyle) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Share style") },
+        text = {
+            Column {
+                ShareCardStyle.entries.forEach { style ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .minimumInteractiveComponentSize()
+                            // Role, so TalkBack announces a button rather than an
+                            // unlabelled clickable — the same reason the passport
+                            // picker's rows carry one.
+                            .clickable(role = Role.Button) { onStylePicked(style) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                style.label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                style.blurb,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 /** Which region/grouping a tapped place belongs to, in the mode that was active. */
