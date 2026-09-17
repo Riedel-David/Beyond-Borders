@@ -2,6 +2,7 @@ package com.riedel.beyondborders.ui.passport
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +56,7 @@ import com.riedel.beyondborders.ui.visa.requirementSummary
  * argument for it being a mode rather than a fifth tab. The rows are ordered easiest
  * first, so the answer to "where can I go" is the top of the screen.
  */
+@OptIn(ExperimentalFoundationApi::class)
 internal fun LazyListScope.visaSection(
     visa: VisaRegistry?,
     secondVisa: VisaRegistry?,
@@ -141,7 +143,7 @@ internal fun LazyListScope.visaSection(
         val header = row.requirement.category.label
         if (header != lastHeader) {
             lastHeader = header
-            item("visa-header-$header", contentType = "header") {
+            stickyHeader("visa-header-$header", contentType = "header") {
                 VisaSectionHeader(header, row.requirement.category.band, Modifier.animateItem())
             }
         }
@@ -514,3 +516,23 @@ internal fun visaEmptyMessage(query: String, filter: VisaFilter): String =
 /** A "Clear" affordance only makes sense once there is something to clear. */
 internal fun canClearVisaFilter(query: String, filter: VisaFilter): Boolean =
     query.isNotBlank() || filter != VisaFilter.All
+
+/**
+ * One entry per item [visaSection]'s `rows.forEach` loop emits, in the same order,
+ * so [PassportScreen] can turn a raw `LazyListState.firstVisibleItemIndex` back into
+ * "which category is this" for the fast-scroll overlay — the visa list's headers are
+ * never collapsible, so unlike [travelHeaderSlots] there is no skip to mirror.
+ */
+internal fun visaHeaderSlots(rows: List<VisaRow>): List<String?> {
+    val slots = mutableListOf<String?>()
+    var lastHeader: String? = null
+    rows.forEach { row ->
+        val header = row.requirement.category.label
+        if (header != lastHeader) {
+            lastHeader = header
+            slots += header
+        }
+        slots += header
+    }
+    return slots
+}
