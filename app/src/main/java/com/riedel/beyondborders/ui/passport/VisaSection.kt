@@ -22,6 +22,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -436,15 +439,30 @@ private fun VisaDetail(
             Text(note, style = MaterialTheme.typography.bodyMedium)
         }
         requirement.confidence?.let { confidence ->
-            Text(
-                confidence.label,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (confidence == VisaConfidence.LOW) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
+            if (confidence == VisaConfidence.LOW) {
+                // The glyph is what makes this line read as a caveat before the
+                // small grey type below it is read at all — decorative, since the
+                // wording already carries the meaning for TalkBack.
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(
+                        Icons.Filled.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Text(
+                        confidence.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            } else {
+                Text(
+                    confidence.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         // A disagreement with upstream is shown rather than quietly won. If this
         // app's answer is the wrong one, the reader can see there is a second one.
@@ -458,7 +476,9 @@ private fun VisaDetail(
         Text(
             if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // Quieter than the confidence line above so a routine timestamp does
+            // not compete with a real caveat for the reader's attention.
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(top = 4.dp),
         )
         requirement.officialUrl?.let { url ->
