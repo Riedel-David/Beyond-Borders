@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.map
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -242,6 +243,11 @@ private suspend fun shareBitmap(context: Context, bitmap: Bitmap) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_TITLE, "Beyond Borders")
+        // The Sharesheet's image preview reads clipData, not the EXTRA_STREAM
+        // extra alone — without it several targets fall back to a generic file
+        // icon instead of the actual thumbnail.
+        clipData = ClipData.newUri(context.contentResolver, "Beyond Borders", uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, null))
