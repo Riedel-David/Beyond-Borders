@@ -70,6 +70,7 @@ class SettingsViewModel(
     val denominator: StateFlow<Denominator> = settings.denominator
     val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
     val nationality: StateFlow<String> = settings.nationality
+    val secondNationality: StateFlow<String?> = settings.secondNationality
 
     /** Every passport the picker can offer, with a real country name where one is
      * known. Loaded once: the set of built passports never changes at runtime. */
@@ -115,6 +116,8 @@ class SettingsViewModel(
     fun setHapticsEnabled(enabled: Boolean) = settings.setHapticsEnabled(enabled)
 
     fun setNationality(value: String) = settings.setNationality(value)
+
+    fun setSecondNationality(value: String?) = settings.setSecondNationality(value)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())

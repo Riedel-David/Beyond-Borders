@@ -82,6 +82,20 @@ class SettingsStore(context: Context) {
         prefs.edit { putString(KEY_NATIONALITY, value) }
     }
 
+    private val _secondNationality = MutableStateFlow(prefs.getString(KEY_SECOND_NATIONALITY, null))
+    val secondNationality: StateFlow<String?> = _secondNationality.asStateFlow()
+
+    fun setSecondNationality(value: String?) {
+        _secondNationality.value = value
+        prefs.edit {
+            if (value != null) {
+                putString(KEY_SECOND_NATIONALITY, value)
+            } else {
+                remove(KEY_SECOND_NATIONALITY)
+            }
+        }
+    }
+
     fun setHasSeenWelcome() {
         _hasSeenWelcome.value = true
         prefs.edit { putBoolean(KEY_HAS_SEEN_WELCOME, true) }
@@ -208,6 +222,7 @@ class SettingsStore(context: Context) {
         const val KEY_HAPTICS = "haptics_enabled"
         const val KEY_HAS_SEEN_WELCOME = "has_seen_welcome"
         const val KEY_NATIONALITY = "nationality"
+        const val KEY_SECOND_NATIONALITY = "second_nationality"
         const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"

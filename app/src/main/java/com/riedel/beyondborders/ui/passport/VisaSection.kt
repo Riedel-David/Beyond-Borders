@@ -38,6 +38,7 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.band
+import com.riedel.beyondborders.ui.places.CombinedRequirement
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
@@ -56,6 +57,7 @@ import com.riedel.beyondborders.ui.visa.requirementSummary
  */
 internal fun LazyListScope.visaSection(
     visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
     placesTotal: Int,
     rows: List<VisaRow>,
     filter: VisaFilter,
@@ -66,6 +68,7 @@ internal fun LazyListScope.visaSection(
     onFilter: (VisaFilter) -> Unit,
     onSelect: (String?) -> Unit,
     nameOf: (String) -> String?,
+    combinedRequirementOf: (String) -> CombinedRequirement?,
 ) {
     if (visa == null) {
         item("visa-missing") { VisaUnavailable() }
@@ -73,7 +76,7 @@ internal fun LazyListScope.visaSection(
     }
 
     item("visa-summary") {
-        VisaSummaryCard(visa, placesTotal, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        VisaSummaryCard(visa, secondVisa, placesTotal, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
     }
 
     item("visa-search") {
@@ -136,6 +139,8 @@ internal fun LazyListScope.visaSection(
                 },
                 nameOf = nameOf,
                 visa = visa,
+                secondVisa = secondVisa,
+                combinedRequirementOf = combinedRequirementOf,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
@@ -150,7 +155,12 @@ internal fun LazyListScope.visaSection(
  * one.
  */
 @Composable
-private fun VisaSummaryCard(visa: VisaRegistry, placesTotal: Int, modifier: Modifier = Modifier) {
+private fun VisaSummaryCard(
+    visa: VisaRegistry,
+    secondVisa: VisaRegistry?,
+    placesTotal: Int,
+    modifier: Modifier = Modifier,
+) {
     val ramp = LocalMapPalette.current.visa
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -180,7 +190,7 @@ private fun VisaSummaryCard(visa: VisaRegistry, placesTotal: Int, modifier: Modi
             )
             BandBar(visa, placesTotal, ramp, Modifier.padding(top = 12.dp))
             Text(
-                asOfNotice(visa),
+                if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 10.dp),
@@ -311,8 +321,14 @@ private fun VisaListRow(
     onClick: () -> Unit,
     nameOf: (String) -> String?,
     visa: VisaRegistry,
+    secondVisa: VisaRegistry?,
+    combinedRequirementOf: (String) -> CombinedRequirement?,
 ) {
     val ramp = LocalMapPalette.current.visa
+    // Attribution only when a second passport is configured and it won
+    val combined = if (secondVisa != null) combinedRequirementOf(row.place.code) else null
+    val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
+
     Column(
         Modifier
             .fillMaxWidth()
@@ -340,7 +356,7 @@ private fun VisaListRow(
                 Text(row.place.name, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     buildString {
-                        append(requirementSummary(row.requirement))
+                        append(requirementSummary(row.requirement, attributeTo))
                         // "Visa-free and I have never been" is the row worth acting
                         // on, so the ones already crossed off say so.
                         if (row.status.isBeen) append(" · been")
@@ -365,6 +381,7 @@ private fun VisaListRow(
             VisaDetail(
                 row = row,
                 visa = visa,
+                secondVisa = secondVisa,
                 nameOf = nameOf,
                 modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 8.dp),
             )
@@ -383,6 +400,7 @@ private fun VisaListRow(
 private fun VisaDetail(
     row: VisaRow,
     visa: VisaRegistry,
+    secondVisa: VisaRegistry?,
     nameOf: (String) -> String?,
     modifier: Modifier = Modifier,
 ) {
@@ -412,7 +430,7 @@ private fun VisaDetail(
             )
         }
         Text(
-            asOfNotice(visa),
+            if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),

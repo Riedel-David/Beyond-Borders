@@ -11,13 +11,27 @@ import com.riedel.beyondborders.data.visa.VisaRequirement
  * than either wording alone.
  */
 
-/** "Visa-free · 90 days", or just the category where no day count is known. */
-fun requirementSummary(requirement: VisaRequirement): String = buildString {
+/**
+ * "Visa-free · 90 days", or just the category where no day count is known.
+ *
+ * When [passportCode] is non-null, appends attribution — e.g.
+ * "Visa-free · 90 days (British passport)". The caller decides whether to
+ * attribute; this function appends whenever the argument is provided.
+ */
+fun requirementSummary(
+    requirement: VisaRequirement,
+    passportCode: String? = null,
+): String = buildString {
     append(requirement.category.label)
     requirement.days?.let {
         append(" · ")
         append(it)
         append(" days")
+    }
+    passportCode?.let {
+        append(" (")
+        append(passportAdjective(it))
+        append(" passport)")
     }
 }
 
@@ -40,6 +54,21 @@ fun passportAdjective(isoCode: String): String = when (isoCode) {
 fun asOfNotice(visa: VisaRegistry): String =
     "Data as of ${visa.asOf} for a ${passportAdjective(visa.passport)} passport — " +
         "verify officially before booking"
+
+/**
+ * The disclaimer for two passports, naming both and showing the older of the two
+ * `asOf` dates.
+ *
+ * With two datasets the honest claim is the staler one — the answers shown are
+ * current as of the older date, not the newer. String comparison with `<=` works
+ * here because `asOf` is ISO YYYY-MM-DD format; a format change would silently
+ * pick the wrong date.
+ */
+fun asOfNotice(primary: VisaRegistry, second: VisaRegistry): String {
+    val olderDate = if (primary.asOf <= second.asOf) primary.asOf else second.asOf
+    return "Data as of $olderDate for ${passportAdjective(primary.passport)} and " +
+        "${passportAdjective(second.passport)} passports — verify officially before booking"
+}
 
 /**
  * How the Auswärtiges Amt link should be labelled.

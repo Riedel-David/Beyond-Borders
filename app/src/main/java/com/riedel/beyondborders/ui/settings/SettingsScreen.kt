@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
 import com.riedel.beyondborders.data.backup.TravelBackup
+import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -87,6 +88,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val denominator by viewModel.denominator.collectAsStateWithLifecycle()
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
+    val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
     val passportNames by viewModel.passportNames.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
@@ -137,6 +139,42 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 names = passportNames,
                 onSelect = viewModel::setNationality,
             )
+            Spacer(Modifier.height(8.dp))
+            if (secondNationality == null) {
+                OutlinedButton(
+                    onClick = { viewModel.setSecondNationality(VisaRegistry.DEFAULT_PASSPORT) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Add second passport")
+                }
+                Text(
+                    "Dual nationals see whichever of the two passports gives the easier answer",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else {
+                secondNationality?.let { secondPassport ->
+                    Text(
+                        "Second passport",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    PassportPickerButton(
+                        selected = secondPassport,
+                        names = passportNames,
+                        onSelect = viewModel::setSecondNationality,
+                        dialogTitle = "Second passport",
+                        exclude = setOf(nationality),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(onClick = { viewModel.setSecondNationality(null) }) {
+                        Text("Remove second passport")
+                    }
+                }
+            }
         }
 
         Section("Haptics", "A short vibration when you mark or clear a place.") {
