@@ -1,5 +1,10 @@
 package com.riedel.beyondborders.ui.passport
 
+import com.riedel.beyondborders.data.place.Bounds
+import com.riedel.beyondborders.data.place.Place
+import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.places.Grouping
+import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.StatusFilter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -50,5 +55,61 @@ class PassportScreenTest {
         assertTrue(canClearPassportFilter(query = "atlantis", statusFilter = StatusFilter.ALL))
         assertTrue(canClearPassportFilter(query = "", statusFilter = StatusFilter.BEEN))
         assertFalse(canClearPassportFilter(query = "", statusFilter = StatusFilter.ALL))
+    }
+
+    private fun place(code: String, name: String, continent: String) = Place(
+        code = code,
+        name = name,
+        continent = continent,
+        region = continent,
+        sovereign = name,
+        uninhabited = false,
+        unMember = true,
+        lat = 0.0,
+        lon = 0.0,
+        bounds = Bounds(-1.0, -1.0, 1.0, 1.0),
+        areaKm2 = 0,
+        popEst = 0,
+    )
+
+    private fun row(code: String, name: String, continent: String) =
+        PlaceRow(place(code, name, continent), PlaceStatus.NONE)
+
+    /**
+     * The fast-scroll overlay's index-to-header mapping has to mirror the travel
+     * loop's own header dedup exactly, or the overlay would name the wrong section
+     * mid-scroll.
+     */
+    @Test
+    fun `each row's slot carries the header it sits under, and headers appear once per run`() {
+        val rows = listOf(
+            row("FR", "France", "Europe"),
+            row("DE", "Germany", "Europe"),
+            row("EG", "Egypt", "Africa"),
+        )
+        assertEquals(
+            listOf("Europe", "Europe", "Europe", "Africa", "Africa"),
+            travelHeaderSlots(rows, Grouping.CONTINENT, collapsedHeaders = emptySet(), query = ""),
+        )
+    }
+
+    @Test
+    fun `a collapsed header keeps its own slot but drops its rows' slots`() {
+        val rows = listOf(row("FR", "France", "Europe"), row("DE", "Germany", "Europe"))
+        val collapsed = setOf("${Grouping.CONTINENT.name}:Europe")
+        assertEquals(
+            listOf("Europe"),
+            travelHeaderSlots(rows, Grouping.CONTINENT, collapsedHeaders = collapsed, query = ""),
+        )
+    }
+
+    @Test
+    fun `a query in progress ignores the collapse state, same as the row loop does`() {
+        val rows = listOf(row("FR", "France", "Europe"), row("DE", "Germany", "Europe"))
+        val collapsed = setOf("${Grouping.CONTINENT.name}:Europe")
+        assertEquals(
+            listOf("Europe", "Europe", "Europe"),
+            travelHeaderSlots(rows, Grouping.CONTINENT, collapsedHeaders = collapsed, query = "many"),
+        )
     }
 }

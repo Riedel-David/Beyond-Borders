@@ -1,6 +1,9 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -34,12 +38,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.BounceFilterChip
@@ -77,6 +84,7 @@ import com.riedel.beyondborders.ui.places.visaFilters
  * purpose: looking up Greenland and then asking what it wants should not mean typing
  * it twice.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
@@ -124,8 +132,56 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         return
     }
 
+    // Shared by both modes, since the fast-scroll overlay below reads from whichever
+    // one is on screen: a rememberSaveable would restore a scroll offset that no
+    // longer matches the rows after a mode switch, so this is deliberately plain.
+    val listState = rememberLazyListState()
+    // One entry per item this LazyColumn actually emits, in emission order, so a raw
+    // firstVisibleItemIndex can be turned back into "which header is this" for the
+    // overlay. Built to mirror the two item-emission loops below exactly, including
+    // the leading non-header items (which read as null) and, for the travel list,
+    // the collapse skip.
+    val headerSlots = if (mode == PassportMode.VISA) {
+        buildList {
+            add(null) // "mode"
+            if (visa == null) {
+                add(null) // "visa-missing"
+            } else {
+                add(null) // "visa-summary"
+                add(null) // "visa-search"
+                add(null) // "visa-filters"
+                if (visaRows.isEmpty()) add(null) // "visa-empty"
+                addAll(visaHeaderSlots(visaRows))
+            }
+        }
+    } else {
+        buildList {
+            add(null) // "mode"
+            add(null) // "stats"
+            add(null) // "controls"
+            if (rows.isEmpty()) add(null) // "empty"
+            addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
+        }
+    }
+    val currentHeader = headerSlots.getOrNull(listState.firstVisibleItemIndex)
+
+    // Visible while a fling is in progress, and for a moment after it settles — long
+    // enough to read the letter that was just reached, not so long that it lingers
+    // over a list the reader has already stopped moving through.
+    var showFastScrollLabel by remember { mutableStateOf(false) }
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            showFastScrollLabel = true
+        } else {
+            delay(600)
+            showFastScrollLabel = false
+        }
+    }
+
+    Box(modifier.fillMaxSize()) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
         item("mode") {
@@ -239,10 +295,6 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             }
         }
 
-        // Headers are emitted inline rather than with stickyHeader: the list is
-        // 252 rows at most, so there is nothing to gain and stickyHeader is still
-        // an opt-in experimental API.
-        //
         // A search that matches something inside a collapsed section would hide
         // its own result, so a query in progress ignores the collapse state
         // entirely rather than making the user remember to expand first.
@@ -255,7 +307,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             val collapseKey = "${grouping.name}:$header"
             if (header != lastHeader) {
                 lastHeader = header
-                item("header-$header", contentType = "header") {
+                stickyHeader("header-$header", contentType = "header") {
                     SectionHeader(
                         text = header,
                         collapsed = collapseKey in effectiveCollapsed,
@@ -278,6 +330,16 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 }
             }
         }
+    }
+
+    AnimatedVisibility(
+        visible = showFastScrollLabel && currentHeader != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.align(Alignment.TopEnd),
+    ) {
+        FastScrollLabel(text = currentHeader.orEmpty())
+    }
     }
 }
 
@@ -359,6 +421,58 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
             color = MaterialTheme.colorScheme.primary,
         )
     }
+}
+
+/**
+ * The fast-scroll overlay: which section a fling just reached, floating over the
+ * top-end corner rather than replacing the (already sticky) header at the top of
+ * the list — the two answer different questions when a short section means both
+ * are visible at once.
+ */
+@Composable
+private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.padding(top = 8.dp, end = 16.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        shadowElevation = 2.dp,
+    ) {
+        Text(
+            text = text.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/**
+ * One entry per item [PassportScreen]'s travel-mode `rows.forEach` loop emits into
+ * the shared `LazyColumn`, in the same order — including the header/collapse skip —
+ * so [PassportScreen] can turn a raw `LazyListState.firstVisibleItemIndex` back into
+ * "which section is this" for the fast-scroll overlay, without a second source of
+ * truth for what that loop already decides.
+ */
+internal fun travelHeaderSlots(
+    rows: List<PlaceRow>,
+    grouping: Grouping,
+    collapsedHeaders: Set<String>,
+    query: String,
+): List<String?> {
+    val effectiveCollapsed = if (query.isBlank()) collapsedHeaders else emptySet()
+    val slots = mutableListOf<String?>()
+    var lastHeader: String? = null
+    rows.forEach { row ->
+        val header = sectionHeader(row.place, grouping)
+        val collapseKey = "${grouping.name}:$header"
+        if (header != lastHeader) {
+            lastHeader = header
+            slots += header
+        }
+        if (collapseKey in effectiveCollapsed) return@forEach
+        slots += header
+    }
+    return slots
 }
 
 @Composable
