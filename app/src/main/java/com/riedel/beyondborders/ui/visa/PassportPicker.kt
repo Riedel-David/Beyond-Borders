@@ -33,16 +33,17 @@ import androidx.compose.ui.window.Dialog
  */
 @Composable
 fun PassportPickerButton(
-    selected: String,
+    selected: String?,
     names: Map<String, String>,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
     dialogTitle: String = "Choose a passport",
+    placeholder: String = "Choose a passport",
     exclude: Set<String> = emptySet(),
 ) {
     var open by remember { mutableStateOf(false) }
     OutlinedButton(onClick = { open = true }, modifier = modifier) {
-        Text(names[selected] ?: passportAdjective(selected))
+        Text(selected?.let { names[it] ?: passportAdjective(it) } ?: placeholder)
     }
     if (open) {
         PassportPickerDialog(
@@ -62,7 +63,7 @@ fun PassportPickerButton(
 @Composable
 private fun PassportPickerDialog(
     names: Map<String, String>,
-    selected: String,
+    selected: String?,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
     title: String = "Choose a passport",

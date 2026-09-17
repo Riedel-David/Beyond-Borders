@@ -51,7 +51,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
 import com.riedel.beyondborders.data.backup.TravelBackup
-import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -141,12 +140,15 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             )
             Spacer(Modifier.height(8.dp))
             if (secondNationality == null) {
-                OutlinedButton(
-                    onClick = { viewModel.setSecondNationality(VisaRegistry.DEFAULT_PASSPORT) },
+                PassportPickerButton(
+                    selected = null,
+                    names = passportNames,
+                    onSelect = viewModel::setSecondNationality,
+                    dialogTitle = "Second passport",
+                    placeholder = "Add second passport",
+                    exclude = setOf(nationality),
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Add second passport")
-                }
+                )
                 Text(
                     "Dual nationals see whichever of the two passports gives the easier answer",
                     style = MaterialTheme.typography.bodySmall,
