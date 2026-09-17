@@ -274,7 +274,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 AlertDialog(
                     onDismissRequest = viewModel::dismissImportPreview,
                     title = { Text("Import this file?") },
-                    text = { ImportPreviewSummary(preview.plan) },
+                    text = { ImportPreviewSummary(preview.plan, preview.sampleNames) },
                     confirmButton = {
                         TextButton(onClick = viewModel::confirmImportPreview) { Text("Import") }
                     },
@@ -576,7 +576,7 @@ private val MapHue.displayName: String
  * has to be read start to end.
  */
 @Composable
-private fun ImportPreviewSummary(plan: BackupMerge.Plan) {
+private fun ImportPreviewSummary(plan: BackupMerge.Plan, sampleNames: List<String>) {
     Column {
         PreviewCountRow("Added", plan.added)
         PreviewCountRow("Updated", plan.updated)
@@ -585,6 +585,14 @@ private fun ImportPreviewSummary(plan: BackupMerge.Plan) {
         // the rows as they stand right now, so this is also why a "nothing to
         // change" import can still happen.
         PreviewCountRow("Skipped (already up to date)", plan.unchanged)
+        importPreviewSampleLine(plan, sampleNames)?.let { sample ->
+            Text(
+                sample,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
         importPreviewCaveat(plan)?.let { caveat ->
             Text(
                 caveat,
@@ -624,6 +632,28 @@ private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> U
             },
         )
         TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 4.dp)) { Text("OK") }
+    }
+}
+
+/**
+ * Which places the added/updated counts actually mean, since a count alone does
+ * not say *which* rows would be overwritten — the one thing worth knowing before
+ * confirming an import. [sampleNames] is already capped and resolved to names by
+ * the view model; this only decides whether there is a "and N more" tail.
+ */
+internal fun importPreviewSampleLine(plan: BackupMerge.Plan, sampleNames: List<String>): String? {
+    val changed = plan.added + plan.updated
+    if (changed == 0 || sampleNames.isEmpty()) return null
+    val more = changed - sampleNames.size
+    return buildString {
+        append("e.g. ")
+        append(sampleNames.joinToString(", "))
+        if (more > 0) {
+            append(", and ")
+            append(more)
+            append(" more")
+        }
+        append(".")
     }
 }
 
