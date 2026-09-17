@@ -223,11 +223,18 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
 
         if (rows.isEmpty()) {
             item("empty") {
-                Text(
-                    "Nothing matches.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(24.dp),
+                // The registry loads once, asynchronously, into an initially-empty
+                // flow (see PlacesViewModel.allPlaces): an empty [places] is that
+                // startup window, not a real zero, so it reads as "loading" rather
+                // than the flat "nothing matches" a query or filter earns.
+                val loading = places.isEmpty()
+                EmptyPlacesState(
+                    message = passportEmptyMessage(loading, query, statusFilter),
+                    showClear = !loading && canClearPassportFilter(query, statusFilter),
+                    onClear = {
+                        viewModel.setQuery("")
+                        viewModel.setStatusFilter(StatusFilter.ALL)
+                    },
                 )
             }
         }
@@ -248,24 +255,27 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             val collapseKey = "${grouping.name}:$header"
             if (header != lastHeader) {
                 lastHeader = header
-                item("header-$header") {
+                item("header-$header", contentType = "header") {
                     SectionHeader(
                         text = header,
                         collapsed = collapseKey in effectiveCollapsed,
                         onClick = { viewModel.toggleHeaderCollapsed(grouping, header) },
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
             if (collapseKey in effectiveCollapsed) return@forEach
-            item(row.place.code) {
-                PlaceListRow(
-                    row = row,
-                    onToggle = { target ->
-                        viewModel.vibrate()
-                        viewModel.toggle(row.place.code, target)
-                    },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            item(row.place.code, contentType = "row") {
+                Column(Modifier.animateItem()) {
+                    PlaceListRow(
+                        row = row,
+                        onToggle = { target ->
+                            viewModel.vibrate()
+                            viewModel.toggle(row.place.code, target)
+                        },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
             }
         }
     }
@@ -326,9 +336,9 @@ private fun ModeToggle(
 }
 
 @Composable
-private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit) {
+private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
@@ -360,7 +370,15 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(row.place.name, style = MaterialTheme.typography.bodyLarge)
+            // One line, always: the code/sovereign subtitle underneath already
+            // carries full identification, so a long name loses only its tail here
+            // rather than pushing every row in a uniform list to two different heights.
+            Text(
+                row.place.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             Text(
                 // Sovereign is shown only where it adds information: "Greenland
                 // (Denmark)" is useful, "France (France)" is noise.
@@ -393,6 +411,30 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
                 label = "Want",
                 onClick = { onToggle(PlaceStatus.WISHLIST) },
             )
+        }
+    }
+}
+
+/** The empty state for the travel list: a loading spinner has nothing to spin
+ * against here, so this is just the message plus, when a query or filter is the
+ * cause, one tap to get back to the full 252. */
+@Composable
+private fun EmptyPlacesState(
+    message: String,
+    showClear: Boolean,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.padding(24.dp)) {
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (showClear) {
+            TextButton(onClick = onClear, contentPadding = PaddingValues(vertical = 4.dp)) {
+                Text("Clear")
+            }
         }
     }
 }
@@ -656,3 +698,25 @@ private fun BucketDetailDialog(
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
 }
+
+/**
+ * What the travel list's empty state should say.
+ *
+ * [loading] stands in for "the registry has not populated [PlacesViewModel.places]
+ * yet" — a real zero at this screen only ever happens for a moment on cold start,
+ * so an empty backing list is read as loading rather than as "no places exist".
+ * A query names itself because "Nothing matches" is the same string whether the
+ * cause is a typo or day-one before the asset has loaded, and only one of those
+ * is worth a "Clear" button.
+ */
+internal fun passportEmptyMessage(loading: Boolean, query: String, statusFilter: StatusFilter): String =
+    when {
+        loading -> "Loading your places…"
+        query.isNotBlank() -> "No places match “$query”."
+        statusFilter != StatusFilter.ALL -> "No places match the “${statusFilter.label}” filter."
+        else -> "Nothing matches."
+    }
+
+/** A "Clear" affordance only makes sense once there is something to clear. */
+internal fun canClearPassportFilter(query: String, statusFilter: StatusFilter): Boolean =
+    query.isNotBlank() || statusFilter != StatusFilter.ALL
