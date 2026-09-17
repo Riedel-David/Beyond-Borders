@@ -143,8 +143,10 @@ internal fun LazyListScope.visaSection(
         val header = row.requirement.category.label
         if (header != lastHeader) {
             lastHeader = header
+            // No animateItem here, for the reason the travel list's header gives: a
+            // placement animation and the pin fight over the same offset mid-fling.
             stickyHeader("visa-header-$header", contentType = "header") {
-                VisaSectionHeader(header, row.requirement.category.band, Modifier.animateItem())
+                VisaSectionHeader(header, row.requirement.category.band)
             }
         }
         item("visa-${row.place.code}", contentType = "row") {

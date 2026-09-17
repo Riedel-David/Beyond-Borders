@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -46,6 +47,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -141,40 +143,30 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     // overlay. Built to mirror the two item-emission loops below exactly, including
     // the leading non-header items (which read as null) and, for the travel list,
     // the collapse skip.
-    val headerSlots = if (mode == PassportMode.VISA) {
-        buildList {
-            add(null) // "mode"
-            if (visa == null) {
-                add(null) // "visa-missing"
-            } else {
-                add(null) // "visa-summary"
-                add(null) // "visa-search"
-                add(null) // "visa-filters"
-                if (visaRows.isEmpty()) add(null) // "visa-empty"
-                addAll(visaHeaderSlots(visaRows))
+    // Remembered, not rebuilt per composition: this walks all 252 rows calling
+    // sectionHeader on each, which is not something to redo while a finger is down.
+    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query) {
+        if (mode == PassportMode.VISA) {
+            buildList {
+                add(null) // "mode"
+                if (visa == null) {
+                    add(null) // "visa-missing"
+                } else {
+                    add(null) // "visa-summary"
+                    add(null) // "visa-search"
+                    add(null) // "visa-filters"
+                    if (visaRows.isEmpty()) add(null) // "visa-empty"
+                    addAll(visaHeaderSlots(visaRows))
+                }
             }
-        }
-    } else {
-        buildList {
-            add(null) // "mode"
-            add(null) // "stats"
-            add(null) // "controls"
-            if (rows.isEmpty()) add(null) // "empty"
-            addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
-        }
-    }
-    val currentHeader = headerSlots.getOrNull(listState.firstVisibleItemIndex)
-
-    // Visible while a fling is in progress, and for a moment after it settles — long
-    // enough to read the letter that was just reached, not so long that it lingers
-    // over a list the reader has already stopped moving through.
-    var showFastScrollLabel by remember { mutableStateOf(false) }
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress) {
-            showFastScrollLabel = true
         } else {
-            delay(600)
-            showFastScrollLabel = false
+            buildList {
+                add(null) // "mode"
+                add(null) // "stats"
+                add(null) // "controls"
+                if (rows.isEmpty()) add(null) // "empty"
+                addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
+            }
         }
     }
 
@@ -307,12 +299,16 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             val collapseKey = "${grouping.name}:$header"
             if (header != lastHeader) {
                 lastHeader = header
+                // No animateItem on a pinned header, unlike the rows: a placement
+                // animation and the pin both want to own the header's offset, so the
+                // two chase each other for the length of every fling. It buys nothing
+                // either way — a re-grouping gives the headers new keys, which is a
+                // swap rather than the reorder animateItem exists to animate.
                 stickyHeader("header-$header", contentType = "header") {
                     SectionHeader(
                         text = header,
                         collapsed = collapseKey in effectiveCollapsed,
                         onClick = { viewModel.toggleHeaderCollapsed(grouping, header) },
-                        modifier = Modifier.animateItem(),
                     )
                 }
             }
@@ -332,14 +328,11 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         }
     }
 
-    AnimatedVisibility(
-        visible = showFastScrollLabel && currentHeader != null,
-        enter = fadeIn(),
-        exit = fadeOut(),
+    FastScrollOverlay(
+        listState = listState,
+        headerSlots = headerSlots,
         modifier = Modifier.align(Alignment.TopEnd),
-    ) {
-        FastScrollLabel(text = currentHeader.orEmpty())
-    }
+    )
     }
 }
 
@@ -428,7 +421,45 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
  * top-end corner rather than replacing the (already sticky) header at the top of
  * the list — the two answer different questions when a short section means both
  * are visible at once.
+ *
+ * Its own composable, and not inlined into [PassportScreen], for the reason the first
+ * version of it flung like it was stuck: reading `firstVisibleItemIndex` in the screen's
+ * scope invalidates the screen, and that re-runs the `LazyColumn` content lambda over
+ * every row on each index change — several times a second mid-fling. Read here instead
+ * and only this pill recomposes; `derivedStateOf` narrows that again to the moments the
+ * section label actually changes rather than every index.
  */
+@Composable
+private fun FastScrollOverlay(
+    listState: LazyListState,
+    headerSlots: List<String?>,
+    modifier: Modifier = Modifier,
+) {
+    val currentHeader by remember(headerSlots) {
+        derivedStateOf { headerSlots.getOrNull(listState.firstVisibleItemIndex) }
+    }
+    // Visible while a fling is in progress, and for a moment after it settles — long
+    // enough to read the letter that was just reached, not so long that it lingers
+    // over a list the reader has already stopped moving through.
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            visible = true
+        } else {
+            delay(600)
+            visible = false
+        }
+    }
+    AnimatedVisibility(
+        visible = visible && currentHeader != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier,
+    ) {
+        FastScrollLabel(text = currentHeader.orEmpty())
+    }
+}
+
 @Composable
 private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
     Surface(
