@@ -4,19 +4,27 @@ import android.content.ComponentCallbacks2
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
-import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
@@ -28,6 +36,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -127,7 +139,15 @@ private const val TAP_SLOP_DP = 16f
  * could do even by accident.
  */
 @Composable
-fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
+fun MapScreen(
+    viewModel: PlacesViewModel,
+    // The root passes the Scaffold's own PaddingValues through here rather than
+    // relying on WindowInsets.safeDrawing: the Scaffold is what actually knows the
+    // navigation bar's height, and safeDrawing alone would not account for it once
+    // the map opts out of the Scaffold's content padding to draw full-bleed.
+    contentPadding: PaddingValues = PaddingValues(),
+    modifier: Modifier = Modifier,
+) {
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
@@ -153,6 +173,9 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     // the stack on demand instead of a fourth-and-growing always-visible pill.
     var controlsExpanded by remember { mutableStateOf(false) }
     var showShareStyleDialog by remember { mutableStateOf(false) }
+    // Local to this screen rather than hoisted: a failed share is a map-only
+    // concern, and nothing else on this tab needs to post to it.
+    val snackbarHostState = remember { SnackbarHostState() }
     val searchMatches = remember(places, searchQuery) { searchMapMatches(places, searchQuery) }
     val regionActive = regionMode != RegionMode.OFF
     // A tap in region mode is asking "which region is this", not "mark this
@@ -178,6 +201,51 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         controller.flyTo(place.bounds)
         searchOpen = false
         searchQuery = ""
+    }
+
+    fun shareStats() {
+        scope.launch {
+            runCatching { shareStatsCard(context, stats) }
+                .onFailure {
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "Couldn't share the map",
+                            actionLabel = "Retry",
+                            duration = SnackbarDuration.Short,
+                        )
+                        if (result == SnackbarResult.ActionPerformed) shareStats()
+                    }
+                }
+        }
+    }
+
+    fun shareSnapshot(style: ShareCardStyle) {
+        // The map's snapshot callback never fires while the style is still
+        // loading, which otherwise left a tap doing nothing at all with no sign
+        // anything was wrong.
+        val started = controller.snapshot { bitmap ->
+            scope.launch {
+                runCatching { shareMapSnapshot(context, bitmap, stats, style) }
+                    .onFailure {
+                        scope.launch {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "Couldn't share the map",
+                                actionLabel = "Retry",
+                                duration = SnackbarDuration.Short,
+                            )
+                            if (result == SnackbarResult.ActionPerformed) shareSnapshot(style)
+                        }
+                    }
+            }
+        }
+        if (!started) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Map isn't ready yet",
+                    duration = SnackbarDuration.Short,
+                )
+            }
+        }
     }
 
     // Switching the heatmap on mid-selection would otherwise leave a marking card
@@ -218,7 +286,12 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             },
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(12.dp),
+                .padding(contentPadding)
+                .padding(12.dp)
+                // The legend's content swaps between a compact dot row and a
+                // labelled column on tap; without this the pill snaps to its new
+                // size in one frame instead of growing into it.
+                .animateContentSize(animationSpec = tween(180)),
         ) {
             if (lens) {
                 VisaLegend(
@@ -271,7 +344,11 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(12.dp),
+                .padding(contentPadding)
+                .padding(12.dp)
+                // The stack grows by a pill's height each time one more control
+                // (search, world, visa, regions) is revealed on expand.
+                .animateContentSize(animationSpec = tween(180)),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -314,19 +391,37 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                             onQuery = { searchQuery = it },
                             label = "Find a place",
                         )
-                        searchMatches.forEach { place ->
+                        if (searchQuery.isNotBlank() && searchMatches.isEmpty()) {
                             Text(
-                                place.name,
+                                "No matches",
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { pickFromSearch(place) }
-                                    // The row's own padding only gets it to ~36 dp;
-                                    // this raises the touch target to 48 dp without
-                                    // adding visible space between rows.
-                                    .minimumInteractiveComponentSize()
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
                             )
+                        } else {
+                            // Capped and scrollable rather than trusting
+                            // MAP_SEARCH_LIMIT alone: five rows plus the field
+                            // above can still outgrow a short phone's screen.
+                            Column(
+                                Modifier
+                                    .heightIn(max = 240.dp)
+                                    .verticalScroll(rememberScrollState()),
+                            ) {
+                                searchMatches.forEach { place ->
+                                    Text(
+                                        place.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { pickFromSearch(place) }
+                                            // The row's own padding only gets it to ~36 dp;
+                                            // this raises the touch target to 48 dp without
+                                            // adding visible space between rows.
+                                            .minimumInteractiveComponentSize()
+                                            .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -364,31 +459,50 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             }
         }
 
-        if (regionActive) {
-            if (regionInfo != null) {
-                RegionInfoCard(
-                    info = regionInfo!!,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(12.dp),
+        // AnimatedVisibility keeps rendering its content through the exit fade, so
+        // the last non-null place/region is held here a beat after the live state
+        // clears — otherwise the card's content would go blank on the same frame
+        // the fade starts, and the fade would have nothing to show.
+        var lastRegionInfo by remember { mutableStateOf(regionInfo) }
+        if (regionInfo != null) lastRegionInfo = regionInfo
+        var lastSelected by remember { mutableStateOf(selected) }
+        if (selected != null) lastSelected = selected
+
+        AnimatedVisibility(
+            visible = regionActive && regionInfo != null,
+            enter = fadeIn(tween(160)),
+            exit = fadeOut(tween(140)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(contentPadding)
+                .padding(12.dp),
+        ) {
+            lastRegionInfo?.let { info -> RegionInfoCard(info = info) }
+        }
+        AnimatedVisibility(
+            visible = !regionActive && selected != null,
+            enter = fadeIn(tween(160)),
+            exit = fadeOut(tween(140)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(contentPadding)
+                .padding(12.dp),
+        ) {
+            lastSelected?.let { place ->
+                SelectedPlaceCard(
+                    place = place,
+                    status = statuses[place.code] ?: PlaceStatus.NONE,
+                    // Carried into the card whenever the lens is on, so a tap answers
+                    // the question the map is currently asking rather than the other
+                    // one.
+                    requirement = if (lens) viewModel.requirementOf(place.code) else null,
+                    noVisaData = lens && place.code in visaNoData,
+                    onToggle = { target ->
+                        viewModel.vibrate()
+                        viewModel.toggle(place.code, target)
+                    },
                 )
             }
-        } else if (selected != null) {
-            SelectedPlaceCard(
-                place = selected,
-                status = statuses[selected.code] ?: PlaceStatus.NONE,
-                // Carried into the card whenever the lens is on, so a tap answers the
-                // question the map is currently asking rather than the other one.
-                requirement = if (lens) viewModel.requirementOf(selected.code) else null,
-                noVisaData = lens && selected.code in visaNoData,
-                onToggle = { target ->
-                    viewModel.vibrate()
-                    viewModel.toggle(selected.code, target)
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(12.dp),
-            )
         }
 
         // Bottom-end is otherwise empty: the region/selection cards above anchor
@@ -398,6 +512,7 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             onClick = { showShareStyleDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .padding(contentPadding)
                 .padding(16.dp),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ) {
@@ -409,42 +524,23 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 onDismiss = { showShareStyleDialog = false },
                 onStylePicked = { style ->
                     showShareStyleDialog = false
-                    if (style == ShareCardStyle.STATS_ONLY) {
-                        // No map bitmap involved, so there is nothing to wait on
-                        // the map controller for.
-                        scope.launch {
-                            runCatching { shareStatsCard(context, stats) }
-                                .onFailure {
-                                    Toast.makeText(
-                                        context,
-                                        "Couldn't share the map",
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                }
-                        }
-                    } else {
-                        // The map's snapshot callback never fires while the style is still
-                        // loading, which otherwise left a tap doing nothing at all with no
-                        // sign anything was wrong.
-                        val started = controller.snapshot { bitmap ->
-                            scope.launch {
-                                runCatching { shareMapSnapshot(context, bitmap, stats, style) }
-                                    .onFailure {
-                                        Toast.makeText(
-                                            context,
-                                            "Couldn't share the map",
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    }
-                            }
-                        }
-                        if (!started) {
-                            Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    // No map bitmap involved for the stats-only style, so there is
+                    // nothing to wait on the map controller for.
+                    if (style == ShareCardStyle.STATS_ONLY) shareStats() else shareSnapshot(style)
                 },
             )
         }
+
+        // Hosted inside this Box, not at the Scaffold level, because the map opts
+        // out of the Scaffold's padding — a host placed there would sit under the
+        // navigation bar on the map tab. contentPadding keeps it clear the same
+        // way the overlay cards above are kept clear.
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(contentPadding),
+        )
     }
 }
 

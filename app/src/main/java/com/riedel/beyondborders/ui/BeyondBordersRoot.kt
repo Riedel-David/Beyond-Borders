@@ -1,6 +1,11 @@
 package com.riedel.beyondborders.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,6 +21,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -95,13 +101,31 @@ fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
             }
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when (tab) {
-                // The map keeps its own inset handling: it draws to the very edge
-                // and floats its controls above the system bars.
-                Tab.MAP -> MapScreen(placesViewModel)
-                Tab.PASSPORT -> PassportScreen(placesViewModel)
-                Tab.SETTINGS -> SettingsScreen(container)
+        // rememberSaveableStateHolder keeps each tab's own composition alive under
+        // the one that's showing, rather than disposing it — so leaving Settings
+        // mid-import or mid-scroll and coming back finds it exactly as it was.
+        val tabState = rememberSaveableStateHolder()
+        AnimatedContent(
+            targetState = tab,
+            label = "tab",
+            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
+            modifier = Modifier.fillMaxSize(),
+        ) { current ->
+            tabState.SaveableStateProvider(current.name) {
+                when (current) {
+                    // The map draws to the very edge and floats its own controls
+                    // above the system bars, so it takes the Scaffold's padding as
+                    // contentPadding instead of having it applied here.
+                    Tab.MAP -> Box(Modifier.fillMaxSize()) {
+                        MapScreen(placesViewModel, contentPadding = padding)
+                    }
+                    Tab.PASSPORT -> Box(Modifier.fillMaxSize().padding(padding)) {
+                        PassportScreen(placesViewModel)
+                    }
+                    Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
+                        SettingsScreen(container)
+                    }
+                }
             }
         }
     }
