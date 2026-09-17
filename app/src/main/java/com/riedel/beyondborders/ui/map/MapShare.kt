@@ -19,14 +19,14 @@ import kotlinx.coroutines.withContext
  *
  * Three discrete variants rather than one parameterised layout. They share only
  * the translucent fill: the bar centres one line on a computed baseline, the
- * stamp measures its own text to size a pill, and the hero places two baselines
- * off font metrics. Parameterising that would mean a layout engine for three
- * fixed cases.
+ * stamp measures its own text to size a pill. Stats-only skips the map bitmap
+ * entirely and draws its own standalone card, so it does not share that fill at
+ * all. Parameterising the rest would mean a layout engine for two fixed cases.
  */
 enum class ShareCardStyle(val label: String, val blurb: String) {
     BAR("Caption bar", "Full stats across the bottom"),
     STAMP("Corner stamp", "Compact top-left badge"),
-    HERO("Big number", "Bold percentage display"),
+    STATS_ONLY("Stats only", "Just the numbers, no map"),
 }
 
 /**
@@ -52,15 +52,6 @@ internal fun mapShareCaption(stats: TravelStats): String =
  */
 internal fun mapShareStamp(stats: TravelStats): String =
     "${stats.percent}% · ${stats.been}/${stats.total}"
-
-/**
- * Two-line hero form: big percentage headline, then counts plus continents.
- */
-internal fun mapShareHero(stats: TravelStats): Pair<String, String> =
-    Pair(
-        "${stats.percent}%",
-        "${stats.been}/${stats.total} · ${stats.continentsTouched} ${pluralize(stats.continentsTouched, "continent")}"
-    )
 
 private fun pluralize(count: Int, singular: String): String =
     if (count == 1) singular else "${singular}s"
@@ -117,40 +108,8 @@ private fun withCaption(bitmap: Bitmap, style: ShareCardStyle, stats: TravelStat
             canvas.drawText(text, inset + paddingH, baseline, textPaint)
         }
 
-        ShareCardStyle.HERO -> {
-            val percentSize = out.width * 0.13f
-            val subSize = out.width * 0.032f
-            val bandHeight = percentSize + subSize * 2.6f
-            val bandTop = out.height - bandHeight
-
-            canvas.drawRect(0f, bandTop, out.width.toFloat(), out.height.toFloat(), fillPaint)
-
-            val (headline, subline) = mapShareHero(stats)
-
-            val percentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textSize = percentSize
-                typeface = Typeface.DEFAULT_BOLD
-                textAlign = Paint.Align.CENTER
-            }
-            val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textSize = subSize
-                typeface = Typeface.DEFAULT_BOLD
-                textAlign = Paint.Align.CENTER
-            }
-
-            val percentMetrics = percentPaint.fontMetrics
-            val subMetrics = subPaint.fontMetrics
-            val percentHeight = percentMetrics.descent - percentMetrics.ascent
-            val subHeight = subMetrics.descent - subMetrics.ascent
-            val gap = subSize * 0.3f
-
-            val percentBaseline = bandTop + (bandHeight - percentHeight - gap - subHeight) / 2f - percentMetrics.ascent
-            val subBaseline = percentBaseline + percentHeight + gap - subMetrics.ascent
-
-            canvas.drawText(headline, out.width / 2f, percentBaseline, percentPaint)
-            canvas.drawText(subline, out.width / 2f, subBaseline, subPaint)
+        ShareCardStyle.STATS_ONLY -> {
+            // Handled by mapShareStatsCard: this style never wraps a map bitmap.
         }
     }
 
@@ -158,8 +117,105 @@ private fun withCaption(bitmap: Bitmap, style: ShareCardStyle, stats: TravelStat
 }
 
 /**
- * Writes the map snapshot, captioned with [stats] in the chosen [style], to
- * cacheDir/shared and opens the system share sheet on it.
+ * Fixed size for the stats-only card: there is no source bitmap to size against,
+ * since this style carries no map at all, so 1080x1350 (a common share-sheet
+ * portrait ratio) stands in for one.
+ */
+private const val STATS_CARD_WIDTH = 1080
+private const val STATS_CARD_HEIGHT = 1350
+
+/**
+ * A standalone card of just the travel numbers, with no map image behind them —
+ * for sharing the claim without the geography. Built the same way [withCaption]
+ * builds its overlays: a [Canvas] over a plain [Bitmap], [Paint] objects sized as
+ * a fraction of the card width.
+ */
+internal fun mapShareStatsCard(stats: TravelStats): Bitmap {
+    val out = Bitmap.createBitmap(STATS_CARD_WIDTH, STATS_CARD_HEIGHT, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(out)
+    canvas.drawColor(Color.rgb(24, 26, 32))
+
+    val centerX = out.width / 2f
+    val headlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textSize = out.width * 0.13f
+        typeface = Typeface.DEFAULT_BOLD
+        textAlign = Paint.Align.CENTER
+    }
+    val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textSize = out.width * 0.05f
+        typeface = Typeface.DEFAULT
+        textAlign = Paint.Align.CENTER
+    }
+    val nudgePaint = Paint(bodyPaint).apply {
+        textSize = out.width * 0.04f
+        color = Color.argb(220, 255, 255, 255)
+    }
+
+    val lines = buildList {
+        add("${stats.percent}% of the world" to headlinePaint)
+        add("${stats.been} of ${stats.total} visited" to bodyPaint)
+        add(
+            "${stats.continentsTouched} ${pluralize(stats.continentsTouched, "continent")} touched" to
+                bodyPaint
+        )
+        stats.nudge?.let { add(it to nudgePaint) }
+        stats.coverage?.let { add(it to nudgePaint) }
+    }
+
+    // Each line's own font metrics decide the gap below it, so a big bold
+    // headline gets more breathing room than a small blurb without hand-tuned
+    // per-line spacing.
+    val gap = out.width * 0.045f
+    val totalHeight = lines.sumOf { (_, paint) ->
+        val metrics = paint.fontMetrics
+        (metrics.descent - metrics.ascent).toDouble()
+    }.toFloat() + gap * (lines.size - 1)
+
+    var baseline = (out.height - totalHeight) / 2f - lines.first().second.fontMetrics.ascent
+    lines.forEach { (text, paint) ->
+        canvas.drawText(text, centerX, baseline, paint)
+        val metrics = paint.fontMetrics
+        baseline += (metrics.descent - metrics.ascent) + gap
+    }
+
+    return out
+}
+
+/**
+ * Captions the map snapshot with [stats] in the chosen [style], then shares it —
+ * see [shareBitmap] for the file-write and share-sheet mechanics.
+ */
+suspend fun shareMapSnapshot(
+    context: Context,
+    bitmap: Bitmap,
+    stats: TravelStats,
+    style: ShareCardStyle,
+) {
+    val captioned = withCaption(bitmap, style, stats)
+    try {
+        shareBitmap(context, captioned)
+    } finally {
+        // withCaption copies the snapshot to draw on, so this is a second
+        // full-screen ARGB_8888 bitmap — several megabytes on a tall phone, and
+        // worth handing back rather than waiting for a GC to notice it.
+        captioned.recycle()
+    }
+}
+
+/**
+ * The stats-only path: no map snapshot to caption, just a standalone card of the
+ * numbers — see [mapShareStatsCard].
+ */
+suspend fun shareStatsCard(context: Context, stats: TravelStats) {
+    shareBitmap(context, mapShareStatsCard(stats))
+}
+
+/**
+ * Writes [bitmap] to cacheDir/shared and opens the system share sheet on it.
+ * Shared by both the map-snapshot styles and the stats-only card, since neither
+ * cares how the bitmap it was handed was built.
  *
  * Named uniquely per call rather than reusing one fixed file: two taps of Share in
  * quick succession, before the first chooser resolves, would otherwise let one
@@ -171,27 +227,14 @@ private fun withCaption(bitmap: Bitmap, style: ShareCardStyle, stats: TravelStat
  * reads it when the mail is sent, so the earlier attachment quietly became a
  * zero-byte failure the moment a second share started.
  */
-suspend fun shareMapSnapshot(
-    context: Context,
-    bitmap: Bitmap,
-    stats: TravelStats,
-    style: ShareCardStyle,
-) {
+private suspend fun shareBitmap(context: Context, bitmap: Bitmap) {
     val file = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "shared").apply { mkdirs() }
         val cutoff = System.currentTimeMillis() - SHARE_RETENTION_MS
         dir.listFiles()?.forEach { if (it.lastModified() < cutoff) it.delete() }
         val file = File(dir, "beyondborders-map-${System.nanoTime()}.png")
-        val captioned = withCaption(bitmap, style, stats)
-        try {
-            FileOutputStream(file).use { out ->
-                captioned.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-        } finally {
-            // withCaption copies the snapshot to draw on, so this is a second
-            // full-screen ARGB_8888 bitmap — several megabytes on a tall phone, and
-            // worth handing back rather than waiting for a GC to notice it.
-            captioned.recycle()
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
         file
     }

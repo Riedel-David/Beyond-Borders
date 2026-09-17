@@ -65,21 +65,8 @@ class MapShareTest {
         assertEquals("15% · 40/252", mapShareStamp(stats))
     }
 
-    @Test
-    fun `hero text has two lines - big percentage and counts with continents`() {
-        val stats = TravelStats(
-            visited = 35,
-            lived = 5,
-            wishlist = 10,
-            total = 252,
-            continents = listOf(
-                ContinentStat("Europe", been = 20, total = 50),
-                ContinentStat("Asia", been = 10, total = 50),
-                ContinentStat("Africa", been = 10, total = 54),
-            ),
-        )
-        val (headline, subline) = mapShareHero(stats)
-        assertEquals("15%", headline)
-        assertEquals("40/252 · 3 continents", subline)
-    }
+    // mapShareStatsCard draws onto a real android.graphics.Bitmap/Canvas, which
+    // this module's host-JVM tests have no mock for (no Robolectric, no
+    // returnDefaultValues) — same reason withCaption and shareMapSnapshot have
+    // no test above. Only the pure caption/stamp string builders are covered.
 }
