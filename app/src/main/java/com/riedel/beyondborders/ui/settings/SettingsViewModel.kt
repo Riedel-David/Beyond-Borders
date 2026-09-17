@@ -39,11 +39,10 @@ sealed interface TransferState {
 /**
  * The confirmation dialog between picking a file and actually importing it.
  *
- * [message] is already the full sentence the dialog shows — built by
- * [previewMessage] from the [plan] plus the names resolved for its sample — so the
- * screen has nothing to compute, only to render.
+ * [sampleNames] are resolved here, not in the screen, because [plan] only carries
+ * place codes and "DE" means nothing to a user deciding whether to trust a file.
  */
-data class ImportPreview(val message: String, val plan: BackupMerge.Plan)
+data class ImportPreview(val plan: BackupMerge.Plan, val sampleNames: List<String>)
 
 /**
  * Preferences, plus getting the travel history in and out of the app.
@@ -196,7 +195,7 @@ class SettingsViewModel(
                 val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
                     .map { entry -> places.place(entry.code)?.name ?: entry.code }
                 pendingImportText = text
-                _importPreview.value = ImportPreview(previewMessage(plan, sampleNames), plan)
+                _importPreview.value = ImportPreview(plan, sampleNames)
                 _transfer.value = TransferState.Idle
             } catch (c: CancellationException) {
                 throw c
@@ -310,70 +309,6 @@ internal fun exportMessage(places: Int, removals: Int): String = buildString {
         append(if (removals == 1) " removal" else " removals")
     }
     append(".")
-}
-
-/**
- * The confirmation dialog's sentence, built before anything is written.
- *
- * @param sampleNames up to [PREVIEW_SAMPLE_SIZE] names of the places [plan.apply]
- *   would touch, in the order the file listed them. Names rather than codes: "DE"
- *   means nothing to a user deciding whether to trust a file.
- */
-internal fun previewMessage(plan: BackupMerge.Plan, sampleNames: List<String>): String = buildString {
-    val changed = plan.added + plan.updated
-    if (changed == 0) {
-        append("Nothing to change — everything in that file is already here.")
-    } else {
-        append("Will import ")
-        val parts = buildList {
-            if (plan.added > 0) add("${plan.added} new")
-            if (plan.updated > 0) add("${plan.updated} updated")
-        }
-        append(parts.joinToString(" and "))
-        append(if (changed == 1) " place." else " places.")
-        if (sampleNames.isNotEmpty()) {
-            append(" ")
-            append(sampleNames.joinToString(", "))
-            val more = changed - sampleNames.size
-            if (more > 0) {
-                append(", and ")
-                append(more)
-                append(" more")
-            }
-            append(".")
-        }
-    }
-    if (plan.unchanged > 0) {
-        // Explains a "Nothing to change" as much as it does a partial import: either
-        // way, this is why the file did not win everywhere.
-        append(" ")
-        append(plan.unchanged)
-        append(if (plan.unchanged == 1) " entry" else " entries")
-        append(" ignored because what's already on this phone is newer.")
-    }
-    if (plan.unknownCodes.isNotEmpty()) {
-        append(" ")
-        append(plan.unknownCodes.size)
-        if (plan.unknownCodes.size == 1) {
-            append(" place code in the file isn't recognised by this build.")
-        } else {
-            append(" place codes in the file aren't recognised by this build.")
-        }
-    }
-    if (plan.unknownStatuses.isNotEmpty()) {
-        append(" ")
-        append(plan.unknownStatuses.size)
-        if (plan.unknownStatuses.size == 1) {
-            append(" entry has a status this build doesn't understand.")
-        } else {
-            append(" entries have a status this build doesn't understand.")
-        }
-    }
-    if (plan.unreadableRows > 0) {
-        append(" ")
-        append(plan.unreadableRows)
-        append(if (plan.unreadableRows == 1) " row could not be read." else " rows could not be read.")
-    }
 }
 
 internal fun importMessage(plan: BackupMerge.Plan): String = buildString {
