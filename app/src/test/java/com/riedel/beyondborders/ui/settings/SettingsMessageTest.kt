@@ -205,4 +205,51 @@ class SettingsMessageTest {
             message,
         )
     }
+
+    @Test
+    fun `a preview with nothing unusual has no caveat line`() {
+        assertEquals(null, importPreviewCaveat(plan(added = 1, updated = 2, unchanged = 3)))
+    }
+
+    @Test
+    fun `the caveat line names an unknown code`() {
+        assertEquals(
+            "1 place code not recognised by this build.",
+            importPreviewCaveat(plan(unknown = listOf("XX"))),
+        )
+        assertEquals(
+            "2 place codes not recognised by this build.",
+            importPreviewCaveat(plan(unknown = listOf("XX", "YY"))),
+        )
+    }
+
+    @Test
+    fun `the caveat line names an unrecognised status`() {
+        assertEquals(
+            "1 entry with a status this build doesn't understand.",
+            importPreviewCaveat(plan(unknownStatuses = listOf("worked"))),
+        )
+        assertEquals(
+            "2 entries with a status this build doesn't understand.",
+            importPreviewCaveat(plan(unknownStatuses = listOf("worked", "dreamt"))),
+        )
+    }
+
+    @Test
+    fun `the caveat line counts unreadable rows`() {
+        assertEquals("1 row could not be read.", importPreviewCaveat(plan(unreadableRows = 1)))
+        assertEquals("2 rows could not be read.", importPreviewCaveat(plan(unreadableRows = 2)))
+    }
+
+    @Test
+    fun `the caveat line can report every kind of exception at once`() {
+        assertEquals(
+            "1 place code not recognised by this build; " +
+                "1 entry with a status this build doesn't understand; " +
+                "1 row could not be read.",
+            importPreviewCaveat(
+                plan(unknown = listOf("XX"), unknownStatuses = listOf("worked"), unreadableRows = 1),
+            ),
+        )
+    }
 }

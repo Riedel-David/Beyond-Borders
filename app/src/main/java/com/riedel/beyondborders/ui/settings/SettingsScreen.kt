@@ -2,6 +2,7 @@ package com.riedel.beyondborders.ui.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
+import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
@@ -233,16 +235,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             BaseRow(mapBase, viewModel::setMapBase)
         }
 
-        Section(
-            "Your travel data",
-            "Everything you have marked, as a JSON file you can keep anywhere. " +
-                "Importing merges: an entry only wins if it is newer than what is " +
-                "already on this phone, and nothing gets deleted.\n\n" +
-                "Android's own backup includes this data too, so a new phone can " +
-                "restore it without a file. The app never uploads anything itself — " +
-                "that copy is made by the system, to your Google account. Switch it " +
-                "off in Android's backup settings if you would rather it did not.",
-        ) {
+        Section("Your travel data", null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(
                     onClick = { exportLauncher.launch(viewModel.suggestedFileName()) },
@@ -257,6 +250,13 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     enabled = transfer !is TransferState.Busy,
                 ) { Text("Import") }
             }
+            Text(
+                "As a JSON file you can keep anywhere. Importing merges it in: an " +
+                    "entry only wins if it is newer than what's already here.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
 
             when (val state = transfer) {
                 TransferState.Idle -> Unit
@@ -274,7 +274,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 AlertDialog(
                     onDismissRequest = viewModel::dismissImportPreview,
                     title = { Text("Import this file?") },
-                    text = { Text(preview.message) },
+                    text = { ImportPreviewSummary(preview.plan) },
                     confirmButton = {
                         TextButton(onClick = viewModel::confirmImportPreview) { Text("Import") }
                     },
@@ -289,11 +289,19 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             "Danger zone",
             "Clears every place you've marked as been, lived in or want to visit. " +
                 "Cannot be undone — export a backup first if there's any doubt.",
+            // Restrained rather than a full errorContainer fill, which would shout on
+            // a screen visited for ordinary reasons too: a container tone distinct
+            // from the neutral sections, plus a border/title/button that are
+            // unambiguously error-coloured.
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            titleColor = MaterialTheme.colorScheme.error,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
         ) {
             var showConfirm by remember { mutableStateOf(false) }
             OutlinedButton(
                 onClick = { showConfirm = true },
                 enabled = reset !is TransferState.Busy,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) { Text("Delete everything") }
 
@@ -337,6 +345,17 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
+            Text(
+                "Android's own Auto Backup includes this data too, so a new phone " +
+                    "can restore it without a file — that copy is made by the system, " +
+                    "to your Google account; the app never uploads anything itself. " +
+                    "A per-install id is excluded from it, so two installs can't end " +
+                    "up sharing one. Switch it off in Android's backup settings if " +
+                    "you would rather it did not.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }
@@ -345,19 +364,22 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
 private fun Section(
     title: String,
     detail: String?,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    border: BorderStroke? = null,
     content: @Composable () -> Unit,
 ) {
     Card(
         Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = border,
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                color = titleColor,
             )
             if (detail != null) {
                 Text(
@@ -548,6 +570,47 @@ private val MapHue.displayName: String
         MapHue.AMBER -> "Amber"
     }
 
+/**
+ * The import confirmation's counts, as three label/value rows rather than one
+ * sentence: same numbers, same source ([plan]), but a row scans where a sentence
+ * has to be read start to end.
+ */
+@Composable
+private fun ImportPreviewSummary(plan: BackupMerge.Plan) {
+    Column {
+        PreviewCountRow("Added", plan.added)
+        PreviewCountRow("Updated", plan.updated)
+        // "Skipped" here is [plan.unchanged]: entries the file also has, but not
+        // newer than what is already on this phone — the plan is built against
+        // the rows as they stand right now, so this is also why a "nothing to
+        // change" import can still happen.
+        PreviewCountRow("Skipped (already up to date)", plan.unchanged)
+        importPreviewCaveat(plan)?.let { caveat ->
+            Text(
+                caveat,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreviewCountRow(label: String, value: Int) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            value.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
 @Composable
 private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> Unit) {
     Column(Modifier.padding(top = 12.dp)) {
@@ -562,4 +625,39 @@ private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> U
         )
         TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 4.dp)) { Text("OK") }
     }
+}
+
+/**
+ * The nuances [ImportPreviewSummary]'s three rows cannot carry: unrecognised place
+ * codes, statuses this build does not know, or rows that could not be read at all.
+ * Rare in practice — a file from this app's own export never has any of them — but
+ * dropping them silently would hide the reason a file did not import in full.
+ */
+internal fun importPreviewCaveat(plan: BackupMerge.Plan): String? {
+    val issues = buildList {
+        if (plan.unknownCodes.isNotEmpty()) {
+            add(
+                "${plan.unknownCodes.size} place " +
+                    (if (plan.unknownCodes.size == 1) "code" else "codes") +
+                    " not recognised by this build",
+            )
+        }
+        if (plan.unknownStatuses.isNotEmpty()) {
+            add(
+                "${plan.unknownStatuses.size} " +
+                    (if (plan.unknownStatuses.size == 1) "entry" else "entries") +
+                    " with a status this build doesn't understand",
+            )
+        }
+        if (plan.unreadableRows > 0) {
+            add(
+                "${plan.unreadableRows} " +
+                    (if (plan.unreadableRows == 1) "row" else "rows") +
+                    " could not be read",
+            )
+        }
+    }
+    if (issues.isEmpty()) return null
+    return issues.joinToString(separator = "; ") { it }
+        .replaceFirstChar { it.uppercase() } + "."
 }
