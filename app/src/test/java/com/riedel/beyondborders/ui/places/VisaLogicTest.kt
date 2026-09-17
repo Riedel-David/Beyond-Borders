@@ -91,7 +91,7 @@ class VisaLogicTest {
         filter: VisaFilter = VisaFilter.All,
         query: String = "",
         statuses: Map<String, PlaceStatus> = emptyMap(),
-    ) = buildVisaRows(places, visa, statuses, query, filter).map { it.place.code }
+    ) = buildVisaRows(places, visa, null, statuses, query, filter).map { it.place.code }
 
     // --- the list --------------------------------------------------------------
 
@@ -112,7 +112,7 @@ class VisaLogicTest {
 
     @Test
     fun `no visa data means no rows at all`() {
-        assertEquals(emptyList<String>(), buildVisaRows(places, null, emptyMap(), "", VisaFilter.All))
+        assertEquals(emptyList<String>(), buildVisaRows(places, null, null, emptyMap(), "", VisaFilter.All))
     }
 
     /**
@@ -151,6 +151,7 @@ class VisaLogicTest {
         val visited = buildVisaRows(
             places,
             visa,
+            null,
             mapOf("GL" to PlaceStatus.LIVED),
             "",
             VisaFilter.All,
@@ -233,8 +234,8 @@ class VisaLogicTest {
 
     @Test
     fun `the lens paints nothing while it is off`() {
-        assertEquals(emptyMap<VisaBand, Set<String>>(), bandCodes(visa, lens = false))
-        assertEquals(emptyMap<VisaBand, Set<String>>(), bandCodes(null, lens = true))
+        assertEquals(emptyMap<VisaBand, Set<String>>(), bandCodes(visa, null, lens = false))
+        assertEquals(emptyMap<VisaBand, Set<String>>(), bandCodes(null, null, lens = true))
     }
 
     /**
@@ -243,7 +244,7 @@ class VisaLogicTest {
      */
     @Test
     fun `each band collects the categories the ramp merges`() {
-        val bands = bandCodes(visa, lens = true)
+        val bands = bandCodes(visa, null, lens = true)
         assertEquals(setOf("DE", "GL"), bands[VisaBand.VISA_FREE])
         assertEquals(setOf("US"), bands[VisaBand.ETA])
         assertEquals(setOf("IN", "RU"), bands[VisaBand.VISA_REQUIRED])
@@ -257,7 +258,7 @@ class VisaLogicTest {
      */
     @Test
     fun `every answer is painted once and only once`() {
-        val bands = bandCodes(visa, lens = true)
+        val bands = bandCodes(visa, null, lens = true)
         val painted = bands.values.flatten()
         assertEquals(visa.requirements.size, painted.size)
         assertEquals(painted.size, painted.toSet().size)
@@ -271,13 +272,13 @@ class VisaLogicTest {
      */
     @Test
     fun `no-data collects exactly the places the registry has no answer for`() {
-        assertEquals(setOf("AA"), noDataCodes(places, visa, lens = true))
+        assertEquals(setOf("AA"), noDataCodes(places, visa, null, lens = true))
     }
 
     @Test
     fun `no-data is empty while the lens is off, or with no visa asset`() {
-        assertEquals(emptySet<String>(), noDataCodes(places, visa, lens = false))
-        assertEquals(emptySet<String>(), noDataCodes(places, null, lens = true))
+        assertEquals(emptySet<String>(), noDataCodes(places, visa, null, lens = false))
+        assertEquals(emptySet<String>(), noDataCodes(places, null, null, lens = true))
     }
 
     // --- the words -------------------------------------------------------------

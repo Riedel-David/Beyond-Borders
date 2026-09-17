@@ -3,8 +3,15 @@ package com.riedel.beyondborders.ui.places
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.data.visa.VisaBand
+import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.data.visa.VisaConfidence
+import com.riedel.beyondborders.data.visa.VisaOrigin
+import com.riedel.beyondborders.data.visa.VisaRegistry
+import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.settings.Denominator
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -353,6 +360,146 @@ class PlacesLogicTest {
         assertTrue(
             buildRows(places, statuses, "", StatusFilter.NONE, Grouping.ALPHABETICAL)
                 .none { it.place.code == "FR" },
+        )
+    }
+
+    private fun requirement(
+        code: String = "US",
+        category: VisaCategory = VisaCategory.VISA_FREE,
+        days: Int? = null,
+        note: String? = null,
+        confidence: VisaConfidence? = null,
+    ) = VisaRequirement(
+        code = code,
+        category = category,
+        days = days,
+        origin = VisaOrigin.DATASET,
+        note = note,
+        confidence = confidence,
+        sourceUrl = null,
+        datasetSaid = null,
+        officialUrl = null,
+        officialFor = null,
+    )
+
+    @Test
+    fun `combining requirements picks the less restrictive by ordinal`() {
+        val visaFree = requirement(category = VisaCategory.VISA_FREE)
+        val eta = requirement(category = VisaCategory.ETA)
+        val visaRequired = requirement(category = VisaCategory.VISA_REQUIRED)
+
+        // Visa-free beats ETA
+        val combined1 = combineRequirements(visaFree, eta)
+        assertEquals(VisaCategory.VISA_FREE, combined1?.winner?.category)
+
+        // Visa-free beats visa required
+        val combined2 = combineRequirements(visaRequired, visaFree)
+        assertEquals(VisaCategory.VISA_FREE, combined2?.winner?.category)
+
+        // ETA beats visa on arrival
+        val voa = requirement(category = VisaCategory.VISA_ON_ARRIVAL)
+        val combined3 = combineRequirements(eta, voa)
+        assertEquals(VisaCategory.ETA, combined3?.winner?.category)
+    }
+
+    @Test
+    fun `combining keeps the winning requirement intact - curated fields preserved`() {
+        val curated = requirement(
+            category = VisaCategory.VISA_FREE,
+            days = 90,
+            note = "Hand-curated note",
+            confidence = VisaConfidence.HIGH,
+        )
+        val generic = requirement(
+            category = VisaCategory.VISA_REQUIRED,
+            note = null,
+            confidence = null,
+        )
+
+        val combined = combineRequirements(curated, generic)
+        assertEquals(curated, combined?.winner)
+        assertEquals("Hand-curated note", combined?.winner?.note)
+        assertEquals(VisaConfidence.HIGH, combined?.winner?.confidence)
+    }
+
+    @Test
+    fun `ties go to the primary passport`() {
+        val primary = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 90)
+        val second = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 180)
+
+        val combined = combineRequirements(primary, second)
+        assertTrue(combined?.fromPrimary == true)
+        assertEquals(90, combined?.winner?.days)
+    }
+
+    @Test
+    fun `one side missing resolves to the other`() {
+        val primary = requirement(category = VisaCategory.VISA_FREE)
+
+        val fromPrimaryOnly = combineRequirements(primary, null)
+        assertEquals(primary, fromPrimaryOnly?.winner)
+        assertTrue(fromPrimaryOnly?.fromPrimary == true)
+
+        val fromSecondOnly = combineRequirements(null, primary)
+        assertEquals(primary, fromSecondOnly?.winner)
+        assertTrue(fromSecondOnly?.fromPrimary == false)
+    }
+
+    @Test
+    fun `both missing returns null`() {
+        assertNull(combineRequirements(null, null))
+    }
+
+    @Test
+    fun `noData with two passports is the union complement - a place covered by either is not grey`() {
+        // Primary covers all 5 places; second covers only FR and GL
+        val primary = VisaRegistry.parse("""
+            {
+              "passport": "DE",
+              "asOf": "2026-02-17",
+              "dataset": {"name": "Test", "url": "https://example.org", "licence": "MIT"},
+              "iataUrl": "https://example.org/iata",
+              "requirements": [
+                {"code": "DK", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "GL", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "FR", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "RE", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "BV", "category": "VISA_FREE", "source": "dataset"}
+              ]
+            }
+        """.trimIndent())
+
+        val second = VisaRegistry.parse("""
+            {
+              "passport": "GB",
+              "asOf": "2026-02-17",
+              "dataset": {"name": "Test", "url": "https://example.org", "licence": "MIT"},
+              "iataUrl": "https://example.org/iata",
+              "requirements": [
+                {"code": "FR", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "GL", "category": "VISA_REQUIRED", "source": "dataset"}
+              ]
+            }
+        """.trimIndent())
+
+        val noData = noDataCodes(places, primary, second, lens = true)
+
+        // DK: covered by primary only - NOT in noData
+        assertTrue("DK covered by primary only", "DK" !in noData)
+        // GL: covered by both - NOT in noData
+        assertTrue("GL covered by both", "GL" !in noData)
+        // FR: covered by both - NOT in noData
+        assertTrue("FR covered by both", "FR" !in noData)
+        // RE, BV: covered by primary only - NOT in noData
+        assertTrue("RE covered by primary only", "RE" !in noData)
+        assertTrue("BV covered by primary only", "BV" !in noData)
+
+        // bandCodes and noDataCodes must agree: every code with a band must be absent from noData
+        val bands = bandCodes(primary, second, lens = true)
+        val painted = bands.values.flatten().toSet()
+        assertTrue(
+            "Every painted code must be absent from noData",
+            painted.intersect(noData).isEmpty()
         )
     }
 }

@@ -37,6 +37,8 @@ fun PassportPickerButton(
     names: Map<String, String>,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    dialogTitle: String = "Choose a passport",
+    exclude: Set<String> = emptySet(),
 ) {
     var open by remember { mutableStateOf(false) }
     OutlinedButton(onClick = { open = true }, modifier = modifier) {
@@ -51,6 +53,8 @@ fun PassportPickerButton(
                 open = false
             },
             onDismiss = { open = false },
+            title = dialogTitle,
+            exclude = exclude,
         )
     }
 }
@@ -61,9 +65,13 @@ private fun PassportPickerDialog(
     selected: String,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
+    title: String = "Choose a passport",
+    exclude: Set<String> = emptySet(),
 ) {
     var query by remember { mutableStateOf("") }
-    val options = remember(names) { names.keys.sortedBy { names[it] ?: it } }
+    val options = remember(names, exclude) {
+        names.keys.filterNot { it in exclude }.sortedBy { names[it] ?: it }
+    }
     val filtered = remember(query, options, names) {
         if (query.isBlank()) {
             options
@@ -81,7 +89,7 @@ private fun PassportPickerDialog(
             modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f),
         ) {
             Column(Modifier.padding(16.dp)) {
-                Text("Choose a passport", style = MaterialTheme.typography.titleMedium)
+                Text(title, style = MaterialTheme.typography.titleMedium)
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },

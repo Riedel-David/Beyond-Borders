@@ -92,6 +92,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
     val mode by viewModel.mode.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
+    val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
     val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
@@ -142,6 +143,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         if (mode == PassportMode.VISA) {
             visaSection(
                 visa = visa,
+                secondVisa = secondVisa,
                 placesTotal = places.size,
                 rows = visaRows,
                 filter = visaFilter,
@@ -155,6 +157,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                 onFilter = viewModel::setVisaFilter,
                 onSelect = viewModel::select,
                 nameOf = { code -> viewModel.placeOf(code)?.name },
+                combinedRequirementOf = viewModel::combinedRequirementOf,
             )
             return@LazyColumn
         }

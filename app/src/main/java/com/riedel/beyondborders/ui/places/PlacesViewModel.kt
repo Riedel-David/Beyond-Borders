@@ -213,6 +213,14 @@ class PlacesViewModel(
     private val _visa = MutableStateFlow<VisaRegistry?>(null)
     val visa: StateFlow<VisaRegistry?> = _visa
 
+    /**
+     * The second passport's registry, null when no second passport is configured
+     * or when its asset cannot be loaded. A missing or broken second registry
+     * degrades to single-passport behavior rather than taking the screen down.
+     */
+    private val _secondVisa = MutableStateFlow<VisaRegistry?>(null)
+    val secondVisa: StateFlow<VisaRegistry?> = _secondVisa
+
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
 
@@ -288,14 +296,19 @@ class PlacesViewModel(
      * the map does not re-bucket 252 places on every frame.
      */
     val visaBands: StateFlow<Map<VisaBand, Set<String>>> =
-        combine(_visa, _visaLens) { visa, lens -> bandCodes(visa, lens) }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        combine(_visa, _secondVisa, _visaLens) { visa, secondVisa, lens ->
+            bandCodes(visa, secondVisa, lens)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** Which place codes the visa lens should paint grey: this passport's dataset
-     * has no answer for them at all, an "honest gap" rather than a sixth band. */
+     * has no answer for them at all, an "honest gap" rather than a sixth band. With
+     * two passports it is the intersection of their two gaps: grey means neither
+     * passport has an answer, so the covered side of that is a union, not an
+     * intersection. Reading it the other way round paints most of the map grey. */
     val visaNoData: StateFlow<Set<String>> =
-        combine(allPlaces, _visa, _visaLens) { places, visa, lens -> noDataCodes(places, visa, lens) }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        combine(allPlaces, _visa, _secondVisa, _visaLens) { places, visa, secondVisa, lens ->
+            noDataCodes(places, visa, secondVisa, lens)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     /** Which place codes the map's region heatmap should paint in each band,
      * empty while the mode is off. Computed here for the same reason [visaBands]
@@ -306,8 +319,14 @@ class PlacesViewModel(
 
     /** The rows the visa list should render, already filtered and ordered. */
     val visaRows: StateFlow<List<VisaRow>> =
-        combine(allPlaces, _visa, statuses, _query, _visaFilter) { places, visa, st, q, filter ->
-            buildVisaRows(places, visa, st, q, filter)
+        combine(
+            allPlaces,
+            combine(_visa, _secondVisa) { primary, second -> primary to second },
+            statuses,
+            _query,
+            _visaFilter
+        ) { places, (visa, secondVisa), st, q, filter ->
+            buildVisaRows(places, visa, secondVisa, st, q, filter)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
@@ -336,6 +355,14 @@ class PlacesViewModel(
                     ?: load(VisaRegistry.DEFAULT_PASSPORT)?.also {
                         settings.setNationality(VisaRegistry.DEFAULT_PASSPORT)
                     }
+            }
+        }
+        viewModelScope.launch {
+            settings.secondNationality.collect { secondNationality ->
+                // A broken second passport degrades to single-passport behavior
+                // rather than breaking the working primary. Null when no second
+                // passport is configured, or when its asset cannot be loaded.
+                _secondVisa.value = secondNationality?.let { load(it) }
             }
         }
     }
@@ -377,6 +404,16 @@ class PlacesViewModel(
     fun statusOf(code: String): PlaceStatus = statuses.value[code] ?: PlaceStatus.NONE
 
     fun requirementOf(code: String): VisaRequirement? = _visa.value?.get(code)
+
+    /**
+     * The combined requirement for one place, or null if neither passport has an answer.
+     *
+     * Returns the less restrictive of the two when both passports have an answer, the
+     * single answer when only one does, and null when neither does. Ties go to the
+     * primary passport.
+     */
+    fun combinedRequirementOf(code: String): CombinedRequirement? =
+        combineRequirements(_visa.value?.get(code), _secondVisa.value?.get(code))
 
     /**
      * Set one place's status. One place: no cascade, ever. If the user asks for
@@ -549,16 +586,26 @@ internal fun worldCoverage(places: List<Place>, statuses: Map<String, PlaceStatu
  *
  * Returns an empty map when the lens is off or the asset failed to load, which the
  * map reads as "paint nothing" — so a missing visa.json costs the lens and nothing
- * else.
+ * else. When two passports are configured, uses the combined (less restrictive)
+ * requirement.
  */
 internal fun bandCodes(
     visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
     lens: Boolean,
 ): Map<VisaBand, Set<String>> {
     if (visa == null || !lens) return emptyMap()
-    return visa.requirements
-        .groupBy { it.category.band }
-        .mapValues { (_, group) -> group.mapTo(mutableSetOf()) { it.code } }
+
+    // All codes that at least one registry covers
+    val allCodes = (visa.requirements.map { it.code } + (secondVisa?.requirements?.map { it.code } ?: emptyList())).toSet()
+
+    return allCodes
+        .mapNotNull { code ->
+            val combined = combineRequirements(visa[code], secondVisa?.get(code))
+            combined?.let { code to it.winner.category.band }
+        }
+        .groupBy({ it.second }, { it.first })
+        .mapValues { (_, codes) -> codes.toSet() }
 }
 
 /**
@@ -567,15 +614,21 @@ internal fun bandCodes(
  * DE's dataset covers all 252 places, so this is always empty for it; every other
  * passport is generic-tier and only has real answers where a specific programme
  * rule applies — see STATUS.md's "honest gap" note. Returns empty when the lens is
- * off or the asset failed to load, the same as [bandCodes].
+ * off or the asset failed to load, the same as [bandCodes]. When two passports are
+ * configured, this becomes places where neither passport has an answer — the
+ * complement of the union of the two covered sets.
  */
 internal fun noDataCodes(
     places: List<Place>,
     visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
     lens: Boolean,
 ): Set<String> {
     if (visa == null || !lens) return emptySet()
-    val covered = visa.requirements.mapTo(mutableSetOf()) { it.code }
+    val primaryCovered = visa.requirements.mapTo(mutableSetOf()) { it.code }
+    val secondCovered = secondVisa?.requirements?.mapTo(mutableSetOf()) { it.code } ?: emptySet()
+    // The union: at least one passport has an answer
+    val covered = if (secondVisa != null) primaryCovered.union(secondCovered) else primaryCovered
     return places.mapNotNullTo(mutableSetOf()) { it.code.takeUnless { code -> code in covered } }
 }
 
@@ -640,11 +693,13 @@ internal fun visaFilters(visa: VisaRegistry?): List<VisaFilter> {
  * purpose rather than by accident.
  *
  * Uninhabited places sort last within their category for the same reason they do
- * in the travel list: Bouvet Island should never be above Spain.
+ * in the travel list: Bouvet Island should never be above Spain. When two passports
+ * are configured, uses the combined (less restrictive) requirement.
  */
 internal fun buildVisaRows(
     places: List<Place>,
     visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
     statuses: Map<String, PlaceStatus>,
     query: String,
     filter: VisaFilter,
@@ -655,10 +710,11 @@ internal fun buildVisaRows(
         .filter { needle.isEmpty() || it.searchKey.contains(needle) }
         // A place with no requirement is dropped rather than shown blank. The
         // build script guarantees there are none; this keeps the list honest if a
-        // future asset disagrees with a future registry.
+        // future asset disagrees with a future registry. When two passports are
+        // configured, a place with no answer from either is also dropped.
         .mapNotNull { place ->
-            visa[place.code]?.let { req ->
-                VisaRow(place, req, statuses[place.code] ?: PlaceStatus.NONE)
+            combineRequirements(visa[place.code], secondVisa?.get(place.code))?.let { combined ->
+                VisaRow(place, combined.winner, statuses[place.code] ?: PlaceStatus.NONE)
             }
         }
         .filter {
@@ -738,4 +794,42 @@ internal fun sectionHeader(place: Place, grouping: Grouping): String = when (gro
     Grouping.REGION -> place.region
     Grouping.ALPHABETICAL ->
         if (place.uninhabited) UNINHABITED_HEADER else place.sortKey.take(1).uppercase()
+}
+
+/**
+ * The result of combining two passport's visa requirements for one place.
+ *
+ * [winner] is the complete requirement from whichever passport won — never a
+ * synthesized one, so curated fields stay intact. [fromPrimary] distinguishes
+ * ties and single-sided answers so the UI can attribute correctly.
+ */
+data class CombinedRequirement(
+    val winner: VisaRequirement,
+    val fromPrimary: Boolean,
+)
+
+/**
+ * Combine two passports' requirements for one place, choosing the less restrictive.
+ *
+ * The rule is comparison on [VisaCategory.ordinal], which [VisaCategory]'s own KDoc
+ * documents as load-bearing and monotonic in how much can go wrong before the
+ * border. Returns the whole winning requirement — never a synthesized one — so
+ * curated fields (`note`, `confidence`, `sourceUrl`, `origin`, `datasetSaid`,
+ * `officialUrl`, `officialFor`) all belong to the passport whose answer won.
+ *
+ * Ties go to the primary passport, so a user whose two passports agree sees
+ * text identical to today's single-passport experience. One side missing a
+ * requirement means the side that has one wins.
+ */
+internal fun combineRequirements(
+    primary: VisaRequirement?,
+    second: VisaRequirement?,
+): CombinedRequirement? {
+    if (primary == null && second == null) return null
+    if (primary == null) return CombinedRequirement(second!!, fromPrimary = false)
+    if (second == null) return CombinedRequirement(primary, fromPrimary = true)
+
+    // Lower ordinal wins; ties go to primary
+    val winner = if (primary.category.ordinal <= second.category.ordinal) primary else second
+    return CombinedRequirement(winner, fromPrimary = winner === primary)
 }
