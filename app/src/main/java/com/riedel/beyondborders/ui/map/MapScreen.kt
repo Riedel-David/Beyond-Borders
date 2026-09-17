@@ -67,6 +67,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.riedel.beyondborders.ui.BounceFilterChip
@@ -285,9 +286,17 @@ fun MapScreen(
             // Only worth a toggle once there is something to spell out; the empty
             // state's nudge and the region heatmap's own legend both stay static.
             onClick = when {
-                lens -> { { visaLegendLabeled = !visaLegendLabeled } }
+                lens -> {
+                    {
+                        viewModel.vibrate()
+                        visaLegendLabeled = !visaLegendLabeled
+                    }
+                }
                 !regionActive && (stats.been > 0 || stats.wishlist > 0) -> {
-                    { counterLabeled = !counterLabeled }
+                    {
+                        viewModel.vibrate()
+                        counterLabeled = !counterLabeled
+                    }
                 }
                 else -> null
             },
@@ -397,6 +406,7 @@ fun MapScreen(
         ) {
             MapPill(
                 onClick = {
+                    viewModel.vibrate()
                     controlsExpanded = !controlsExpanded
                     // Collapsing hides the search field along with everything else,
                     // so leaving it open underneath would reopen it silently the
@@ -415,7 +425,7 @@ fun MapScreen(
             // both screens share the [PlacesViewModel] query, this just is not
             // routed through it, since the map wants to fly the camera on a pick
             // rather than filter a list.
-            MapPill(onClick = { searchOpen = !searchOpen }) {
+            MapPill(onClick = { viewModel.vibrate(); searchOpen = !searchOpen }) {
                 Text(
                     if (searchOpen) "Close" else "Search",
                     style = MaterialTheme.typography.labelLarge,
@@ -477,7 +487,7 @@ fun MapScreen(
             // Offered only once the asset is known to have loaded: a toggle that
             // silently paints nothing would be worse than no toggle.
             if (visa != null) {
-                MapPill(onClick = { viewModel.setVisaLens(!lens) }) {
+                MapPill(onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) }) {
                     Text(
                         if (lens) "My travels" else "Visa",
                         style = MaterialTheme.typography.labelLarge,
@@ -487,7 +497,7 @@ fun MapScreen(
             }
             // One pill cycles all three states rather than three pills for one
             // choice — Off/Official/Informal is a single question, not three.
-            MapPill(onClick = { viewModel.setRegionMode(nextRegionMode(regionMode)) }) {
+            MapPill(onClick = { viewModel.vibrate(); viewModel.setRegionMode(nextRegionMode(regionMode)) }) {
                 Text(
                     when (regionMode) {
                         RegionMode.OFF -> "Regions"
@@ -573,7 +583,10 @@ fun MapScreen(
         // The region/selection cards above anchor to BottomCenter and reserve an
         // end inset (see their modifiers) so this FAB's corner stays clear of them.
         FloatingActionButton(
-            onClick = { showShareStyleDialog = true },
+            onClick = {
+                viewModel.vibrate()
+                showShareStyleDialog = true
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(contentPadding)
@@ -1280,6 +1293,8 @@ private fun SelectedPlaceCard(
                 place.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 buildString {
@@ -1295,6 +1310,14 @@ private fun SelectedPlaceCard(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Two lines, fixed: one line ellipsises the sovereign away, and
+                // the sovereign is the fact this app exists to surface — Sint
+                // Maarten being Dutch is the point, not decoration. minLines
+                // alongside maxLines pins the card's height at two lines
+                // regardless of which place is selected.
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             if (requirement != null) {
                 Text(

@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -132,7 +132,7 @@ fun WelcomeScreen(
                     onSelect = onNationalityChange,
                     modifier = Modifier.padding(top = 12.dp),
                 )
-                FilledTonalButton(
+                Button(
                     onClick = onGetStarted,
                     modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
                 ) {
