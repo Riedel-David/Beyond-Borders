@@ -155,6 +155,7 @@ fun MapScreen(
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
+    val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
     val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
     val visaNoData by viewModel.visaNoData.collectAsStateWithLifecycle()
     val lens by viewModel.visaLens.collectAsStateWithLifecycle()
@@ -323,6 +324,7 @@ fun MapScreen(
                     MapLegendKind.VISA_DOTS, MapLegendKind.VISA_LABELED -> VisaLegend(
                         palette.visa,
                         visa,
+                        secondVisa,
                         noDataCount = visaNoData.size,
                         labeled = kind == MapLegendKind.VISA_LABELED,
                     )
@@ -522,14 +524,24 @@ fun MapScreen(
                 .padding(12.dp),
         ) {
             (selected ?: lastSelected)?.let { place ->
+                // Carried into the card whenever the lens is on, so a tap answers
+                // the question the map is currently asking rather than the other
+                // one. Goes through the same combined lookup the map's own paint
+                // uses (bandCodes unions both passports), so the card can never
+                // show an answer that contradicts the colour the place is drawn in.
+                val combined = if (lens) viewModel.combinedRequirementOf(place.code) else null
+                val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) {
+                    secondVisa!!.passport
+                } else {
+                    null
+                }
                 SelectedPlaceCard(
                     place = place,
                     status = statuses[place.code] ?: PlaceStatus.NONE,
-                    // Carried into the card whenever the lens is on, so a tap answers
-                    // the question the map is currently asking rather than the other
-                    // one.
-                    requirement = if (lens) viewModel.requirementOf(place.code) else null,
+                    requirement = combined?.winner,
+                    attributeTo = attributeTo,
                     noVisaData = lens && place.code in visaNoData,
+                    hasSecondPassport = secondVisa != null,
                     onToggle = { target ->
                         viewModel.vibrate()
                         viewModel.toggle(place.code, target)
@@ -1055,7 +1067,13 @@ private fun MapPill(
  * words are one tap away rather than always taking the space.
  */
 @Composable
-private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?, noDataCount: Int, labeled: Boolean) {
+private fun VisaLegend(
+    ramp: VisaRamp,
+    visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
+    noDataCount: Int,
+    labeled: Boolean,
+) {
     Column {
         if (labeled && visa != null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1076,7 +1094,7 @@ private fun VisaLegend(ramp: VisaRamp, visa: VisaRegistry?, noDataCount: Int, la
                 // never say a visa lens is even showing. The expanded, tap-labelled
                 // rows already speak for themselves via CounterLegendRow's own text.
                 modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = visaLegendSummary(visa, noDataCount)
+                    contentDescription = visaLegendSummary(visa, noDataCount, secondVisa)
                 },
             ) {
                 // Separated dots, like the travel legend: the five bands are a
@@ -1225,7 +1243,9 @@ private fun SelectedPlaceCard(
     place: Place,
     status: PlaceStatus,
     requirement: VisaRequirement?,
+    attributeTo: String?,
     noVisaData: Boolean,
+    hasSecondPassport: Boolean,
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1258,7 +1278,7 @@ private fun SelectedPlaceCard(
             )
             if (requirement != null) {
                 Text(
-                    requirementSummary(requirement),
+                    requirementSummary(requirement, attributeTo),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1286,7 +1306,11 @@ private fun SelectedPlaceCard(
                 // only a nudge to look it up, rather than the silent blank this
                 // used to leave on both the map and the card.
                 Text(
-                    "No data available for this passport — check official sources before travelling.",
+                    if (hasSecondPassport) {
+                        "No data available for either passport — check official sources before travelling."
+                    } else {
+                        "No data available for this passport — check official sources before travelling."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1397,8 +1421,18 @@ internal fun travelLegendDescription(stats: TravelStats): String {
  * of their own in that state, a screen reader would otherwise say nothing about
  * the visa lens beyond the trailing aggregate.
  */
-internal fun visaLegendSummary(visa: VisaRegistry?, noDataCount: Int): String {
-    if (visa == null) return "Visa lens: no visa data for this passport"
+internal fun visaLegendSummary(
+    visa: VisaRegistry?,
+    noDataCount: Int,
+    secondVisa: VisaRegistry? = null,
+): String {
+    if (visa == null) {
+        return if (secondVisa != null) {
+            "Visa lens: no visa data for your passports"
+        } else {
+            "Visa lens: no visa data for this passport"
+        }
+    }
     val bands = VisaBand.entries.count { (visa.countByBand[it] ?: 0) > 0 }
     val withNoData = if (noDataCount > 0) bands + 1 else bands
     return "Visa lens: $withNoData bands shown, ${visa.visaFreeCount} visa-free"
