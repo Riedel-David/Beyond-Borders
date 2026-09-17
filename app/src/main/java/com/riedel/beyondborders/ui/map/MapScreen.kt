@@ -20,10 +20,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -336,13 +338,6 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            MapPill(onClick = { showShareStyleDialog = true }) {
-                Text(
-                    "Share",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
             // Offered only once the asset is known to have loaded: a toggle that
             // silently paints nothing would be worse than no toggle.
             if (visa != null) {
@@ -396,17 +391,29 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
             )
         }
 
+        // Bottom-end is otherwise empty: the region/selection cards above anchor
+        // to BottomCenter, so a small FAB here shares a corner with nothing else
+        // on the map.
+        FloatingActionButton(
+            onClick = { showShareStyleDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+            Icon(Icons.Filled.Share, contentDescription = "Share")
+        }
+
         if (showShareStyleDialog) {
             ShareStyleDialog(
                 onDismiss = { showShareStyleDialog = false },
                 onStylePicked = { style ->
                     showShareStyleDialog = false
-                    // The map's snapshot callback never fires while the style is still
-                    // loading, which otherwise left a tap doing nothing at all with no
-                    // sign anything was wrong.
-                    val started = controller.snapshot { bitmap ->
+                    if (style == ShareCardStyle.STATS_ONLY) {
+                        // No map bitmap involved, so there is nothing to wait on
+                        // the map controller for.
                         scope.launch {
-                            runCatching { shareMapSnapshot(context, bitmap, stats, style) }
+                            runCatching { shareStatsCard(context, stats) }
                                 .onFailure {
                                     Toast.makeText(
                                         context,
@@ -415,9 +422,25 @@ fun MapScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
                                     ).show()
                                 }
                         }
-                    }
-                    if (!started) {
-                        Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // The map's snapshot callback never fires while the style is still
+                        // loading, which otherwise left a tap doing nothing at all with no
+                        // sign anything was wrong.
+                        val started = controller.snapshot { bitmap ->
+                            scope.launch {
+                                runCatching { shareMapSnapshot(context, bitmap, stats, style) }
+                                    .onFailure {
+                                        Toast.makeText(
+                                            context,
+                                            "Couldn't share the map",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                            }
+                        }
+                        if (!started) {
+                            Toast.makeText(context, "Map isn't ready yet", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 },
             )
