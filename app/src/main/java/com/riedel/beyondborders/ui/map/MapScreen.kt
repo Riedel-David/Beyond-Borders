@@ -1310,10 +1310,13 @@ private fun SelectedPlaceCard(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                // Fixed at one line so the card's height stays put as the
-                // selection changes — a wrapping second line would grow the
-                // card for places with both a continent and a sovereign.
-                maxLines = 1,
+                // Two lines, fixed: one line ellipsises the sovereign away, and
+                // the sovereign is the fact this app exists to surface — Sint
+                // Maarten being Dutch is the point, not decoration. minLines
+                // alongside maxLines pins the card's height at two lines
+                // regardless of which place is selected.
+                minLines = 2,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             if (requirement != null) {

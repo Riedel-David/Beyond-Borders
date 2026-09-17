@@ -440,19 +440,23 @@ private fun VisaDetail(
         }
         requirement.confidence?.let { confidence ->
             if (confidence == VisaConfidence.LOW) {
-                // The glyph is what makes this line read as a caveat before the
-                // small grey type below it is read at all — decorative, since the
-                // wording already carries the meaning for TalkBack.
+                // labelSmall is the bottom of the type scale, so there is no
+                // smaller style left to drop the freshness notice below it — the
+                // separation has to come from stepping this line up instead:
+                // labelMedium plus the glyph is what makes it read as a caveat
+                // before the smaller grey type underneath is read at all. The
+                // glyph is decorative, since the wording already carries the
+                // meaning for TalkBack.
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(
                         Icons.Filled.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(16.dp),
                     )
                     Text(
                         confidence.label,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -475,10 +479,13 @@ private fun VisaDetail(
         }
         Text(
             if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
+            // labelSmall — one step below the LOW-confidence warning's
+            // labelMedium, at full-strength onSurfaceVariant. The separation is
+            // size, not contrast: cutting this colour's alpha would put a
+            // caption under WCAG AA's 4.5:1, which is a worse trade than the
+            // crowding it was meant to fix.
             style = MaterialTheme.typography.labelSmall,
-            // Quieter than the confidence line above so a routine timestamp does
-            // not compete with a real caveat for the reader's attention.
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
         )
         requirement.officialUrl?.let { url ->
