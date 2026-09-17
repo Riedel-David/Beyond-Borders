@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,8 +91,13 @@ fun StatsScreen(
     // the screen collapsed again is not worth a process-death survivor.
     var showAllGroupings by remember { mutableStateOf(false) }
 
+    // Zero insets throughout: this screen is drawn inside the root Scaffold's own
+    // content padding (BeyondBordersRoot pads the passport tab before it composes),
+    // so a Scaffold and a TopAppBar left to their defaults would each add the status
+    // bar a second time and push the title a full bar's height down the screen.
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Stats") },
@@ -100,6 +106,7 @@ fun StatsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
     ) { padding ->
