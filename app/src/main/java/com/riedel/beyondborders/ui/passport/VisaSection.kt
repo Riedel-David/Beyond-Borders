@@ -110,12 +110,27 @@ internal fun LazyListScope.visaSection(
 
     if (rows.isEmpty()) {
         item("visa-empty") {
-            Text(
-                "Nothing matches.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
+            // Reached only once [visa] is non-null, i.e. the registry has already
+            // loaded in full — there is no "not loaded yet" state to distinguish
+            // from a genuine zero here, unlike the travel list's async [places].
+            Column(Modifier.padding(24.dp)) {
+                Text(
+                    visaEmptyMessage(query, filter),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (canClearVisaFilter(query, filter)) {
+                    TextButton(
+                        onClick = {
+                            onQuery("")
+                            onFilter(VisaFilter.All)
+                        },
+                        contentPadding = PaddingValues(vertical = 4.dp),
+                    ) {
+                        Text("Clear")
+                    }
+                }
+            }
         }
     }
 
@@ -126,23 +141,25 @@ internal fun LazyListScope.visaSection(
         val header = row.requirement.category.label
         if (header != lastHeader) {
             lastHeader = header
-            item("visa-header-$header") {
-                VisaSectionHeader(header, row.requirement.category.band)
+            item("visa-header-$header", contentType = "header") {
+                VisaSectionHeader(header, row.requirement.category.band, Modifier.animateItem())
             }
         }
-        item("visa-${row.place.code}") {
-            VisaListRow(
-                row = row,
-                expanded = row.place.code == selectedCode,
-                onClick = {
-                    onSelect(if (row.place.code == selectedCode) null else row.place.code)
-                },
-                nameOf = nameOf,
-                visa = visa,
-                secondVisa = secondVisa,
-                combinedRequirementOf = combinedRequirementOf,
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        item("visa-${row.place.code}", contentType = "row") {
+            Column(Modifier.animateItem()) {
+                VisaListRow(
+                    row = row,
+                    expanded = row.place.code == selectedCode,
+                    onClick = {
+                        onSelect(if (row.place.code == selectedCode) null else row.place.code)
+                    },
+                    nameOf = nameOf,
+                    visa = visa,
+                    secondVisa = secondVisa,
+                    combinedRequirementOf = combinedRequirementOf,
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
         }
     }
 }
@@ -286,10 +303,10 @@ private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifi
 
 /** A category header, carrying the band colour so the list and the map agree. */
 @Composable
-private fun VisaSectionHeader(text: String, band: VisaBand) {
+private fun VisaSectionHeader(text: String, band: VisaBand, modifier: Modifier = Modifier) {
     val ramp = LocalMapPalette.current.visa
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -353,7 +370,12 @@ private fun VisaListRow(
                     .weight(1f)
                     .padding(start = 12.dp)
             ) {
-                Text(row.place.name, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    row.place.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Text(
                     buildString {
                         append(requirementSummary(row.requirement, attributeTo))
@@ -475,3 +497,20 @@ private fun VisaUnavailable() {
         )
     }
 }
+
+/**
+ * What the visa list's empty state should say, once [visaSection] has already
+ * established the registry itself loaded (the `visa == null` branch returns
+ * earlier). So the only two causes left are a query and a filter, and either
+ * is worth naming — "Nothing matches" alone does not say what to undo.
+ */
+internal fun visaEmptyMessage(query: String, filter: VisaFilter): String =
+    when {
+        query.isNotBlank() -> "No destinations match “$query”."
+        filter != VisaFilter.All -> "No destinations match the “${filter.label}” filter."
+        else -> "Nothing matches."
+    }
+
+/** A "Clear" affordance only makes sense once there is something to clear. */
+internal fun canClearVisaFilter(query: String, filter: VisaFilter): Boolean =
+    query.isNotBlank() || filter != VisaFilter.All
