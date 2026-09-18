@@ -179,14 +179,20 @@ private fun ConfigScreen(
                     },
                     update = { frameLayout ->
                         frameLayout.removeAllViews()
+                        // Inflate against the application context, not the activity's:
+                        // AppCompat installs a factory on the activity's LayoutInflater that
+                        // swaps <ImageView> for AppCompatImageView, whose setImageBitmap is
+                        // not @RemotableViewMethod, and apply() then throws. The application
+                        // context has a plain inflater — the same one the launcher uses.
+                        val remoteContext = frameLayout.context.applicationContext
                         val views = travelWidgetViews(
-                            context = frameLayout.context,
+                            context = remoteContext,
                             tier = WidgetTier.MEDIUM,
                             metric = metric,
                             filled = filledBackground,
                             stats = stats,
                         )
-                        frameLayout.addView(views.apply(frameLayout.context, frameLayout))
+                        frameLayout.addView(views.apply(remoteContext, frameLayout))
                     },
                 )
             }

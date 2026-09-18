@@ -50,10 +50,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -361,20 +358,6 @@ fun PassportScreen(
         }
     }
 
-    // Scrub state for the A-Z rail: written by AzRail when a finger is on the rail,
-    // read by FastScrollOverlay to suppress itself during a scrub so the two pills
-    // never appear at once. Hoisted here but never read in this scope to avoid
-    // invalidating PassportScreen on every finger movement — only the two composables
-    // that need it actually read the value.
-    val scrubLabel = remember { mutableStateOf<String?>(null) }
-
-    FastScrollOverlay(
-        listState = listState,
-        headerSlots = headerSlots,
-        scrubLabel = scrubLabel,
-        modifier = Modifier.align(Alignment.TopEnd),
-    )
-
     // Continent and Region sections aren't addressable by a letter, so the rail is
     // absent rather than disabled outside A-Z grouping. Visa mode has no grouping of
     // its own at all — its headers are requirement categories, not letters — so this
@@ -384,7 +367,6 @@ fun PassportScreen(
         AzRail(
             listState = listState,
             headerSlots = headerSlots,
-            scrubLabel = scrubLabel,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
@@ -471,70 +453,6 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
     }
 }
 
-/**
- * The fast-scroll overlay: which section a fling just reached, floating over the
- * top-end corner rather than replacing the (already sticky) header at the top of
- * the list — the two answer different questions when a short section means both
- * are visible at once.
- *
- * Its own composable, and not inlined into [PassportScreen], for the reason the first
- * version of it flung like it was stuck: reading `firstVisibleItemIndex` in the screen's
- * scope invalidates the screen, and that re-runs the `LazyColumn` content lambda over
- * every row on each index change — several times a second mid-fling. Read here instead
- * and only this pill recomposes; `derivedStateOf` narrows that again to the moments the
- * section label actually changes rather than every index.
- */
-@Composable
-private fun FastScrollOverlay(
-    listState: LazyListState,
-    headerSlots: List<String?>,
-    scrubLabel: MutableState<String?>,
-    modifier: Modifier = Modifier,
-) {
-    val currentHeader by remember(headerSlots) {
-        derivedStateOf { headerSlots.getOrNull(listState.firstVisibleItemIndex) }
-    }
-    // Visible while a fling is in progress, and for a moment after it settles — long
-    // enough to read the letter that was just reached, not so long that it lingers
-    // over a list the reader has already stopped moving through. Suppressed while a
-    // scrub is active so the rail's own pill and this one never appear at once.
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress) {
-            visible = true
-        } else {
-            delay(600)
-            visible = false
-        }
-    }
-    val scrubActive = scrubLabel.value != null
-    AnimatedVisibility(
-        visible = visible && currentHeader != null && !scrubActive,
-        enter = fadeIn(),
-        exit = fadeOut(),
-        modifier = modifier,
-    ) {
-        FastScrollLabel(text = currentHeader.orEmpty())
-    }
-}
-
-@Composable
-private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.padding(top = 8.dp, end = 16.dp),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        shadowElevation = 2.dp,
-    ) {
-        Text(
-            text = text.uppercase(),
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-        )
-    }
-}
-
 @Composable
 private fun ScrubPill(text: String, railWidthDp: Dp, modifier: Modifier = Modifier) {
     Surface(
@@ -577,8 +495,7 @@ private val ScrubPillSizeDp = 48.dp
  *
  * Every read of [listState] and every bit of scrub state (the finger's row, the
  * touched letter, the target index) lives in `remember`/`mutableStateOf` local to this
- * composable, not in [PassportScreen]'s scope — for the same reason [FastScrollOverlay]
- * moved its own read down here first: a state read up in [PassportScreen] would
+ * composable, not in [PassportScreen]'s scope: a state read up in [PassportScreen] would
  * recompose the whole screen, re-running the `LazyColumn` content lambda over all 252
  * rows, on every frame a finger moves across the rail.
  *
@@ -592,7 +509,6 @@ private val ScrubPillSizeDp = 48.dp
 private fun AzRail(
     listState: LazyListState,
     headerSlots: List<String?>,
-    scrubLabel: MutableState<String?>,
     modifier: Modifier = Modifier,
 ) {
     val labels = remember(headerSlots) { railLabels(headerSlots) }
@@ -611,25 +527,32 @@ private fun AzRail(
     var surfaceTopInBox by remember { mutableFloatStateOf(0f) }
     var boxHeight by remember { mutableIntStateOf(0) }
 
+    // The rail only earns its place over the row content while the list is actually
+    // moving (or a finger is on the rail itself) — otherwise it permanently covers the
+    // Want chip of whichever row lands under it. 600ms linger after settling, so a tap
+    // right after a fling still lands on a visible rail.
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(listState.isScrollInProgress, touchedLabel) {
+        if (listState.isScrollInProgress || touchedLabel != null) {
+            visible = true
+        } else {
+            delay(600)
+            visible = false
+        }
+    }
+
     LaunchedEffect(targetIndex) {
         if (targetIndex >= 0) listState.scrollToItem(targetIndex)
     }
 
-    // Write the scrub label so FastScrollOverlay can suppress itself during a scrub.
-    // touchedLabel is local state; scrubLabel is hoisted but never read in
-    // PassportScreen's scope.
-    LaunchedEffect(touchedLabel) {
-        scrubLabel.value = touchedLabel
-    }
-
-    // Clear scrubLabel if AzRail leaves composition mid-scrub (e.g. when grouping
-    // changes away from A-Z), otherwise FastScrollOverlay stays suppressed.
-    DisposableEffect(Unit) {
-        onDispose { scrubLabel.value = null }
-    }
-
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier,
+    ) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxHeight()
             .padding(end = 8.dp)
             .onSizeChanged { boxHeight = it.height },
@@ -727,6 +650,7 @@ private fun AzRail(
                 }
             }
         }
+    }
     }
 }
 
