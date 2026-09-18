@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Fill: white at ~8% alpha -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <solid android:color="#14FFFFFF" />
+        </shape>
+    </item>
+    <!-- Stroke: white at ~12% alpha -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <stroke
+                android:width="1dp"
+                android:color="#1FFFFFFF" />
+        </shape>
+    </item>
+</layer-list>

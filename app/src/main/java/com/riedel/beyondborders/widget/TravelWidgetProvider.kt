@@ -5,12 +5,10 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.widget.RemoteViews
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.MainActivity
 import com.riedel.beyondborders.R
-import com.riedel.beyondborders.data.place.PlaceRepository
+import com.riedel.beyondborders.ui.Tab
 import com.riedel.beyondborders.ui.places.computeStats
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +36,27 @@ class TravelWidgetProvider : AppWidgetProvider() {
             // the app down over a home-screen count. The widget keeps the number it
             // last drew instead, which is a stale count rather than a crash.
             try {
-                appWidgetIds.forEach { id -> updateOne(context, id) }
+                appWidgetIds.forEach { id -> updateOne(context, manager, id) }
+            } catch (_: Exception) {
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        manager: AppWidgetManager,
+        widgetId: Int,
+        newOptions: android.os.Bundle?,
+    ) {
+        // A resize must re-pick the tier, which is the actual defect this fixes.
+        // Doing it via the options bundle on every path is simpler than branching on
+        // API level to use the SizeF-based API on 31+.
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                updateOne(context, manager, widgetId)
             } catch (_: Exception) {
             } finally {
                 pending.finish()
@@ -65,10 +83,10 @@ class TravelWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        /** Shared by [onUpdate] and by the config activity's "Add widget", which
-         * has to draw the just-chosen state immediately rather than wait out
-         * [android.appwidget.AppWidgetProviderInfo.updatePeriodMillis]. */
-        suspend fun updateOne(context: Context, widgetId: Int) {
+        /** Shared by [onUpdate], [onAppWidgetOptionsChanged] and by the config
+         * activity's "Add widget", which has to draw the just-chosen state immediately
+         * rather than wait out [android.appwidget.AppWidgetProviderInfo.updatePeriodMillis]. */
+        suspend fun updateOne(context: Context, manager: AppWidgetManager, widgetId: Int) {
             val container = (context.applicationContext as BeyondBordersApp).container
             val places = container.places
             // The denominator has to come along: it changes what counts as "been" as
@@ -83,23 +101,37 @@ class TravelWidgetProvider : AppWidgetProvider() {
             val metric = WidgetPrefs.metric(context, widgetId)
             val filledBackground = WidgetPrefs.filledBackground(context, widgetId)
 
-            val views = RemoteViews(context.packageName, R.layout.travel_widget)
-            val (headline, subline) = widgetText(metric, stats)
-            views.setTextViewText(R.id.widget_headline, headline)
-            views.setTextViewText(R.id.widget_subline, subline)
-            if (filledBackground) {
-                views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_background)
-            } else {
-                views.setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
+            // Pick the tier from the options bundle, in both onUpdate and
+            // onAppWidgetOptionsChanged — a resize must re-pick the tier.
+            val options = manager.getAppWidgetOptions(widgetId)
+            val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180)
+            val minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110)
+            val tier = widgetTier(minWidthDp, minHeightDp)
+
+            val views = travelWidgetViews(context, tier, metric, filledBackground, stats)
+
+            // Metric-aware tap: COUNTRIES → travel list; PERCENT and CONTINENTS →
+            // stats screen. Use the widget id as the request code so two widgets with
+            // different metrics both tap through correctly — getActivity reuses a
+            // cached PendingIntent when the request code matches and keeps the old
+            // extras, which is the trap.
+            val openApp = Intent(context, MainActivity::class.java).apply {
+                when (metric) {
+                    WidgetMetric.COUNTRIES -> putExtra("widget_open_tab", Tab.PASSPORT.name)
+                    WidgetMetric.PERCENT, WidgetMetric.CONTINENTS -> {
+                        putExtra("widget_open_tab", Tab.PASSPORT.name)
+                        putExtra("widget_open_stats", true)
+                    }
+                }
             }
-            val openApp = PendingIntent.getActivity(
+            val pendingIntent = PendingIntent.getActivity(
                 context,
-                0,
-                Intent(context, MainActivity::class.java),
+                widgetId,
+                openApp,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-            views.setOnClickPendingIntent(R.id.widget_root, openApp)
-            AppWidgetManager.getInstance(context).updateAppWidget(widgetId, views)
+            views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+            manager.updateAppWidget(widgetId, views)
         }
 
         /** Called after any change that could move the count, so the widget never

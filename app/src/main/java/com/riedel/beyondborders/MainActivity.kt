@@ -1,21 +1,27 @@
 package com.riedel.beyondborders
 
+import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.riedel.beyondborders.data.db.DatabaseHealth
 import com.riedel.beyondborders.data.db.DatabaseRecovery
 import com.riedel.beyondborders.ui.BeyondBordersRoot
+import com.riedel.beyondborders.ui.Tab
 import com.riedel.beyondborders.ui.recovery.DatabaseRecoveryScreen
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import com.riedel.beyondborders.widget.TravelWidgetProvider
+import com.riedel.beyondborders.widget.WidgetIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -27,11 +33,16 @@ import kotlinx.coroutines.launch
  */
 class MainActivity : AppCompatActivity() {
 
+    private var widgetIntent by mutableStateOf<WidgetIntent?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val container = (application as BeyondBordersApp).container
+
+        // Handle widget tap intents
+        handleWidgetIntent(intent)
 
         setContent {
             val themeMode by container.settings.themeMode.collectAsStateWithLifecycle()
@@ -46,7 +57,11 @@ class MainActivity : AppCompatActivity() {
                 // normally already resolved by the time the first frame is drawn.
                 when (val health = databaseHealth) {
                     DatabaseHealth.Unknown -> Surface(Modifier.fillMaxSize()) {}
-                    DatabaseHealth.Usable -> BeyondBordersRoot(container)
+                    DatabaseHealth.Usable -> BeyondBordersRoot(
+                        container = container,
+                        widgetIntent = widgetIntent,
+                        onWidgetIntentConsumed = ::consumeWidgetIntent,
+                    )
                     is DatabaseHealth.Unusable -> DatabaseRecoveryScreen(
                         detail = health.detail,
                         onWipe = {
@@ -59,6 +74,33 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // launchMode="singleTop" delivers a tap on an already-running app here rather
+        // than stacking a second instance.
+        handleWidgetIntent(intent)
+    }
+
+    private fun handleWidgetIntent(intent: Intent) {
+        val tabName = intent.getStringExtra("widget_open_tab")
+        val openStats = intent.getBooleanExtra("widget_open_stats", false)
+        if (tabName != null) {
+            // Use uptimeMillis to give each tap a distinct identity. WidgetIntent is a
+            // data class with structural equality, so assigning the same (tab, openStats)
+            // values is a no-op write: the state never changes, LaunchedEffect never
+            // re-runs, and a second tap on the same widget does nothing.
+            widgetIntent = WidgetIntent(tabName, openStats, SystemClock.uptimeMillis())
+            // Clear the extras so rotation does not replay this intent.
+            intent.removeExtra("widget_open_tab")
+            intent.removeExtra("widget_open_stats")
+        }
+    }
+
+    /** Called from BeyondBordersRoot after applying the intent, so rotation does not replay it. */
+    fun consumeWidgetIntent() {
+        widgetIntent = null
     }
 
     // The widget's own updatePeriodMillis is capped at 30 minutes; leaving the app

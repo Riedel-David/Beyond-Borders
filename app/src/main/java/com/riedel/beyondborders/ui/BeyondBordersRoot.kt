@@ -34,6 +34,7 @@ import com.riedel.beyondborders.ui.passport.PassportScreen
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.settings.SettingsScreen
 import com.riedel.beyondborders.ui.welcome.WelcomeScreen
+import com.riedel.beyondborders.widget.WidgetIntent
 
 enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
     MAP("Map", R.drawable.ic_tab_map),
@@ -58,7 +59,12 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
  * Revisit when a screen needs real arguments in its route.
  */
 @Composable
-fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
+fun BeyondBordersRoot(
+    container: AppContainer,
+    widgetIntent: WidgetIntent? = null,
+    onWidgetIntentConsumed: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
@@ -78,6 +84,19 @@ fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
     }
 
     var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
+    var openStats by rememberSaveable { mutableStateOf(false) }
+
+    // Handle widget intent: set the tab and stats flag, then consume it. Uses Tab enum
+    // name matching so a typo is a visible no-op rather than a silent one.
+    LaunchedEffect(widgetIntent) {
+        widgetIntent?.let { intent ->
+            Tab.entries.firstOrNull { it.name == intent.tabName }?.let { tab ->
+                selected = tab.ordinal
+                openStats = intent.openStats
+            }
+            onWidgetIntentConsumed()
+        }
+    }
     val tab = Tab.entries[selected]
 
     // Hoisted to the root so the map and the passport share one instance: marking
@@ -120,7 +139,11 @@ fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
                         MapScreen(placesViewModel, contentPadding = padding)
                     }
                     Tab.PASSPORT -> Box(Modifier.fillMaxSize().padding(padding)) {
-                        PassportScreen(placesViewModel)
+                        PassportScreen(
+                            viewModel = placesViewModel,
+                            openStats = openStats,
+                            onStatsConsumed = { openStats = false },
+                        )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
                         SettingsScreen(container)
