@@ -94,9 +94,19 @@ class AppContainer(context: Context) {
 
     val cloudSnapshot: CloudSnapshot by lazy { CloudSnapshot(appContext) }
 
-    /** Refresh the snapshot Auto Backup carries. */
+    /**
+     * Refresh the snapshot Auto Backup carries.
+     *
+     * An empty export does nothing at all — not write, not delete. The empty case is
+     * exactly the state a fresh install sits in right after a restore: the database
+     * is empty because nothing has been imported yet, but the snapshot next to it is
+     * the whole reason a Restore row has anything to offer. Deleting it here on the
+     * very first `onPause` would erase it before it was ever read.
+     * [SettingsViewModel.deleteEverything] deletes the snapshot explicitly instead —
+     * that is the one place "no history" is a real action rather than "not yet".
+     */
     suspend fun stageCloudSnapshot() {
         val export = places.exportBackup()
-        if (shouldStageSnapshot(export)) cloudSnapshot.write(export.json) else cloudSnapshot.delete()
+        if (shouldStageSnapshot(export)) cloudSnapshot.write(export.json)
     }
 }

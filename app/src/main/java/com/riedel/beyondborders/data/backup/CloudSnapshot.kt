@@ -3,7 +3,6 @@ package com.riedel.beyondborders.data.backup
 import android.app.backup.BackupManager
 import android.content.Context
 import java.io.File
-import java.io.IOException
 
 /**
  * A copy of the travel history that lives entirely in `files/`, for Android's Auto
@@ -32,6 +31,12 @@ class CloudSnapshot(context: Context) {
      * the real name. Auto Backup can run at any time, including mid-write, so a
      * half-written file must never be the one it sees — only a completed rename ever
      * changes what `snapshot.json` itself contains.
+     *
+     * A failed rename is left as a failed rename rather than turned into an exception
+     * to throw and then swallow in the same breath: the `.tmp` sibling stays on disk,
+     * unreferenced by anything, and the next successful `write` overwrites it, so
+     * nothing worse than a wasted write happens. Same "never crash over this" stance
+     * as [read] and [delete].
      */
     fun write(json: String) {
         runCatching {
@@ -39,7 +44,7 @@ class CloudSnapshot(context: Context) {
             dir.mkdirs()
             val tmp = File(dir, "${file.name}.tmp")
             tmp.writeText(json)
-            if (!tmp.renameTo(file)) throw IOException("Could not rename ${tmp.name} to ${file.name}.")
+            tmp.renameTo(file)
         }
     }
 
@@ -62,12 +67,11 @@ class CloudSnapshot(context: Context) {
 // --- pure functions, unit-testable without Android ---------------------------
 
 /**
- * Whether a fresh export is worth keeping around for Auto Backup to pick up.
+ * Whether a fresh export is worth writing for Auto Backup to pick up.
  *
- * An empty export — no places, no tombstones — is what "Delete everything" leaves
- * behind, and staging it anyway would both dress a "Restore" button up for nothing
- * and hand Auto Backup a snapshot with nothing in it. [CloudSnapshot.delete] is the
- * right response instead: it lets an emptied history actually stay empty.
+ * Tombstones alone do not count: a history that is nothing but removals has
+ * nothing a Restore button could usefully bring back, and this is also what keeps
+ * this check and [SettingsViewModel]'s "is there local history" check agreeing on
+ * one notion of "there is history" — both ask only about [BackupExport.places].
  */
-internal fun shouldStageSnapshot(export: BackupExport): Boolean =
-    export.places > 0 || export.removals > 0
+internal fun shouldStageSnapshot(export: BackupExport): Boolean = export.places > 0

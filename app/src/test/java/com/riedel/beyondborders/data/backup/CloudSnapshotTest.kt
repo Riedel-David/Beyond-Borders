@@ -7,9 +7,10 @@ import org.junit.Test
 /**
  * Whether a fresh export is worth staging for Auto Backup to pick up.
  *
- * The trap this guards against: after "Delete everything", the next `onPause`
- * exports an empty history, and staging that anyway would leave a useless
- * "Restore" button on screen for nothing worth restoring.
+ * Places, not tombstones, are what makes an export worth restoring — a history
+ * that is nothing but removals has nothing a Restore row could usefully bring
+ * back, and places-only is also the "is there history" test `SettingsViewModel`
+ * uses for the row's own visibility, so the two have to agree.
  */
 class CloudSnapshotTest {
 
@@ -26,7 +27,7 @@ class CloudSnapshotTest {
     }
 
     @Test
-    fun `an export with only removals is still staged`() {
-        assertTrue(shouldStageSnapshot(export(places = 0, removals = 2)))
+    fun `an export with only removals is not staged, because there is nothing to restore`() {
+        assertFalse(shouldStageSnapshot(export(places = 0, removals = 2)))
     }
 }

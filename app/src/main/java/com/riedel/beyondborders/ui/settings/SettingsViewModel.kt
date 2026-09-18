@@ -24,8 +24,11 @@ import java.time.LocalDate
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -104,13 +107,29 @@ class SettingsViewModel(
     private val _reset = MutableStateFlow<TransferState>(TransferState.Idle)
     val reset: StateFlow<TransferState> = _reset.asStateFlow()
 
-    // Whether Auto Backup left a snapshot behind for the Restore row to offer. Read
-    // once at construction — this ViewModel is recreated per Settings visit, which
-    // is often enough to notice a restore that happened since the screen was last
-    // open — and then only ever updated from inside this class, after a restore or
-    // a delete, rather than polled.
-    private val _snapshotAvailable = MutableStateFlow(snapshot.exists())
-    val snapshotAvailable: StateFlow<Boolean> = _snapshotAvailable.asStateFlow()
+    // Whether the snapshot file is on disk. Seeded off the main thread rather than
+    // read in the constructor — `snapshot.exists()` is a stat call, and this class
+    // is constructed during composition. Otherwise only ever written from inside
+    // this class: after a restore lands, a delete, or a snapshot found to have
+    // vanished underneath a tap.
+    private val _snapshotFilePresent = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            _snapshotFilePresent.value = withContext(Dispatchers.IO) { snapshot.exists() }
+        }
+    }
+
+    /**
+     * Whether the Restore row belongs on screen: the file is there *and* the local
+     * history is empty. Both conditions together are what make the row's own copy
+     * true — "Android's backup left a snapshot of your history on this phone" would
+     * be a lie the moment the phone has its own history again, whether that history
+     * arrived by the user marking a place or by the restore itself landing.
+     */
+    val snapshotAvailable: StateFlow<Boolean> =
+        combine(_snapshotFilePresent, places.statuses) { present, statuses -> present && statuses.isEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
 
     fun setThemeMode(mode: ThemeMode) = settings.setThemeMode(mode)
 
@@ -155,13 +174,15 @@ class SettingsViewModel(
             _reset.value = try {
                 places.deleteAll()
                 settings.resetHasSeenWelcome()
-                snapshot.delete()
-                _snapshotAvailable.value = false
-                // Only enqueues the upload — it does not run synchronously and does
-                // not confirm anything reached Google, but it is what turns the
-                // emptied state into what Auto Backup carries next, overwriting
-                // whatever pre-existing cloud copy this device had.
-                snapshot.notifyBackupChanged()
+                withContext(Dispatchers.IO) {
+                    snapshot.delete()
+                    // Only enqueues the upload — it does not run synchronously and does
+                    // not confirm anything reached Google, but it is what turns the
+                    // emptied state into what Auto Backup carries next, overwriting
+                    // whatever pre-existing cloud copy this device had.
+                    snapshot.notifyBackupChanged()
+                }
+                _snapshotFilePresent.value = false
                 TransferState.Idle
             } catch (e: Exception) {
                 TransferState.Failed(e.message ?: "Couldn't delete everything.")
@@ -233,7 +254,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             val text = withContext(Dispatchers.IO) { snapshot.read() }
             if (text == null) {
-                _snapshotAvailable.value = false
+                _snapshotFilePresent.value = false
                 _transfer.value = TransferState.Failed("That snapshot isn't there anymore.")
                 return@launch
             }
@@ -273,13 +294,11 @@ class SettingsViewModel(
         _transfer.value = TransferState.Busy
         viewModelScope.launch {
             _transfer.value = try {
-                val message = importMessage(places.importBackup(text))
-                // Re-checked from disk rather than assumed: this same confirm path
-                // handles both a picked file and [previewSnapshotRestore], and either
-                // way the on-disk snapshot's presence, not which path was used, is
-                // what the Restore row should reflect.
-                _snapshotAvailable.value = withContext(Dispatchers.IO) { snapshot.exists() }
-                TransferState.Done(message)
+                // No snapshot-presence bookkeeping needed here: [snapshotAvailable]
+                // already combines the file's presence with `places.statuses`, and a
+                // successful import — from a snapshot restore or an ordinary file —
+                // makes that flow non-empty on its own, which is what hides the row.
+                TransferState.Done(importMessage(places.importBackup(text)))
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
