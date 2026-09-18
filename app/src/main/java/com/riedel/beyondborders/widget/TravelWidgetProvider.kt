@@ -5,12 +5,10 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.widget.RemoteViews
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.MainActivity
 import com.riedel.beyondborders.R
-import com.riedel.beyondborders.data.place.PlaceRepository
+import com.riedel.beyondborders.ui.Tab
 import com.riedel.beyondborders.ui.places.computeStats
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -119,9 +117,9 @@ class TravelWidgetProvider : AppWidgetProvider() {
             // extras, which is the trap.
             val openApp = Intent(context, MainActivity::class.java).apply {
                 when (metric) {
-                    WidgetMetric.COUNTRIES -> putExtra("widget_open_tab", "passport")
+                    WidgetMetric.COUNTRIES -> putExtra("widget_open_tab", Tab.PASSPORT.name)
                     WidgetMetric.PERCENT, WidgetMetric.CONTINENTS -> {
-                        putExtra("widget_open_tab", "passport")
+                        putExtra("widget_open_tab", Tab.PASSPORT.name)
                         putExtra("widget_open_stats", true)
                     }
                 }

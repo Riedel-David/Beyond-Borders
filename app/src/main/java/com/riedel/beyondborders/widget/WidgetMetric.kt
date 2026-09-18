@@ -17,16 +17,7 @@ enum class WidgetMetric(val storageValue: String) {
     }
 }
 
-/** (headline, subline) for the text widget, split out for host-JVM testing. */
-internal fun widgetText(metric: WidgetMetric, stats: TravelStats): Pair<String, String> =
-    when (metric) {
-        WidgetMetric.COUNTRIES -> "${stats.been} of ${stats.total}" to "${stats.percent}% of the world"
-        WidgetMetric.PERCENT -> "${stats.percent}%" to "of the world visited"
-        WidgetMetric.CONTINENTS ->
-            "${stats.continentsTouched} of ${stats.continents.size}" to "continents touched"
-    }
-
-/** Just the hero number for the new widget layouts. */
+/** Just the hero number for the widget layouts. */
 internal fun widgetHeadline(metric: WidgetMetric, stats: TravelStats): String =
     when (metric) {
         WidgetMetric.COUNTRIES -> "${stats.been}"
@@ -34,7 +25,7 @@ internal fun widgetHeadline(metric: WidgetMetric, stats: TravelStats): String =
         WidgetMetric.CONTINENTS -> "${stats.continentsTouched}"
     }
 
-/** The label beneath the hero number in the new widget layouts. */
+/** The label beneath the hero number in the widget layouts. */
 internal fun widgetLabel(metric: WidgetMetric, stats: TravelStats): String =
     when (metric) {
         WidgetMetric.COUNTRIES -> "PLACES BEEN"

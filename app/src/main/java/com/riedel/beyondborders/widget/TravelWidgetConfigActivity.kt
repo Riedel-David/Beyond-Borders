@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -33,9 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BeyondBordersApp
+import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.computeStats
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import kotlinx.coroutines.Dispatchers
@@ -101,19 +104,21 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
 
 @Composable
 private fun ConfigScreen(
-    container: com.riedel.beyondborders.AppContainer,
+    container: AppContainer,
     onDone: (WidgetMetric, Boolean) -> Unit,
 ) {
     var metric by remember { mutableStateOf(WidgetMetric.DEFAULT) }
     var filledBackground by remember { mutableStateOf(true) }
 
     // Fetch the real stats for the preview
-    var stats by remember { mutableStateOf(com.riedel.beyondborders.ui.places.TravelStats.EMPTY) }
+    var stats by remember { mutableStateOf(TravelStats.EMPTY) }
     LaunchedEffect(Unit) {
         val statuses = container.places.statuses.first()
         val denominator = container.settings.denominator.first()
-        withContext(Dispatchers.IO) {
-            stats = computeStats(
+        // Assign the result, not the state itself, so the snapshot state is written
+        // on the main thread rather than from the IO dispatcher.
+        stats = withContext(Dispatchers.IO) {
+            computeStats(
                 container.places.places(),
                 statuses,
                 denominator,
@@ -123,7 +128,11 @@ private fun ConfigScreen(
 
     Scaffold { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Text("What should the widget show?", style = MaterialTheme.typography.titleMedium)
@@ -168,16 +177,16 @@ private fun ConfigScreen(
                     factory = { context ->
                         android.widget.FrameLayout(context)
                     },
-                    update = { container ->
-                        container.removeAllViews()
+                    update = { frameLayout ->
+                        frameLayout.removeAllViews()
                         val views = travelWidgetViews(
-                            context = container.context,
+                            context = frameLayout.context,
                             tier = WidgetTier.MEDIUM,
                             metric = metric,
                             filled = filledBackground,
                             stats = stats,
                         )
-                        container.addView(views.apply(container.context, container))
+                        frameLayout.addView(views.apply(frameLayout.context, frameLayout))
                     },
                 )
             }

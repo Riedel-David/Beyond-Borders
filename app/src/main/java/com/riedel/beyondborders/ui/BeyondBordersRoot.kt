@@ -34,6 +34,7 @@ import com.riedel.beyondborders.ui.passport.PassportScreen
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.settings.SettingsScreen
 import com.riedel.beyondborders.ui.welcome.WelcomeScreen
+import com.riedel.beyondborders.widget.WidgetIntent
 
 enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
     MAP("Map", R.drawable.ic_tab_map),
@@ -60,7 +61,8 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
 @Composable
 fun BeyondBordersRoot(
     container: AppContainer,
-    widgetIntent: com.riedel.beyondborders.WidgetIntent? = null,
+    widgetIntent: WidgetIntent? = null,
+    onWidgetIntentConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
@@ -84,15 +86,15 @@ fun BeyondBordersRoot(
     var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
     var openStats by rememberSaveable { mutableStateOf(false) }
 
-    // Handle widget intent: set the tab and stats flag, then consume it
+    // Handle widget intent: set the tab and stats flag, then consume it. Uses Tab enum
+    // name matching so a typo is a visible no-op rather than a silent one.
     LaunchedEffect(widgetIntent) {
         widgetIntent?.let { intent ->
-            when (intent.tab) {
-                "passport" -> {
-                    selected = Tab.PASSPORT.ordinal
-                    openStats = intent.openStats
-                }
+            Tab.entries.firstOrNull { it.name == intent.tabName }?.let { tab ->
+                selected = tab.ordinal
+                openStats = intent.openStats
             }
+            onWidgetIntentConsumed()
         }
     }
     val tab = Tab.entries[selected]

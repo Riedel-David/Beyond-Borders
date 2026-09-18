@@ -2,6 +2,7 @@ package com.riedel.beyondborders
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -16,9 +17,11 @@ import androidx.lifecycle.lifecycleScope
 import com.riedel.beyondborders.data.db.DatabaseHealth
 import com.riedel.beyondborders.data.db.DatabaseRecovery
 import com.riedel.beyondborders.ui.BeyondBordersRoot
+import com.riedel.beyondborders.ui.Tab
 import com.riedel.beyondborders.ui.recovery.DatabaseRecoveryScreen
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import com.riedel.beyondborders.widget.TravelWidgetProvider
+import com.riedel.beyondborders.widget.WidgetIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -54,7 +57,11 @@ class MainActivity : AppCompatActivity() {
                 // normally already resolved by the time the first frame is drawn.
                 when (val health = databaseHealth) {
                     DatabaseHealth.Unknown -> Surface(Modifier.fillMaxSize()) {}
-                    DatabaseHealth.Usable -> BeyondBordersRoot(container, widgetIntent)
+                    DatabaseHealth.Usable -> BeyondBordersRoot(
+                        container = container,
+                        widgetIntent = widgetIntent,
+                        onWidgetIntentConsumed = ::consumeWidgetIntent,
+                    )
                     is DatabaseHealth.Unusable -> DatabaseRecoveryScreen(
                         detail = health.detail,
                         onWipe = {
@@ -77,11 +84,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleWidgetIntent(intent: Intent) {
-        val tab = intent.getStringExtra("widget_open_tab")
+        val tabName = intent.getStringExtra("widget_open_tab")
         val openStats = intent.getBooleanExtra("widget_open_stats", false)
-        if (tab != null) {
-            widgetIntent = WidgetIntent(tab, openStats)
+        if (tabName != null) {
+            // Use uptimeMillis to give each tap a distinct identity. WidgetIntent is a
+            // data class with structural equality, so assigning the same (tab, openStats)
+            // values is a no-op write: the state never changes, LaunchedEffect never
+            // re-runs, and a second tap on the same widget does nothing.
+            widgetIntent = WidgetIntent(tabName, openStats, SystemClock.uptimeMillis())
+            // Clear the extras so rotation does not replay this intent.
+            intent.removeExtra("widget_open_tab")
+            intent.removeExtra("widget_open_stats")
         }
+    }
+
+    /** Called from BeyondBordersRoot after applying the intent, so rotation does not replay it. */
+    fun consumeWidgetIntent() {
+        widgetIntent = null
     }
 
     // The widget's own updatePeriodMillis is capped at 30 minutes; leaving the app
@@ -99,8 +118,3 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) { container.checkpointDatabase() }
     }
 }
-
-data class WidgetIntent(
-    val tab: String,
-    val openStats: Boolean,
-)

@@ -129,9 +129,10 @@ fun PassportScreen(
     // Transient: which continent/region a place belongs to never needs to survive
     // a process death the way a preference would, so this is rememberSaveable
     // rather than anything in SettingsStore.
-    var showStatsDetail by rememberSaveable { mutableStateOf(openStats) }
+    var showStatsDetail by rememberSaveable { mutableStateOf(false) }
 
-    // Handle widget intent to open stats
+    // Handle widget intent to open stats. The LaunchedEffect handles a tap arriving
+    // while the screen is already composed; seeding from openStats would conflict.
     LaunchedEffect(openStats) {
         if (openStats) {
             showStatsDetail = true

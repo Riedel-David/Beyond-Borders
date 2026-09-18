@@ -8,6 +8,12 @@ import com.riedel.beyondborders.ui.map.shareStatTiles
 import com.riedel.beyondborders.ui.places.TravelStats
 
 /**
+ * Logo bitmap size in dp. Must be at least the largest ImageView size any tier
+ * declares in its layout (currently 48dp in both medium and large).
+ */
+private const val LOGO_SIZE_DP = 48
+
+/**
  * Builds the widget's RemoteViews for the chosen tier, metric and background.
  *
  * Shared by [TravelWidgetProvider.updateOne] and the config activity's preview so
@@ -60,8 +66,8 @@ internal fun travelWidgetViews(
         // mask, so the ImageView shows the masked icon the home screen shows.
         val logo = context.packageManager.getApplicationIcon(context.packageName)
         val logoBitmap = logo.toBitmap(
-            width = (48 * context.resources.displayMetrics.density).toInt(),
-            height = (48 * context.resources.displayMetrics.density).toInt(),
+            width = (LOGO_SIZE_DP * context.resources.displayMetrics.density).toInt(),
+            height = (LOGO_SIZE_DP * context.resources.displayMetrics.density).toInt(),
         )
         views.setImageViewBitmap(R.id.widget_logo, logoBitmap)
 
@@ -71,7 +77,9 @@ internal fun travelWidgetViews(
         views.setProgressBar(R.id.widget_progress, 100, clampedPercent, false)
     }
 
-    // LARGE adds the three stat tiles
+    // LARGE adds the three stat tiles. shareStatTiles returns exactly three pairs;
+    // indexing [0][1][2] is safe today but if that ever changes the widget silently
+    // keeps a stale count (updateOne is wrapped in catch (_: Exception)).
     if (tier == WidgetTier.LARGE) {
         val tiles = shareStatTiles(stats)
         views.setTextViewText(R.id.widget_tile_1_value, tiles[0].first)
