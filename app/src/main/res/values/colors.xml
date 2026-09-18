@@ -13,6 +13,12 @@
     <color name="widget_surface">#F7F9FC</color>
     <color name="widget_on_surface">#131A22</color>
     <color name="widget_accent">#135CC9</color>
+    <!-- The quiet card's own tones. The brand card is dark in both light and dark mode,
+         so its white-alpha wordmark, tile fill and tile label cannot be reused here:
+         on a light quiet card they are white on near-white and vanish. -->
+    <color name="widget_quiet_muted">#8A131A22</color>
+    <color name="widget_quiet_tile_fill">#0D131A22</color>
+    <color name="widget_quiet_tile_stroke">#1F131A22</color>
 
     <!-- Brand colours for the widget's filled background, copied from MapShare.kt. -->
     <color name="brand_azure">#1E6FE3</color>

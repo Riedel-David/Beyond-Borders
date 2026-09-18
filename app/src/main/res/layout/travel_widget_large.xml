@@ -36,6 +36,13 @@
 
     </LinearLayout>
 
+    <!-- See travel_widget_medium.xml: absorbs the host's surplus height so the brand
+         mark stays top and the stats block bottom. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <!-- Hero number and label -->
     <TextView
         android:id="@+id/widget_headline"
@@ -77,11 +84,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="4dp"
             android:background="@drawable/widget_stat_tile"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="12dp">
+            android:padding="8dp">
 
             <TextView
                 android:id="@+id/widget_tile_1_value"
@@ -96,12 +103,12 @@
                 android:id="@+id/widget_tile_1_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:textColor="#9DFFFFFF"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:fontFamily="sans-serif-medium"
                 android:textStyle="bold"
-                android:letterSpacing="0.16" />
+                android:letterSpacing="0.06" />
 
         </LinearLayout>
 
@@ -110,12 +117,12 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:layout_marginEnd="6dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:background="@drawable/widget_stat_tile"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="12dp">
+            android:padding="8dp">
 
             <TextView
                 android:id="@+id/widget_tile_2_value"
@@ -130,12 +137,12 @@
                 android:id="@+id/widget_tile_2_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:textColor="#9DFFFFFF"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:fontFamily="sans-serif-medium"
                 android:textStyle="bold"
-                android:letterSpacing="0.16" />
+                android:letterSpacing="0.06" />
 
         </LinearLayout>
 
@@ -144,11 +151,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="4dp"
             android:background="@drawable/widget_stat_tile"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="12dp">
+            android:padding="8dp">
 
             <TextView
                 android:id="@+id/widget_tile_3_value"
@@ -163,12 +170,12 @@
                 android:id="@+id/widget_tile_3_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:textColor="#9DFFFFFF"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:fontFamily="sans-serif-medium"
                 android:textStyle="bold"
-                android:letterSpacing="0.16" />
+                android:letterSpacing="0.06" />
 
         </LinearLayout>
 

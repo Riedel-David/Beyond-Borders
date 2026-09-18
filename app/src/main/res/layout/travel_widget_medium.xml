@@ -36,6 +36,15 @@
 
     </LinearLayout>
 
+    <!-- Absorbs whatever height the host gave beyond what the content needs, so the
+         brand mark stays at the top and the stats block sits at the bottom instead of
+         both bunching up under a gap. A FrameLayout rather than a View or a Space
+         because RemoteViews only inflates @RemoteView-annotated classes. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <!-- Hero number and label -->
     <TextView
         android:id="@+id/widget_headline"

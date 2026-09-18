@@ -51,7 +51,11 @@ internal fun travelWidgetViews(
     views.setTextViewText(R.id.widget_headline, headline)
     views.setTextViewText(R.id.widget_label, label)
 
-    // Text colors: white on brand, theme colors on quiet
+    // Text colors: white on brand, theme colors on quiet. Every colour the layouts
+    // hardcode is white-alpha, which is right only on the brand card — the brand card is
+    // dark in both light and dark mode, the quiet card is not. So anything the layouts
+    // set has to be re-set here for the quiet case, including the wordmark and the tiles
+    // below; leaving the wordmark out left it white on near-white in light mode.
     if (filled) {
         views.setTextColor(R.id.widget_headline, 0xFFFFFFFF.toInt())
         views.setTextColor(R.id.widget_label, 0xDDFFFFFF.toInt())
@@ -71,10 +75,12 @@ internal fun travelWidgetViews(
         )
         views.setImageViewBitmap(R.id.widget_logo, logoBitmap)
 
-        // Progress bar: enforce a minimum fill so 1% is a visible dot, matching
-        // MapShare.drawProgressBar's reason for doing the same.
-        val clampedPercent = stats.percent.coerceAtLeast(2)
-        views.setProgressBar(R.id.widget_progress, 100, clampedPercent, false)
+        views.setTextColor(
+            R.id.widget_wordmark,
+            if (filled) 0xDBFFFFFF.toInt() else context.getColor(R.color.widget_quiet_muted),
+        )
+
+        views.setProgressBar(R.id.widget_progress, 100, widgetProgressValue(stats.percent), false)
     }
 
     // LARGE adds the three stat tiles. shareStatTiles returns exactly three pairs;
@@ -82,13 +88,39 @@ internal fun travelWidgetViews(
     // keeps a stale count (updateOne is wrapped in catch (_: Exception)).
     if (tier == WidgetTier.LARGE) {
         val tiles = shareStatTiles(stats)
-        views.setTextViewText(R.id.widget_tile_1_value, tiles[0].first)
-        views.setTextViewText(R.id.widget_tile_1_label, tiles[0].second)
-        views.setTextViewText(R.id.widget_tile_2_value, tiles[1].first)
-        views.setTextViewText(R.id.widget_tile_2_label, tiles[1].second)
-        views.setTextViewText(R.id.widget_tile_3_value, tiles[2].first)
-        views.setTextViewText(R.id.widget_tile_3_label, tiles[2].second)
+        val tileIds = listOf(
+            Triple(R.id.widget_tile_1, R.id.widget_tile_1_value, R.id.widget_tile_1_label),
+            Triple(R.id.widget_tile_2, R.id.widget_tile_2_value, R.id.widget_tile_2_label),
+            Triple(R.id.widget_tile_3, R.id.widget_tile_3_value, R.id.widget_tile_3_label),
+        )
+        val tileBackground =
+            if (filled) R.drawable.widget_stat_tile else R.drawable.widget_stat_tile_quiet
+        val valueColor =
+            if (filled) 0xFFFFFFFF.toInt() else context.getColor(R.color.widget_on_surface)
+        val labelColor =
+            if (filled) 0x9DFFFFFF.toInt() else context.getColor(R.color.widget_quiet_muted)
+
+        tileIds.forEachIndexed { index, (tile, value, label) ->
+            views.setInt(tile, "setBackgroundResource", tileBackground)
+            views.setTextViewText(value, tiles[index].first)
+            views.setTextViewText(label, tiles[index].second)
+            views.setTextColor(value, valueColor)
+            views.setTextColor(label, labelColor)
+        }
     }
 
     return views
 }
+
+/**
+ * The value to hand the widget's progress bar for a travelled [percent], out of 100.
+ *
+ * A minimum fill of 2 so 1% is a visible dot rather than a sliver the round cap swallows,
+ * matching the share card's own bar — but only above zero. `MapShare.drawProgressBar`
+ * returns before drawing any fill at `percent <= 0`, so an unconditional floor shows a dot
+ * for nothing travelled, which is the one case the bar has to read as empty. Pure and
+ * host-tested because the difference between an empty bar and a 2% dot is otherwise only
+ * visible on a device, and it was wrong here for as long as the widget existed.
+ */
+internal fun widgetProgressValue(percent: Int): Int =
+    if (percent <= 0) 0 else percent.coerceAtLeast(2)

@@ -6,6 +6,9 @@
     <color name="widget_surface">#0E1319</color>
     <color name="widget_on_surface">#E2E6EC</color>
     <color name="widget_accent">#AEC6FF</color>
+    <color name="widget_quiet_muted">#A8E2E6EC</color>
+    <color name="widget_quiet_tile_fill">#14FFFFFF</color>
+    <color name="widget_quiet_tile_stroke">#26FFFFFF</color>
 
     <!-- Brand colours for the widget's filled background, copied from MapShare.kt. -->
     <color name="brand_azure">#1E6FE3</color>

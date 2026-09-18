@@ -27,7 +27,7 @@ Everything works **offline**: the geometry is bundled in the APK and there is no
 basemap, no tile server and no API key. A flight tracker was built through phase
 3.6 and then removed — see [PLAN.md](PLAN.md) §1 for why.
 
-Every scoped phase is done (version `0.7.5`). Nothing is currently planned; see
+Every scoped phase is done (version `0.7.13`). Nothing is currently planned; see
 [STATUS.md](STATUS.md) for what that means and [PLAN.md](PLAN.md) §6 for the
 ideas that aren't scheduled.
 

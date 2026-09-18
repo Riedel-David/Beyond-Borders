@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Track: white at ~15% alpha -->
+    <!-- Track: neutral grey at ~22% alpha rather than white-alpha. A ProgressBar's
+         track lives inside this drawable and RemoteViews cannot swap a progressDrawable,
+         so one colour has to read on both the dark brand card and a light quiet card;
+         white-alpha satisfied only the first and left the quiet card's track invisible. -->
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <corners android:radius="100dp" />
-            <solid android:color="#26FFFFFF" />
+            <solid android:color="#38808080" />
         </shape>
     </item>
     <!-- Progress: BrandAzure to BrandTeal gradient -->

@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- minWidth/minHeight are the floor a user can resize down to, so they have to be a size
+     some tier can actually draw: minHeight was 40dp, well under the 95dp even COMPACT
+     needs. 160dp wide rather than 110dp because below ~160dp the label wraps to two lines
+     ("OF THE WORLD" is the longest) and COMPACT then needs 109dp instead of 95dp. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="110dp"
-    android:minHeight="40dp"
+    android:minWidth="160dp"
+    android:minHeight="96dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
     android:initialLayout="@layout/travel_widget_medium"
