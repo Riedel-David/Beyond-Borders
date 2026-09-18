@@ -29,33 +29,47 @@ export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
 adb install -r -t app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Second install — the two findings above
+## Second install — A–Z rail polish on fix/az-rail-polish
+
+First pass found two defects (bare letters reading as stray text against the screen
+edge, and no pill tracking the finger during a scrub). Both fixed on this branch.
 
 - [ ] Stats title now sits a normal distance below the status bar, not a doubled one.
-- [ ] A–Z rail: pick the A–Z chip on the travel list. Rail appears at the right edge.
+- [ ] A–Z rail: pick the A–Z chip on the travel list. Rail appears at the right edge
+      on a pill-shaped container (surfaceContainerHigh, 28 dp wide, 8 dp vertical
+      padding, 8 dp inset from right edge).
+- [ ] Container reads correctly in both light and dark modes.
 - [ ] Tap a letter — list jumps to it.
-- [ ] Press and slide — list follows the finger continuously, and the existing pill
-      names the letter under the finger.
-- [ ] Drag past the top and past the bottom of the rail: no crash, clamps to A / Z.
+- [ ] Press and slide — list follows the finger continuously.
+- [ ] During a scrub: a large pill to the **left** of the rail tracks the finger,
+      vertically centred on it, showing the letter under it. The pill appears
+      instantly when the finger lands (no fade-in) and names the correct letter.
+- [ ] The top-right FastScrollOverlay pill and the scrub pill **never appear at once**.
+      The top-right pill is suppressed during a scrub, only visible during flings.
+- [ ] Top and bottom letters are still reachable after the container padding change
+      (verify by scrubbing to A and Z — the letterAt arithmetic must account for the
+      padding or the mapping skews).
+- [ ] Drag past the top and past the bottom of the rail: no crash, pill clamps inside
+      the available height.
 - [ ] Switch to Continent or Region grouping — the rail is **gone**, not greyed out.
-- [ ] **flag** — rail is 20 dp wide, 16 dp per letter, `labelSmall`. All three are
-      mine, picked blind, and 16 dp per letter is the one most likely to feel wrong.
-- [ ] **flag** — the pill is aligned top-right and the rail centre-right. Check they
-      do not visually collide while scrubbing.
 - [ ] The rail is invisible to TalkBack by design. Confirm the list is still fully
       navigable by section header with TalkBack on.
+- [ ] **Overflow check**: 26 letters × 16 dp plus 16 dp padding is ~432 dp. On a small
+      screen or in landscape, the rail may exceed the list's available height. Note
+      whether this occurs and whether it is acceptable or needs adaptive sizing.
 
 ## §6 Stats screen — the Canvas, so this is the part the rule is about
 
 Reach it by tapping the passport card (the caption that used to say "Tap for
 continents…" is gone, a chevron replaces it).
 
-- [ ] Ring draws at all, and the percent sits centred *inside* it — not clipped by
-      the stroke, not overlapping it.
-- [ ] Ring metrics look right: 168 dp diameter, 14 dp stroke. Both are one-line
+- [x] Ring draws at all, and the percent sits centred *inside* it — not clipped by
+      the stroke, not overlapping it. **Confirmed by eye in one state; edge cases
+      (0%, 1–3%, 100%) and dark mode remain unverified.**
+- [x] Ring metrics look right: 168 dp diameter, 14 dp stroke. Both are one-line
       constants at the top of `StatsScreen.kt` if you want them different. **flag** —
-      I picked these blind.
-- [ ] Sweep starts at twelve o'clock and fills clockwise.
+      I picked these blind. **Confirmed visually correct.**
+- [x] Sweep starts at twelve o'clock and fills clockwise. **Confirmed.**
 - [ ] **Low percentage** (a fresh-ish install, 1–3%): the `StrokeCap.Round` cap does
       not render as a stray blob or bulge larger than the arc it caps.
 - [ ] **100%**: no seam, gap or overdraw where the sweep meets its own start.
@@ -96,13 +110,14 @@ worst option, since it is the screen that appears in the app's worst moment.
 
 ## §7 Settings — the danger zone
 
-- [ ] The Danger zone card is distinguishable from the neutral sections in **both**
+- [x] The Danger zone card is distinguishable from the neutral sections in **both**
       light and dark. **flag** — it uses `surfaceContainerHigh` against the other
       cards' `surfaceContainerLow`, which is a subtle step and the agent's own call.
-- [ ] Error-coloured border on the card and on "Delete everything"; the ripple
-      carries the warning too, not just the label text.
-- [ ] It reads as *dangerous*, not as *broken* or shouting. Settings is a screen you
-      open for ordinary reasons.
+      **Confirmed in the mode checked; dark mode remains unverified.**
+- [x] Error-coloured border on the card and on "Delete everything"; the ripple
+      carries the warning too, not just the label text. **Confirmed.**
+- [x] It reads as *dangerous*, not as *broken* or shouting. Settings is a screen you
+      open for ordinary reasons. **Confirmed.**
 - [ ] The confirmation flow behind the button is unchanged — it should still demand
       the name.
 
