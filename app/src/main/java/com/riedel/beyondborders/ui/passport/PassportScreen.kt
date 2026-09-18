@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -47,9 +50,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,12 +63,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
@@ -334,9 +346,17 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         }
     }
 
+    // Scrub state for the A-Z rail: written by AzRail when a finger is on the rail,
+    // read by FastScrollOverlay to suppress itself during a scrub so the two pills
+    // never appear at once. Hoisted here but never read in this scope to avoid
+    // invalidating PassportScreen on every finger movement — only the two composables
+    // that need it actually read the value.
+    val scrubLabel = remember { mutableStateOf<String?>(null) }
+
     FastScrollOverlay(
         listState = listState,
         headerSlots = headerSlots,
+        scrubLabel = scrubLabel,
         modifier = Modifier.align(Alignment.TopEnd),
     )
 
@@ -349,6 +369,7 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
         AzRail(
             listState = listState,
             headerSlots = headerSlots,
+            scrubLabel = scrubLabel,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
@@ -452,6 +473,7 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
 private fun FastScrollOverlay(
     listState: LazyListState,
     headerSlots: List<String?>,
+    scrubLabel: MutableState<String?>,
     modifier: Modifier = Modifier,
 ) {
     val currentHeader by remember(headerSlots) {
@@ -459,7 +481,8 @@ private fun FastScrollOverlay(
     }
     // Visible while a fling is in progress, and for a moment after it settles — long
     // enough to read the letter that was just reached, not so long that it lingers
-    // over a list the reader has already stopped moving through.
+    // over a list the reader has already stopped moving through. Suppressed while a
+    // scrub is active so the rail's own pill and this one never appear at once.
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
@@ -469,8 +492,9 @@ private fun FastScrollOverlay(
             visible = false
         }
     }
+    val scrubActive = scrubLabel.value != null
     AnimatedVisibility(
-        visible = visible && currentHeader != null,
+        visible = visible && currentHeader != null && !scrubActive,
         enter = fadeIn(),
         exit = fadeOut(),
         modifier = modifier,
@@ -496,6 +520,33 @@ private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+private fun ScrubPill(text: String, railWidthDp: Dp, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.padding(end = railWidthDp + 12.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        shadowElevation = 2.dp,
+    ) {
+        Box(
+            modifier = Modifier.size(ScrubPillSizeDp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text.uppercase(),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+    }
+}
+
+// Rail container width, used to position both the container and the scrub pill.
+private val RailWidthDp = 28.dp
+
+// Scrub pill size, used for drawing and positioning arithmetic.
+private val ScrubPillSizeDp = 48.dp
+
 /**
  * The A-Z index rail: a letter per distinct header the alphabetically-grouped list
  * actually emits (see [railLabels]), tap or drag to jump there. Shared between the
@@ -504,10 +555,10 @@ private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
  *
  * Scrubbing moves [listState] with [LazyListState.scrollToItem], not the animated
  * version: an animation per finger movement would fight the gesture and lag behind it,
- * where a jump is supposed to read as instant. The letter-under-finger pill is
- * [FastScrollOverlay] itself — every `scrollToItem` call lands `firstVisibleItemIndex`
- * exactly on the target header's own slot, so that composable's existing
- * `derivedStateOf` reports the right letter without this one saying so a second time.
+ * where a jump is supposed to read as instant. The letter-under-finger pill is a
+ * separate composable to the left of the rail, visible only while a finger is on the
+ * rail; [FastScrollOverlay] is suppressed during a scrub so the two never appear at
+ * once.
  *
  * Every read of [listState] and every bit of scrub state (the finger's row, the
  * touched letter, the target index) lives in `remember`/`mutableStateOf` local to this
@@ -526,72 +577,140 @@ private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
 private fun AzRail(
     listState: LazyListState,
     headerSlots: List<String?>,
+    scrubLabel: MutableState<String?>,
     modifier: Modifier = Modifier,
 ) {
     val labels = remember(headerSlots) { railLabels(headerSlots) }
     if (labels.isEmpty()) return
+
+    val density = LocalDensity.current
+    val verticalPaddingPx = with(density) { 8.dp.toPx() }
+    val pillHeightPx = with(density) { ScrubPillSizeDp.roundToPx() }
 
     // -1 means "no scrub has requested a jump yet"; the effect below only runs again
     // when this actually changes, so a finger dwelling inside one letter's band does
     // not re-issue the same scrollToItem every frame.
     var targetIndex by remember { mutableIntStateOf(-1) }
     var touchedLabel by remember { mutableStateOf<String?>(null) }
+    var touchY by remember { mutableFloatStateOf(0f) }
+    var surfaceTopInBox by remember { mutableFloatStateOf(0f) }
+    var boxHeight by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(targetIndex) {
         if (targetIndex >= 0) listState.scrollToItem(targetIndex)
     }
 
-    Column(
+    // Write the scrub label so FastScrollOverlay can suppress itself during a scrub.
+    // touchedLabel is local state; scrubLabel is hoisted but never read in
+    // PassportScreen's scope.
+    LaunchedEffect(touchedLabel) {
+        scrubLabel.value = touchedLabel
+    }
+
+    // Clear scrubLabel if AzRail leaves composition mid-scrub (e.g. when grouping
+    // changes away from A-Z), otherwise FastScrollOverlay stays suppressed.
+    DisposableEffect(Unit) {
+        onDispose { scrubLabel.value = null }
+    }
+
+    Box(
         modifier = modifier
-            .width(20.dp)
-            .clearAndSetSemantics {}
-            .pointerInput(labels, headerSlots) {
-                fun letterAt(y: Float): String {
-                    val i = (y / size.height * labels.size)
-                        .toInt()
-                        .coerceIn(0, labels.size - 1)
-                    return labels[i]
-                }
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    val pointerId = down.id
-                    var pressed = true
-                    var label = letterAt(down.position.y)
-                    touchedLabel = label
-                    railTargetIndex(headerSlots, label)?.let { targetIndex = it }
-                    while (pressed) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == pointerId }
-                        if (change == null) break
-                        pressed = change.pressed
-                        if (pressed) {
-                            label = letterAt(change.position.y)
-                            touchedLabel = label
-                            railTargetIndex(headerSlots, label)?.let { targetIndex = it }
-                            change.consume()
-                        }
-                    }
-                    touchedLabel = null
-                }
-            },
-        verticalArrangement = Arrangement.Center,
+            .fillMaxHeight()
+            .padding(end = 8.dp)
+            .onSizeChanged { boxHeight = it.height },
+        contentAlignment = Alignment.CenterEnd,
     ) {
-        labels.forEach { label ->
-            val touched = label == touchedLabel
-            Text(
-                text = label.take(1).uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (touched) FontWeight.Bold else FontWeight.Normal,
-                color = if (touched) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                textAlign = TextAlign.Center,
+        // Scrub pill: visible only while a finger is on the rail, tracks the finger's
+        // vertical position, shows the letter under it. Positioned to the left of the
+        // rail with a 12 dp gap. No fade-in animation: it must appear instantly.
+        // Aligned TopEnd so offset is measured from the Box's top, not from the
+        // CenterEnd alignment the Box applies by default.
+        if (touchedLabel != null && boxHeight > 0) {
+            val pillY = surfaceTopInBox + verticalPaddingPx + touchY - pillHeightPx / 2f
+            val clampedPillY = if (boxHeight >= pillHeightPx) {
+                pillY.coerceIn(0f, (boxHeight - pillHeightPx).toFloat())
+            } else {
+                0f
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset { IntOffset(0, clampedPillY.toInt()) }
+                    .clearAndSetSemantics {},
+            ) {
+                ScrubPill(
+                    text = touchedLabel!!,
+                    railWidthDp = RailWidthDp,
+                )
+            }
+        }
+
+        // Rail container: pill-shaped surface, 28 dp wide, 8 dp vertical padding inside.
+        // onPlaced measures the Surface's position within the Box (not the Column's
+        // position within the Surface), so surfaceTopInBox is in the Box's coordinate space.
+        Surface(
+            modifier = Modifier
+                .width(RailWidthDp)
+                .onPlaced { surfaceTopInBox = it.positionInParent().y },
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(16.dp),
-            )
+                    .padding(vertical = 8.dp)
+                    .clearAndSetSemantics {}
+                    .pointerInput(labels, headerSlots) {
+                        fun letterAt(y: Float): String {
+                            val i = (y / size.height * labels.size)
+                                .toInt()
+                                .coerceIn(0, labels.size - 1)
+                            return labels[i]
+                        }
+                        awaitEachGesture {
+                            val down = awaitFirstDown()
+                            val pointerId = down.id
+                            var pressed = true
+                            var label = letterAt(down.position.y)
+                            touchedLabel = label
+                            touchY = down.position.y
+                            railTargetIndex(headerSlots, label)?.let { targetIndex = it }
+                            while (pressed) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == pointerId }
+                                if (change == null) break
+                                pressed = change.pressed
+                                if (pressed) {
+                                    label = letterAt(change.position.y)
+                                    touchedLabel = label
+                                    touchY = change.position.y
+                                    railTargetIndex(headerSlots, label)?.let { targetIndex = it }
+                                    change.consume()
+                                }
+                            }
+                            touchedLabel = null
+                        }
+                    },
+                verticalArrangement = Arrangement.Center,
+            ) {
+                labels.forEach { label ->
+                    val touched = label == touchedLabel
+                    Text(
+                        text = label.take(1).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (touched) FontWeight.Bold else FontWeight.Normal,
+                        color = if (touched) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp),
+                    )
+                }
+            }
         }
     }
 }
