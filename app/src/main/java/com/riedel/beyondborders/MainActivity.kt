@@ -1,5 +1,6 @@
 package com.riedel.beyondborders
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -7,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -27,11 +30,16 @@ import kotlinx.coroutines.launch
  */
 class MainActivity : AppCompatActivity() {
 
+    private var widgetIntent by mutableStateOf<WidgetIntent?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val container = (application as BeyondBordersApp).container
+
+        // Handle widget tap intents
+        handleWidgetIntent(intent)
 
         setContent {
             val themeMode by container.settings.themeMode.collectAsStateWithLifecycle()
@@ -46,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                 // normally already resolved by the time the first frame is drawn.
                 when (val health = databaseHealth) {
                     DatabaseHealth.Unknown -> Surface(Modifier.fillMaxSize()) {}
-                    DatabaseHealth.Usable -> BeyondBordersRoot(container)
+                    DatabaseHealth.Usable -> BeyondBordersRoot(container, widgetIntent)
                     is DatabaseHealth.Unusable -> DatabaseRecoveryScreen(
                         detail = health.detail,
                         onWipe = {
@@ -58,6 +66,21 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // launchMode="singleTop" delivers a tap on an already-running app here rather
+        // than stacking a second instance.
+        handleWidgetIntent(intent)
+    }
+
+    private fun handleWidgetIntent(intent: Intent) {
+        val tab = intent.getStringExtra("widget_open_tab")
+        val openStats = intent.getBooleanExtra("widget_open_stats", false)
+        if (tab != null) {
+            widgetIntent = WidgetIntent(tab, openStats)
         }
     }
 
@@ -76,3 +99,8 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) { container.checkpointDatabase() }
     }
 }
+
+data class WidgetIntent(
+    val tab: String,
+    val openStats: Boolean,
+)

@@ -25,3 +25,19 @@ internal fun widgetText(metric: WidgetMetric, stats: TravelStats): Pair<String, 
         WidgetMetric.CONTINENTS ->
             "${stats.continentsTouched} of ${stats.continents.size}" to "continents touched"
     }
+
+/** Just the hero number for the new widget layouts. */
+internal fun widgetHeadline(metric: WidgetMetric, stats: TravelStats): String =
+    when (metric) {
+        WidgetMetric.COUNTRIES -> "${stats.been}"
+        WidgetMetric.PERCENT -> "${stats.percent}%"
+        WidgetMetric.CONTINENTS -> "${stats.continentsTouched}"
+    }
+
+/** The label beneath the hero number in the new widget layouts. */
+internal fun widgetLabel(metric: WidgetMetric, stats: TravelStats): String =
+    when (metric) {
+        WidgetMetric.COUNTRIES -> "PLACES BEEN"
+        WidgetMetric.PERCENT -> "OF THE WORLD"
+        WidgetMetric.CONTINENTS -> "CONTINENTS"
+    }

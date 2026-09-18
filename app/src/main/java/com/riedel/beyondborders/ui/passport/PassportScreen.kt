@@ -94,7 +94,12 @@ import com.riedel.beyondborders.ui.places.visaFilters
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
+fun PassportScreen(
+    viewModel: PlacesViewModel,
+    openStats: Boolean = false,
+    onStatsConsumed: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     // The stats detail popup needs a name and a status per code in a bucket, and
@@ -124,7 +129,16 @@ fun PassportScreen(viewModel: PlacesViewModel, modifier: Modifier = Modifier) {
     // Transient: which continent/region a place belongs to never needs to survive
     // a process death the way a preference would, so this is rememberSaveable
     // rather than anything in SettingsStore.
-    var showStatsDetail by rememberSaveable { mutableStateOf(false) }
+    var showStatsDetail by rememberSaveable { mutableStateOf(openStats) }
+
+    // Handle widget intent to open stats
+    LaunchedEffect(openStats) {
+        if (openStats) {
+            showStatsDetail = true
+            onStatsConsumed()
+        }
+    }
+
     if (showStatsDetail) {
         // Not a real back-stack entry — just this boolean — so without this the
         // system back gesture has nothing here to intercept and falls through to

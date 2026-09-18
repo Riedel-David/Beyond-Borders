@@ -58,7 +58,11 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
  * Revisit when a screen needs real arguments in its route.
  */
 @Composable
-fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
+fun BeyondBordersRoot(
+    container: AppContainer,
+    widgetIntent: com.riedel.beyondborders.WidgetIntent? = null,
+    modifier: Modifier = Modifier,
+) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
@@ -78,6 +82,19 @@ fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
     }
 
     var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
+    var openStats by rememberSaveable { mutableStateOf(false) }
+
+    // Handle widget intent: set the tab and stats flag, then consume it
+    LaunchedEffect(widgetIntent) {
+        widgetIntent?.let { intent ->
+            when (intent.tab) {
+                "passport" -> {
+                    selected = Tab.PASSPORT.ordinal
+                    openStats = intent.openStats
+                }
+            }
+        }
+    }
     val tab = Tab.entries[selected]
 
     // Hoisted to the root so the map and the passport share one instance: marking
@@ -120,7 +137,11 @@ fun BeyondBordersRoot(container: AppContainer, modifier: Modifier = Modifier) {
                         MapScreen(placesViewModel, contentPadding = padding)
                     }
                     Tab.PASSPORT -> Box(Modifier.fillMaxSize().padding(padding)) {
-                        PassportScreen(placesViewModel)
+                        PassportScreen(
+                            viewModel = placesViewModel,
+                            openStats = openStats,
+                            onStatsConsumed = { openStats = false },
+                        )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
                         SettingsScreen(container)

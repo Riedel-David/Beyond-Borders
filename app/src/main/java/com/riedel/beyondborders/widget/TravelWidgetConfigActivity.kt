@@ -8,8 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +24,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,9 +32,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.riedel.beyondborders.BeyondBordersApp
+import com.riedel.beyondborders.ui.places.computeStats
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -62,9 +70,14 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             return
         }
 
+        val container = (application as BeyondBordersApp).container
+
         setContent {
             BeyondBordersTheme {
-                ConfigScreen(onDone = { metric, filledBackground -> save(metric, filledBackground) })
+                ConfigScreen(
+                    container = container,
+                    onDone = { metric, filledBackground -> save(metric, filledBackground) },
+                )
             }
         }
     }
@@ -76,7 +89,8 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             // the moment the user taps Done, which is the worst moment to stall.
             withContext(Dispatchers.IO) {
                 WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground)
-                TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, widgetId)
+                val manager = AppWidgetManager.getInstance(this@TravelWidgetConfigActivity)
+                TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, manager, widgetId)
             }
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
             setResult(Activity.RESULT_OK, result)
@@ -86,9 +100,26 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
 }
 
 @Composable
-private fun ConfigScreen(onDone: (WidgetMetric, Boolean) -> Unit) {
+private fun ConfigScreen(
+    container: com.riedel.beyondborders.AppContainer,
+    onDone: (WidgetMetric, Boolean) -> Unit,
+) {
     var metric by remember { mutableStateOf(WidgetMetric.DEFAULT) }
     var filledBackground by remember { mutableStateOf(true) }
+
+    // Fetch the real stats for the preview
+    var stats by remember { mutableStateOf(com.riedel.beyondborders.ui.places.TravelStats.EMPTY) }
+    LaunchedEffect(Unit) {
+        val statuses = container.places.statuses.first()
+        val denominator = container.settings.denominator.first()
+        withContext(Dispatchers.IO) {
+            stats = computeStats(
+                container.places.places(),
+                statuses,
+                denominator,
+            )
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -124,6 +155,31 @@ private fun ConfigScreen(onDone: (WidgetMetric, Boolean) -> Unit) {
                     Text(if (filledBackground) "Filled" else "Transparent")
                     Switch(checked = filledBackground, onCheckedChange = { filledBackground = it })
                 }
+            }
+
+            // Live preview: inflate the real RemoteViews at MEDIUM tier
+            Text("Preview", style = MaterialTheme.typography.titleMedium)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(3f / 2f),
+            ) {
+                AndroidView(
+                    factory = { context ->
+                        android.widget.FrameLayout(context)
+                    },
+                    update = { container ->
+                        container.removeAllViews()
+                        val views = travelWidgetViews(
+                            context = container.context,
+                            tier = WidgetTier.MEDIUM,
+                            metric = metric,
+                            filled = filledBackground,
+                            stats = stats,
+                        )
+                        container.addView(views.apply(container.context, container))
+                    },
+                )
             }
 
             FilledTonalButton(
