@@ -1,16 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?><!--
    Auto Backup on API 26-30; data_extraction_rules.xml is the same decision for 31+.
 
-   Everything is backed up except where excluded, and that default is what we want
-   here: beyondborders.db is the travel history, the one thing in the app that cannot be
-   re-fetched from anywhere, so a new phone should get it back.
+   The database and the settings prefs are excluded on purpose, not left in by the
+   exclude-only default: a reinstall has to be genuinely empty, and "Delete
+   everything" has to actually be the end of the data, not something a Google
+   restore quietly undoes. beyondborders.db (and its -wal/-shm write-ahead files)
+   and beyondborders.settings.xml — which also carries has_seen_welcome — are the
+   two places that would otherwise bring the whole travel history and app state
+   back on the next install. widget_prefs.xml goes too: it is keyed by AppWidget
+   id, and the launcher re-allocates those from scratch after a reinstall, so a
+   restored entry could dress a brand-new widget in a stale config.
 
-   beyondborders.device.xml is the exception. It holds the per-install id that a future
-   sync uses to tell its own writes from another device's, and restoring it would
-   give two installs the same id — each ignoring the other's edits as an echo of its
-   own. Excluded, it is regenerated on first launch, which is the correct answer for
-   a new install.
+   The travel history is not lost to Auto Backup, only kept from restoring itself
+   automatically: a plain JSON snapshot written to files/cloud/snapshot.json (see
+   CloudSnapshot) rides along instead, and it sits there unread until the user taps
+   Restore in Settings — the same import path a picked file already goes through.
+
+   beyondborders.device.xml is excluded for an unrelated reason: it holds the
+   per-install id that a future sync uses to tell its own writes from another
+   device's, and restoring it would give two installs the same id — each ignoring
+   the other's edits as an echo of its own. Excluded, it is regenerated on first
+   launch, which is the correct answer for a new install.
 -->
 <full-backup-content>
+    <exclude domain="database" path="beyondborders.db"/>
+    <exclude domain="database" path="beyondborders.db-wal"/>
+    <exclude domain="database" path="beyondborders.db-shm"/>
+    <exclude domain="sharedpref" path="beyondborders.settings.xml"/>
+    <exclude domain="sharedpref" path="widget_prefs.xml"/>
     <exclude domain="sharedpref" path="beyondborders.device.xml"/>
 </full-backup-content>

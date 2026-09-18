@@ -2,6 +2,8 @@ package com.riedel.beyondborders
 
 import android.content.Context
 import com.riedel.beyondborders.core.Haptics
+import com.riedel.beyondborders.data.backup.CloudSnapshot
+import com.riedel.beyondborders.data.backup.shouldStageSnapshot
 import com.riedel.beyondborders.data.db.BeyondBordersDatabase
 import com.riedel.beyondborders.data.db.DatabaseHealth
 import com.riedel.beyondborders.data.db.DatabaseRecovery
@@ -55,11 +57,10 @@ class AppContainer(context: Context) {
     /**
      * Fold the write-ahead log back into `beyondborders.db`.
      *
-     * Room runs in WAL mode, so a committed change can be sitting in `-wal` with the
-     * database file itself untouched. Android's Auto Backup copies the two as separate
-     * files, not as one snapshot, so a write landing between the copies puts a torn
-     * pair in the backup. Checkpointing as the app goes to the background makes the
-     * `.db` file complete on its own at the moment a backup is allowed to run.
+     * The database is excluded from Auto Backup now (see `backup_rules.xml`), so this
+     * is no longer about backup consistency — it is crash recovery: folding `-wal` back
+     * in as the app leaves the foreground shrinks how much a hard kill or a wiped app
+     * process could lose to whatever was still sitting unflushed.
      *
      * Blocking — the caller puts it on IO. Silent on failure: this runs on the way out
      * of the app, and the WAL staying put for another round is not worth a crash.
@@ -89,5 +90,13 @@ class AppContainer(context: Context) {
             registryLoader = { passport -> VisaRegistry.load(appContext.assets, passport) },
             passportsLoader = { VisaRegistry.availablePassports(appContext.assets) },
         )
+    }
+
+    val cloudSnapshot: CloudSnapshot by lazy { CloudSnapshot(appContext) }
+
+    /** Refresh the snapshot Auto Backup carries. */
+    suspend fun stageCloudSnapshot() {
+        val export = places.exportBackup()
+        if (shouldStageSnapshot(export)) cloudSnapshot.write(export.json) else cloudSnapshot.delete()
     }
 }

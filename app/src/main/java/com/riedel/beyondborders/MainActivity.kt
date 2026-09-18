@@ -107,14 +107,18 @@ class MainActivity : AppCompatActivity() {
     // is the moment a count just changed on-screen is most likely to matter on the
     // home screen too, so it gets a nudge here rather than waiting that out.
     //
-    // Backgrounding is also when Auto Backup becomes free to run, so the write-ahead
-    // log is folded back into the database file here for the same reason — see
-    // AppContainer.checkpointDatabase. On IO because it touches the disk, and on
-    // lifecycleScope because the checkpoint has no suspension point to cancel at.
+    // Backgrounding is also the moment to fold the write-ahead log back into the
+    // database file (see AppContainer.checkpointDatabase, now a crash-recovery
+    // measure rather than a backup one) and to refresh the JSON snapshot Auto
+    // Backup actually carries. lifecycleScope survives onPause — it is cancelled
+    // on destroy — and Dispatchers.IO because both touch disk.
     override fun onPause() {
         super.onPause()
         TravelWidgetProvider.requestUpdate(applicationContext)
         val container = (application as BeyondBordersApp).container
-        lifecycleScope.launch(Dispatchers.IO) { container.checkpointDatabase() }
+        lifecycleScope.launch(Dispatchers.IO) {
+            container.checkpointDatabase()
+            container.stageCloudSnapshot()
+        }
     }
 }

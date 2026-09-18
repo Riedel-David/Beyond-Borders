@@ -80,6 +80,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             // The application context's resolver: the ViewModel outlives the
             // activity across a rotation, and holding the activity's would leak it.
             resolver = context.applicationContext.contentResolver,
+            snapshot = container.cloudSnapshot,
         ),
     )
 
@@ -92,6 +93,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
     val passportNames by viewModel.passportNames.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
+    val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
     val importPreview by viewModel.importPreview.collectAsStateWithLifecycle()
 
@@ -258,6 +260,21 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 8.dp),
             )
 
+            if (snapshotAvailable) {
+                OutlinedButton(
+                    onClick = viewModel::previewSnapshotRestore,
+                    enabled = transfer !is TransferState.Busy,
+                    modifier = Modifier.padding(top = 12.dp),
+                ) { Text("Restore from Android's backup") }
+                Text(
+                    "Android's backup left a snapshot of your history on this " +
+                        "phone. Restoring merges it in, exactly like importing a file.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
             when (val state = transfer) {
                 TransferState.Idle -> Unit
                 TransferState.Busy -> LinearProgressIndicator(
@@ -318,7 +335,15 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 AlertDialog(
                     onDismissRequest = { showConfirm = false },
                     title = { Text("Delete everything?") },
-                    text = { Text("Every place you've marked will be cleared. This cannot be undone.") },
+                    text = {
+                        Text(
+                            "Every place you've marked is cleared from this phone, " +
+                                "along with the snapshot Android's backup keeps. " +
+                                "Google may still hold an earlier backup until " +
+                                "Android next runs one — Android's backup settings " +
+                                "can delete that now."
+                        )
+                    },
                     confirmButton = {
                         TextButton(onClick = {
                             showConfirm = false
@@ -346,12 +371,13 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 4.dp),
             )
             Text(
-                "Android's own Auto Backup includes this data too, so a new phone " +
-                    "can restore it without a file — that copy is made by the system, " +
-                    "to your Google account; the app never uploads anything itself. " +
-                    "A per-install id is excluded from it, so two installs can't end " +
-                    "up sharing one. Switch it off in Android's backup settings if " +
-                    "you would rather it did not.",
+                "Android's own Auto Backup carries a snapshot of your history to " +
+                    "your Google account — the system makes that copy, the app " +
+                    "never uploads anything itself. A reinstalled or new phone " +
+                    "starts empty: nothing is put back until you tap Restore. The " +
+                    "database, your settings and a per-install id stay out of the " +
+                    "backup entirely. Switch it off in Android's backup settings " +
+                    "if you would rather it did not.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),

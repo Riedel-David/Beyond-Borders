@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.beyondborders.data.backup.BackupMerge
+import com.riedel.beyondborders.data.backup.CloudSnapshot
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.visa.VisaRepository
@@ -60,6 +61,7 @@ class SettingsViewModel(
     private val places: PlaceRepository,
     private val visa: VisaRepository,
     private val resolver: ContentResolver,
+    private val snapshot: CloudSnapshot,
     private val today: () -> LocalDate = LocalDate::now,
 ) : ViewModel() {
 
@@ -101,6 +103,14 @@ class SettingsViewModel(
     // export's) under the wrong heading.
     private val _reset = MutableStateFlow<TransferState>(TransferState.Idle)
     val reset: StateFlow<TransferState> = _reset.asStateFlow()
+
+    // Whether Auto Backup left a snapshot behind for the Restore row to offer. Read
+    // once at construction — this ViewModel is recreated per Settings visit, which
+    // is often enough to notice a restore that happened since the screen was last
+    // open — and then only ever updated from inside this class, after a restore or
+    // a delete, rather than polled.
+    private val _snapshotAvailable = MutableStateFlow(snapshot.exists())
+    val snapshotAvailable: StateFlow<Boolean> = _snapshotAvailable.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) = settings.setThemeMode(mode)
 
@@ -145,6 +155,13 @@ class SettingsViewModel(
             _reset.value = try {
                 places.deleteAll()
                 settings.resetHasSeenWelcome()
+                snapshot.delete()
+                _snapshotAvailable.value = false
+                // Only enqueues the upload — it does not run synchronously and does
+                // not confirm anything reached Google, but it is what turns the
+                // emptied state into what Auto Backup carries next, overwriting
+                // whatever pre-existing cloud copy this device had.
+                snapshot.notifyBackupChanged()
                 TransferState.Idle
             } catch (e: Exception) {
                 TransferState.Failed(e.message ?: "Couldn't delete everything.")
@@ -189,14 +206,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 val text = withContext(Dispatchers.IO) { readText(uri) }
-                val plan = places.previewBackup(text)
-                // Codes, not names, are what the plan carries — resolved here because
-                // "DE" means nothing to a user looking at a confirmation dialog.
-                val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
-                    .map { entry -> places.place(entry.code)?.name ?: entry.code }
-                pendingImportText = text
-                _importPreview.value = ImportPreview(plan, sampleNames)
-                _transfer.value = TransferState.Idle
+                previewText(text)
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
@@ -209,6 +219,50 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Offer the snapshot Auto Backup left behind through the same preview dialog a
+     * picked file goes through — [previewText] is the tail [previewImport] shares.
+     *
+     * A null read means the file vanished between the Restore button appearing and
+     * the tap (deleted from under it, or never actually landed): treated as the
+     * snapshot no longer being there, not as an import failure with nothing to blame.
+     */
+    fun previewSnapshotRestore() {
+        if (_transfer.value == TransferState.Busy) return
+        _transfer.value = TransferState.Busy
+        viewModelScope.launch {
+            val text = withContext(Dispatchers.IO) { snapshot.read() }
+            if (text == null) {
+                _snapshotAvailable.value = false
+                _transfer.value = TransferState.Failed("That snapshot isn't there anymore.")
+                return@launch
+            }
+            try {
+                previewText(text)
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                _transfer.value = TransferState.Failed(t.message ?: "The import failed.")
+            }
+        }
+    }
+
+    /**
+     * The shared tail of [previewImport] and [previewSnapshotRestore]: plan what
+     * importing [text] would do and hand the result to the same confirmation dialog,
+     * regardless of where the text came from.
+     */
+    private suspend fun previewText(text: String) {
+        val plan = places.previewBackup(text)
+        // Codes, not names, are what the plan carries — resolved here because
+        // "DE" means nothing to a user looking at a confirmation dialog.
+        val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
+            .map { entry -> places.place(entry.code)?.name ?: entry.code }
+        pendingImportText = text
+        _importPreview.value = ImportPreview(plan, sampleNames)
+        _transfer.value = TransferState.Idle
+    }
+
     /** The user confirmed the dialog [previewImport] opened. Applies the file held
      * since the preview, not a fresh read of the URI. */
     fun confirmImportPreview() {
@@ -219,7 +273,13 @@ class SettingsViewModel(
         _transfer.value = TransferState.Busy
         viewModelScope.launch {
             _transfer.value = try {
-                TransferState.Done(importMessage(places.importBackup(text)))
+                val message = importMessage(places.importBackup(text))
+                // Re-checked from disk rather than assumed: this same confirm path
+                // handles both a picked file and [previewSnapshotRestore], and either
+                // way the on-disk snapshot's presence, not which path was used, is
+                // what the Restore row should reflect.
+                _snapshotAvailable.value = withContext(Dispatchers.IO) { snapshot.exists() }
+                TransferState.Done(message)
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
@@ -282,10 +342,11 @@ class SettingsViewModel(
             places: PlaceRepository,
             visa: VisaRepository,
             resolver: ContentResolver,
+            snapshot: CloudSnapshot,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(settings, places, visa, resolver) as T
+                return SettingsViewModel(settings, places, visa, resolver, snapshot) as T
             }
         }
     }
