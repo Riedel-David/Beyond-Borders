@@ -530,7 +530,7 @@ private fun ScrubPill(text: String, railWidthDp: Dp, modifier: Modifier = Modifi
         shadowElevation = 2.dp,
     ) {
         Box(
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(ScrubPillSizeDp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -543,6 +543,9 @@ private fun ScrubPill(text: String, railWidthDp: Dp, modifier: Modifier = Modifi
 
 // Rail container width, used to position both the container and the scrub pill.
 private val RailWidthDp = 28.dp
+
+// Scrub pill size, used for drawing and positioning arithmetic.
+private val ScrubPillSizeDp = 48.dp
 
 /**
  * The A-Z index rail: a letter per distinct header the alphabetically-grouped list
@@ -582,6 +585,7 @@ private fun AzRail(
 
     val density = LocalDensity.current
     val verticalPaddingPx = with(density) { 8.dp.toPx() }
+    val pillHeightPx = with(density) { ScrubPillSizeDp.roundToPx() }
 
     // -1 means "no scrub has requested a jump yet"; the effect below only runs again
     // when this actually changes, so a finger dwelling inside one letter's band does
@@ -590,7 +594,6 @@ private fun AzRail(
     var touchedLabel by remember { mutableStateOf<String?>(null) }
     var touchY by remember { mutableFloatStateOf(0f) }
     var surfaceTopInBox by remember { mutableFloatStateOf(0f) }
-    var pillHeight by remember { mutableIntStateOf(0) }
     var boxHeight by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(targetIndex) {
@@ -622,10 +625,10 @@ private fun AzRail(
         // rail with a 12 dp gap. No fade-in animation: it must appear instantly.
         // Aligned TopEnd so offset is measured from the Box's top, not from the
         // CenterEnd alignment the Box applies by default.
-        if (touchedLabel != null && boxHeight > 0 && pillHeight > 0) {
-            val pillY = surfaceTopInBox + verticalPaddingPx + touchY - pillHeight / 2f
-            val clampedPillY = if (boxHeight >= pillHeight) {
-                pillY.coerceIn(0f, (boxHeight - pillHeight).toFloat())
+        if (touchedLabel != null && boxHeight > 0) {
+            val pillY = surfaceTopInBox + verticalPaddingPx + touchY - pillHeightPx / 2f
+            val clampedPillY = if (boxHeight >= pillHeightPx) {
+                pillY.coerceIn(0f, (boxHeight - pillHeightPx).toFloat())
             } else {
                 0f
             }
@@ -633,7 +636,6 @@ private fun AzRail(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset { IntOffset(0, clampedPillY.toInt()) }
-                    .onSizeChanged { pillHeight = it.height }
                     .clearAndSetSemantics {},
             ) {
                 ScrubPill(
