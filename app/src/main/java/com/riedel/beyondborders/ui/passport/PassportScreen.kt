@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -65,12 +66,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -518,9 +521,9 @@ private fun FastScrollLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ScrubPill(text: String, modifier: Modifier = Modifier) {
+private fun ScrubPill(text: String, railWidthDp: Dp, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.padding(end = 12.dp),
+        modifier = modifier.padding(end = railWidthDp + 12.dp),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -537,6 +540,9 @@ private fun ScrubPill(text: String, modifier: Modifier = Modifier) {
         }
     }
 }
+
+// Rail container width, used to position both the container and the scrub pill.
+private val RailWidthDp = 28.dp
 
 /**
  * The A-Z index rail: a letter per distinct header the alphabetically-grouped list
@@ -574,13 +580,16 @@ private fun AzRail(
     val labels = remember(headerSlots) { railLabels(headerSlots) }
     if (labels.isEmpty()) return
 
+    val density = LocalDensity.current
+    val verticalPaddingPx = with(density) { 8.dp.toPx() }
+
     // -1 means "no scrub has requested a jump yet"; the effect below only runs again
     // when this actually changes, so a finger dwelling inside one letter's band does
     // not re-issue the same scrollToItem every frame.
     var targetIndex by remember { mutableIntStateOf(-1) }
     var touchedLabel by remember { mutableStateOf<String?>(null) }
     var touchY by remember { mutableFloatStateOf(0f) }
-    var railTopOffset by remember { mutableFloatStateOf(0f) }
+    var surfaceTopInBox by remember { mutableFloatStateOf(0f) }
     var pillHeight by remember { mutableIntStateOf(0) }
     var boxHeight by remember { mutableIntStateOf(0) }
 
@@ -595,6 +604,12 @@ private fun AzRail(
         scrubLabel.value = touchedLabel
     }
 
+    // Clear scrubLabel if AzRail leaves composition mid-scrub (e.g. when grouping
+    // changes away from A-Z), otherwise FastScrollOverlay stays suppressed.
+    DisposableEffect(Unit) {
+        onDispose { scrubLabel.value = null }
+    }
+
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -605,22 +620,36 @@ private fun AzRail(
         // Scrub pill: visible only while a finger is on the rail, tracks the finger's
         // vertical position, shows the letter under it. Positioned to the left of the
         // rail with a 12 dp gap. No fade-in animation: it must appear instantly.
-        if (touchedLabel != null && boxHeight > 0) {
-            val pillY = (railTopOffset + touchY - pillHeight / 2f)
-                .coerceIn(0f, boxHeight - pillHeight.toFloat())
+        // Aligned TopEnd so offset is measured from the Box's top, not from the
+        // CenterEnd alignment the Box applies by default.
+        if (touchedLabel != null && boxHeight > 0 && pillHeight > 0) {
+            val pillY = surfaceTopInBox + verticalPaddingPx + touchY - pillHeight / 2f
+            val clampedPillY = if (boxHeight >= pillHeight) {
+                pillY.coerceIn(0f, (boxHeight - pillHeight).toFloat())
+            } else {
+                0f
+            }
             Box(
                 modifier = Modifier
-                    .offset { IntOffset(0, pillY.toInt()) }
+                    .align(Alignment.TopEnd)
+                    .offset { IntOffset(0, clampedPillY.toInt()) }
                     .onSizeChanged { pillHeight = it.height }
                     .clearAndSetSemantics {},
             ) {
-                ScrubPill(text = touchedLabel!!)
+                ScrubPill(
+                    text = touchedLabel!!,
+                    railWidthDp = RailWidthDp,
+                )
             }
         }
 
         // Rail container: pill-shaped surface, 28 dp wide, 8 dp vertical padding inside.
+        // onPlaced measures the Surface's position within the Box (not the Column's
+        // position within the Surface), so surfaceTopInBox is in the Box's coordinate space.
         Surface(
-            modifier = Modifier.width(28.dp),
+            modifier = Modifier
+                .width(RailWidthDp)
+                .onPlaced { surfaceTopInBox = it.positionInParent().y },
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
@@ -628,7 +657,6 @@ private fun AzRail(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
-                    .onPlaced { railTopOffset = it.positionInParent().y }
                     .clearAndSetSemantics {}
                     .pointerInput(labels, headerSlots) {
                         fun letterAt(y: Float): String {

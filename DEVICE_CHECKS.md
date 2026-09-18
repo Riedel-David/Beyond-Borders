@@ -44,6 +44,9 @@ edge, and no pill tracking the finger during a scrub). Both fixed on this branch
 - [ ] During a scrub: a large pill to the **left** of the rail tracks the finger,
       vertically centred on it, showing the letter under it. The pill appears
       instantly when the finger lands (no fade-in) and names the correct letter.
+- [ ] The scrub pill sits clear of the rail (not overlapping it) and is level with
+      the finger at the very top and the very bottom of the rail — where a
+      coordinate-space error would show up smallest.
 - [ ] The top-right FastScrollOverlay pill and the scrub pill **never appear at once**.
       The top-right pill is suppressed during a scrub, only visible during flings.
 - [ ] Top and bottom letters are still reachable after the container padding change
