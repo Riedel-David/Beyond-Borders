@@ -3,7 +3,6 @@ package com.riedel.beyondborders.settings
 import android.content.Context
 import androidx.core.content.edit
 import com.riedel.beyondborders.core.Uuid
-import com.riedel.beyondborders.data.visa.VisaRegistry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,10 +71,11 @@ class SettingsStore(context: Context) {
     private val _hasSeenWelcome = MutableStateFlow(prefs.getBoolean(KEY_HAS_SEEN_WELCOME, false))
     val hasSeenWelcome: StateFlow<Boolean> = _hasSeenWelcome.asStateFlow()
 
-    private val _nationality = MutableStateFlow(
-        prefs.getString(KEY_NATIONALITY, null) ?: VisaRegistry.DEFAULT_PASSPORT
-    )
-    val nationality: StateFlow<String> = _nationality.asStateFlow()
+    /** Null until the user actually picks one on the welcome screen — no silent
+     * default, per the welcome screen's own promise that a choice never made
+     * never quietly resolves to DE. */
+    private val _nationality = MutableStateFlow(prefs.getString(KEY_NATIONALITY, null))
+    val nationality: StateFlow<String?> = _nationality.asStateFlow()
 
     fun setNationality(value: String) {
         _nationality.value = value

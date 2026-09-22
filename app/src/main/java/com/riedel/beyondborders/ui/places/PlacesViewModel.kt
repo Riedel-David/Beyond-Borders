@@ -343,6 +343,10 @@ class PlacesViewModel(
             // switch from Settings — one path, not an init load plus a separate
             // reactor for later changes.
             settings.nationality.collect { nationality ->
+                // Still on the welcome screen with nothing chosen yet — nothing to
+                // load, and no fallback to apply; loading DEFAULT_PASSPORT here would
+                // recreate the silent-default bug the welcome screen exists to avoid.
+                if (nationality == null) return@collect
                 // A malformed or missing asset must not take the travel map down
                 // with it, so this is caught rather than allowed to kill the scope.
                 // The build script is what stops it happening; this is the seatbelt.

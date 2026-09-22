@@ -10,6 +10,7 @@ import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.CloudSnapshot
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
+import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,7 +75,12 @@ class SettingsViewModel(
     val mapBase: StateFlow<MapBase> = settings.mapBase
     val denominator: StateFlow<Denominator> = settings.denominator
     val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
+    // Settings is only reachable once welcome-gating has forced a real choice, so
+    // this fallback is structurally unreachable — kept only so the type stays
+    // non-null, not as a real default.
     val nationality: StateFlow<String> = settings.nationality
+        .map { it ?: VisaRegistry.DEFAULT_PASSPORT }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), VisaRegistry.DEFAULT_PASSPORT)
     val secondNationality: StateFlow<String?> = settings.secondNationality
 
     /** Every passport the picker can offer, with a real country name where one is

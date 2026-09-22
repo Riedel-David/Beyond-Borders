@@ -55,7 +55,7 @@ private val LauncherIconBackground = Brush.linearGradient(
  */
 @Composable
 fun WelcomeScreen(
-    nationality: String,
+    nationality: String?,
     onNationalityChange: (String) -> Unit,
     passportNames: Map<String, String>,
     onGetStarted: () -> Unit,
@@ -134,6 +134,7 @@ fun WelcomeScreen(
                 )
                 Button(
                     onClick = onGetStarted,
+                    enabled = nationality != null,
                     modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
                 ) {
                     Text("Get started")
