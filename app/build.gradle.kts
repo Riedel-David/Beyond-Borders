@@ -27,7 +27,7 @@ android {
         // does. The patch number carries the half phases — 0.2.5 was phase 1.5,
         // the round of fixes from notes.md.
         // versionCode only ever increases, independently of the name.
-        versionCode = 20
+        versionCode = 21
         versionName = "0.7.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
