@@ -27,9 +27,8 @@ Everything works **offline**: the geometry is bundled in the APK and there is no
 basemap, no tile server and no API key. A flight tracker was built through phase
 3.6 and then removed — see [PLAN.md](PLAN.md) §1 for why.
 
-Every scoped phase is done (version `0.7.13`). Nothing is currently planned; see
-[STATUS.md](STATUS.md) for what that means and [PLAN.md](PLAN.md) §6 for the
-ideas that aren't scheduled.
+See [STATUS.md](STATUS.md) for the current version, test count and what's still
+open, and [PLAN.md](PLAN.md) §6 for ideas that aren't scheduled.
 
 ## Choosing the map colours
 
@@ -59,25 +58,16 @@ it earns its place.
 
 Passport → **Where I can go** answers the other half of the question the map answers,
 entirely offline, for any passport in a searchable picker over all ~195 Passport Index
-passports — pick one on first launch or switch it later in Settings. Hold two, and
-Settings takes a second one: every answer is then whichever of the two passports asks
-less of you, attributed to the passport it came from, and the freshness notice falls
-back to the older of the two datasets. A German passport
-gets the full, hand-curated 252-destination answer; every other passport gets a
-generic, programme-based answer (EU membership, the UK's Common Travel Area, and six
-reference-country groups) wherever a rule applies, and an honest gap where none does.
-Both the map and the list paint that gap grey and say so — a place this passport's
-dataset has no answer for is not the same thing as "visa-free" or "closed", and used to
-be indistinguishable from either. The map has a matching **Visa** toggle that repaints
-the same map by requirement instead of by your own history; tapping its legend expands
-the dots into one labelled row per band.
+passports. A German passport gets the full, hand-curated 252-destination answer; every
+other passport gets a generic, programme-based answer wherever a rule applies, and an
+honest grey gap where none does — see [STATUS.md](STATUS.md) for how the current build
+handles both lenses, bands and the dual-passport case.
 
 The interesting part is not the dataset — it is the ~53 places per passport that the
 dataset does not cover. The Passport Index matrix is 199 sovereign states; Beyond
 Borders has 252 places, because the whole point of this app is that Greenland is not
-Denmark. So those are hand-written in [`tools/visa/rules.py`](tools/visa/rules.py) as
-twelve shared **programs** (EU freedom of movement, the UK's Common Travel Area, and
-so on), one entry at a time, and they are exactly the ones other apps get wrong:
+Denmark. Those are hand-written in [`tools/visa/rules.py`](tools/visa/rules.py), one
+entry at a time, and they are exactly the ones other apps get wrong:
 
 - **Greenland** is outside the EU *and* outside Schengen — a Schengen visa is not valid
   there, and an ID card is not enough.
@@ -86,38 +76,9 @@ so on), one entry at a time, and they are exactly the ones other apps get wrong:
   freedom of movement does not have one.
 - **American Samoa** does not accept an ESTA even though Guam does.
 
-Every one of those carries a note written for a traveller and a **confidence** the
-app displays — a handful per passport are marked *uncertain*, and
-the app says so on the row rather than presenting them all in the same authoritative
-voice. Every destination links to the IATA Travel Centre; a German passport's rows
-also link to their Auswärtiges Amt travel-advice page — that link-out is DE-only, since
-there's no equivalent official feed wired up for anyone else. Every visa surface
-carries *"data as of <date> for a [passport] passport — verify officially before
-booking"*, whichever passport is currently chosen. A bundled dataset is a navigation
-aid, not an authority.
-
-The map's lens uses **five** bands rather than all eight categories, coloured
-categorically — green for visa-free, blue for an ETA, orange for on arrival, red for
-apply-first, grey for closed — rather than one hue at several intensities. That pairing
-of green and red is exactly what an intensity-ordered scale would rule out, since hue
-is the channel colour-vision deficiency takes away; the fix is pushing every pair,
-green/red included, to opposite ends of the lightness range that still clears 3:1
-against land, so the pair stays tellable apart under simulated protanopia,
-deuteranopia and tritanopia even when hue collapses.
-[`VisaRampTest`](app/src/test/java/com/riedel/beyondborders/ui/theme/VisaRampTest.kt)
-asserts that pairwise, for every one of the ten band pairs, plus the same bar for the
-grey used for the honest-gap places above. The exact answer — "e-Visa · 30 days" — is
-text in the list, where an exact answer belongs; the map is for "roughly, where can
-I go".
-
-The map's other lens is a **region heatmap**: tap to cycle through off, official
-continents, and informal named groupings, and every region repaints by how much of
-it you've been to — none, some, most, or all of it. It uses a two-hue ramp rather
-than one hue at four intensities, for the same colour-vision-deficiency reason as the
-visa lens. Region and named-group sets aren't known at style-build time the way the
-five visa bands are, so the map still only ever holds four heatmap layers — one per
-completion band — and switching grouping or region is a `setFilter` call, not a style
-rebuild.
+Every one of those carries a note written for a traveller and a **confidence** the app
+displays — presented as uncertain rather than in the same authoritative voice as the
+rest. A bundled dataset is a navigation aid, not an authority.
 
 ## Regenerating the visa asset
 
@@ -143,8 +104,8 @@ API 30+.
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew :app:testDebugUnitTest        # 167 tests, no device needed
-./gradlew :app:connectedDebugAndroidTest # 9 tests, needs a device: DB migrations, deviceId storage
+./gradlew :app:testDebugUnitTest        # host tests, no device needed — see STATUS.md for the count
+./gradlew :app:connectedDebugAndroidTest # needs a device: DB migrations, deviceId storage
 ./gradlew :app:installDebug              # build + install
 ```
 
