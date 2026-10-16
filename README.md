@@ -22,8 +22,7 @@ that was fixed, it is a thing the code cannot express.
 | First run | working — a welcome screen on first launch |
 
 Everything works **offline**: the geometry is bundled in the APK and there is no
-basemap, no tile server and no API key. A flight tracker was built through phase
-3.6 and then removed.
+basemap, no tile server and no API key.
 
 
 ## Choosing the map colours
@@ -91,6 +90,20 @@ and every curated rule is still live — so the day the dataset starts covering 
 territory itself, the build says the override is dead instead of preserving a stale
 opinion forever.
 
+## Install
+
+Download `BeyondBorders-<version>.apk` from the
+[Releases](../../releases) page. Requires Android 11 (API 30) or newer.
+
+1. Open the APK on your phone. Android will ask you to allow installs from that
+   app (your browser or file manager); this is the "install unknown apps" setting.
+2. Play Protect may warn that the developer is unknown, since the app is not on
+   the Play Store. The APK is signed with a fixed key, so updates install over it.
+3. To check the download, compare `sha256sum BeyondBorders-<version>.apk` with the
+   contents of the `.sha256` file next to it.
+
+There is no update notification: check the Releases page for new versions.
+
 ## Build and run
 
 Requires Android Studio (for its bundled JDK 21) and an emulator or device with
@@ -156,19 +169,6 @@ all asserted before anything is written.
 The curation rules — what gets merged, dropped, renamed or given a private code,
 and why — live in [`tools/geo/rules.py`](tools/geo/rules.py). Read that file
 before changing anything about the place list.
-
-## A note on OneDrive — historical
-
-The repo used to live inside a OneDrive folder and no longer does. That removed
-three Gradle workarounds from `gradle.properties` (file-system watching off,
-configuration cache off, project cache relocated) along with two failure modes worth
-recognising if you ever see them again: sync-conflict forks named `Foo 2.kt` or
-`Foo-David's MacBook Air.kt` that Kotlin compiles while `git status` stays clean, and
-one tracked file silently truncated to 0 bytes (a notes file). Both were triggered by
-two edits to the same file in quick succession.
-
-`.gitignore` still carries `* 2.*` from that era. It is harmless and guards nothing
-now.
 
 ## Data and licences
 

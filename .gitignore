@@ -30,14 +30,6 @@ tools/*/cache/
 __pycache__/
 *.pyc
 
-# OneDrive sync-conflict copies. Two shapes so far: "MapScreen-David's MacBook
-# Air.kt" and "rules 2.py". These have broken the Kotlin build before; ignoring
-# them keeps them out of git at least, but delete them when they appear — a stale
-# copy of a rules file that still imports cleanly is the dangerous kind.
-*-David's MacBook Air.*
-*conflicted copy*
-* 2.*
-
 # macOS
 .DS_Store
 
