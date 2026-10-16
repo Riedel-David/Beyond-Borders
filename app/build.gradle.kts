@@ -41,10 +41,28 @@ android {
         }
     }
 
+    // The release workflow supplies these from repository secrets. Without them
+    // (every local build, every test run) the release type simply stays unsigned.
+    val releaseKeystore = System.getenv("RELEASE_KEYSTORE_FILE")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                // PKCS12: the key password is the keystore password.
+                keyPassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
+            }
+            if (releaseKeystore != null) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
