@@ -40,3 +40,15 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# Private working files: never public (also purged from history)
+/CLAUDE.md
+/AGENTS.md
+/docs/PLAN.md
+/docs/STATUS.md
+/docs/UI_IDEAS.md
+/docs/WIDGET_CHECKS.md
+/docs/BACKUP_CHECKS.md
+/docs/PLAYSTORE_PUBLISHING.md
+/.claude/
+/.idea/

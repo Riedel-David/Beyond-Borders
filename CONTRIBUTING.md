@@ -2,8 +2,7 @@
 
 Issues and pull requests are welcome. Before opening a PR:
 
-- Read `CLAUDE.md` for the build commands and conventions, and `docs/STATUS.md` for
-  the current state.
+- Read the README for the build commands.
 - `./gradlew :app:testDebugUnitTest` must be green; CI runs it on every PR.
 - The app is offline-first by design: no feature may need a network connection, and
   the `INTERNET` permission stays removed.

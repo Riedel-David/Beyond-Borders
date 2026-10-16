@@ -24,8 +24,7 @@ android {
         // number is the last completed phase (0.1 scaffold, 0.2 travel map and
         // backup, 0.3 passport and visas — flight tracking, once 0.4, was built
         // and then removed), so the About card never claims more than the app
-        // does. The patch number carries the half phases — 0.2.5 was phase 1.5,
-        // the round of fixes from notes.md.
+        // does. The patch number carries the half phases — 0.2.5 was phase 1.5.
         // versionCode only ever increases, independently of the name.
         versionCode = 21
         versionName = "0.7.14"
