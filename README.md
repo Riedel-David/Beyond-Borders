@@ -9,7 +9,7 @@ French Guiana. Beyond Borders is built on a dataset where those are separate pla
 and on a data model with no parent-child link at all, so a cascade is not a bug
 that was fixed, it is a thing the code cannot express.
 
-See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
+See [PLAN.md](docs/PLAN.md) for the full reasoning, the decisions and the phase plan.
 
 ## Status
 
@@ -25,10 +25,10 @@ See [PLAN.md](PLAN.md) for the full reasoning, the decisions and the phase plan.
 
 Everything works **offline**: the geometry is bundled in the APK and there is no
 basemap, no tile server and no API key. A flight tracker was built through phase
-3.6 and then removed — see [PLAN.md](PLAN.md) §1 for why.
+3.6 and then removed — see [PLAN.md](docs/PLAN.md) §1 for why.
 
-See [STATUS.md](STATUS.md) for the current version, test count and what's still
-open, and [PLAN.md](PLAN.md) §6 for ideas that aren't scheduled.
+See [STATUS.md](docs/STATUS.md) for the current version, test count and what's still
+open, and [PLAN.md](docs/PLAN.md) §6 for ideas that aren't scheduled.
 
 ## Choosing the map colours
 
@@ -60,7 +60,7 @@ Passport → **Where I can go** answers the other half of the question the map a
 entirely offline, for any passport in a searchable picker over all ~195 Passport Index
 passports. A German passport gets the full, hand-curated 252-destination answer; every
 other passport gets a generic, programme-based answer wherever a rule applies, and an
-honest grey gap where none does — see [STATUS.md](STATUS.md) for how the current build
+honest grey gap where none does — see [STATUS.md](docs/STATUS.md) for how the current build
 handles both lenses, bands and the dual-passport case.
 
 The interesting part is not the dataset — it is the ~53 places per passport that the
@@ -104,7 +104,7 @@ API 30+.
 ```sh
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew :app:testDebugUnitTest        # host tests, no device needed — see STATUS.md for the count
+./gradlew :app:testDebugUnitTest        # host tests, no device needed — see docs/STATUS.md for the count
 ./gradlew :app:connectedDebugAndroidTest # needs a device: DB migrations, deviceId storage
 ./gradlew :app:installDebug              # build + install
 ```
@@ -186,4 +186,4 @@ now.
 - Map rendering: [MapLibre Native Android](https://github.com/maplibre/maplibre-native),
   BSD-2-Clause. Note it requires Vulkan.
 
-Not for publication — this is a personal-use build.
+See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and the [privacy policy](docs/PRIVACY.md). No licence has been chosen for the code yet, so all rights are reserved for now.
