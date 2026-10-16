@@ -4,7 +4,7 @@ Why this file exists
 --------------------
 The Passport Index matrix is 199 passports x 199 destinations. Those 199
 destinations are sovereign states. BeyondBorders has 252 places, because the whole
-point of the place registry (PLAN.md section 3) is that Greenland is not Denmark
+point of the place registry is that Greenland is not Denmark
 and French Guiana is not France.
 
 So 53 of our places have no row in the dataset at all, and they are exactly the
@@ -69,10 +69,10 @@ CTA_MEMBERS = ("GB", "IE")
 # ---------------------------------------------------------------------------
 # The dataset.
 #
-# PLAN.md names ilyankou/passport-index-dataset. That repo was archived in
+# The plan names ilyankou/passport-index-dataset. That repo was archived in
 # January 2025 and its README points at this fork for February 2026 onwards.
 # The fork is also MIT rather than CC BY-SA, which removes the redistribution
-# constraint PLAN.md section 8 flagged as unchecked.
+# constraint flagged as unchecked.
 #
 # The switch is not cosmetic: the archived data still gave Germans 180 visa-free
 # days to GB, but the UK ETA has applied to EU nationals since 2025. This fork
@@ -133,7 +133,7 @@ CONFIDENCE = ("high", "medium", "low")
 # ---------------------------------------------------------------------------
 # The Auswärtiges Amt link-out, from their open data rather than from guesswork.
 #
-# PLAN.md wants every destination to link to the German Federal Foreign Office
+# Every destination should to link to the German Federal Foreign Office
 # page for that country. Their country pages live at
 # /de/service/laender/<german-slug>-node/..., and the slugs are not derivable:
 # Türkei is `tuerkei` but the United States is not `vereinigtestaaten`. Guessing
@@ -200,7 +200,7 @@ AA_NONE = {
     "AQ",  # no country page exists; the Antarctic permit source covers it
 }
 
-# The other link PLAN.md asks for. No deep link exists — the IATA Travel Centre
+# The other link. No deep link exists — the IATA Travel Centre
 # is a form you fill in — so this is a hub, and the app says so rather than
 # implying it lands on the destination.
 IATA_TRAVEL_CENTRE = (

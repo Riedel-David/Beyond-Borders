@@ -6,7 +6,7 @@ package com.riedel.beyondborders.data.place
  * which no one has ever said out loud. Hand-curated, same shape and same caveat as
  * the visa territory overrides in `tools/geo/rules.py`: someone will disagree with
  * a boundary, which is fine for a private stats screen and not fine for anything
- * presented as authoritative. See PLAN.md's "Distant ideas" section.
+ * presented as authoritative.
  *
  * Two sets are fuzzy at the edges and were picked deliberately rather than argued
  * over every time this file is touched:

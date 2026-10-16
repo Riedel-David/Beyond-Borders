@@ -1091,7 +1091,7 @@ private fun MapPill(
  * The lens' legend: the ramp itself, the headline count, and the dataset date.
  *
  * The date is not optional decoration. Visa rules change without notice and this asset
- * is a snapshot, so PLAN.md requires every visa surface to say how old it is and to
+ * is a snapshot, so every visa surface is required to say how old it is and to
  * point at an official source — the map's share of that is this line.
  *
  * A tap expands the dot row into one labelled row per band, same trick as the travel

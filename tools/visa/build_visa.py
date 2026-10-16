@@ -152,7 +152,7 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
 
     # The Foreign Office link-out is DE-only: it comes from the Auswärtiges
     # Amt's own open data, and there is no equivalent feed wired up for any
-    # other passport (see PLAN.md §6 — the plan is only to link out for DE).
+    # other passport (the plan is only to link out for DE).
     if passport == "DE":
         advice_links = load_advice_links(advice)
         print(f"foreign office: {len(advice_links)} country pages from {advice.name}")
@@ -309,7 +309,7 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
         print(f"generic tier: no answer for {len(unresolved)} places — "
               f"{' '.join(sorted(unresolved))}")
 
-    # ---------------- the promise in PLAN.md ----------------
+    # ---------------- the promise to users ----------------
     resolved = {e["code"]: e for e in entries}
     for code, (expected, why) in rules.EXPECTED.get(passport, {}).items():
         if expected is None:
@@ -335,7 +335,7 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
                 f"{code} {names[code]} came out {got}, expected {expected} ({why})"
             )
 
-    fail(problems, "see tools/visa/rules.py and PLAN.md phase 2")
+    fail(problems, "see tools/visa/rules.py")
 
     # ---------------- write ----------------
     # Sorted by code so a diff of this file is reviewable; the app sorts by
@@ -350,7 +350,7 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
             "licence": rules.DATASET["licence"],
         },
         "categories": rules.CATEGORIES,
-        # The second link-out PLAN.md asks for. One hub rather than per-place,
+        # The second link-out. One hub rather than per-place,
         # because the IATA Travel Centre is a form with no deep link.
         "iataUrl": rules.IATA_TRAVEL_CENTRE,
         "requirements": entries,

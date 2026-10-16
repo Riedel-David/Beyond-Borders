@@ -41,7 +41,7 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
     PASSPORT("Passport", R.drawable.ic_tab_passport),
 
     /**
-     * A destination rather than the floating gear PLAN.md originally sketched: both
+     * A destination rather than the floating gear originally sketched: both
      * of the built screens already own their top edge — the map floats controls in
      * both top corners, the passport opens with a full-width stats card — so an
      * icon up there would have had to overlap one of them. It also makes export and

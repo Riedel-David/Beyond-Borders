@@ -637,7 +637,7 @@ internal fun bandCodes(
  *
  * DE's dataset covers all 252 places, so this is always empty for it; every other
  * passport is generic-tier and only has real answers where a specific programme
- * rule applies — see STATUS.md's "honest gap" note. Returns empty when the lens is
+ * rule applies. Returns empty when the lens is
  * off or the asset failed to load, the same as [bandCodes]. When two passports are
  * configured, this becomes places where neither passport has an answer — the
  * complement of the union of the two covered sets.

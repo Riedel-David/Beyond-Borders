@@ -24,7 +24,7 @@ abstract class BeyondBordersDatabase : RoomDatabase() {
         const val NAME = "beyondborders.db"
 
         /**
-         * Flight tracking was removed (see PLAN.md revision 7). Drops the three
+         * Flight tracking was removed. Drops the three
          * tables `MIGRATION_1_2`..`MIGRATION_7_8` built up rather than leaving
          * them behind for Room's schema validator to complain about.
          */
@@ -38,7 +38,7 @@ abstract class BeyondBordersDatabase : RoomDatabase() {
 
         /**
          * Drops `firstVisitedOn` and `note`: two columns no screen ever wrote to
-         * (see PLAN.md phase 5c). SQLite's ALTER TABLE cannot drop a column on
+         *. SQLite's ALTER TABLE cannot drop a column on
          * the SQLite version Room targets here, so this rebuilds the table as
          * MIGRATION_6_7 did for the same reason.
          */

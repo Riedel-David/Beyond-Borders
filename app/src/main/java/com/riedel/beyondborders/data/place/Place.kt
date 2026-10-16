@@ -8,7 +8,7 @@ package com.riedel.beyondborders.data.place
  * is the reason this app exists. Every other tracker models Greenland as a child
  * of Denmark and then cascades selection down the tree, so tapping Denmark also
  * marks Greenland. With no parent link there is nothing to cascade along, so the
- * bug is not merely fixed, it is inexpressible. See PLAN.md section 3.
+ * bug is not merely fixed, it is inexpressible.
  *
  * Populated from the bundled `places.json`, which tools/geo/build_geo.py
  * generates from Natural Earth map units.

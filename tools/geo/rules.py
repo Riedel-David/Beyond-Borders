@@ -4,7 +4,7 @@ Why this file exists
 --------------------
 Natural Earth's `admin_0_map_units` layer is the only admin-0 layer that keeps
 Greenland separate from Denmark and French Guiana separate from France, which is
-the entire reason BeyondBorders uses it (see PLAN.md section 3).
+the entire reason BeyondBorders uses it.
 
 But it also splits things we do NOT want split: England/Scotland/Wales/Northern
 Ireland, Belgium's three regions, the Azores and Madeira, Zanzibar, Republika
@@ -292,7 +292,7 @@ UN_MEMBER = {
 }
 
 # ---------------------------------------------------------------------------
-# SPLIT_ASSERTIONS: the regression test from PLAN.md section 3.
+# SPLIT_ASSERTIONS: the regression test for the place registry.
 # Each tuple must come out as distinct, independently selectable places.
 # If a future Natural Earth release merges any of these, the build fails loudly
 # rather than silently shipping the bug this whole app exists to avoid.

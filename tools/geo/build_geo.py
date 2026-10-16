@@ -839,7 +839,7 @@ def build(source: Path, eps_scale: float) -> int:
         # rings. Using the dissolved cluster outline instead of the biggest
         # ring alone is the fix for merged places (Belgium, UK, Bosnia, ...)
         # whose biggest ring is only one piece of the whole place - see
-        # PLAN.md "country labels off-centre in merged places".
+        # Country labels off-centre in merged places.
         cluster = mainland_cluster(rings)
         outline = union_outline(cluster)
         if code in rules.LABEL_POINT_OVERRIDE:
@@ -938,7 +938,7 @@ def build(source: Path, eps_scale: float) -> int:
     if problems:
         for pr in problems:
             print(f"  FAIL {pr}")
-        raise SystemExit("territory assertions failed - see PLAN.md section 3")
+        raise SystemExit("territory assertions failed")
 
     # ---------------- write ----------------
     ASSETS.mkdir(parents=True, exist_ok=True)

@@ -21,7 +21,7 @@ enum class WidgetTier {
  * 110 dp against the 186 dp it needs, and LARGE from 200 dp against 274 dp; a perfectly
  * ordinary 4×2 widget therefore drew three empty tiles. Before changing a layout's content,
  * re-measure: a throwaway androidTest that inflates `travelWidgetViews` and measures it with
- * an UNSPECIFIED height spec reports what the layout needs (the recipe in CLAUDE.md).
+ * an UNSPECIFIED height spec reports what the layout needs.
  */
 private const val LARGE_MIN_WIDTH_DP = 290
 private const val LARGE_MIN_HEIGHT_DP = 261

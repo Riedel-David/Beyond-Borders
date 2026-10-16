@@ -43,7 +43,7 @@ fun passportAdjective(isoCode: String): String = when (isoCode) {
 }
 
 /**
- * The disclaimer PLAN.md requires on every visa surface.
+ * The disclaimer required on every visa surface.
  *
  * One function rather than a string in each screen: the promise is that the app never
  * shows a visa answer without saying how old it is, and a promise kept in two places
