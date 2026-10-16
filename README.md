@@ -181,4 +181,8 @@ now.
 - Map rendering: [MapLibre Native Android](https://github.com/maplibre/maplibre-native),
   BSD-2-Clause. Note it requires Vulkan.
 
-See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and the [privacy policy](docs/PRIVACY.md). No licence has been chosen for the code yet, so all rights are reserved for now.
+See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and the [privacy policy](docs/PRIVACY.md).
+
+## Licence
+
+The code is licensed under the [GNU GPL v3](LICENSE). The bundled data keeps its own licences, listed above; the MIT-licensed visa data comes with the upstream copyright notice at its repository's `LICENSE` file.
