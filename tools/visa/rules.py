@@ -133,7 +133,7 @@ CONFIDENCE = ("high", "medium", "low")
 # ---------------------------------------------------------------------------
 # The Auswärtiges Amt link-out, from their open data rather than from guesswork.
 #
-# Every destination should to link to the German Federal Foreign Office
+# Every destination should link to the German Federal Foreign Office
 # page for that country. Their country pages live at
 # /de/service/laender/<german-slug>-node/..., and the slugs are not derivable:
 # Türkei is `tuerkei` but the United States is not `vereinigtestaaten`. Guessing
@@ -334,7 +334,7 @@ SOURCES = {
 # ---------------------------------------------------------------------------
 PROGRAMS = {
     # --- EU outermost regions: inside the Union, outside Schengen -----------
-    # PLAN.md's named test case is here. These are *not* "France, roughly" — an
+    # A named test case is here. These are *not* "France, roughly" — an
     # ID card gets you in, but there is a border check on arrival from Paris,
     # because the Schengen area stops at the Atlantic.
     #
@@ -424,7 +424,7 @@ PROGRAMS = {
     },
 
     # --- Kingdom of Denmark: outside the EU and outside Schengen -----------
-    # The other PLAN.md test case. The trap is the reverse of the usual one:
+    # The other named test case. The trap is the reverse of the usual one:
     # people assume a Schengen visa covers Greenland. It does not.
     "dk_realm": {
         "members": ("DE",),
@@ -782,7 +782,7 @@ GENERIC_RULE = {
                 "CK": "A New Zealand NZeTA is needed for the transit through Auckland.",
                 "NU": "Reached only via Auckland, which needs an NZeTA.",
                 # TK is deliberately absent: its day limit is unresolved even
-                # for DE (STATUS.md), so there is nothing to borrow.
+                # for DE, so there is nothing to borrow.
             },
         },
         {
@@ -955,7 +955,7 @@ def _generic_overrides_for(
 CORRECTIONS = {}
 
 # ---------------------------------------------------------------------------
-# ASSERTIONS: PLAN.md's "done when" clause, made executable.
+# ASSERTIONS: the "done when" clause, made executable.
 #
 # "You see, offline, where your German passport gets you without a visa — with
 # correct answers for Greenland and French Guiana." Those two are here by name.
@@ -975,7 +975,7 @@ CORRECTIONS = {}
 # ---------------------------------------------------------------------------
 EXPECTED = {
     "DE": {
-        # PLAN.md's named cases.
+        # The named cases.
         "GL": ("VISA_FREE", "not Schengen, but no visa for a German"),
         "GF": ("VISA_FREE", "EU territory, so freedom of movement"),
         # Same island, two administrations, and the dataset covers neither.
