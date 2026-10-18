@@ -278,8 +278,14 @@ private fun drawCaptionBar(
         Paint().apply {
             shader = LinearGradient(
                 0f, h - scrimHeight, 0f, h,
-                intArrayOf(Color.TRANSPARENT, Color.argb(140, 4, 7, 14), Color.argb(240, 4, 7, 14)),
-                floatArrayOf(0f, 0.45f, 1f),
+                // Near-opaque by the time the text starts (~0.58 of the way down): at the
+                // old 0.45-stop of 140 a country label on the snapshot still showed
+                // through behind the wordmark and the percentage.
+                intArrayOf(
+                    Color.TRANSPARENT, Color.argb(170, 4, 7, 14),
+                    Color.argb(242, 4, 7, 14), Color.argb(250, 4, 7, 14),
+                ),
+                floatArrayOf(0f, 0.3f, 0.5f, 1f),
                 Shader.TileMode.CLAMP,
             )
         },
