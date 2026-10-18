@@ -370,6 +370,9 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
+            var showLicences by remember { mutableStateOf(false) }
+            TextButton(onClick = { showLicences = true }) { Text("Open-source licences") }
+            if (showLicences) LicencesDialog(onDismiss = { showLicences = false })
             Text(
                 "Android's own Auto Backup carries a snapshot of your history to " +
                     "your Google account — the system makes that copy, the app " +
