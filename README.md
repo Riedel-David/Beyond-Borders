@@ -33,10 +33,12 @@ basemap, no tile server and no API key.
 
 <table>
   <tr>
+    <td align="center"><img src="docs/screenshots/share-card.jpg" width="180" alt="Share card"><br><sub>Share card</sub></td>
     <td align="center"><img src="docs/screenshots/map.jpg" width="180" alt="Travel map"><br><sub>Travel map</sub></td>
     <td align="center"><img src="docs/screenshots/visa-lens.jpg" width="180" alt="Visa lens"><br><sub>Visa lens</sub></td>
+    <td align="center"><img src="docs/screenshots/passport-list.jpg" width="180" alt="Passport list"><br><sub>Passport list</sub></td>
     <td align="center"><img src="docs/screenshots/where-i-can-go.jpg" width="180" alt="Where I can go"><br><sub>Where I can go</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.jpg" width="180" alt="Settings"><br><sub>Settings</sub></td>
+    <td align="center"><img src="docs/screenshots/stats.jpg" width="180" alt="Stats"><br><sub>Stats</sub></td>
   </tr>
 </table>
 
