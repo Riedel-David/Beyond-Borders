@@ -39,6 +39,7 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest
 
   release:
+    if: github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -65,8 +66,10 @@ jobs:
           fi
 
       - name: Decode keystore
+        env:
+          KS_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
         run: |
-          echo "${{ secrets.RELEASE_KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       - name: Build signed APK
