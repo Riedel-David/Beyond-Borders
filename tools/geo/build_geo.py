@@ -51,7 +51,7 @@ AVG_GLYPH_WIDTH_EM = 0.58  # Noto Sans Regular's rough average advance width
 TEXT_SIZE_ZOOM_LO, TEXT_SIZE_SP_LO = 2.0, 8.0
 TEXT_SIZE_ZOOM_HI, TEXT_SIZE_SP_HI = 8.0, 15.0
 TEXT_MAX_WIDTH_EM = 8.0
-LABEL_WIDTH_MARGIN = 0.75  # headroom so text doesn't hug the coastline
+LABEL_WIDTH_MARGIN = 0.5  # fraction of the text width the country must span; <1 lets text spill over the border
 
 # Coordinate precision, chosen per feature from its bounding-box diagonal.
 # 3 decimals is ~110 m, which is invisible on a Russia-sized polygon but would
