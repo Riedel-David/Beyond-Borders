@@ -5,9 +5,21 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5
     groups:
-      gradle-dependencies:
-        patterns: ["*"]
+      androidx-compose:
+        patterns: ["androidx.*", "org.jetbrains.kotlinx:*"]
+    ignore:
+      # The Kotlin version is whatever AGP provides, and the compose plugin, KSP and
+      # the wrapper have to move with it. Bump these together, by hand.
+      - dependency-name: "org.jetbrains.kotlin.*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "com.google.devtools.ksp"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "com.android.application"
+      - dependency-name: "gradle"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
