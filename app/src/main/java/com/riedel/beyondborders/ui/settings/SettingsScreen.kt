@@ -362,6 +362,13 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 "BeyondBorders ${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodyMedium,
             )
+            // Plain text, not a link: the app has no INTERNET permission to open one with.
+            Text(
+                "Open source (GPL-3.0): github.com/Riedel-David/Beyond-Borders",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
             Text(
                 "Borders from Natural Earth (public domain), drawn with MapLibre. " +
                     "The whole map is bundled in the app, so it works with no network " +
