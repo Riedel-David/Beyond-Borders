@@ -11,21 +11,34 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 private val LICENCE_LINES = listOf(
-    "Beyond Borders" to "GPL-3.0\nhttps://github.com/Riedel-David/Beyond-Borders",
+    "Beyond Borders" to "GPL-3.0",
     "Map" to "MapLibre Native (BSD-2-Clause)",
     "Borders" to "Natural Earth (public domain)",
     "Labels" to "Noto Sans (SIL OFL 1.1)",
     "Visa data" to "Passport Index Data (MIT), see THIRD_PARTY_NOTICES.md in the repository",
-    "Travel warnings" to "Auswärtiges Amt open data (German Federal Foreign Office)",
+    "Official advice links" to "Auswärtiges Amt (German Federal Foreign Office)",
     "Libraries" to "AndroidX, Jetpack Compose, Room, Kotlin coroutines (Apache-2.0)",
 )
 
-// The URL is selectable text rather than a link: the app declares no INTERNET
-// permission, so there is nothing for a browser intent to do from here.
+private const val REPO_URL = "https://github.com/Riedel-David/Beyond-Borders"
+
+// Hands the URL to the browser. The app itself declares no INTERNET permission and
+// needs none for this: the browser does the network. Guarded like the visa screen's
+// links, because a device with no browser would otherwise crash on tap.
+@Composable
+internal fun RepoLink(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    TextButton(
+        onClick = { runCatching { uriHandler.openUri(REPO_URL) } },
+        modifier = modifier,
+    ) { Text("github.com/Riedel-David/Beyond-Borders") }
+}
+
 @Composable
 internal fun LicencesDialog(onDismiss: () -> Unit) {
     AlertDialog(
@@ -42,6 +55,7 @@ internal fun LicencesDialog(onDismiss: () -> Unit) {
                             modifier = Modifier.padding(top = if (i == 0) 0.dp else 12.dp),
                         )
                         Text(body, style = MaterialTheme.typography.bodyMedium)
+                        if (i == 0) RepoLink()
                     }
                 }
             }
