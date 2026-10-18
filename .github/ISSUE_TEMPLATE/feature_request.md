@@ -1,6 +1,7 @@
 ---
 name: Feature request
 about: Suggest a change or addition
+labels: enhancement
 ---
 
 **What would you like, and what problem does it solve?**
