@@ -10,3 +10,9 @@ Issues and pull requests are welcome. Before opening a PR:
   generator, not the output, and record sources in `ASSET_SOURCES.md`.
 - Visa data is a snapshot from a third party, not legal advice. Fixes to a
   specific answer belong in `tools/visa/rules.py` with a comment saying why.
+- Keep a change to one topic per pull request, branched from `main`. There is no
+  linter; match the style of the file you are editing, and write comments that
+  explain why rather than what.
+- Test names are sentences in backticks stating the claim. Pure logic goes in
+  `internal` functions with host-JVM tests; keep Compose thin.
+- Commit messages: a short imperative summary line, no prefix convention.

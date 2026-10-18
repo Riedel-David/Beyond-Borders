@@ -9,4 +9,4 @@ about: Something is wrong or missing in the app or its data
 
 **Device and Android version:**
 
-**App version** :
+**App version:**

@@ -1,7 +1,7 @@
 # Beyond Borders
 
-A personal Android app for tracking where I have been and where I can go without
-a visa.
+An Android app for tracking where you have been and where your passport gets you
+without a visa. Offline, no account, no network permission.
 
 It exists because of one specific annoyance. Every travel tracker I tried selects
 more than you ask for — tap Denmark and you get Greenland, tap France and you get
@@ -9,86 +9,33 @@ French Guiana. Beyond Borders is built on a dataset where those are separate pla
 and on a data model with no parent-child link at all, so a cascade is not a bug
 that was fixed, it is a thing the code cannot express.
 
-## Status
+## Features
 
-| | |
-|---|---|
-| Travel map | working — 252 places, tap to select, Been / Lived / Want, a visa lens, and a region-completion heatmap |
-| Passport list | working — search, filters, per-continent stats |
-| Passport visas | working — where any of ~195 passports goes, offline; DE gets a full 252-place curated answer; a second passport is optional, and the easier of its two answers wins |
-| Share | working — the map as an image, captioned with your numbers in one of three styles |
-| Home-screen widget | working — configurable per instance: headline metric and card background |
-| Settings | working — theme, map colours, JSON export / import, emergency full data reset |
-| First run | working — a welcome screen on first launch |
+- **Travel map** — 252 places, tap to select, Been / Lived / Want, a visa lens and a
+  region-completion heatmap.
+- **Passport list** — search, filters, per-continent stats.
+- **Passport visas** — where any of ~195 passports goes, offline. DE gets a full
+  252-place curated answer; a second passport is optional, and the easier of its two
+  answers wins.
+- **Share** — the map as an image, captioned with your numbers in one of three styles.
+- **Home-screen widget** — configurable per instance: headline metric and card background.
+- **Settings** — theme, map colours, JSON export / import, emergency full data reset.
 
 Everything works **offline**: the geometry is bundled in the APK and there is no
 basemap, no tile server and no API key.
 
+## Screenshots
 
-## Choosing the map colours
-
-Settings → **Map colours** repaints Been, Lived and Want to. Six presets each, not a
-colour picker: the reason this app has a hand-picked palette at all is that the four
-map states have to stay tellable apart, and a free picker can land on three shades
-of one hue just as easily as Material You can.
-
-Two things follow from that, both deliberate:
-
-- **Picking a colour another status holds swaps the two.** With six colours and
-  three statuses, refusing the tap would leave you to work out unprompted that the
-  *other* status has to move first. A swap always works and is its own undo, so the
-  three colours are distinct by construction rather than by validation.
-- **Each preset is a light/dark pair.** A single hex would look chosen-for-daylight
-  the first evening you saw it.
-
-The palette's claim to be readable is a test rather than a promise:
-[`MapColorsTest`](app/src/test/java/com/riedel/beyondborders/settings/MapColorsTest.kt)
-computes each preset's WCAG contrast against unmarked land and open water in both
-themes and fails below 3:1, and separately checks that no two presets sit within 40°
-of each other on the colour wheel — because contrast says a fill is *visible*, not
-that two fills are *distinguishable*. Adding a seventh colour breaks the build until
-it earns its place.
-
-## Where the passport gets you
-
-Passport → **Where I can go** answers the other half of the question the map answers,
-entirely offline, for any passport in a searchable picker over all ~195 Passport Index
-passports. A German passport gets the full, hand-curated 252-destination answer; every
-other passport gets a generic, programme-based answer wherever a rule applies, and an
-honest grey gap where none does.
-
-The interesting part is not the dataset — it is the ~53 places per passport that the
-dataset does not cover. The Passport Index matrix is 199 sovereign states; Beyond
-Borders has 252 places, because the whole point of this app is that Greenland is not
-Denmark. Those are hand-written in [`tools/visa/rules.py`](tools/visa/rules.py), one
-entry at a time, and they are exactly the ones other apps get wrong:
-
-- **Greenland** is outside the EU *and* outside Schengen — a Schengen visa is not valid
-  there, and an ID card is not enough.
-- **French Guiana** *is* the EU with full freedom of movement, but outside Schengen, so
-  expect a passport check on a domestic flight from Paris. No 90-day limit, because
-  freedom of movement does not have one.
-- **American Samoa** does not accept an ESTA even though Guam does.
-
-Every one of those carries a note written for a traveller and a **confidence** the app
-displays — presented as uncertain rather than in the same authoritative voice as the
-rest. A bundled dataset is a navigation aid, not an authority.
-
-## Regenerating the visa asset
-
-Committed like the geo assets, so a normal build never needs this. There is
-deliberately no in-app refresh: a new matrix has to be re-reviewed against the
-curated territory answers, which is a review rather than a download.
-
-```sh
-python3 tools/visa/build_visa.py                  # visa.json, for DE (the default)
-python3 tools/visa/build_visa.py --passport GB     # visa_gb.json
-```
-
-It refuses to write unless every one of the 252 places resolves to exactly one answer
-and every curated rule is still live — so the day the dataset starts covering a
-territory itself, the build says the override is dead instead of preserving a stale
-opinion forever.
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/map.jpg" width="180" alt="Travel map"><br><sub>Travel map</sub></td>
+    <td align="center"><img src="docs/screenshots/visa-lens.jpg" width="180" alt="Visa lens"><br><sub>Visa lens</sub></td>
+    <td align="center"><img src="docs/screenshots/passport-list.jpg" width="180" alt="Passport list"><br><sub>Passport list</sub></td>
+    <td align="center"><img src="docs/screenshots/share-card.jpg" width="180" alt="Share card"><br><sub>Share card</sub></td>
+    <td align="center"><img src="docs/screenshots/stats.jpg" width="180" alt="Stats"><br><sub>Stats</sub></td>
+    <td align="center"><img src="docs/screenshots/where-i-can-go.jpg" width="180" alt="Where I can go"><br><sub>Where I can go</sub></td>
+  </tr>
+</table>
 
 ## Install
 
@@ -97,8 +44,9 @@ Download `BeyondBorders-<version>.apk` from the
 
 1. Open the APK on your phone. Android will ask you to allow installs from that
    app (your browser or file manager); this is the "install unknown apps" setting.
-2. Play Protect may warn that the developer is unknown, since the app is not on
-   the Play Store. The APK is signed with a fixed key, so updates install over it.
+2. Play Protect may warn that the developer is unknown. To continue, tap
+   **More details → Install anyway**; you only need to do this once. The APK is
+   signed with a fixed key, so updates install over it.
 3. To check the download, compare `sha256sum BeyondBorders-<version>.apk` with the
    contents of the `.sha256` file next to it.
 
@@ -121,54 +69,19 @@ The unit tests are the useful ones to run first: they read the shipped geo and v
 assets directly and assert the territory splits, the visa coverage and the colour
 contrast, so they catch a broken dataset without launching anything.
 
-## Getting the data out
+## Tech stack
 
-Settings → **Export** writes every place you have marked to a JSON file through the
-system file picker. It is plain text, sorted by code, and small enough to read:
+Kotlin, Jetpack Compose with Material 3, Room (KSP), MapLibre Native. Manual
+dependency injection, no Hilt. Reference data is generated by Python scripts under
+`tools/` and bundled as assets.
 
-```json
-{ "code": "GL", "name": "Greenland", "status": "visited",
-  "updatedAt": 1786536430561, "deviceId": "019ff5dc-…" }
-```
+## Documentation
 
-**Import merges, it does not restore.** Each entry is applied only if it is newer
-than what is already on the phone, so importing an old backup cannot undo newer
-trips, and importing the same file twice does nothing. Un-markings travel as
-tombstones so they propagate too, and a place code this build does not know is
-skipped and named rather than stored. The rules are in
-[`data/backup/BackupMerge.kt`](app/src/main/java/com/riedel/beyondborders/data/backup/BackupMerge.kt)
-as a pure function.
-
-**Moving to a new phone needs no file.** Android's own Auto Backup is left on, so if
-you have backup enabled the marks, the theme and colours, the passport and the widget
-config come back when the app is installed on the new device. The app never uploads
-anything itself — it asks for no network permission at all — that copy is made by the
-system, to your own Google account, and Android's backup settings are where to switch
-it off. The one thing deliberately left out is the per-install id the merge uses to
-tell this device's writes from another's; restoring it would give two installs the
-same id, so it is regenerated instead.
-
-## Regenerating the geo assets
-
-Both assets are committed, so a normal build never needs this. Run it only after
-changing the curation rules or taking a new Natural Earth release.
-
-```sh
-mkdir -p tools/geo/cache
-curl -sL -o tools/geo/cache/ne_10m_admin_0_map_units.geojson \
-  https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_map_units.geojson
-
-python3 tools/geo/build_geo.py
-```
-
-This writes `app/src/main/assets/places.geojson` (polygons, ~2.6 MB) and
-`places.json` (the registry, ~50 kB). It fails loudly rather than shipping a
-regression: the territory splits, the reverse merges and the continent buckets are
-all asserted before anything is written.
-
-The curation rules — what gets merged, dropped, renamed or given a private code,
-and why — live in [`tools/geo/rules.py`](tools/geo/rules.py). Read that file
-before changing anything about the place list.
+- [Features in depth](docs/FEATURES.md) — map colours, how passport answers work,
+  export and import.
+- [Data and regenerating assets](docs/DATA.md) — rebuilding the geo and visa assets.
+- [Asset sources](ASSET_SOURCES.md) — provenance and checksums of every bundled asset.
+- [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), [Privacy policy](docs/PRIVACY.md).
 
 ## Data and licences
 
@@ -180,8 +93,6 @@ before changing anything about the place list.
   ([Auswärtiges Amt](https://www.auswaertiges-amt.de/)) — links only, no content copied.
 - Map rendering: [MapLibre Native Android](https://github.com/maplibre/maplibre-native),
   BSD-2-Clause. Note it requires Vulkan.
-
-See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and the [privacy policy](docs/PRIVACY.md).
 
 ## Licence
 
