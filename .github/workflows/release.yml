@@ -2,9 +2,19 @@ name: Release
 
 # Manual, from main: a read-only test job runs first, then the write job. Actions -> Release -> Run workflow. The tag is read from versionName
 # in app/build.gradle.kts, so bump the version first; the run fails if that tag
-# already exists rather than overwriting a release.
+# already exists rather than overwriting a release. The release is a draft unless
+# "draft" is unticked, so the APK can be looked at before anyone can download it.
 on:
   workflow_dispatch:
+    inputs:
+      notes:
+        description: Release notes (markdown). Empty = auto-generated from merged PRs.
+        required: false
+        default: ""
+      draft:
+        description: Create as a draft, to publish by hand after checking it
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -65,11 +75,22 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: ./gradlew :app:assembleRelease
 
+      # Fails the run if the APK is unsigned or its signature does not check out, and
+      # prints the certificate digest to compare with the key given to Play App Signing.
+      - name: Verify signature
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs --verbose app/build/outputs/apk/release/app-release.apk
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ inputs.notes }}
+          DRAFT: ${{ inputs.draft }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk "BeyondBorders-$VERSION.apk"
           sha256sum "BeyondBorders-$VERSION.apk" > "BeyondBorders-$VERSION.apk.sha256"
-          gh release create "v$VERSION" "BeyondBorders-$VERSION.apk" "BeyondBorders-$VERSION.apk.sha256" \
-            --title "Beyond Borders $VERSION" --generate-notes
+          ARGS=(--title "Beyond Borders $VERSION" --target "$GITHUB_SHA")
+          if [ -n "$NOTES" ]; then ARGS+=(--notes "$NOTES"); else ARGS+=(--generate-notes); fi
+          if [ "$DRAFT" = "true" ]; then ARGS+=(--draft); fi
+          gh release create "v$VERSION" "BeyondBorders-$VERSION.apk" "BeyondBorders-$VERSION.apk.sha256" "${ARGS[@]}"

@@ -40,7 +40,8 @@ basemap, no tile server and no API key.
 ## Install
 
 Download `BeyondBorders-<version>.apk` from the
-[Releases](../../releases) page. Requires Android 11 (API 30) or newer.
+[Releases](../../releases) page. Requires Android 11 (API 30) or newer on a 64-bit ARM (arm64) device, which is
+nearly every phone from the last several years.
 
 1. Open the APK on your phone. Android will ask you to allow installs from that
    app (your browser or file manager); this is the "install unknown apps" setting.
