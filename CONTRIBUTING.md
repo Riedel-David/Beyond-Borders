@@ -16,3 +16,5 @@ Issues and pull requests are welcome. Before opening a PR:
 - Test names are sentences in backticks stating the claim. Pure logic goes in
   `internal` functions with host-JVM tests; keep Compose thin.
 - Commit messages: a short imperative summary line, no prefix convention.
+- Contributions are accepted under the project's GPL-3.0 licence. A sign-off
+  (`git commit -s`, the Developer Certificate of Origin) is appreciated.

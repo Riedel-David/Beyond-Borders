@@ -7,8 +7,8 @@ and byte size were computed directly from the files currently in the repo
 (`shasum -a 256`); "source" is what the generator scripts in `tools/` say they were
 built from, not a guess.
 
-The `glyphs/` directory (font atlas for MapLibre text rendering) is not a data
-asset and is not covered here.
+The `glyphs/` directory is covered in its own section below; the full third-party
+licence texts are in `THIRD_PARTY_NOTICES.md`.
 
 ## Map geometry — `tools/geo/build_geo.py`
 
@@ -22,10 +22,10 @@ curl -sL -o tools/geo/cache/ne_10m_admin_0_map_units.geojson \
 
 Natural Earth data is public domain. The raw layer is then curated by
 `tools/geo/rules.py` (merges, splits, and hand-written overrides — see that file
-for why) before `build_geo.py` writes the three outputs below. The exact commit of
-`natural-earth-vector` used for the currently-committed assets is not recorded
-anywhere, so it is unknown; only the upstream URL and the curation step are
-traceable.
+for why) before `build_geo.py` writes the three outputs below. The script
+downloads from the `master` branch and the exact `natural-earth-vector` commit used
+for the currently-committed assets is not recorded anywhere, so the source is
+unpinned; only the upstream URL and the curation step are traceable.
 
 | filename | sha256 | bytes | source |
 |---|---|---|---|
@@ -250,3 +250,21 @@ exact snapshot.
 | visa_za.json | e9f405e0ff49c307ec15fcc8f2069ab357d7577ba7fdce5737dc3739beb82382 | 25155 |
 | visa_zm.json | d17675a1264a145f25bc323ec88428a16d8cac3e4c138f7077a0687fd6779c30 | 24984 |
 | visa_zw.json | e52fe209977870d16b62cc3cc1f3fffe7bd39f83cfec7e969c38e0e3f0a10f94 | 24944 |
+
+## Map label glyphs — `glyphs/Noto Sans Regular/`
+
+`0-255.pbf` and `256-511.pbf` are signed-distance-field glyph atlases (Mapbox/MapLibre
+PBF format) for Noto Sans Regular, covering code points U+0000 to U+01FF. They are
+bundled so the map's country-name `SymbolLayer` works with no glyph server. The
+source TTF and the generator tool (fontnik, font-maker or similar) are not recorded
+in the repo or its history, so the exact build is unknown; `OFL.txt` beside the files
+gives the copyright as "The Noto Project Authors"
+(<https://github.com/notofonts/latin-greek-cyrillic>). Licence: SIL Open Font License
+1.1, which permits bundling and conversion; the licence text ships with the glyphs
+and in `THIRD_PARTY_NOTICES.md`.
+
+## Icons
+
+`ic_settings` and `ic_tab_*` under `app/src/main/res/drawable/` are hand-drawn vector
+paths, not copied from Material Icons or another library (the source comments say so).
+The launcher and widget drawables are also project-made vectors.
