@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MEDIUM's content on the left, the three stat tiles stacked on the right. LARGE stacks
+     everything vertically and needs 274 dp; a 3x2 is about 220x202 dp, so the tiles move
+     beside the hero instead of under it. The tile column is 88 dp so the hero still has
+     ~88 dp at 3 columns, which is why the headline auto-sizes: "100%" at 40sp is wider. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background_brand"
+    android:orientation="horizontal"
+    android:baselineAligned="false"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:id="@+id/widget_logo"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:scaleType="centerCrop"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:id="@+id/widget_wordmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/widget_wordmark"
+                android:textColor="#DBFFFFFF"
+                android:textSize="10sp"
+                android:fontFamily="sans-serif-medium"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+        </LinearLayout>
+
+        <!-- See travel_widget_medium.xml: absorbs the host's surplus height. -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/widget_headline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="22sp"
+            android:autoSizeMaxTextSize="40sp"
+            android:autoSizeStepGranularity="2sp"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp"
+            android:fontFamily="sans-serif-black"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#B9FFFFFF"
+            android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/widget_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginTop="12dp"
+            android:progressDrawable="@drawable/widget_progress"
+            android:max="100" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="88dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/widget_tile_1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="0dp"
+            android:background="@drawable/widget_stat_tile"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/widget_tile_1_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-black"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_tile_1_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#9DFFFFFF"
+                android:textSize="9sp"
+                android:fontFamily="sans-serif-medium"
+                android:textStyle="bold"
+                android:letterSpacing="0.06" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_tile_2"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/widget_stat_tile"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/widget_tile_2_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-black"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_tile_2_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#9DFFFFFF"
+                android:textSize="9sp"
+                android:fontFamily="sans-serif-medium"
+                android:textStyle="bold"
+                android:letterSpacing="0.06" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_tile_3"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/widget_stat_tile"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/widget_tile_3_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-black"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_tile_3_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#9DFFFFFF"
+                android:textSize="9sp"
+                android:fontFamily="sans-serif-medium"
+                android:textStyle="bold"
+                android:letterSpacing="0.06" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

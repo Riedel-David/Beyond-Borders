@@ -110,14 +110,14 @@ class TravelWidgetProvider : AppWidgetProvider() {
 
             val views = travelWidgetViews(context, tier, metric, filledBackground, stats)
 
-            // Metric-aware tap: COUNTRIES → travel list; PERCENT and CONTINENTS →
-            // stats screen. Use the widget id as the request code so two widgets with
+            // Metric-aware tap: COUNTRIES → the app as it normally opens (the map);
+            // PERCENT and CONTINENTS → stats screen. Use the widget id as the request code so two widgets with
             // different metrics both tap through correctly — getActivity reuses a
             // cached PendingIntent when the request code matches and keeps the old
             // extras, which is the trap.
             val openApp = Intent(context, MainActivity::class.java).apply {
                 when (metric) {
-                    WidgetMetric.COUNTRIES -> putExtra("widget_open_tab", Tab.PASSPORT.name)
+                    WidgetMetric.COUNTRIES -> Unit
                     WidgetMetric.PERCENT, WidgetMetric.CONTINENTS -> {
                         putExtra("widget_open_tab", Tab.PASSPORT.name)
                         putExtra("widget_open_stats", true)

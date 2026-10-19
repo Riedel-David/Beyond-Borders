@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.widget
 
 import android.content.Context
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.drawable.toBitmap
 import com.riedel.beyondborders.R
@@ -9,7 +10,7 @@ import com.riedel.beyondborders.ui.places.TravelStats
 
 /**
  * Logo bitmap size in dp. Must be at least the largest ImageView size any tier
- * declares in its layout (currently 48dp in both medium and large).
+ * declares in its layout (currently 48dp in medium and large).
  */
 private const val LOGO_SIZE_DP = 48
 
@@ -27,8 +28,9 @@ internal fun travelWidgetViews(
     stats: TravelStats,
 ): RemoteViews {
     val layoutId = when (tier) {
-        WidgetTier.COMPACT -> R.layout.travel_widget_compact
+        WidgetTier.COMPACT, WidgetTier.NAMED -> R.layout.travel_widget_compact
         WidgetTier.MEDIUM -> R.layout.travel_widget_medium
+        WidgetTier.WIDE -> R.layout.travel_widget_wide
         WidgetTier.LARGE -> R.layout.travel_widget_large
     }
 
@@ -64,29 +66,35 @@ internal fun travelWidgetViews(
         views.setTextColor(R.id.widget_label, context.getColor(R.color.widget_accent))
     }
 
-    // MEDIUM and LARGE add logo, wordmark and progress bar
-    if (tier == WidgetTier.MEDIUM || tier == WidgetTier.LARGE) {
-        // Logo: the launcher icon as a bitmap. AdaptiveIconDrawable applies its own
-        // mask, so the ImageView shows the masked icon the home screen shows.
-        val logo = context.packageManager.getApplicationIcon(context.packageName)
-        val logoBitmap = logo.toBitmap(
-            width = (LOGO_SIZE_DP * context.resources.displayMetrics.density).toInt(),
-            height = (LOGO_SIZE_DP * context.resources.displayMetrics.density).toInt(),
-        )
-        views.setImageViewBitmap(R.id.widget_logo, logoBitmap)
+    // Every tier carries the logo: the launcher icon as a bitmap. AdaptiveIconDrawable
+    // applies its own mask, so the ImageView shows the masked icon the home screen shows.
+    val logo = context.packageManager.getApplicationIcon(context.packageName)
+    val logoBitmap = logo.toBitmap(
+        width = (LOGO_SIZE_DP * context.resources.displayMetrics.density).toInt(),
+        height = (LOGO_SIZE_DP * context.resources.displayMetrics.density).toInt(),
+    )
+    views.setImageViewBitmap(R.id.widget_logo, logoBitmap)
+
+    // COMPACT shares its layout with NAMED and hides the wordmark; the rest of the tiers
+    // add the progress bar as well.
+    if (tier == WidgetTier.COMPACT) {
+        views.setViewVisibility(R.id.widget_wordmark, View.GONE)
+    } else {
 
         views.setTextColor(
             R.id.widget_wordmark,
             if (filled) 0xDBFFFFFF.toInt() else context.getColor(R.color.widget_quiet_muted),
         )
 
-        views.setProgressBar(R.id.widget_progress, 100, widgetProgressValue(stats.percent), false)
+        if (tier != WidgetTier.NAMED) {
+            views.setProgressBar(R.id.widget_progress, 100, widgetProgressValue(stats.percent), false)
+        }
     }
 
-    // LARGE adds the three stat tiles. shareStatTiles returns exactly three pairs;
+    // WIDE and LARGE add the three stat tiles. shareStatTiles returns exactly three pairs;
     // indexing [0][1][2] is safe today but if that ever changes the widget silently
     // keeps a stale count (updateOne is wrapped in catch (_: Exception)).
-    if (tier == WidgetTier.LARGE) {
+    if (tier == WidgetTier.LARGE || tier == WidgetTier.WIDE) {
         val tiles = shareStatTiles(stats)
         val tileIds = listOf(
             Triple(R.id.widget_tile_1, R.id.widget_tile_1_value, R.id.widget_tile_1_label),
