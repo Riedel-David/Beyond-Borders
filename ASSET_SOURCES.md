@@ -31,7 +31,7 @@ unpinned; only the upstream URL and the curation step are traceable.
 |---|---|---|---|
 | places.geojson | c315e8b08909f1e23dfda270f1f81dd8722905da73845e78a519417ab1ccf3ab | 2669172 | Natural Earth `ne_10m_admin_0_map_units`, curated by `tools/geo/rules.py`, built by `tools/geo/build_geo.py` |
 | places.json | 86db954005e6a032623cccd46ec3490606890d5fbfa833f4022af0cf65098aaa | 61861 | same |
-| places_labels.geojson | 3690485a7567e9807f2da30f16f0b320f0846b82be0e552fe344efb1ad51ea4b | 39801 | same |
+| places_labels.geojson | c1185582b7fad64f36b91cf303c617e5adcec52b402b5194258ea1d678fc9c86 | 39798 | same |
 
 ## Visa requirements — `tools/visa/build_visa.py`
 
