@@ -169,7 +169,7 @@ class SettingsViewModel(
      * The emergency reset. The screen is responsible for confirming first — this
      * assumes that already happened and just does it.
      *
-     * No [TransferState.Done] on success: [SettingsStore.resetHasSeenWelcome] sends
+     * No [TransferState.Done] on success: [SettingsStore.resetAll] sends
      * the user straight to the welcome screen, which is confirmation enough. A
      * "deleted" dialog on top of that would need its own dismissal before the
      * welcome screen underneath became visible.
@@ -180,7 +180,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             _reset.value = try {
                 places.deleteAll()
-                settings.resetHasSeenWelcome()
+                settings.resetAll()
                 withContext(Dispatchers.IO) {
                     snapshot.delete()
                     // Only enqueues the upload — it does not run synchronously and does

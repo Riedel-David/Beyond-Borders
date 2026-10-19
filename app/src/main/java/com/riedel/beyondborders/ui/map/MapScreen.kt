@@ -955,6 +955,9 @@ private fun PlacesMapView(
     DisposableEffect(mapView) {
         val app = context.applicationContext
         val callbacks = object : ComponentCallbacks2 {
+            // The RUNNING_* levels are deprecated because newer releases stop sending
+            // them, but minSdk 30 phones still do, and this is the one that matters there.
+            @Suppress("DEPRECATION")
             override fun onTrimMemory(level: Int) {
                 if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW && !mapView.isDestroyed) {
                     mapView.onLowMemory()

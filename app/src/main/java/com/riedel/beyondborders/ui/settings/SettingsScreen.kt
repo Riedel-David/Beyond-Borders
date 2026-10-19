@@ -337,8 +337,9 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     title = { Text("Delete everything?") },
                     text = {
                         Text(
-                            "Every place you've marked is cleared from this phone, " +
-                                "along with the snapshot Android's backup keeps. " +
+                            "Every place you've marked, your passports and your display settings " +
+                                "are cleared from this phone, along with the snapshot " +
+                                "Android's backup keeps. " +
                                 "Google may still hold an earlier backup until " +
                                 "Android next runs one — Android's backup settings " +
                                 "can delete that now."

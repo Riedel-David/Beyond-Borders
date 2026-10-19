@@ -101,12 +101,22 @@ class SettingsStore(context: Context) {
         prefs.edit { putBoolean(KEY_HAS_SEEN_WELCOME, true) }
     }
 
-    /** Part of the emergency reset: once the travel data is gone, the welcome
-     * screen's "nothing leaves this phone" pitch is true again from a blank slate,
-     * so it shows again rather than assuming this is still the same user's app. */
-    fun resetHasSeenWelcome() {
+    /** Part of the emergency reset: back to a first-run app. Passports, theme and map
+     * colours go with the trips, because "Delete everything" has to mean everything;
+     * the welcome screen then shows again, and its "nothing leaves this phone" pitch
+     * is true again from a blank slate. Only [deviceId] survives, in its own file —
+     * it is an install id, not something the user entered. */
+    fun resetAll() {
+        _themeMode.value = ThemeMode.SYSTEM
+        _mapColors.value = MapColors.parse(visited = null, lived = null, wishlist = null)
+        _mapBase.value = MapBase.DEFAULT
+        _denominator.value = Denominator.ALL
+        _hapticsEnabled.value = true
         _hasSeenWelcome.value = false
-        prefs.edit { remove(KEY_HAS_SEEN_WELCOME) }
+        _nationality.value = null
+        _secondNationality.value = null
+        _collapsedHeaders.value = emptySet()
+        prefs.edit { clear() }
     }
 
     /**

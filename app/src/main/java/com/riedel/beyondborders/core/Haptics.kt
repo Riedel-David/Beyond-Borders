@@ -17,6 +17,9 @@ import android.os.VibratorManager
  * say vibration is on.
  */
 class Haptics(context: Context) {
+    // minSdk is 30 and VibratorManager arrived in 31, so API 30 still needs the old
+    // service; the deprecation is for the 31+ path, which never takes this branch.
+    @Suppress("DEPRECATION")
     private val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
     } else {
