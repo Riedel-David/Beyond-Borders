@@ -15,6 +15,10 @@ on:
         description: Create as a draft, to publish by hand after checking it
         type: boolean
         default: true
+      aab:
+        description: Also build the Play bundle (AAB), kept as a private workflow artifact, not on the release
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -72,11 +76,15 @@ jobs:
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
-      - name: Build signed APK and AAB
+      - name: Build signed APK (and AAB if asked)
         env:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-        run: ./gradlew :app:assembleRelease :app:bundleRelease
+          WITH_AAB: ${{ inputs.aab }}
+        run: |
+          TASKS=(:app:assembleRelease)
+          if [ "$WITH_AAB" = "true" ]; then TASKS+=(:app:bundleRelease); fi
+          ./gradlew "${TASKS[@]}"
 
       # Fails the run if the APK is unsigned or its signature does not check out, and
       # prints the certificate digest to compare with the key given to Play App Signing.
@@ -89,6 +97,7 @@ jobs:
       # only for a bundle whose signature checks out, and the digest below should match
       # the one apksigner printed above.
       - name: Verify bundle signature
+        if: inputs.aab
         run: |
           OUT=$(jarsigner -verify -certs -verbose app/build/outputs/bundle/release/app-release.aab)
           echo "$OUT" | tail -5
@@ -101,9 +110,18 @@ jobs:
           DRAFT: ${{ inputs.draft }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk "BeyondBorders-$VERSION.apk"
-          cp app/build/outputs/bundle/release/app-release.aab "BeyondBorders-$VERSION.aab"
           sha256sum "BeyondBorders-$VERSION.apk" > "BeyondBorders-$VERSION.apk.sha256"
           ARGS=(--title "Beyond Borders $VERSION" --target "$GITHUB_SHA")
           if [ -n "$NOTES" ]; then ARGS+=(--notes "$NOTES"); else ARGS+=(--generate-notes); fi
           if [ "$DRAFT" = "true" ]; then ARGS+=(--draft); fi
-          gh release create "v$VERSION" "BeyondBorders-$VERSION.apk" "BeyondBorders-$VERSION.apk.sha256" "BeyondBorders-$VERSION.aab" "${ARGS[@]}"
+          gh release create "v$VERSION" "BeyondBorders-$VERSION.apk" "BeyondBorders-$VERSION.apk.sha256" "${ARGS[@]}"
+
+      # Not attached to the release: Play is the only consumer, and the public page
+      # should offer one installable file. Download it from this run's page.
+      - name: Keep the AAB as a private artifact
+        if: inputs.aab
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BeyondBorders-${{ env.VERSION }}-aab
+          path: app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
