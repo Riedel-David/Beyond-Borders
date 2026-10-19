@@ -30,12 +30,12 @@ it earns its place.
 ## Where the passport gets you
 
 Passport → **Where I can go** answers the other half of the question the map answers,
-entirely offline, for any passport in a searchable picker over all ~195 Passport Index
+entirely offline, for any passport in a searchable picker over about 200 Passport Index
 passports. A German passport gets the full, hand-curated 252-destination answer; every
 other passport gets a generic, programme-based answer wherever a rule applies, and an
 honest grey gap where none does.
 
-The interesting part is not the dataset — it is the ~53 places per passport that the
+The interesting part is not the dataset — it is the up to 53 places per passport that the
 dataset does not cover. The Passport Index matrix is 199 sovereign states; Beyond
 Borders has 252 places, because the whole point of this app is that Greenland is not
 Denmark. Those are hand-written in [`tools/visa/rules.py`](../tools/visa/rules.py), one
@@ -51,7 +51,6 @@ entry at a time, and they are exactly the ones other apps get wrong:
 Every one of those carries a note written for a traveller and a **confidence** the app
 displays — presented as uncertain rather than in the same authoritative voice as the
 rest. A bundled dataset is a navigation aid, not an authority.
-
 
 ## Getting the data out
 
@@ -71,12 +70,29 @@ skipped and named rather than stored. The rules are in
 [`data/backup/BackupMerge.kt`](../app/src/main/java/com/riedel/beyondborders/data/backup/BackupMerge.kt)
 as a pure function.
 
-**Moving to a new phone needs no file.** Android's own Auto Backup is left on, so if
-you have backup enabled the marks, the theme and colours, the passport and the widget
-config come back when the app is installed on the new device. The app never uploads
-anything itself — it asks for no network permission at all — that copy is made by the
-system, to your own Google account, and Android's backup settings are where to switch
-it off. The one thing deliberately left out is the per-install id the merge uses to
-tell this device's writes from another's; restoring it would give two installs the
-same id, so it is regenerated instead.
+**Moving to a new phone needs no file.** Android's Auto Backup carries your places, not
+the app's database: the app writes a small JSON snapshot of the history to its own
+storage whenever it goes to the background, and the system copies that file to your own
+Google account. After a reinstall, Settings shows **Restore from Android's backup**; it
+opens the same preview an imported file gets, and nothing is applied until you confirm.
+Theme, colours, passports and widget configuration are deliberately left out and start
+fresh, as does the per-install id the merge uses to tell this device's writes from
+another's. The app never uploads anything itself and asks for no network permission; the
+copy is made by the system, and Android's backup settings are where to switch it off.
 
+**Delete everything** (Settings) clears your places, both passports and the display
+settings, and removes the staged snapshot so there is nothing for a restore to offer.
+Google may still hold an earlier backup until Android next runs one, so a reinstall
+before that can bring the places back; Android's backup settings can delete that copy.
+
+## The stats screen, share cards and widget
+
+The passport card's headline number opens a stats screen: a bar per continent, the
+least-covered continent and the next milestone. **Share** renders the map as an image in
+three styles: a caption bar, a corner badge, or a numbers-only stats card.
+
+The home-screen widget shows one headline number (countries, percent of the world or
+continents) and grows with its size: a corner logo and number when small, the wordmark
+when narrow but tall, a progress bar at 3×2 with the three stat tiles in a column beside
+it, and the tiles in a row beneath at 4×3. Tapping a countries widget opens the map;
+percent and continents widgets open the stats screen.

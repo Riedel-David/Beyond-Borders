@@ -6,4 +6,6 @@ export (share) path.
 
 To report a vulnerability, use GitHub's private
 [security advisory form](https://github.com/Riedel-David/Beyond-Borders/security/advisories/new) rather than a public issue.
-Expect an answer within a couple of weeks; this is a one-person project.
+Expect an answer within a couple of weeks; this is a one-person project. Only the
+latest release is supported. Release APKs are signed with a fixed key and published
+with a `.sha256` file.
