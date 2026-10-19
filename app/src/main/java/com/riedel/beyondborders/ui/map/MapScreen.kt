@@ -400,8 +400,12 @@ fun MapScreen(
                 .padding(contentPadding)
                 .padding(12.dp)
                 // The stack grows by a pill's height each time one more control
-                // (search, visa, regions) is revealed on expand.
-                .animateContentSize(animationSpec = tween(180)),
+                // (search, visa, regions) is revealed on expand. It also changes width
+                // whenever a pill's label does ("Search"/"Close", "Regions"/"Regions:
+                // named"), and the stack hangs off the right edge: the default TopStart
+                // alignment anchored the content to the left of the animating box, so
+                // every right-aligned pill, the ⋮ included, slid sideways for 180 ms.
+                .animateContentSize(animationSpec = tween(180), alignment = Alignment.TopEnd),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
