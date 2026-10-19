@@ -21,7 +21,7 @@ junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 # Only for host-side unit tests: android.jar ships org.json as method stubs that
 # throw, so tests that parse the bundled places.json need the real implementation.
-json = "20240303"
+json = "20260814"
 
 [libraries]
 # --- Compose ---------------------------------------------------------------
