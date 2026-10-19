@@ -124,6 +124,9 @@ data class MapPalette(
     val wishlist: Color,
     val border: Color,
     val selectedOutline: Color,
+    /** The opposite of [selectedOutline], drawn wider beneath it so the line reads on
+     * any fill. Every selection outline on the map is a core line over a casing. */
+    val selectedCasing: Color,
     /** Country name labels; a halo instead of the Compose pill's background,
      * since a SymbolLayer has no way to draw a rounded rect behind text. */
     val labelText: Color,
@@ -173,9 +176,10 @@ data class VisaRamp(
      *
      * Its own value because [MapPalette.selectedOutline] was picked against the
      * status fills, not this set — the lens repaints every fill on the map, so it
-     * repaints this too.
+     * repaints this too. Black in light mode, white in dark, over [selectedCasing].
      */
     val selectedOutline: Color,
+    val selectedCasing: Color,
 ) {
     fun colorFor(band: VisaBand): Color = when (band) {
         VisaBand.VISA_FREE -> visaFree
@@ -202,7 +206,8 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
         visaRequired = Color(0xFFD35E64),
         closed = Color(0xFFCAC7CA),
         noData = Color(0xFF9AA0A8),
-        selectedOutline = Color(0xFF05080C),
+        selectedOutline = Color(0xFFF7FAFF),
+        selectedCasing = Color(0xFF05080C),
     )
 } else {
     VisaRamp(
@@ -212,7 +217,8 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
         visaRequired = Color(0xFF310B08),
         closed = Color(0xFF4B4B49),
         noData = Color(0xFF6B6D70),
-        selectedOutline = Color(0xFFF7FAFF),
+        selectedOutline = Color(0xFF05080C),
+        selectedCasing = Color(0xFFF7FAFF),
     )
 }
 
@@ -236,8 +242,14 @@ data class RegionRamp(
     val most: Color,
     val done: Color,
     /** The heatmap's own selection outline; see [VisaRamp.selectedOutline] for
-     * why the fixed [MapPalette.selectedOutline] would not have done here either. */
+     * why the fixed [MapPalette.selectedOutline] would not have done here either.
+     * Black in light mode, white in dark: the ramp's fills run dark-on-light and
+     * light-on-dark (they must clear 3:1 against the land), so this line alone
+     * vanishes on the extreme bands — [selectedCasing] sits under it to carry those. */
     val selectedOutline: Color,
+    /** The opposite of [selectedOutline], drawn wider beneath it so the line reads on
+     * any fill. */
+    val selectedCasing: Color,
 ) {
     fun colorFor(band: RegionBand): Color = when (band) {
         RegionBand.NONE -> none
@@ -253,7 +265,8 @@ private fun regionRamp(dark: Boolean): RegionRamp = if (dark) {
         some = Color(0xFF44C16D),
         most = Color(0xFFF1C79D),
         done = Color(0xFFFDF4F2),
-        selectedOutline = Color(0xFF05080C),
+        selectedOutline = Color(0xFFF7FAFF),
+        selectedCasing = Color(0xFF05080C),
     )
 } else {
     RegionRamp(
@@ -261,7 +274,8 @@ private fun regionRamp(dark: Boolean): RegionRamp = if (dark) {
         some = Color(0xFF154826),
         most = Color(0xFF3C2207),
         done = Color(0xFF030100),
-        selectedOutline = Color(0xFFF7FAFF),
+        selectedOutline = Color(0xFF05080C),
+        selectedCasing = Color(0xFFF7FAFF),
     )
 }
 
@@ -281,6 +295,7 @@ fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT
     wishlist = Color(colors.wishlist.argb(dark)),
     border = if (dark) Color(0xFF4C5663) else Color(0xFFA9B4C2),
     selectedOutline = if (dark) Color(0xFFDCE7FF) else Color(0xFF0B2C63),
+    selectedCasing = if (dark) Color(0xFF05080C) else Color(0xFFF7FAFF),
     labelText = if (dark) Color(0xFFF2F5FA) else Color(0xFF10151C),
     labelHalo = if (dark) Color(0xFF10151C) else Color(0xFFF2F5FA),
     visa = visaRamp(dark),

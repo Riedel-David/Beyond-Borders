@@ -550,4 +550,11 @@ class PlacesLogicTest {
             painted.intersect(noData).isEmpty()
         )
     }
+
+    @Test
+    fun `the region pill offers the named groupings first and the UN list one tap later`() {
+        assertEquals(RegionMode.INFORMAL, nextRegionMode(RegionMode.OFF))
+        assertEquals(RegionMode.OFFICIAL, nextRegionMode(RegionMode.INFORMAL))
+        assertEquals(RegionMode.OFF, nextRegionMode(RegionMode.OFFICIAL))
+    }
 }

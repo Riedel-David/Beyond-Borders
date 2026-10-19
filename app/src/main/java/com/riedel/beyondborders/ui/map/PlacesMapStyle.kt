@@ -40,9 +40,12 @@ internal object PlacesMapStyle {
     const val LAYER_WISHLIST = "places-wishlist"
     const val LAYER_BORDER = "places-border"
     const val LAYER_SELECTED = "places-selected"
+    const val LAYER_SELECTED_CASING = "places-selected-casing"
     const val LAYER_VISA_SELECTED = "places-visa-selected"
+    const val LAYER_VISA_SELECTED_CASING = "places-visa-selected-casing"
     const val LAYER_VISA_NO_DATA = "places-visa-no-data"
     const val LAYER_REGION_SELECTED = "places-region-selected"
+    const val LAYER_REGION_SELECTED_CASING = "places-region-selected-casing"
     const val LAYER_LABELS = "places-labels"
 
     /** Latin-only SDF ranges bundled at assets/glyphs; see [GLYPHS_ASSET]. */
@@ -192,6 +195,16 @@ internal object PlacesMapStyle {
                     ),
                 )
             )
+            // Each selection outline is a core line over a wider casing in the opposite
+            // colour, so it reads on any fill; the casing is added first to draw beneath.
+            .withLayer(
+                LineLayer(LAYER_SELECTED_CASING, SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.lineColor(palette.selectedCasing.toArgb()),
+                        PropertyFactory.lineWidth(casingWidth()),
+                    )
+                    .withFilter(noPlaces())
+            )
             .withLayer(
                 LineLayer(LAYER_SELECTED, SOURCE_ID)
                     .withProperties(
@@ -205,10 +218,27 @@ internal object PlacesMapStyle {
             // is built and the lens toggles far more often than the theme does. Only
             // ever one of the two carries a filter, so they cannot both draw.
             .withLayer(
+                LineLayer(LAYER_VISA_SELECTED_CASING, SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.lineColor(palette.visa.selectedCasing.toArgb()),
+                        PropertyFactory.lineWidth(casingWidth()),
+                    )
+                    .withFilter(noPlaces())
+            )
+            .withLayer(
                 LineLayer(LAYER_VISA_SELECTED, SOURCE_ID)
                     .withProperties(
                         PropertyFactory.lineColor(palette.visa.selectedOutline.toArgb()),
                         PropertyFactory.lineWidth(selectionWidth()),
+                    )
+                    .withFilter(noPlaces())
+            )
+            // The casing goes in first so the core line draws over it.
+            .withLayer(
+                LineLayer(LAYER_REGION_SELECTED_CASING, SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.lineColor(palette.region.selectedCasing.toArgb()),
+                        PropertyFactory.lineWidth(casingWidth()),
                     )
                     .withFilter(noPlaces())
             )
@@ -272,6 +302,14 @@ internal object PlacesMapStyle {
         Expression.zoom(),
         Expression.stop(1, 1.4f),
         Expression.stop(5, 2.6f),
+    )
+
+    /** [selectionWidth] plus a rim on each side, for every selection outline's casing. */
+    private fun casingWidth(): Expression = Expression.interpolate(
+        Expression.linear(),
+        Expression.zoom(),
+        Expression.stop(1, 3.4f),
+        Expression.stop(5, 5.2f),
     )
 
     /** A filter that matches nothing — the starting state of every overlay. */

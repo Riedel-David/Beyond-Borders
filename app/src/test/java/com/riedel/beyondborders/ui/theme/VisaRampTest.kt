@@ -164,11 +164,13 @@ class VisaRampTest {
     fun `the lens outline is visible on every band`() {
         themes().forEach { dark ->
             val outline = ramp(dark).selectedOutline.rgb()
+            val casing = ramp(dark).selectedCasing.rgb()
             bands(dark).forEach { (band, fill) ->
+                // The core line alone may vanish on an extreme band; the casing carries it.
+                val seen = maxOf(contrast(outline, fill), contrast(casing, fill))
                 assertTrue(
-                    "lens outline on $band in ${name(dark)}: " +
-                        "${"%.2f".format(contrast(outline, fill))}:1",
-                    contrast(outline, fill) >= floorAgainstBackground,
+                    "lens outline on $band in ${name(dark)}: ${"%.2f".format(seen)}:1",
+                    seen >= floorAgainstBackground,
                 )
             }
         }

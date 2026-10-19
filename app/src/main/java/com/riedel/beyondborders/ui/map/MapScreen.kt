@@ -273,6 +273,7 @@ fun MapScreen(
             regionBands = regionBands,
             regionActive = regionActive,
             selectedCode = selectedCode,
+            regionOutline = regionInfo?.codes.orEmpty(),
             places = places,
             onTap = ::tap,
             initialCamera = viewModel.mapCamera,
@@ -668,7 +669,13 @@ private fun ShareStyleDialog(
 }
 
 /** Which region/grouping a tapped place belongs to, in the mode that was active. */
-private data class RegionTapInfo(val place: Place, val name: String, val been: Int, val total: Int)
+private data class RegionTapInfo(
+    val place: Place,
+    val name: String,
+    val been: Int,
+    val total: Int,
+    val codes: Set<String>,
+)
 
 private fun regionInfoFor(
     code: String,
@@ -680,9 +687,9 @@ private fun regionInfoFor(
     return when (mode) {
         RegionMode.OFF -> null
         RegionMode.OFFICIAL -> stats.regions.firstOrNull { code in it.codes }
-            ?.let { RegionTapInfo(place, it.region, it.been, it.total) }
+            ?.let { RegionTapInfo(place, it.region, it.been, it.total, it.codes) }
         RegionMode.INFORMAL -> stats.informalRegions.firstOrNull { code in it.codes }
-            ?.let { RegionTapInfo(place, it.name, it.been, it.total) }
+            ?.let { RegionTapInfo(place, it.name, it.been, it.total, it.codes) }
     }
 }
 
@@ -706,6 +713,7 @@ private class PlacesMapController {
     private var appliedSelection: String? = null
     private var appliedLens = false
     private var appliedRegionActive = false
+    private var appliedRegionOutline: Set<String> = emptySet()
 
     fun attach(map: MapLibreMap) {
         this.map = map
@@ -722,6 +730,7 @@ private class PlacesMapController {
         appliedRegionBands = emptyMap()
         appliedSelection = null
         appliedLens = false
+        appliedRegionOutline = emptySet()
         appliedRegionActive = false
     }
 
@@ -794,22 +803,29 @@ private class PlacesMapController {
         }
     }
 
-    fun applySelection(code: String?, lens: Boolean, regionActive: Boolean) {
+    fun applySelection(code: String?, lens: Boolean, regionActive: Boolean, regionOutline: Set<String>) {
         val style = style ?: return
-        if (code == appliedSelection && lens == appliedLens && regionActive == appliedRegionActive) return
+        if (code == appliedSelection && lens == appliedLens && regionActive == appliedRegionActive &&
+            regionOutline == appliedRegionOutline
+        ) return
         appliedSelection = code
         appliedLens = lens
         appliedRegionActive = regionActive
+        appliedRegionOutline = regionOutline
         val outline =
             if (code == null) PlacesMapStyle.noPlaces() else PlacesMapStyle.onlyPlace(code)
         // Exactly one of the three outlines is armed, so no two of the travel,
         // visa and region views can ever draw over each other.
-        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_SELECTED)
-            ?.setFilter(if (lens || regionActive) PlacesMapStyle.noPlaces() else outline)
-        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_VISA_SELECTED)
-            ?.setFilter(if (lens) outline else PlacesMapStyle.noPlaces())
-        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_REGION_SELECTED)
-            ?.setFilter(if (regionActive) outline else PlacesMapStyle.noPlaces())
+        val travelFilter = if (lens || regionActive) PlacesMapStyle.noPlaces() else outline
+        val visaFilter = if (lens) outline else PlacesMapStyle.noPlaces()
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_SELECTED_CASING)?.setFilter(travelFilter)
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_SELECTED)?.setFilter(travelFilter)
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_VISA_SELECTED_CASING)?.setFilter(visaFilter)
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_VISA_SELECTED)?.setFilter(visaFilter)
+        val regionFilter =
+            if (regionActive) PlacesMapStyle.onlyPlaces(regionOutline) else PlacesMapStyle.noPlaces()
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_REGION_SELECTED_CASING)?.setFilter(regionFilter)
+        style.getLayerAs<LineLayer>(PlacesMapStyle.LAYER_REGION_SELECTED)?.setFilter(regionFilter)
     }
 
     /** Where the camera goes when search picks a place — its own bounding box,
@@ -874,6 +890,7 @@ private fun PlacesMapView(
     regionBands: Map<RegionBand, Set<String>>,
     regionActive: Boolean,
     selectedCode: String?,
+    regionOutline: Set<String>,
     places: List<Place>,
     onTap: (String?) -> Unit,
     initialCamera: MapCamera?,
@@ -896,6 +913,7 @@ private fun PlacesMapView(
     val currentRegionBands by rememberUpdatedState(regionBands)
     val currentRegionActive by rememberUpdatedState(regionActive)
     val currentSelectedCode by rememberUpdatedState(selectedCode)
+    val currentRegionOutline by rememberUpdatedState(regionOutline)
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
 
@@ -991,7 +1009,7 @@ private fun PlacesMapView(
                 controller.applyStatuses(currentStatuses, currentLens, currentRegionActive)
                 controller.applyVisa(currentVisaBands, currentVisaNoData)
                 controller.applyRegion(currentRegionBands)
-                controller.applySelection(currentSelectedCode, currentLens, currentRegionActive)
+                controller.applySelection(currentSelectedCode, currentLens, currentRegionActive, currentRegionOutline)
             }
         }
         onDispose { disposed = true }
@@ -1049,7 +1067,7 @@ private fun PlacesMapView(
             controller.applyStatuses(statuses, lens, regionActive)
             controller.applyVisa(visaBands, visaNoData)
             controller.applyRegion(regionBands)
-            controller.applySelection(selectedCode, lens, regionActive)
+            controller.applySelection(selectedCode, lens, regionActive, regionOutline)
         },
     )
 }
