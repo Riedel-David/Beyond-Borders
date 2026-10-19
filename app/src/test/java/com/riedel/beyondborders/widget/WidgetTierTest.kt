@@ -17,20 +17,37 @@ class WidgetTierTest {
     }
 
     @Test
-    fun `MEDIUM when width meets threshold but height is below LARGE threshold`() {
-        assertEquals(WidgetTier.MEDIUM, widgetTier(290, 260))
+    fun `WIDE when wide enough for LARGE but too short for it`() {
+        assertEquals(WidgetTier.WIDE, widgetTier(290, 260))
+        assertEquals(WidgetTier.WIDE, widgetTier(290, 186))
+        assertEquals(WidgetTier.NAMED, widgetTier(290, 185))
+        assertEquals(WidgetTier.WIDE, widgetTier(220, 313))
+        assertEquals(WidgetTier.WIDE, widgetTier(205, 186))
+        assertEquals(WidgetTier.MEDIUM, widgetTier(204, 186))
+    }
+
+    @Test
+    fun `MEDIUM when height meets threshold but width is below WIDE`() {
         assertEquals(WidgetTier.MEDIUM, widgetTier(180, 186))
+        assertEquals(WidgetTier.WIDE, widgetTier(289, 260))
     }
 
     @Test
     fun `MEDIUM when height meets threshold but width is below LARGE threshold`() {
-        assertEquals(WidgetTier.MEDIUM, widgetTier(289, 261))
+        assertEquals(WidgetTier.WIDE, widgetTier(289, 261))
     }
 
     @Test
     fun `COMPACT when width is below MEDIUM threshold`() {
-        assertEquals(WidgetTier.COMPACT, widgetTier(179, 200))
-        assertEquals(WidgetTier.COMPACT, widgetTier(100, 150))
+        assertEquals(WidgetTier.NAMED, widgetTier(179, 200))
+        assertEquals(WidgetTier.NAMED, widgetTier(100, 150))
+    }
+
+    @Test
+    fun `NAMED for a narrow widget tall enough to carry the wordmark`() {
+        assertEquals(WidgetTier.NAMED, widgetTier(125, 190))
+        assertEquals(WidgetTier.NAMED, widgetTier(179, 130))
+        assertEquals(WidgetTier.COMPACT, widgetTier(125, 129))
     }
 
     @Test
@@ -47,32 +64,32 @@ class WidgetTierTest {
     }
 
     @Test
-    fun `COMPACT for tall narrow widget`() {
-        assertEquals(WidgetTier.COMPACT, widgetTier(100, 400))
+    fun `a tall narrow widget is NAMED, not COMPACT`() {
+        assertEquals(WidgetTier.NAMED, widgetTier(100, 400))
     }
 
     @Test
     fun `MEDIUM boundary cases`() {
         assertEquals(WidgetTier.MEDIUM, widgetTier(180, 186))
-        assertEquals(WidgetTier.COMPACT, widgetTier(179, 186))
-        assertEquals(WidgetTier.COMPACT, widgetTier(180, 185))
+        assertEquals(WidgetTier.NAMED, widgetTier(179, 186))
+        assertEquals(WidgetTier.NAMED, widgetTier(180, 185))
     }
 
     @Test
     fun `LARGE boundary cases`() {
         assertEquals(WidgetTier.LARGE, widgetTier(290, 261))
-        assertEquals(WidgetTier.MEDIUM, widgetTier(289, 261))
-        assertEquals(WidgetTier.MEDIUM, widgetTier(290, 260))
+        assertEquals(WidgetTier.WIDE, widgetTier(289, 261))
+        assertEquals(WidgetTier.WIDE, widgetTier(290, 260))
     }
 
     @Test
-    fun `a real One UI 3x2 is MEDIUM and a 4x2 is not LARGE`() {
+    fun `a real One UI 3x2 and 4x2 are both WIDE rather than LARGE`() {
         // Measured from the options bundle on a physical phone: One UI reports a 3x2 as
         // 220x202 dp and a 4x2 as roughly 300x202. The old thresholds made the 4x2 LARGE,
         // whose content needs 261 dp, so its three stat tiles were squeezed to no height
         // at all — the defect that set every number in this file.
-        assertEquals(WidgetTier.MEDIUM, widgetTier(220, 202))
-        assertEquals(WidgetTier.MEDIUM, widgetTier(300, 202))
+        assertEquals(WidgetTier.WIDE, widgetTier(220, 202))
+        assertEquals(WidgetTier.WIDE, widgetTier(300, 202))
         assertEquals(WidgetTier.LARGE, widgetTier(300, 304))
     }
 

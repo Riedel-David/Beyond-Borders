@@ -23,7 +23,7 @@ that was fixed, it is a thing the code cannot express.
   252-place curated answer; a second passport is optional, and the easier of its two
   answers wins.
 - **Share** — the map as an image, captioned with your numbers in one of three styles.
-- **Home-screen widget** — configurable per instance: headline metric and card background.
+- **Home-screen widget** — configurable per instance: headline metric and card background. Adapts to its size, adding the logo, wordmark and stat tiles as it grows.
 - **Settings** — theme, map colours, JSON export / import, emergency full data reset.
 
 Everything works **offline**: the geometry is bundled in the APK and there is no
