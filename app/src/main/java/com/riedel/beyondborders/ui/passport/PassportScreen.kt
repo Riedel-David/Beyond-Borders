@@ -105,7 +105,7 @@ import com.riedel.beyondborders.ui.places.visaFilters
 @Composable
 fun PassportScreen(
     viewModel: PlacesViewModel,
-    openStats: Boolean = false,
+    openStats: Boolean? = null,
     onStatsConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -140,11 +140,13 @@ fun PassportScreen(
     // rather than anything in SettingsStore.
     var showStatsDetail by rememberSaveable { mutableStateOf(false) }
 
-    // Handle widget intent to open stats. The LaunchedEffect handles a tap arriving
-    // while the screen is already composed; seeding from openStats would conflict.
+    // A widget tap says where to land, not just "open stats": a tap aimed at the list
+    // has to close a stats screen the app was left on, so false is a command too. Null
+    // means no tap is pending. The LaunchedEffect handles a tap arriving while the
+    // screen is already composed; seeding from openStats would conflict.
     LaunchedEffect(openStats) {
-        if (openStats) {
-            showStatsDetail = true
+        openStats?.let {
+            showStatsDetail = it
             onStatsConsumed()
         }
     }

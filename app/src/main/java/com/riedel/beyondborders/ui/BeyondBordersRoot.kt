@@ -84,7 +84,7 @@ fun BeyondBordersRoot(
     }
 
     var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
-    var openStats by rememberSaveable { mutableStateOf(false) }
+    var openStats by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
     // Handle widget intent: set the tab and stats flag, then consume it. Uses Tab enum
     // name matching so a typo is a visible no-op rather than a silent one.
@@ -142,7 +142,7 @@ fun BeyondBordersRoot(
                         PassportScreen(
                             viewModel = placesViewModel,
                             openStats = openStats,
-                            onStatsConsumed = { openStats = false },
+                            onStatsConsumed = { openStats = null },
                         )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
