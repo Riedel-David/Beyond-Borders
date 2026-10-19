@@ -43,11 +43,12 @@ enum class RegionMode { OFF, OFFICIAL, INFORMAL }
  */
 enum class RegionBand { NONE, SOME, MOST, DONE }
 
-/** Off -> Official -> Informal -> Off, one tap at a time. */
+/** Off -> Informal -> Official -> Off, one tap at a time: the named groupings people
+ * think in come first, the UN's list one tap later. */
 fun nextRegionMode(mode: RegionMode): RegionMode = when (mode) {
-    RegionMode.OFF -> RegionMode.OFFICIAL
-    RegionMode.OFFICIAL -> RegionMode.INFORMAL
-    RegionMode.INFORMAL -> RegionMode.OFF
+    RegionMode.OFF -> RegionMode.INFORMAL
+    RegionMode.INFORMAL -> RegionMode.OFFICIAL
+    RegionMode.OFFICIAL -> RegionMode.OFF
 }
 
 /**

@@ -135,14 +135,27 @@ class RegionRampTest {
     fun `the heatmap outline is visible on every band`() {
         themes().forEach { dark ->
             val outline = ramp(dark).selectedOutline.rgb()
+            val casing = ramp(dark).selectedCasing.rgb()
             bands(dark).forEach { (band, fill) ->
+                // The core line alone may vanish on the extreme bands; the casing
+                // under it must then carry the edge.
+                val seen = maxOf(contrast(outline, fill), contrast(casing, fill))
                 assertTrue(
-                    "heatmap outline on $band in ${name(dark)}: " +
-                        "${"%.2f".format(contrast(outline, fill))}:1",
-                    contrast(outline, fill) >= floorAgainstBackground,
+                    "heatmap outline on $band in ${name(dark)}: ${"%.2f".format(seen)}:1",
+                    seen >= floorAgainstBackground,
                 )
             }
         }
+    }
+
+    @Test
+    fun `the outline is black in light mode and white in dark, with the opposite casing`() {
+        val light = ramp(false)
+        val dark = ramp(true)
+        assertTrue(luminance(light.selectedOutline.rgb()) < 0.05)
+        assertTrue(luminance(dark.selectedOutline.rgb()) > 0.9)
+        assertTrue(contrast(light.selectedOutline.rgb(), light.selectedCasing.rgb()) >= 10.0)
+        assertTrue(contrast(dark.selectedOutline.rgb(), dark.selectedCasing.rgb()) >= 10.0)
     }
 
     @Test
