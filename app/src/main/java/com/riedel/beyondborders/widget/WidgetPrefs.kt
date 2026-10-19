@@ -16,9 +16,21 @@ object WidgetPrefs {
     fun filledBackground(context: Context, widgetId: Int): Boolean =
         prefs(context).getBoolean(backgroundKey(widgetId), true)
 
-    fun save(context: Context, widgetId: Int, metric: WidgetMetric, filledBackground: Boolean) {
+    /** Unset for a widget placed before the choice existed: it keeps the metric's old behaviour. */
+    fun target(context: Context, widgetId: Int, metric: WidgetMetric): WidgetTarget =
+        WidgetTarget.fromStorage(prefs(context).getString(targetKey(widgetId), null))
+            ?: WidgetTarget.defaultFor(metric)
+
+    fun save(
+        context: Context,
+        widgetId: Int,
+        metric: WidgetMetric,
+        filledBackground: Boolean,
+        target: WidgetTarget,
+    ) {
         prefs(context).edit()
             .putString(metricKey(widgetId), metric.storageValue)
+            .putString(targetKey(widgetId), target.storageValue)
             .putBoolean(backgroundKey(widgetId), filledBackground)
             .apply()
     }
@@ -35,7 +47,10 @@ object WidgetPrefs {
         val prefs = prefs(context)
         val metric = prefs.getString(metricKey(oldId), null) ?: return
         val filled = prefs.getBoolean(backgroundKey(oldId), true)
+        val target = prefs.getString(targetKey(oldId), null)
         prefs.edit()
+            .putString(targetKey(newId), target)
+            .remove(targetKey(oldId))
             .putString(metricKey(newId), metric)
             .putBoolean(backgroundKey(newId), filled)
             .remove(metricKey(oldId))
@@ -47,12 +62,14 @@ object WidgetPrefs {
      * don't linger forever under an id nothing will ever read again. */
     fun clear(context: Context, widgetId: Int) {
         prefs(context).edit()
+            .remove(targetKey(widgetId))
             .remove(metricKey(widgetId))
             .remove(backgroundKey(widgetId))
             .apply()
     }
 
     private fun metricKey(widgetId: Int) = "metric_$widgetId"
+    private fun targetKey(widgetId: Int) = "target_$widgetId"
     private fun backgroundKey(widgetId: Int) = "background_$widgetId"
 
     private fun prefs(context: Context) =

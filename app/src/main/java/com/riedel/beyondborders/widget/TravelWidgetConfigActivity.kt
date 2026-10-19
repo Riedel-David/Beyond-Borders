@@ -11,7 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -79,19 +80,19 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             BeyondBordersTheme {
                 ConfigScreen(
                     container = container,
-                    onDone = { metric, filledBackground -> save(metric, filledBackground) },
+                    onDone = { metric, filledBackground, target -> save(metric, filledBackground, target) },
                 )
             }
         }
     }
 
-    private fun save(metric: WidgetMetric, filledBackground: Boolean) {
+    private fun save(metric: WidgetMetric, filledBackground: Boolean, target: WidgetTarget) {
         lifecycleScope.launch {
             // Both the preferences write and the widget update read or touch disk and
             // the AppWidget binder, so they belong off the main thread — this runs at
             // the moment the user taps Done, which is the worst moment to stall.
             withContext(Dispatchers.IO) {
-                WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground)
+                WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground, target)
                 val manager = AppWidgetManager.getInstance(this@TravelWidgetConfigActivity)
                 TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, manager, widgetId)
             }
@@ -105,10 +106,14 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
 @Composable
 private fun ConfigScreen(
     container: AppContainer,
-    onDone: (WidgetMetric, Boolean) -> Unit,
+    onDone: (WidgetMetric, Boolean, WidgetTarget) -> Unit,
 ) {
     var metric by remember { mutableStateOf(WidgetMetric.DEFAULT) }
     var filledBackground by remember { mutableStateOf(true) }
+    // Null until touched, so the default keeps following the metric.
+    var chosenTarget by remember { mutableStateOf<WidgetTarget?>(null) }
+    val target = chosenTarget ?: WidgetTarget.defaultFor(metric)
+    var size by remember { mutableStateOf(PreviewSize.DEFAULT) }
 
     // Fetch the real stats for the preview
     var stats by remember { mutableStateOf(TravelStats.EMPTY) }
@@ -154,6 +159,17 @@ private fun ConfigScreen(
                 }
             }
 
+            Text("Tapping the widget opens", style = MaterialTheme.typography.titleMedium)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                WidgetTarget.entries.forEachIndexed { index, option ->
+                    SegmentedButton(
+                        selected = target == option,
+                        onClick = { chosenTarget = option },
+                        shape = SegmentedButtonDefaults.itemShape(index, WidgetTarget.entries.size),
+                    ) { Text(option.label) }
+                }
+            }
+
             Column {
                 Text("Card background", style = MaterialTheme.typography.titleMedium)
                 Row(
@@ -166,14 +182,27 @@ private fun ConfigScreen(
                 }
             }
 
-            // Live preview: inflate the real RemoteViews at MEDIUM tier
-            Text("Preview", style = MaterialTheme.typography.titleMedium)
+            // Preview only: the launcher still picks the real tier from the placed widget's
+            // size, so this shows what each grid size will look like once resized to it.
+            Text("Preview size", style = MaterialTheme.typography.titleMedium)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                PreviewSize.entries.forEachIndexed { index, option ->
+                    SegmentedButton(
+                        selected = size == option,
+                        onClick = { size = option },
+                        shape = SegmentedButtonDefaults.itemShape(index, PreviewSize.entries.size),
+                    ) { Text(option.label) }
+                }
+            }
+
+            // Live preview: inflate the real RemoteViews in a box of the chosen size's dp.
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(3f / 2f),
+                    .width(size.widthDp.dp)
+                    .height(size.heightDp.dp),
             ) {
                 AndroidView(
+                    modifier = Modifier.fillMaxSize(),
                     factory = { context ->
                         android.widget.FrameLayout(context)
                     },
@@ -187,7 +216,7 @@ private fun ConfigScreen(
                         val remoteContext = frameLayout.context.applicationContext
                         val views = travelWidgetViews(
                             context = remoteContext,
-                            tier = WidgetTier.MEDIUM,
+                            tier = widgetTier(size.widthDp, size.heightDp),
                             metric = metric,
                             filled = filledBackground,
                             stats = stats,
@@ -198,11 +227,24 @@ private fun ConfigScreen(
             }
 
             FilledTonalButton(
-                onClick = { onDone(metric, filledBackground) },
+                onClick = { onDone(metric, filledBackground, target) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Add widget")
             }
         }
+    }
+}
+
+/** Grid sizes with the dp a One UI home screen reports for them (3×2 is 220×202). */
+private enum class PreviewSize(val label: String, val widthDp: Int, val heightDp: Int) {
+    S2X1("2×1", 146, 101),
+    S2X2("2×2", 146, 202),
+    S3X2("3×2", 220, 202),
+    S4X2("4×2", 293, 202),
+    S4X3("4×3", 293, 303);
+
+    companion object {
+        val DEFAULT = S3X2
     }
 }
