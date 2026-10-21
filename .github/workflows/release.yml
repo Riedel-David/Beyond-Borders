@@ -68,6 +68,12 @@ jobs:
             echo "Tag v$VERSION already exists; bump versionName first." >&2
             exit 1
           fi
+          # The README's download buttons name the versioned APK, so they go stale on
+          # every release unless the link is bumped together with versionName.
+          if ! grep -qF "releases/download/v$VERSION/BeyondBorders-$VERSION.apk" README.md; then
+            echo "README.md download link does not point at v$VERSION; update it first." >&2
+            exit 1
+          fi
 
       - name: Decode keystore
         env:
