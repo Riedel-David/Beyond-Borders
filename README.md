@@ -1,19 +1,31 @@
-# Beyond Borders
-
-[![CI](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml/badge.svg)](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml)
-![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
-![Android minSdk 30](https://img.shields.io/badge/Android-minSdk%2030-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white)
-![Offline](https://img.shields.io/badge/network-none-lightgrey)
+<img src="docs/screenshots/social-preview.png" alt="Beyond Borders" />
 
 An Android app for tracking where you have been and where your passport gets you
 without a visa. Offline, no account, no network permission.
 
-It exists because of one specific annoyance. Every travel tracker I tried selects
-more than you ask for — tap Denmark and you get Greenland, tap France and you get
-French Guiana. Beyond Borders is built on a dataset where those are separate places
-and on a data model with no parent-child link at all, so a cascade is not a bug
-that was fixed, it is a thing the code cannot express.
+[![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/download/v0.7.17/BeyondBorders-0.7.17.apk)
+
+[![CI](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml/badge.svg)](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml)
+![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/map.jpg" width="216" alt="Travel map"><br><sub>Travel map</sub></td>
+    <td align="center"><img src="docs/screenshots/visa-lens.jpg" width="216" alt="Visa lens"><br><sub>Visa lens</sub></td>
+    <td align="center"><img src="docs/screenshots/passport-list.jpg" width="216" alt="Passport list"><br><sub>Passport list</sub></td>
+    <td align="center"><img src="docs/screenshots/where-i-can-go.jpg" width="216" alt="Where I can go"><br><sub>Where I can go</sub></td>
+    <td align="center"><img src="docs/screenshots/stats.jpg" width="216" alt="Stats"><br><sub>Stats</sub></td>
+  </tr>
+</table>
+
+[Install](#install) · [Features](docs/FEATURES.md) · [Privacy](docs/PRIVACY.md) · [Data](docs/DATA.md) · [Contributing](CONTRIBUTING.md)
+
+## Why
+
+Every travel tracker I tried selects more than you ask for — tap Denmark and you get
+Greenland, tap France and you get French Guiana. Beyond Borders is built on a dataset
+where those are separate places and on a data model with no parent-child link at all,
+so a cascade is not a bug that was fixed, it is a thing the code cannot express.
 
 ## Features
 
@@ -33,26 +45,21 @@ that was fixed, it is a thing the code cannot express.
   after a reinstall, and *Delete everything*, which clears your places, passports and
   display settings.
 
-Everything works **offline**: the geometry is bundled in the APK and there is no
-basemap, no tile server and no API key.
+More detail in [docs/FEATURES.md](docs/FEATURES.md).
 
-## Screenshots
+## Privacy
 
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/map.jpg" width="216" alt="Travel map"><br><sub>Travel map</sub></td>
-    <td align="center"><img src="docs/screenshots/visa-lens.jpg" width="216" alt="Visa lens"><br><sub>Visa lens</sub></td>
-    <td align="center"><img src="docs/screenshots/passport-list.jpg" width="216" alt="Passport list"><br><sub>Passport list</sub></td>
-    <td align="center"><img src="docs/screenshots/where-i-can-go.jpg" width="216" alt="Where I can go"><br><sub>Where I can go</sub></td>
-    <td align="center"><img src="docs/screenshots/stats.jpg" width="216" alt="Stats"><br><sub>Stats</sub></td>
-  </tr>
-</table>
+Everything stays on your phone. The app has no network permission, no account, no
+basemap, no tile server and no API key; the geometry is bundled in the APK. Details in
+the [privacy policy](docs/PRIVACY.md).
 
 ## Install
 
-Download `BeyondBorders-<version>.apk` from the
-[Releases](../../releases) page. Requires Android 11 (API 30) or newer on a 64-bit ARM (arm64) device, which is
-nearly every phone from the last several years.
+[![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/download/v0.7.17/BeyondBorders-0.7.17.apk)
+
+Download `BeyondBorders-<version>.apk` from the [Releases](../../releases) page. Requires
+Android 11 (API 30) or newer on a 64-bit ARM (arm64) device, which is nearly every phone
+from the last several years.
 
 1. Open the APK on your phone. Android will ask you to allow installs from that
    app (your browser or file manager); this is the "install unknown apps" setting.
@@ -83,13 +90,11 @@ The unit tests are the useful ones to run first: they read the shipped geo and v
 assets directly and assert the territory splits, the visa coverage and the colour
 contrast, so they catch a broken dataset without launching anything.
 
-## Tech stack
-
-Kotlin, Jetpack Compose with Material 3, Room (KSP), MapLibre Native. Manual
-dependency injection, no Hilt. Reference data is generated by Python scripts under
+**Tech stack:** Kotlin, Jetpack Compose with Material 3, Room (KSP), MapLibre Native.
+Manual dependency injection, no Hilt. Reference data is generated by Python scripts under
 `tools/` and bundled as assets.
 
-## Documentation
+## Guides
 
 - [Features in depth](docs/FEATURES.md) — map colours, how passport answers work,
   export and import.
