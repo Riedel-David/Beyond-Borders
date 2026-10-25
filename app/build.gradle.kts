@@ -26,8 +26,8 @@ android {
         // and then removed), so the About card never claims more than the app
         // does. The patch number carries the half phases — 0.2.5 was phase 1.5.
         // versionCode only ever increases, independently of the name.
-        versionCode = 24
-        versionName = "0.7.17"
+        versionCode = 25
+        versionName = "0.7.18"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

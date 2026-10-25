@@ -371,6 +371,14 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             )
             RepoLink()
             Text(
+                "An independent app, not affiliated with or representing any government. " +
+                    "Visa data is a snapshot and can be out of date: confirm entry rules " +
+                    "with the official government source before you travel.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Text(
                 "Borders from Natural Earth (public domain), drawn with MapLibre. " +
                     "The whole map is bundled in the app, so it works with no network " +
                     "and no account.",

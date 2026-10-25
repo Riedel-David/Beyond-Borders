@@ -53,7 +53,7 @@ fun passportAdjective(isoCode: String): String = when (isoCode) {
  */
 fun asOfNotice(visa: VisaRegistry): String =
     "Data as of ${visa.asOf} for a ${passportAdjective(visa.passport)} passport — " +
-        "verify officially before booking"
+        "verify with the official government source before booking"
 
 /**
  * The disclaimer for two passports, naming both and showing the older of the two
@@ -67,7 +67,7 @@ fun asOfNotice(visa: VisaRegistry): String =
 fun asOfNotice(primary: VisaRegistry, second: VisaRegistry): String {
     val olderDate = if (primary.asOf <= second.asOf) primary.asOf else second.asOf
     return "Data as of $olderDate for ${passportAdjective(primary.passport)} and " +
-        "${passportAdjective(second.passport)} passports — verify officially before booking"
+        "${passportAdjective(second.passport)} passports — verify with the official government source before booking"
 }
 
 /**
