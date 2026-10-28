@@ -370,6 +370,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 4.dp),
             )
             RepoLink()
+            ReportProblemLink()
             Text(
                 "An independent app, not affiliated with or representing any government. " +
                     "Visa data is a snapshot and can be out of date: confirm entry rules " +
