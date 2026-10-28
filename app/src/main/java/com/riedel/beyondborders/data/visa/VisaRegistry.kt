@@ -8,13 +8,14 @@ import org.json.JSONObject
  *
  * Same shape and same reasoning as
  * [com.riedel.beyondborders.data.place.PlaceRegistry]: reference data, not user
- * data, so it is not in Room. 252 entries and ~44 kB, parsed once with the
- * platform's org.json.
+ * data, so it is not in Room. 252 entries and ~46 kB for DE (~26 kB for a typical
+ * other passport), parsed once with the platform's org.json.
  *
- * One passport at a time, not the whole matrix in one asset: `visa.json` for DE
- * (the curated one, with its 53 territory overrides) and one `visa_<code>.json`
- * per other dataset passport (generic programme-based territory answers where a
- * real rule applies, no answer where it doesn't — see tools/visa/rules.py).
+ * One passport at a time, not the whole matrix in one asset: all 199 passports
+ * ship (~5 MB of JSON in total), `visa.json` for DE (the curated one, with its 53
+ * territory overrides) and one `visa_<code>.json` for each of the 198 others
+ * (generic programme-based territory answers where a real rule applies, no
+ * answer where it doesn't — see tools/visa/rules.py).
  */
 class VisaRegistry private constructor(
     /** ISO 3166-1 alpha-2 of the passport these answers are for. */
