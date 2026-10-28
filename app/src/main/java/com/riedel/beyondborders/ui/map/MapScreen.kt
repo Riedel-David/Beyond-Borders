@@ -66,6 +66,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -97,11 +98,13 @@ import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
+import com.riedel.beyondborders.ui.places.RegionStyleKey
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.nextRegionMode
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.MapPalette
 import com.riedel.beyondborders.ui.theme.RegionRamp
+import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.visa.asOfNotice
 import com.riedel.beyondborders.ui.visa.requirementSummary
@@ -380,9 +383,9 @@ fun MapScreen(
                         labeled = kind == MapLegendKind.VISA_LABELED,
                     )
                     MapLegendKind.REGION_OFFICIAL ->
-                        RegionLegend(palette.region, RegionMode.OFFICIAL, stats)
+                        RegionLegend(palette.region, palette.unvisited, RegionMode.OFFICIAL, stats)
                     MapLegendKind.REGION_INFORMAL ->
-                        RegionLegend(palette.region, RegionMode.INFORMAL, stats)
+                        RegionLegend(palette.region, palette.unvisited, RegionMode.INFORMAL, stats)
                     // Nothing marked yet, so the counter would say "0" and teach
                     // nothing. Say what to do instead.
                     MapLegendKind.NUDGE -> Text(
@@ -748,7 +751,7 @@ private class PlacesMapController {
     private var appliedWishlist: Set<String> = emptySet()
     private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
     private var appliedNoData: Set<String> = emptySet()
-    private var appliedRegionBands: Map<RegionBand, Set<String>> = emptyMap()
+    private var appliedRegionBands: Map<RegionStyleKey, Set<String>> = emptyMap()
     private var appliedSelection: String? = null
     private var appliedLens = false
     private var appliedRegionActive = false
@@ -834,14 +837,16 @@ private class PlacesMapController {
         }
     }
 
-    /** Which codes each region band paints. Empty map means the heatmap is off. */
-    fun applyRegion(bands: Map<RegionBand, Set<String>>) {
+    /** Which codes each (slot, band) layer paints. Empty map means the heatmap is off. */
+    fun applyRegion(bands: Map<RegionStyleKey, Set<String>>) {
         val style = style ?: return
         if (bands == appliedRegionBands) return
         appliedRegionBands = bands
-        RegionBand.entries.forEach { band ->
-            style.getLayerAs<FillLayer>(PlacesMapStyle.regionLayerId(band))
-                ?.setFilter(PlacesMapStyle.onlyPlaces(bands[band].orEmpty()))
+        for (slot in 0 until RegionSlots.COUNT) {
+            RegionBand.entries.forEach { band ->
+                style.getLayerAs<FillLayer>(PlacesMapStyle.regionLayerId(slot, band))
+                    ?.setFilter(PlacesMapStyle.onlyPlaces(bands[RegionStyleKey(slot, band)].orEmpty()))
+            }
         }
     }
 
@@ -929,7 +934,7 @@ private fun PlacesMapView(
     visaBands: Map<VisaBand, Set<String>>,
     visaNoData: Set<String>,
     lens: Boolean,
-    regionBands: Map<RegionBand, Set<String>>,
+    regionBands: Map<RegionStyleKey, Set<String>>,
     regionActive: Boolean,
     selectedCode: String?,
     regionOutline: Set<String>,
@@ -1236,33 +1241,48 @@ private fun VisaLegend(
 }
 
 /**
- * The heatmap's legend: the ramp itself and how many of the groupings it is
- * currently painting are fully done.
+ * The heatmap's legend: how to read the encoding, and how many of the groupings it
+ * is currently painting are fully done.
+ *
+ * Each region is its own colour, so the swatches are one neutral hue at the four
+ * strengths the map uses (drawn over the land colour, as the map does) rather than
+ * any region's colour: what they teach is "stronger = more visited".
  *
  * No date line, unlike [VisaLegend] — this is derived entirely from [Place.region]
  * and the hand-curated informal sets already bundled with the app, not from a
  * dated external asset, so there is nothing here that goes stale.
  */
 @Composable
-private fun RegionLegend(ramp: RegionRamp, mode: RegionMode, stats: TravelStats) {
+private fun RegionLegend(ramp: RegionRamp, land: Color, mode: RegionMode, stats: TravelStats) {
     val totals = if (mode == RegionMode.OFFICIAL) {
         stats.regions.map { it.been to it.total }
     } else {
         stats.informalRegions.map { it.been to it.total }
     }
     val done = totals.count { (been, total) -> been == total && total > 0 }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(Modifier.clip(MaterialTheme.shapes.extraSmall)) {
-            RegionBand.entries.forEach { band ->
-                Box(
-                    Modifier
-                        .size(width = 14.dp, height = 10.dp)
-                        .background(ramp.colorFor(band))
-                )
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(Modifier.clip(MaterialTheme.shapes.extraSmall)) {
+                RegionBand.entries.forEach { band ->
+                    Box(
+                        Modifier
+                            .size(width = 14.dp, height = 10.dp)
+                            .background(
+                                ramp.legendHue
+                                    .copy(alpha = RegionRamp.BAND_ALPHA.getValue(band))
+                                    .compositeOver(land)
+                            )
+                    )
+                }
             }
+            Text(
+                if (mode == RegionMode.OFFICIAL) "Each colour is a region; stronger = more visited"
+                else "Each colour is a grouping; stronger = more visited",
+                style = MaterialTheme.typography.labelLarge,
+            )
         }
         Text(
             "$done of ${totals.size} " +

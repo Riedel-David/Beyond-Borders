@@ -11,6 +11,7 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaRegistry
@@ -42,6 +43,9 @@ enum class RegionMode { OFF, OFFICIAL, INFORMAL }
  * fixed regardless of how many regions exist.
  */
 enum class RegionBand { NONE, SOME, MOST, DONE }
+
+/** One pre-built heatmap layer: a hue slot (which region) at a band (how done). */
+data class RegionStyleKey(val slot: Int, val band: RegionBand)
 
 /** Off -> Informal -> Official -> Off, one tap at a time: the named groupings people
  * think in come first, the UN's list one tap later. */
@@ -314,7 +318,7 @@ class PlacesViewModel(
     /** Which place codes the map's region heatmap should paint in each band,
      * empty while the mode is off. Computed here for the same reason [visaBands]
      * is: panning the map should not re-bucket every region on every frame. */
-    val regionBands: StateFlow<Map<RegionBand, Set<String>>> =
+    val regionBands: StateFlow<Map<RegionStyleKey, Set<String>>> =
         combine(stats, _regionMode) { stats, mode -> regionBandCodes(mode, stats) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
@@ -668,20 +672,33 @@ internal fun noDataCodes(
 }
 
 /**
- * Bucket every region (or, in [RegionMode.INFORMAL], every named grouping) into
- * its completion band.
+ * Bucket every region (or, in [RegionMode.INFORMAL], every named grouping) by its
+ * hue slot ([RegionSlots]) and completion band, so the map can paint each region in
+ * its own colour at a strength that says how done it is.
  *
  * Returns an empty map when the mode is off, which the map reads the same way it
  * reads an empty visa-band map: paint nothing.
+ *
+ * Informal groupings overlap (Scandinavia sits inside the Nordics), but a place can
+ * only be painted once. The grouping listed first in [INFORMAL_REGIONS] claims it,
+ * so Norway, Sweden and Denmark show as Scandinavia and the Nordics layer keeps
+ * only Finland and Iceland. The order is the list's, not the stats' (those are
+ * re-sorted by progress), so a place does not change colour as you travel.
  */
-internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionBand, Set<String>> {
+internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionStyleKey, Set<String>> {
     val buckets = when (mode) {
         RegionMode.OFF -> return emptyMap()
-        RegionMode.OFFICIAL -> stats.regions.map { Triple(it.been, it.total, it.codes) }
-        RegionMode.INFORMAL -> stats.informalRegions.map { Triple(it.been, it.total, it.codes) }
+        RegionMode.OFFICIAL -> stats.regions.map {
+            Triple(RegionSlots.forOfficial(it.region), Pair(it.been, it.total), it.codes)
+        }
+        RegionMode.INFORMAL -> stats.informalRegions
+            .sortedBy { s -> INFORMAL_REGIONS.indexOfFirst { it.name == s.name }.let { if (it < 0) Int.MAX_VALUE else it } }
+            .map { Triple(RegionSlots.forInformal(it.name), Pair(it.been, it.total), it.codes) }
     }
-    val result = mutableMapOf<RegionBand, MutableSet<String>>()
-    buckets.forEach { (been, total, codes) ->
+    val result = mutableMapOf<RegionStyleKey, MutableSet<String>>()
+    val claimed = mutableSetOf<String>()
+    buckets.forEach { (slot, progress, codes) ->
+        val (been, total) = progress
         if (total == 0) return@forEach
         val band = when {
             been == 0 -> RegionBand.NONE
@@ -689,7 +706,8 @@ internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionBa
             been * 2 >= total -> RegionBand.MOST
             else -> RegionBand.SOME
         }
-        result.getOrPut(band) { mutableSetOf() }.addAll(codes)
+        val mine = codes.filter { claimed.add(it) }
+        if (mine.isNotEmpty()) result.getOrPut(RegionStyleKey(slot, band)) { mutableSetOf() }.addAll(mine)
     }
     return result
 }

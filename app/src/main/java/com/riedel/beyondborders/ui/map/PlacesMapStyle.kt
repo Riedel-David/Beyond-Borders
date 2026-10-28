@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.theme.MapPalette
+import com.riedel.beyondborders.ui.theme.RegionSlots
 import java.net.URI
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
@@ -52,14 +53,15 @@ internal object PlacesMapStyle {
     private const val LABEL_FONT = "Noto Sans Regular"
 
     /**
-     * The region heatmap's fills, one per completion band.
+     * The region heatmap's fills, one per (hue slot, completion band).
      *
      * Same trick as [visaLayerId]: a fixed, small layer set regardless of how many
      * regions or named groupings exist, because MapLibre bakes a layer's colour in
      * at style-build time. Toggling the heatmap on, or switching between official
      * and informal groupings, is then only ever a setFilter call.
      */
-    fun regionLayerId(band: RegionBand): String = "places-region-${band.name.lowercase()}"
+    fun regionLayerId(slot: Int, band: RegionBand): String =
+        "places-region-$slot-${band.name.lowercase()}"
 
     /**
      * The visa lens' fills, one per band.
@@ -167,15 +169,17 @@ internal object PlacesMapStyle {
                 .withFilter(noPlaces())
         )
 
-        // The region heatmap, one layer per completion band, above the visa lens
+        // The region heatmap, one layer per hue slot and band, above the visa lens
         // and below the borders — the two lenses never carry a filter at once, so
         // layer order between them is cosmetic, but a fixed spot keeps it simple.
-        RegionBand.entries.forEach { band ->
-            builder = builder.withLayer(
-                FillLayer(regionLayerId(band), SOURCE_ID)
-                    .withProperties(PropertyFactory.fillColor(palette.region.colorFor(band).toArgb()))
-                    .withFilter(noPlaces())
-            )
+        for (slot in 0 until RegionSlots.COUNT) {
+            RegionBand.entries.forEach { band ->
+                builder = builder.withLayer(
+                    FillLayer(regionLayerId(slot, band), SOURCE_ID)
+                        .withProperties(PropertyFactory.fillColor(palette.region.colorFor(slot, band).toArgb()))
+                        .withFilter(noPlaces())
+                )
+            }
         }
 
         return builder

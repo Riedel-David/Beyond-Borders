@@ -223,57 +223,111 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
 }
 
 /**
- * The region heatmap's colour ramp: two hue pairs, not one hue at four intensities.
+ * The region heatmap's colours: each region gets its own hue, and how far along
+ * the region is shows in how strong that hue is.
  *
- * The single-amber version this started as turned out to not read as four steps on
- * an actual phone screen — adjacent intensities of one hue are exactly the kind of
- * difference that gets lost outdoors or on a dim display, even though it clears the
- * same contrast maths [VisaRamp] does. A hue change per step is the fix, but it
- * reopens the risk [VisaRampTest]'s own history warns about: a hue-ordered ramp can
- * collapse under dichromacy in a way a single hue never does. So this is two hues,
- * not four — teal/green for the low half, orange/near-black for the high half — with
- * [RegionRampTest] checking every pair (not just neighbours) survives all three
- * dichromacy simulations, on top of the same 3:1-background and monotonic-luminance
- * bars [VisaRamp] holds.
+ * The first version coloured by completion band alone (four colours), which left
+ * almost every region the same "nothing yet" colour for anyone who had visited
+ * little, so regions could not be told apart. Now identity is hue ([hues], one per
+ * slot of [RegionSlots]) and progress is strength ([BAND_ALPHA]: a fill alpha over
+ * the unvisited land colour, so the land shows through more the less is done).
+ * Strength rather than a lightness step because the layers are pre-built per
+ * (slot, band) at style time and an alpha is the one thing that reads the same on
+ * every [MapBase].
+ *
+ * What [RegionRampTest] holds: the full-strength fill of every slot clears 3:1
+ * against land and ocean on every base in both themes; every pair of slots is at
+ * least 25 CIE76 apart in Lab; each band step is visibly stronger than the one
+ * before. What it does not hold, and cannot for eight categorical hues: every pair
+ * surviving dichromacy simulation. Hue is therefore never the only carrier of
+ * meaning: the region's name is in the tap card and the legend does not rely on
+ * telling two hues apart.
  */
 data class RegionRamp(
-    val none: Color,
-    val some: Color,
-    val most: Color,
-    val done: Color,
+    /** One full-strength colour per [RegionSlots] slot. */
+    val hues: List<Color>,
+    /** A neutral stand-in hue for the legend's strength swatches. */
+    val legendHue: Color,
     /** The heatmap's own selection outline; see [VisaRamp.selectedOutline] for
      * why the fixed [MapPalette.selectedOutline] would not have done here either.
-     * Black in light mode, white in dark: the ramp's fills run dark-on-light and
-     * light-on-dark (they must clear 3:1 against the land), so this line alone
-     * vanishes on the extreme bands — [selectedCasing] sits under it to carry those. */
+     * Black in light mode, white in dark; [selectedCasing] sits under it to carry
+     * the fills it vanishes on. */
     val selectedOutline: Color,
     /** The opposite of [selectedOutline], drawn wider beneath it so the line reads on
      * any fill. */
     val selectedCasing: Color,
 ) {
-    fun colorFor(band: RegionBand): Color = when (band) {
-        RegionBand.NONE -> none
-        RegionBand.SOME -> some
-        RegionBand.MOST -> most
-        RegionBand.DONE -> done
+    /** The fill for [slot] at [band]'s strength, translucent over the land. */
+    fun colorFor(slot: Int, band: RegionBand): Color =
+        hues[slot].copy(alpha = BAND_ALPHA.getValue(band))
+
+    companion object {
+        /** Faint (nothing visited) up to full (done). */
+        val BAND_ALPHA: Map<RegionBand, Float> = mapOf(
+            RegionBand.NONE to 0.30f,
+            RegionBand.SOME to 0.50f,
+            RegionBand.MOST to 0.75f,
+            RegionBand.DONE to 1.0f,
+        )
     }
+}
+
+/**
+ * Which hue slot each region is drawn in. A fixed table rather than an index into
+ * whatever list the stats come out in, so a region keeps its colour when the visited
+ * set (and with it the sort order) changes. Neighbouring regions never share a slot;
+ * [RegionRampTest] lists the adjacencies it checks. Antarctica and the open-ocean
+ * bucket touch nothing, so their slots are arbitrary.
+ */
+object RegionSlots {
+    const val COUNT = 8
+
+    val official: Map<String, Int> = mapOf(
+        "Eastern Africa" to 0, "Northern Africa" to 1, "Western Africa" to 2,
+        "Southern Africa" to 3, "Middle Africa" to 4,
+        "Western Europe" to 5, "Northern Europe" to 6, "Southern Europe" to 7,
+        "Eastern Europe" to 4,
+        "Western Asia" to 3, "Central Asia" to 2, "Southern Asia" to 1,
+        "Eastern Asia" to 0, "South-Eastern Asia" to 6,
+        "Australia and New Zealand" to 5, "Melanesia" to 1, "Micronesia" to 4,
+        "Polynesia" to 2,
+        "Northern America" to 0, "Central America" to 2, "Caribbean" to 3,
+        "South America" to 7,
+        "Antarctica" to 4, "Seven seas (open ocean)" to 6,
+    )
+
+    /** Keyed by [com.riedel.beyondborders.data.place.NamedGroup.name]. */
+    val informal: Map<String, Int> = mapOf(
+        "Benelux" to 0, "Scandinavia" to 1, "Nordics" to 2, "Baltics" to 3,
+        "British Isles" to 4, "Iberia" to 5, "Alpine states" to 6,
+        "Visegrád / Central Europe" to 7, "Caucasus" to 0, "Levant" to 1,
+        "Arabian Peninsula / Gulf" to 2, "Maghreb" to 3, "Horn of Africa" to 4,
+        "Indochina" to 5, "The Stans" to 6, "Balkans" to 4,
+    )
+
+    /** Slot 0 for a name the table does not know, so a new region degrades to a
+     * colour rather than a crash; the tests fail first. */
+    fun forOfficial(region: String): Int = official[region] ?: 0
+    fun forInformal(group: String): Int = informal[group] ?: 0
 }
 
 private fun regionRamp(dark: Boolean): RegionRamp = if (dark) {
     RegionRamp(
-        none = Color(0xFF2F8E8E),
-        some = Color(0xFF44C16D),
-        most = Color(0xFFF1C79D),
-        done = Color(0xFFFDF4F2),
+        hues = listOf(
+            Color(0xFF4F8FE8), Color(0xFFE8913A), Color(0xFF5BB55F), Color(0xFFE0609A),
+            Color(0xFFB58AEF), Color(0xFF2EC0CC), Color(0xFFD8C23A), Color(0xFFF0675C),
+        ),
+        legendHue = Color(0xFFB8C0CC),
         selectedOutline = Color(0xFFF7FAFF),
         selectedCasing = Color(0xFF05080C),
     )
 } else {
     RegionRamp(
-        none = Color(0xFF1F7C7C),
-        some = Color(0xFF154826),
-        most = Color(0xFF3C2207),
-        done = Color(0xFF030100),
+        hues = listOf(
+            Color(0xFF1F5FBF), Color(0xFFB35400), Color(0xFF2E7D32), Color(0xFFB0245C),
+            Color(0xFF7B2FBE), Color(0xFF0E7C86), Color(0xFF8A6D00), Color(0xFFB3261E),
+        ),
+        legendHue = Color(0xFF4A5260),
         selectedOutline = Color(0xFF05080C),
         selectedCasing = Color(0xFFF7FAFF),
     )
