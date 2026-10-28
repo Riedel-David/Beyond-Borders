@@ -278,13 +278,15 @@ internal object PlacesMapStyle {
                         // visual center, so the text should sit on it, not below
                         // and past it.
                         PropertyFactory.textAnchor(Property.TEXT_ANCHOR_CENTER),
-                        // true, not MapLibre's collision-avoidance default: every place
-                        // now has exactly one label candidate (LABELS_SOURCE_ID, one
-                        // point per place), so the only thing collision-avoidance could
-                        // still do is hide a small country's name near a larger
-                        // neighbour - and a missing name reads as more broken than an
-                        // occasional overlap between two adjacent small countries.
-                        PropertyFactory.textAllowOverlap(true),
+                        // Collision avoidance on: a name that would sit on top of another
+                        // is dropped rather than drawn as an unreadable pile (central
+                        // Africa, Europe). Labels are placed in symbolSortKey order, lowest
+                        // first, and minLabelZoom is smaller for bigger countries - so the
+                        // large one keeps its name and the small one gets it once zoomed in.
+                        PropertyFactory.textAllowOverlap(false),
+                        PropertyFactory.textIgnorePlacement(false),
+                        PropertyFactory.textPadding(2f),
+                        PropertyFactory.symbolSortKey(Expression.get("minLabelZoom")),
                         PropertyFactory.textMaxWidth(8f),
                     )
                     .withFilter(
