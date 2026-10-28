@@ -53,15 +53,23 @@ object DatabaseRecovery {
         // create the file a moment earlier than the app otherwise would.
         if (!databaseFile(context, name).exists()) return DatabaseHealth.Usable
 
-        val db = BeyondBordersDatabase.open(context, name)
-        return try {
-            db.openHelper.writableDatabase
-            DatabaseHealth.Usable
-        } catch (t: Throwable) {
-            DatabaseHealth.Unusable(t.message ?: t.javaClass.simpleName)
-        } finally {
-            runCatching { db.close() }
+        // One retry: SQLITE_BUSY or a momentarily full disk fails an open exactly like a
+        // version mismatch does, and reporting that as "can't read your data" would
+        // send someone to the wipe button over a hiccup.
+        var last: Throwable? = null
+        repeat(2) {
+            val db = BeyondBordersDatabase.open(context, name)
+            try {
+                db.openHelper.writableDatabase
+                return DatabaseHealth.Usable
+            } catch (t: Throwable) {
+                last = t
+            } finally {
+                runCatching { db.close() }
+            }
         }
+        val t = last!!
+        return DatabaseHealth.Unusable(t.message ?: t.javaClass.simpleName)
     }
 
     /**

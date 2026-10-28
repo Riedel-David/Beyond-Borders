@@ -23,6 +23,7 @@ import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import com.riedel.beyondborders.widget.TravelWidgetProvider
 import com.riedel.beyondborders.widget.WidgetIntent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 /**
@@ -65,9 +66,10 @@ class MainActivity : AppCompatActivity() {
                     is DatabaseHealth.Unusable -> DatabaseRecoveryScreen(
                         detail = health.detail,
                         onWipe = {
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                DatabaseRecovery.wipe(this@MainActivity)
+                            withContext(Dispatchers.IO) {
+                                val ok = DatabaseRecovery.wipe(this@MainActivity)
                                 container.refreshDatabaseHealth()
+                                ok
                             }
                         },
                     )

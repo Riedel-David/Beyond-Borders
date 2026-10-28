@@ -3,6 +3,7 @@ package com.riedel.beyondborders
 import android.content.Context
 import com.riedel.beyondborders.core.Haptics
 import com.riedel.beyondborders.data.backup.CloudSnapshot
+import com.riedel.beyondborders.data.backup.mayReplaceSnapshot
 import com.riedel.beyondborders.data.backup.shouldStageSnapshot
 import com.riedel.beyondborders.data.db.BeyondBordersDatabase
 import com.riedel.beyondborders.data.db.DatabaseHealth
@@ -106,7 +107,17 @@ class AppContainer(context: Context) {
      * that is the one place "no history" is a real action rather than "not yet".
      */
     suspend fun stageCloudSnapshot() {
-        val export = places.exportBackup()
-        if (shouldStageSnapshot(export)) cloudSnapshot.write(export.json)
+        // The recovery screen is showing: touching `places` would open the very
+        // database that failed the probe, and throw. Unknown means not probed yet.
+        if (_databaseHealth.value != DatabaseHealth.Usable) return
+        runCatching {
+            val info = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+            cloudSnapshot.adoptLegacySnapshot(updatedInPlace = info.lastUpdateTime > info.firstInstallTime)
+            // A restored snapshot nobody has imported yet is the only copy of the
+            // history; see [mayReplaceSnapshot].
+            if (!mayReplaceSnapshot(cloudSnapshot.exists(), cloudSnapshot.isOwned())) return
+            val export = places.exportBackup()
+            if (shouldStageSnapshot(export)) cloudSnapshot.write(export.json)
+        }
     }
 }

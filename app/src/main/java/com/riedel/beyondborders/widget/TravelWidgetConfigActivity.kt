@@ -91,10 +91,16 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             // Both the preferences write and the widget update read or touch disk and
             // the AppWidget binder, so they belong off the main thread — this runs at
             // the moment the user taps Done, which is the worst moment to stall.
-            withContext(Dispatchers.IO) {
-                WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground, target)
-                val manager = AppWidgetManager.getInstance(this@TravelWidgetConfigActivity)
-                TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, manager, widgetId)
+            //
+            // An update that throws must not strand the user on this screen with an
+            // unconfigured widget: the choice is already saved, and the provider
+            // repaints on its next update.
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground, target)
+                    val manager = AppWidgetManager.getInstance(this@TravelWidgetConfigActivity)
+                    TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, manager, widgetId)
+                }
             }
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
             setResult(Activity.RESULT_OK, result)

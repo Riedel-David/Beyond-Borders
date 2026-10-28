@@ -295,9 +295,11 @@ class SettingsViewModel(
      * since the preview, not a fresh read of the URI. */
     fun confirmImportPreview() {
         val text = pendingImportText ?: return
+        // Busy means another transfer is still running: keep the dialog and the text so
+        // the tap can be repeated, instead of silently discarding what was confirmed.
+        if (_transfer.value == TransferState.Busy) return
         pendingImportText = null
         _importPreview.value = null
-        if (_transfer.value == TransferState.Busy) return
         _transfer.value = TransferState.Busy
         viewModelScope.launch {
             _transfer.value = try {
@@ -305,7 +307,11 @@ class SettingsViewModel(
                 // already combines the file's presence with `places.statuses`, and a
                 // successful import — from a snapshot restore or an ordinary file —
                 // makes that flow non-empty on its own, which is what hides the row.
-                TransferState.Done(importMessage(places.importBackup(text)))
+                val plan = places.importBackup(text)
+                // The user has acted on the snapshot (or on a file that supersedes it),
+                // so staging may refresh it from here on.
+                withContext(Dispatchers.IO) { snapshot.markOwned() }
+                TransferState.Done(importMessage(plan))
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {

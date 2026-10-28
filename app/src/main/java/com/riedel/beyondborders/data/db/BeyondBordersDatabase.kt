@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 
 @Database(
     entities = [
@@ -85,6 +87,41 @@ abstract class BeyondBordersDatabase : RoomDatabase() {
                 // missing migration must fail the build's tests, not quietly wipe
                 // a decade of travel history on upgrade.
                 .addMigrations(MIGRATION_8_9, MIGRATION_9_10)
+                .openHelperFactory(KeepOnCorruptionFactory(FrameworkSQLiteOpenHelperFactory()))
                 .build()
+    }
+
+    /**
+     * Same reasoning as the missing destructive-migration fallback: the stock
+     * [SupportSQLiteOpenHelper.Callback.onCorruption] deletes the database file, so a
+     * single failed integrity check would silently erase the history before the
+     * recovery screen could offer a copy. This hands every call through unchanged
+     * except that one, which does nothing; the open then throws and
+     * [DatabaseRecovery] reports it.
+     */
+    private class KeepOnCorruptionFactory(
+        private val delegate: SupportSQLiteOpenHelper.Factory,
+    ) : SupportSQLiteOpenHelper.Factory {
+        override fun create(configuration: SupportSQLiteOpenHelper.Configuration): SupportSQLiteOpenHelper {
+            val inner = configuration.callback
+            val wrapped = object : SupportSQLiteOpenHelper.Callback(inner.version) {
+                override fun onConfigure(db: SupportSQLiteDatabase) = inner.onConfigure(db)
+                override fun onCreate(db: SupportSQLiteDatabase) = inner.onCreate(db)
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) =
+                    inner.onUpgrade(db, oldVersion, newVersion)
+                override fun onDowngrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) =
+                    inner.onDowngrade(db, oldVersion, newVersion)
+                override fun onOpen(db: SupportSQLiteDatabase) = inner.onOpen(db)
+                override fun onCorruption(db: SupportSQLiteDatabase) = Unit
+            }
+            return delegate.create(
+                SupportSQLiteOpenHelper.Configuration.builder(configuration.context)
+                    .name(configuration.name)
+                    .callback(wrapped)
+                    .noBackupDirectory(configuration.useNoBackupDirectory)
+                    .allowDataLossOnRecovery(configuration.allowDataLossOnRecovery)
+                    .build()
+            )
+        }
     }
 }

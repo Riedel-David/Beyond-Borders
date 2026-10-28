@@ -32,6 +32,9 @@ object TravelBackup {
 
     const val MIME_TYPE = "application/json"
 
+    /** How far past the importing phone's clock an imported timestamp may reach. */
+    const val MAX_FUTURE_SKEW_MS = 24L * 60 * 60 * 1000
+
     /**
      * One place's row as it appears in the file.
      *
@@ -124,7 +127,7 @@ object TravelBackup {
      * @throws BackupFormatException if this is not an BeyondBorders backup, or is a
      *   newer one than this build understands.
      */
-    fun decode(text: String): Payload {
+    fun decode(text: String, now: Long = System.currentTimeMillis()): Payload {
         val root = try {
             JSONObject(text)
         } catch (e: JSONException) {
@@ -155,7 +158,10 @@ object TravelBackup {
             // A row with no timestamp cannot be merged safely: last-write-wins has
             // nothing to compare, and defaulting to "now" would let a stale backup
             // silently overwrite newer local edits.
-            val updatedAt = row.optLong("updatedAt", 0L).takeIf { it > 0L }
+            // Clamped to a day past now: last-write-wins would otherwise let a row stamped
+            // in the far future beat every later local edit of that place, forever.
+            val ceiling = now + MAX_FUTURE_SKEW_MS
+            val updatedAt = row.optLong("updatedAt", 0L).takeIf { it > 0L }?.coerceAtMost(ceiling)
                 ?: run { unreadableRows++; continue }
             val rawStatus = row.optString("status")
             // Strict, not PlaceStatus.fromStorage: falling back to NONE here would
@@ -177,7 +183,7 @@ object TravelBackup {
                     // status left in place. Both mean the same thing, so they are
                     // normalised to the same thing here and the rest of the import
                     // only has to understand deletedAt.
-                    deletedAt = row.optLong("deletedAt", 0L).takeIf { it > 0L }
+                    deletedAt = row.optLong("deletedAt", 0L).takeIf { it > 0L }?.coerceAtMost(ceiling)
                         ?: updatedAt.takeIf { status == PlaceStatus.NONE },
                     deviceId = row.optStringOrNull("deviceId"),
                 )
