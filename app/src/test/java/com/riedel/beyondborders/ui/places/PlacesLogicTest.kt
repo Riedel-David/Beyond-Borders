@@ -473,7 +473,7 @@ class PlacesLogicTest {
     @Test
     fun `ties go to the primary passport`() {
         val primary = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 90)
-        val second = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 180)
+        val second = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 90)
 
         val combined = combineRequirements(primary, second)
         assertTrue(combined?.fromPrimary == true)
@@ -556,5 +556,94 @@ class PlacesLogicTest {
         assertEquals(RegionMode.INFORMAL, nextRegionMode(RegionMode.OFF))
         assertEquals(RegionMode.OFFICIAL, nextRegionMode(RegionMode.INFORMAL))
         assertEquals(RegionMode.OFF, nextRegionMode(RegionMode.OFFICIAL))
+    }
+
+    @Test
+    fun `equal categories prefer the passport that allows the longer stay`() {
+        val shorter = requirement(category = VisaCategory.VISA_FREE, days = 30)
+        val longer = requirement(category = VisaCategory.VISA_FREE, days = 90)
+
+        assertEquals(false, combineRequirements(shorter, longer)?.fromPrimary)
+        assertEquals(longer, combineRequirements(shorter, longer)?.winner)
+        assertEquals(true, combineRequirements(longer, shorter)?.fromPrimary)
+    }
+
+    @Test
+    fun `equal categories with equal or unstated days still go to the primary`() {
+        val a = requirement(category = VisaCategory.VISA_FREE, days = 90)
+        val b = requirement(category = VisaCategory.VISA_FREE, days = 90)
+        val unstated = requirement(category = VisaCategory.VISA_FREE, days = null)
+
+        assertEquals(true, combineRequirements(a, b)?.fromPrimary)
+        assertEquals(true, combineRequirements(unstated, a)?.fromPrimary)
+        assertEquals(true, combineRequirements(a, unstated)?.fromPrimary)
+    }
+
+    @Test
+    fun `a better category beats a longer stay`() {
+        val eta = requirement(category = VisaCategory.ETA, days = 180)
+        val free = requirement(category = VisaCategory.VISA_FREE, days = 30)
+        assertEquals(free, combineRequirements(eta, free)?.winner)
+    }
+
+    @Test
+    fun `coverage over a denominator-filtered set measures against that set`() {
+        val all = listOf(
+            place("FR", "France", areaKm2 = 500_000, popEst = 60_000_000),
+            place("GL", "Greenland", areaKm2 = 500_000, popEst = 60_000_000, unMember = false),
+        )
+        val statuses = mapOf("FR" to PlaceStatus.VISITED)
+        val unOnly = all.filter(Denominator.UN_MEMBER::includes)
+        assertEquals(
+            "50% of the world's land area, 50% of its population",
+            worldCoverage(all, statuses),
+        )
+        assertEquals(
+            "100% of the world's land area, 100% of its population",
+            worldCoverage(unOnly, statuses),
+        )
+        assertEquals(
+            "100% of the world's land area, 100% of its population",
+            computeStats(all, statuses, Denominator.UN_MEMBER).coverage,
+        )
+    }
+
+    @Test
+    fun `the wishlist join counts only places inside the chosen denominator`() {
+        val all = listOf(
+            place("FR", "France"),
+            place("GL", "Greenland", unMember = false),
+            place("BV", "Bouvet Island", uninhabited = true, unMember = false),
+        )
+        val visa = VisaRegistry.parse("""
+            {
+              "passport": "DE",
+              "asOf": "2026-02-17",
+              "dataset": {"name": "Test", "url": "https://example.org", "licence": "MIT"},
+              "iataUrl": "https://example.org/iata",
+              "requirements": [
+                {"code": "FR", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "GL", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "BV", "category": "VISA_FREE", "source": "dataset"}
+              ]
+            }
+        """.trimIndent())
+        val statuses = mapOf(
+            "FR" to PlaceStatus.WISHLIST,
+            "GL" to PlaceStatus.WISHLIST,
+            "BV" to PlaceStatus.WISHLIST,
+        )
+        assertEquals(
+            "3 of your 3 wishlist places need no embassy",
+            computeWishlistEasyLine(all, statuses, visa),
+        )
+        assertEquals(
+            "1 of your 1 wishlist places need no embassy",
+            computeWishlistEasyLine(all, statuses, visa, Denominator.UN_MEMBER),
+        )
+        assertEquals(
+            "2 of your 2 wishlist places need no embassy",
+            computeWishlistEasyLine(all, statuses, visa, Denominator.INHABITED),
+        )
     }
 }

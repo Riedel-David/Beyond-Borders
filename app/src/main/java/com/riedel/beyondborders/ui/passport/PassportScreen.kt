@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -67,6 +68,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -151,6 +154,13 @@ fun PassportScreen(
         }
     }
 
+    // Shared by both modes, since the fast-scroll overlay below reads from whichever
+    // one is on screen: a rememberSaveable would restore a scroll offset that no
+    // longer matches the rows after a mode switch, so this is deliberately plain.
+    // Declared above the stats early return so leaving and re-entering the stats
+    // detail does not throw the list's scroll position away with the composition slot.
+    val listState = rememberLazyListState()
+
     if (showStatsDetail) {
         // Not a real back-stack entry — just this boolean — so without this the
         // system back gesture has nothing here to intercept and falls through to
@@ -166,10 +176,6 @@ fun PassportScreen(
         return
     }
 
-    // Shared by both modes, since the fast-scroll overlay below reads from whichever
-    // one is on screen: a rememberSaveable would restore a scroll offset that no
-    // longer matches the rows after a mode switch, so this is deliberately plain.
-    val listState = rememberLazyListState()
     // One entry per item this LazyColumn actually emits, in emission order, so a raw
     // firstVisibleItemIndex can be turned back into "which header is this" for the
     // overlay. Built to mirror the two item-emission loops below exactly, including
@@ -435,7 +441,11 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
+            // 48 dp minimum touch target; the content stays centred so the label sits
+            // where it did.
+            .heightIn(min = 48.dp)
+            .semantics { stateDescription = if (collapsed) "Collapsed" else "Expanded" }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -520,9 +530,11 @@ private fun AzRail(
     val verticalPaddingPx = with(density) { 8.dp.toPx() }
     val pillHeightPx = with(density) { ScrubPillSizeDp.roundToPx() }
 
-    // -1 means "no scrub has requested a jump yet"; the effect below only runs again
-    // when this actually changes, so a finger dwelling inside one letter's band does
-    // not re-issue the same scrollToItem every frame.
+    // -1 means "no jump pending". The effect below resets it once consumed, so a second
+    // jump to the same section (touch, scroll away, touch again) is a real change of
+    // value rather than an equal assignment the effect would never see. A finger dwelling
+    // inside one letter's band is kept from re-issuing the jump by the label check in
+    // the gesture loop.
     var targetIndex by remember { mutableIntStateOf(-1) }
     var touchedLabel by remember { mutableStateOf<String?>(null) }
     var touchY by remember { mutableFloatStateOf(0f) }
@@ -544,7 +556,10 @@ private fun AzRail(
     }
 
     LaunchedEffect(targetIndex) {
-        if (targetIndex >= 0) listState.scrollToItem(targetIndex)
+        if (targetIndex >= 0) {
+            listState.scrollToItem(targetIndex)
+            targetIndex = -1
+        }
     }
 
     AnimatedVisibility(
@@ -621,10 +636,13 @@ private fun AzRail(
                                 if (change == null) break
                                 pressed = change.pressed
                                 if (pressed) {
-                                    label = letterAt(change.position.y)
-                                    touchedLabel = label
+                                    val newLabel = letterAt(change.position.y)
                                     touchY = change.position.y
-                                    railTargetIndex(headerSlots, label)?.let { targetIndex = it }
+                                    if (newLabel != label) {
+                                        label = newLabel
+                                        touchedLabel = label
+                                        railTargetIndex(headerSlots, label)?.let { targetIndex = it }
+                                    }
                                     change.consume()
                                 }
                             }
@@ -723,16 +741,19 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
             BounceFilterChip(
                 selected = row.status == PlaceStatus.VISITED,
                 label = "Been",
+                semanticsLabel = "Mark ${row.place.name} as been",
                 onClick = { onToggle(PlaceStatus.VISITED) },
             )
             BounceFilterChip(
                 selected = row.status == PlaceStatus.LIVED,
                 label = "Lived",
+                semanticsLabel = "Mark ${row.place.name} as lived in",
                 onClick = { onToggle(PlaceStatus.LIVED) },
             )
             BounceFilterChip(
                 selected = row.status == PlaceStatus.WISHLIST,
                 label = "Want",
+                semanticsLabel = "Mark ${row.place.name} as wanted",
                 onClick = { onToggle(PlaceStatus.WISHLIST) },
             )
         }
@@ -779,7 +800,8 @@ private fun StatsCard(
             // heard, this only names what the tap does, in place of the removed
             // "Tap for continents..." caption.
             .semantics {
-                onClick(label = "View continents, regions and groupings") { false }
+                // action = null: the Card's own click stays the action, this only names it.
+                onClick(label = "View continents, regions and groupings", action = null)
             },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,

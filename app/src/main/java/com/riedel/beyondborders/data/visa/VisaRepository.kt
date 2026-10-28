@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
  * there is nothing to join: visa answers are entirely reference data, with no
  * user decisions layered on top and therefore no database, no writes and no
  * Flow. The only reason this class exists rather than the ViewModel touching
- * [VisaRegistry] directly is to keep the ~29 kB parse off the main thread.
+ * [VisaRegistry] directly is to keep the ~26-46 kB parse off the main thread.
  *
  * One registry per passport code, cached the first time it is asked for. A
  * passport switch is rare enough that re-parsing on the way back to a
@@ -30,7 +30,7 @@ class VisaRepository(
         // wait out any other passport's parse — and wait by blocking an IO thread
         // rather than suspending, since this is a monitor and not a Mutex. Two
         // callers racing the same cold passport now both parse it: one redundant
-        // ~29 kB parse, and getOrPut still hands both of them the same instance.
+        // ~26-46 kB parse, and getOrPut still hands both of them the same instance.
         val loaded = registryLoader(passport)
         synchronized(cache) { cache.getOrPut(passport) { loaded } }
     }
