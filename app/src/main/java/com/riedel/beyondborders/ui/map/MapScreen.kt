@@ -4,6 +4,7 @@ import android.content.ComponentCallbacks2
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
@@ -16,9 +17,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -55,6 +59,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,7 +68,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -96,6 +105,9 @@ import com.riedel.beyondborders.ui.theme.RegionRamp
 import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.visa.asOfNotice
 import com.riedel.beyondborders.ui.visa.requirementSummary
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -134,6 +146,11 @@ private fun MapCamera.toCameraPosition(): CameraPosition = CameraPosition.Builde
  */
 private const val TAP_SLOP_DP = 16f
 
+/** Outlives the Map tab; see the share functions in [MapScreen]. */
+// lazy: Dispatchers.Main throws on the host JVM, and a top-level initialiser would
+// take every host test of this file's pure functions down with it.
+private val shareScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate) }
+
 /**
  * The world map: one tap marks exactly one place.
  *
@@ -170,16 +187,18 @@ fun MapScreen(
     val selected = selectedCode?.let(viewModel::placeOf)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var counterLabeled by remember { mutableStateOf(false) }
-    var visaLegendLabeled by remember { mutableStateOf(false) }
-    var searchOpen by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+    // rememberSaveable because the root disposes this screen on a tab switch (the
+    // SaveableStateProvider above it restores these on return).
+    var counterLabeled by rememberSaveable { mutableStateOf(false) }
+    var visaLegendLabeled by rememberSaveable { mutableStateOf(false) }
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     // Collapsed by default: Search/Visa/Regions stacking up every time made the
     // top-right corner read as clutter rather than controls. One icon expands the
     // stack on demand instead of a third-and-growing always-visible pill. A "World"
     // pill used to live here too and was dropped: pinching back out is the gesture
     // everyone already knows, so the button only cost space.
-    var controlsExpanded by remember { mutableStateOf(false) }
+    var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     var showShareStyleDialog by remember { mutableStateOf(false) }
     // Local to this screen rather than hoisted: a failed share is a map-only
     // concern, and nothing else on this tab needs to post to it.
@@ -211,19 +230,32 @@ fun MapScreen(
         searchQuery = ""
     }
 
-    fun shareStats() {
+    // Share work runs in a scope that outlives this screen: the snapshot callback
+    // and the caption/PNG work finish after the user may have left the Map tab, and
+    // a scope cancelled with the composition dropped the share without a word.
+    // [onScreen] says whether the snackbar still has a host to show on.
+    var onScreen by remember { mutableStateOf(true) }
+    DisposableEffect(Unit) { onDispose { onScreen = false } }
+
+    fun reportShareFailure(retry: () -> Unit) {
+        if (!onScreen) {
+            Toast.makeText(context.applicationContext, "Couldn't share the map", Toast.LENGTH_SHORT).show()
+            return
+        }
         scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "Couldn't share the map",
+                actionLabel = "Retry",
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) retry()
+        }
+    }
+
+    fun shareStats() {
+        shareScope.launch {
             runCatching { shareStatsCard(context, stats) }
-                .onFailure {
-                    scope.launch {
-                        val result = snackbarHostState.showSnackbar(
-                            message = "Couldn't share the map",
-                            actionLabel = "Retry",
-                            duration = SnackbarDuration.Short,
-                        )
-                        if (result == SnackbarResult.ActionPerformed) shareStats()
-                    }
-                }
+                .onFailure { reportShareFailure(::shareStats) }
         }
     }
 
@@ -232,18 +264,9 @@ fun MapScreen(
         // loading, which otherwise left a tap doing nothing at all with no sign
         // anything was wrong.
         val started = controller.snapshot { bitmap ->
-            scope.launch {
+            shareScope.launch {
                 runCatching { shareMapSnapshot(context, bitmap, stats, style) }
-                    .onFailure {
-                        scope.launch {
-                            val result = snackbarHostState.showSnackbar(
-                                message = "Couldn't share the map",
-                                actionLabel = "Retry",
-                                duration = SnackbarDuration.Short,
-                            )
-                            if (result == SnackbarResult.ActionPerformed) shareSnapshot(style)
-                        }
-                    }
+                    .onFailure { reportShareFailure { shareSnapshot(style) } }
             }
         }
         if (!started) {
@@ -258,11 +281,22 @@ fun MapScreen(
 
     // Switching the heatmap on mid-selection would otherwise leave a marking card
     // showing over a map that no longer means "tap to mark".
-    LaunchedEffect(regionActive) {
-        if (regionActive) viewModel.select(null) else regionInfo = null
+    // Keyed on the mode itself, not just on/off: OFFICIAL <-> INFORMAL keeps
+    // regionActive true, and the old card and outline described the other mode.
+    LaunchedEffect(regionMode) {
+        regionInfo = null
+        if (regionActive) viewModel.select(null)
     }
 
-    Box(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // The legend pill (top-left) and the control stack (top-right) share one
+        // row; at large font scales or on narrow screens their natural widths
+        // overlap, so each gets a fixed share of what is left after the padding.
+        val direction = LocalLayoutDirection.current
+        val rowWidth = maxWidth - 24.dp -
+            contentPadding.calculateStartPadding(direction) - contentPadding.calculateEndPadding(direction)
+        val pillMaxWidth = minOf(240.dp, rowWidth * 0.55f)
+        val controlsMaxWidth = rowWidth * 0.45f - 8.dp
         PlacesMapView(
             controller = controller,
             palette = palette,
@@ -310,7 +344,7 @@ fun MapScreen(
                 // the opposite corner — without a cap, a long enough sentence (two
                 // passports named instead of one) renders on one line right across
                 // the screen and under the ⋮ button instead of wrapping under itself.
-                .widthIn(max = 240.dp),
+                .widthIn(max = pillMaxWidth),
         ) {
             // AnimatedContent, not animateContentSize on the pill: the pill's size
             // animated while its content swapped in a single frame, so expanding read
@@ -405,6 +439,7 @@ fun MapScreen(
                 // named"), and the stack hangs off the right edge: the default TopStart
                 // alignment anchored the content to the left of the animating box, so
                 // every right-aligned pill, the ⋮ included, slid sideways for 180 ms.
+                .widthIn(max = controlsMaxWidth)
                 .animateContentSize(animationSpec = tween(180), alignment = Alignment.TopEnd),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -721,6 +756,9 @@ private class PlacesMapController {
 
     fun attach(map: MapLibreMap) {
         this.map = map
+        // A new style is about to load (first load or a palette change); until it
+        // lands, the old one belongs to layers the map is discarding.
+        style = null
     }
 
     fun onStyleLoaded(style: Style) {
@@ -963,6 +1001,10 @@ private fun PlacesMapView(
             lifecycle.removeObserver(observer)
             controller.detach()
             if (!mapView.isDestroyed) {
+                // The observer may never have seen ON_PAUSE for this view (the
+                // owner is still RESUMED when the tab is left), so pause first to
+                // keep the order MapView expects: pause, stop, destroy.
+                if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) mapView.onPause()
                 mapView.onStop()
                 mapView.onDestroy()
             }
@@ -1066,7 +1108,9 @@ private fun PlacesMapView(
 
     AndroidView(
         factory = { mapView },
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = "Map of the world. Tap a country or territory to select it."
+        },
         update = {
             controller.applyStatuses(statuses, lens, regionActive)
             controller.applyVisa(visaBands, visaNoData)
@@ -1259,7 +1303,7 @@ private fun LegendDot(color: Color) {
 @Composable
 private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
@@ -1308,7 +1352,7 @@ private fun SelectedPlaceCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
