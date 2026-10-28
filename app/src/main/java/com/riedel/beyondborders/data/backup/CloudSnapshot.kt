@@ -91,12 +91,21 @@ class CloudSnapshot(context: Context) {
      * existed. Those were all written by this install, but have no marker; without this
      * their snapshot would be frozen forever. A reinstall that received a restore is a
      * first install ([updatedInPlace] false) and is left unclaimed.
+     *
+     * [localHasHistory] guards the other lookalike: an in-place update whose database is
+     * still empty could be holding a restored snapshot nobody has imported. That case is
+     * undecided, so the checked flag stays unset and a later pass (once there is history)
+     * decides.
      */
-    fun adoptLegacySnapshot(updatedInPlace: Boolean) {
+    fun adoptLegacySnapshot(updatedInPlace: Boolean, localHasHistory: Boolean) {
         val done = File(appContext.noBackupFilesDir, "cloud-snapshot-adoption-checked")
         if (runCatching { done.exists() }.getOrDefault(true)) return
-        if (shouldAdoptLegacySnapshot(exists(), isOwned(), updatedInPlace)) markOwned()
-        runCatching { done.parentFile?.mkdirs(); done.writeText("1") }
+        val exists = exists()
+        val owned = isOwned()
+        if (shouldAdoptLegacySnapshot(exists, owned, updatedInPlace, localHasHistory)) markOwned()
+        if (isAdoptionDecisionFinal(exists, owned, updatedInPlace, localHasHistory)) {
+            runCatching { done.parentFile?.mkdirs(); done.writeText("1") }
+        }
     }
 
     /**
@@ -135,5 +144,20 @@ internal fun mayReplaceSnapshot(snapshotExists: Boolean, owned: Boolean): Boolea
     !snapshotExists || owned
 
 /** See [CloudSnapshot.adoptLegacySnapshot]. */
-internal fun shouldAdoptLegacySnapshot(snapshotExists: Boolean, owned: Boolean, updatedInPlace: Boolean): Boolean =
-    snapshotExists && !owned && updatedInPlace
+internal fun shouldAdoptLegacySnapshot(
+    snapshotExists: Boolean,
+    owned: Boolean,
+    updatedInPlace: Boolean,
+    localHasHistory: Boolean,
+): Boolean = snapshotExists && !owned && updatedInPlace && localHasHistory
+
+/**
+ * Whether the adoption check may be recorded as done. Only the one undecidable case
+ * keeps it open: an unowned snapshot, updated in place, but no local history yet.
+ */
+internal fun isAdoptionDecisionFinal(
+    snapshotExists: Boolean,
+    owned: Boolean,
+    updatedInPlace: Boolean,
+    localHasHistory: Boolean,
+): Boolean = !(snapshotExists && !owned && updatedInPlace && !localHasHistory)

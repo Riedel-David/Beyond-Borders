@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.launch
@@ -40,7 +41,12 @@ fun BounceFilterChip(
                 scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
             }
         },
-        label = { Text(label) },
+        // With a semanticsLabel the chip's merged node would read that description and then
+        // the text again; clearing only the Text's own semantics leaves the chip's click,
+        // selected state and role untouched and lets the label replace the text.
+        label = {
+            Text(label, modifier = if (semanticsLabel != null) Modifier.clearAndSetSemantics { } else Modifier)
+        },
         modifier = Modifier
             .graphicsLayer {
                 scaleX = scale.value

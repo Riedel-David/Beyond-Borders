@@ -112,11 +112,14 @@ class AppContainer(context: Context) {
         if (_databaseHealth.value != DatabaseHealth.Usable) return
         runCatching {
             val info = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
-            cloudSnapshot.adoptLegacySnapshot(updatedInPlace = info.lastUpdateTime > info.firstInstallTime)
+            val export = places.exportBackup()
+            cloudSnapshot.adoptLegacySnapshot(
+                updatedInPlace = info.lastUpdateTime > info.firstInstallTime,
+                localHasHistory = shouldStageSnapshot(export),
+            )
             // A restored snapshot nobody has imported yet is the only copy of the
             // history; see [mayReplaceSnapshot].
             if (!mayReplaceSnapshot(cloudSnapshot.exists(), cloudSnapshot.isOwned())) return
-            val export = places.exportBackup()
             if (shouldStageSnapshot(export)) cloudSnapshot.write(export.json)
         }
     }

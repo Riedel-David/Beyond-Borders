@@ -42,6 +42,7 @@ import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.computeStats
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -92,14 +93,29 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             // the AppWidget binder, so they belong off the main thread — this runs at
             // the moment the user taps Done, which is the worst moment to stall.
             //
-            // An update that throws must not strand the user on this screen with an
-            // unconfigured widget: the choice is already saved, and the provider
-            // repaints on its next update.
-            runCatching {
+            // Only the refresh is allowed to fail quietly: the choice is already saved,
+            // and the provider repaints on its next update. A failed save must not
+            // report RESULT_OK with no config behind it, so it propagates.
+            try {
                 withContext(Dispatchers.IO) {
                     WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground, target)
+                }
+            } catch (c: CancellationException) {
+                throw c
+            } catch (_: Exception) {
+                // Nothing was saved: cancel, so the system drops the widget instead of
+                // adding one that was never configured.
+                setResult(Activity.RESULT_CANCELED)
+                finish()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                try {
                     val manager = AppWidgetManager.getInstance(this@TravelWidgetConfigActivity)
                     TravelWidgetProvider.updateOne(this@TravelWidgetConfigActivity, manager, widgetId)
+                } catch (c: CancellationException) {
+                    throw c
+                } catch (_: Exception) {
                 }
             }
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
