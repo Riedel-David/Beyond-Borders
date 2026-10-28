@@ -96,13 +96,16 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             // Only the refresh is allowed to fail quietly: the choice is already saved,
             // and the provider repaints on its next update. A failed save must not
             // report RESULT_OK with no config behind it, so it propagates.
-            try {
+            val saved = try {
                 withContext(Dispatchers.IO) {
                     WidgetPrefs.save(this@TravelWidgetConfigActivity, widgetId, metric, filledBackground, target)
                 }
             } catch (c: CancellationException) {
                 throw c
             } catch (_: Exception) {
+                false
+            }
+            if (!saved) {
                 // Nothing was saved: cancel, so the system drops the widget instead of
                 // adding one that was never configured.
                 setResult(Activity.RESULT_CANCELED)

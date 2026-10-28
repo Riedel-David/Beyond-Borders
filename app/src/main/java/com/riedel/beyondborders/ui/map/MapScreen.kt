@@ -841,12 +841,12 @@ private class PlacesMapController {
     fun applyRegion(bands: Map<RegionStyleKey, Set<String>>) {
         val style = style ?: return
         if (bands == appliedRegionBands) return
+        // A key that vanished from [bands] is in the changed set and gets an empty filter.
+        val changed = changedRegionKeys(appliedRegionBands, bands)
         appliedRegionBands = bands
-        for (slot in 0 until RegionSlots.COUNT) {
-            RegionBand.entries.forEach { band ->
-                style.getLayerAs<FillLayer>(PlacesMapStyle.regionLayerId(slot, band))
-                    ?.setFilter(PlacesMapStyle.onlyPlaces(bands[RegionStyleKey(slot, band)].orEmpty()))
-            }
+        for (key in changed) {
+            style.getLayerAs<FillLayer>(PlacesMapStyle.regionLayerId(key.slot, key.band))
+                ?.setFilter(PlacesMapStyle.onlyPlaces(bands[key].orEmpty()))
         }
     }
 
@@ -1572,3 +1572,14 @@ internal fun visaLegendSummary(
     val withNoData = if (noDataCount > 0) bands + 1 else bands
     return "Visa lens: $withNoData bands shown, ${visa.visaFreeCount} visa-free"
 }
+
+/**
+ * The (slot, band) layers whose code set differs between two applied states. A key
+ * missing on one side counts as empty, so a key that disappears is reported and gets
+ * cleared, while an explicit empty set and an absent key are the same thing.
+ */
+internal fun changedRegionKeys(
+    old: Map<RegionStyleKey, Set<String>>,
+    new: Map<RegionStyleKey, Set<String>>,
+): Set<RegionStyleKey> =
+    (old.keys + new.keys).filterTo(mutableSetOf()) { old[it].orEmpty() != new[it].orEmpty() }

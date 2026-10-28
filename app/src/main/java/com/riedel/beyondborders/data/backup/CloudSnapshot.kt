@@ -86,6 +86,11 @@ class CloudSnapshot(context: Context) {
         runCatching { marker.delete() }
     }
 
+    private val adoptionFlag: File get() = File(appContext.noBackupFilesDir, "cloud-snapshot-adoption-checked")
+
+    /** True until [adoptLegacySnapshot] has run once; a cheap file check, no export needed. */
+    fun adoptionPending(): Boolean = !runCatching { adoptionFlag.exists() }.getOrDefault(true)
+
     /**
      * One-time bridge for installs that already had a snapshot before the marker
      * existed. Those were all written by this install, but have no marker; without this
@@ -93,19 +98,19 @@ class CloudSnapshot(context: Context) {
      * first install ([updatedInPlace] false) and is left unclaimed.
      *
      * [localHasHistory] guards the other lookalike: an in-place update whose database is
-     * still empty could be holding a restored snapshot nobody has imported. That case is
-     * undecided, so the checked flag stays unset and a later pass (once there is history)
-     * decides.
+     * still empty could be holding a restored snapshot nobody has imported.
+     *
+     * The decision is one-shot: made at the first check, and the checked flag is always
+     * written afterwards. Leaving it open would let a restored-but-unimported snapshot
+     * be adopted, and then overwritten, the moment the user marks one country. The
+     * accepted residual case is a restored install that was updated in place and whose
+     * user marks a place before the first pause: it looks like legacy history and the
+     * unimported snapshot is claimed.
      */
     fun adoptLegacySnapshot(updatedInPlace: Boolean, localHasHistory: Boolean) {
-        val done = File(appContext.noBackupFilesDir, "cloud-snapshot-adoption-checked")
-        if (runCatching { done.exists() }.getOrDefault(true)) return
-        val exists = exists()
-        val owned = isOwned()
-        if (shouldAdoptLegacySnapshot(exists, owned, updatedInPlace, localHasHistory)) markOwned()
-        if (isAdoptionDecisionFinal(exists, owned, updatedInPlace, localHasHistory)) {
-            runCatching { done.parentFile?.mkdirs(); done.writeText("1") }
-        }
+        if (!adoptionPending()) return
+        if (shouldAdoptLegacySnapshot(exists(), isOwned(), updatedInPlace, localHasHistory)) markOwned()
+        runCatching { adoptionFlag.parentFile?.mkdirs(); adoptionFlag.writeText("1") }
     }
 
     /**
@@ -150,14 +155,3 @@ internal fun shouldAdoptLegacySnapshot(
     updatedInPlace: Boolean,
     localHasHistory: Boolean,
 ): Boolean = snapshotExists && !owned && updatedInPlace && localHasHistory
-
-/**
- * Whether the adoption check may be recorded as done. Only the one undecidable case
- * keeps it open: an unowned snapshot, updated in place, but no local history yet.
- */
-internal fun isAdoptionDecisionFinal(
-    snapshotExists: Boolean,
-    owned: Boolean,
-    updatedInPlace: Boolean,
-    localHasHistory: Boolean,
-): Boolean = !(snapshotExists && !owned && updatedInPlace && !localHasHistory)

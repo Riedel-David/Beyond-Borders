@@ -36,6 +36,7 @@ sealed interface DatabaseHealth {
  * first, and only then a wipe the user asks for by name.
  */
 object DatabaseRecovery {
+    private const val RETRY_DELAY_MS = 300L
 
     /**
      * Open the database and let go of it again, reporting whether it worked.
@@ -48,7 +49,6 @@ object DatabaseRecovery {
      * Blocking: call it off the main thread. On a healthy database this is also where
      * any pending migration runs, which is a better place for it than the first frame.
      */
-    private const val RETRY_DELAY_MS = 300L
 
     fun probe(context: Context, name: String = BeyondBordersDatabase.NAME): DatabaseHealth {
         // A fresh install has nothing to fail on, and opening the database here would

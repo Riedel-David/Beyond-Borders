@@ -58,13 +58,4 @@ class CloudSnapshotTest {
     fun `an unowned snapshot over an empty database is never adopted`() {
         assertFalse(shouldAdoptLegacySnapshot(true, owned = false, updatedInPlace = true, localHasHistory = false))
     }
-
-    @Test
-    fun `the adoption check stays open only for an unowned snapshot updated in place with no history`() {
-        assertFalse(isAdoptionDecisionFinal(true, owned = false, updatedInPlace = true, localHasHistory = false))
-        assertTrue(isAdoptionDecisionFinal(true, owned = false, updatedInPlace = true, localHasHistory = true))
-        assertTrue(isAdoptionDecisionFinal(true, owned = false, updatedInPlace = false, localHasHistory = false))
-        assertTrue(isAdoptionDecisionFinal(false, owned = false, updatedInPlace = true, localHasHistory = false))
-        assertTrue(isAdoptionDecisionFinal(true, owned = true, updatedInPlace = true, localHasHistory = false))
-    }
 }
