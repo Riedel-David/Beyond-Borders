@@ -96,7 +96,10 @@ class PlaceRepository(
      * to appear in the file rather than simply be missing from it.
      */
     suspend fun exportBackup(): BackupExport = withContext(Dispatchers.IO) {
-        val rows = dao.allRows()
+        // Rows whose stored status this build cannot read are left out rather than
+        // exported as NONE, which an import would read as a tombstone and use to
+        // delete the place on another phone. Only a corrupt row can be like this.
+        val rows = dao.allRows().filter { PlaceStatus.parseOrNull(it.status) != null }
         val names = rows.mapNotNull { row -> registry[row.code]?.let { row.code to it.name } }.toMap()
         val json = TravelBackup.encode(
             entries = rows.map { row ->
@@ -126,7 +129,7 @@ class PlaceRepository(
      * @throws BackupFormatException if [text] is not a readable BeyondBorders backup.
      */
     suspend fun previewBackup(text: String): BackupMerge.Plan = withContext(Dispatchers.IO) {
-        val payload = TravelBackup.decode(text)
+        val payload = TravelBackup.decode(text, clock())
         planAgainstCurrentRows(payload, registry.codes)
     }
 
@@ -142,7 +145,7 @@ class PlaceRepository(
      * @throws BackupFormatException if [text] is not a readable BeyondBorders backup.
      */
     suspend fun importBackup(text: String): BackupMerge.Plan = withContext(Dispatchers.IO) {
-        val payload = TravelBackup.decode(text)
+        val payload = TravelBackup.decode(text, clock())
         // Touched before the transaction opens, not inside it: the registry is lazy, so
         // on the first import of a session dereferencing it here would hold the write
         // transaction open across a ~50 kB JSON parse for no reason.

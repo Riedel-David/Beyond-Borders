@@ -262,4 +262,21 @@ class TravelBackupTest {
         assertNull(payload.entries.single().deviceId)
         assertNotNull(payload.entries.single().status)
     }
+
+    @Test
+    fun `a timestamp far in the future is clamped to a day past now`() {
+        val now = 1_000_000_000_000L
+        val json = """{"format":"beyondborders.travel","version":1,"places":[
+            {"code":"DE","status":"visited","updatedAt":9999999999999,"deletedAt":9999999999999}]}"""
+        val entry = TravelBackup.decode(json, now).entries.single()
+        assertEquals(now + TravelBackup.MAX_FUTURE_SKEW_MS, entry.updatedAt)
+        assertEquals(now + TravelBackup.MAX_FUTURE_SKEW_MS, entry.deletedAt)
+    }
+
+    @Test
+    fun `a timestamp in the past is left alone`() {
+        val json = """{"format":"beyondborders.travel","version":1,"places":[
+            {"code":"DE","status":"visited","updatedAt":1234}]}"""
+        assertEquals(1234L, TravelBackup.decode(json, 1_000_000_000_000L).entries.single().updatedAt)
+    }
 }

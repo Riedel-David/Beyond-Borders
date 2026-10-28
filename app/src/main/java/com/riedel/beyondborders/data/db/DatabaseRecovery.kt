@@ -36,6 +36,7 @@ sealed interface DatabaseHealth {
  * first, and only then a wipe the user asks for by name.
  */
 object DatabaseRecovery {
+    private const val RETRY_DELAY_MS = 300L
 
     /**
      * Open the database and let go of it again, reporting whether it worked.
@@ -48,20 +49,32 @@ object DatabaseRecovery {
      * Blocking: call it off the main thread. On a healthy database this is also where
      * any pending migration runs, which is a better place for it than the first frame.
      */
+
     fun probe(context: Context, name: String = BeyondBordersDatabase.NAME): DatabaseHealth {
         // A fresh install has nothing to fail on, and opening the database here would
         // create the file a moment earlier than the app otherwise would.
         if (!databaseFile(context, name).exists()) return DatabaseHealth.Usable
 
-        val db = BeyondBordersDatabase.open(context, name)
-        return try {
-            db.openHelper.writableDatabase
-            DatabaseHealth.Usable
-        } catch (t: Throwable) {
-            DatabaseHealth.Unusable(t.message ?: t.javaClass.simpleName)
-        } finally {
-            runCatching { db.close() }
+        // One retry, after a short pause: SQLITE_BUSY or a momentarily full disk fails an
+        // open exactly like a version mismatch does, and reporting that as "can't read
+        // your data" would send someone to the wipe button over a hiccup. The pause is
+        // what lets the retry outlast a brief lock; an immediate retry would mostly
+        // hit the same one. A real corruption just costs the user 300 ms.
+        var last: Throwable? = null
+        repeat(2) { attempt ->
+            if (attempt > 0) Thread.sleep(RETRY_DELAY_MS)
+            val db = BeyondBordersDatabase.open(context, name)
+            try {
+                db.openHelper.writableDatabase
+                return DatabaseHealth.Usable
+            } catch (t: Throwable) {
+                last = t
+            } finally {
+                runCatching { db.close() }
+            }
         }
+        val t = last!!
+        return DatabaseHealth.Unusable(t.message ?: t.javaClass.simpleName)
     }
 
     /**

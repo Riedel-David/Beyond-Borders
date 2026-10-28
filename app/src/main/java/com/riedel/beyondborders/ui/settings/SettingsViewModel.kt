@@ -121,21 +121,33 @@ class SettingsViewModel(
     // vanished underneath a tap.
     private val _snapshotFilePresent = MutableStateFlow(false)
 
+    // Whether this install owns the snapshot file (see [CloudSnapshot.isOwned]). Mirrors
+    // the marker; refreshed here whenever this class changes it (restore, delete).
+    private val _snapshotOwned = MutableStateFlow(false)
+
+    // True only while the pending import is the cloud snapshot itself, so that only a
+    // Restore-row import claims the snapshot and a generic file import cannot release it.
+    private var pendingIsSnapshot = false
+
     init {
         viewModelScope.launch {
-            _snapshotFilePresent.value = withContext(Dispatchers.IO) { snapshot.exists() }
+            val (present, owned) = withContext(Dispatchers.IO) { snapshot.exists() to snapshot.isOwned() }
+            _snapshotFilePresent.value = present
+            _snapshotOwned.value = owned
         }
     }
 
     /**
-     * Whether the Restore row belongs on screen: the file is there *and* the local
-     * history is empty. Both conditions together are what make the row's own copy
-     * true — "Android's backup left a snapshot of your history on this phone" would
-     * be a lie the moment the phone has its own history again, whether that history
-     * arrived by the user marking a place or by the restore itself landing.
+     * Whether the Restore row belongs on screen: the file is there and either the
+     * local history is empty or the file is still unowned (see
+     * [shouldOfferSnapshotRestore]). An unowned snapshot stays offered even over
+     * existing history because staging is frozen until it is claimed, and importing
+     * is a merge, so restoring onto non-empty history cannot lose anything.
      */
     val snapshotAvailable: StateFlow<Boolean> =
-        combine(_snapshotFilePresent, places.statuses) { present, statuses -> present && statuses.isEmpty() }
+        combine(_snapshotFilePresent, _snapshotOwned, places.statuses) { present, owned, statuses ->
+            shouldOfferSnapshotRestore(present, owned, historyEmpty = statuses.isEmpty())
+        }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
 
     fun setThemeMode(mode: ThemeMode) = settings.setThemeMode(mode)
@@ -190,6 +202,7 @@ class SettingsViewModel(
                     snapshot.notifyBackupChanged()
                 }
                 _snapshotFilePresent.value = false
+                _snapshotOwned.value = false
                 TransferState.Idle
             } catch (e: Exception) {
                 TransferState.Failed(e.message ?: "Couldn't delete everything.")
@@ -234,7 +247,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 val text = withContext(Dispatchers.IO) { readText(uri) }
-                previewText(text)
+                previewText(text, isSnapshot = false)
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
@@ -266,7 +279,7 @@ class SettingsViewModel(
                 return@launch
             }
             try {
-                previewText(text)
+                previewText(text, isSnapshot = true)
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
@@ -280,13 +293,14 @@ class SettingsViewModel(
      * importing [text] would do and hand the result to the same confirmation dialog,
      * regardless of where the text came from.
      */
-    private suspend fun previewText(text: String) {
+    private suspend fun previewText(text: String, isSnapshot: Boolean) {
         val plan = places.previewBackup(text)
         // Codes, not names, are what the plan carries — resolved here because
         // "DE" means nothing to a user looking at a confirmation dialog.
         val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
             .map { entry -> places.place(entry.code)?.name ?: entry.code }
         pendingImportText = text
+        pendingIsSnapshot = isSnapshot
         _importPreview.value = ImportPreview(plan, sampleNames)
         _transfer.value = TransferState.Idle
     }
@@ -295,9 +309,13 @@ class SettingsViewModel(
      * since the preview, not a fresh read of the URI. */
     fun confirmImportPreview() {
         val text = pendingImportText ?: return
-        pendingImportText = null
-        _importPreview.value = null
+        // Busy means another transfer is still running: keep the dialog and the text so
+        // the tap can be repeated, instead of silently discarding what was confirmed.
         if (_transfer.value == TransferState.Busy) return
+        pendingImportText = null
+        val isSnapshot = pendingIsSnapshot
+        pendingIsSnapshot = false
+        _importPreview.value = null
         _transfer.value = TransferState.Busy
         viewModelScope.launch {
             _transfer.value = try {
@@ -305,7 +323,15 @@ class SettingsViewModel(
                 // already combines the file's presence with `places.statuses`, and a
                 // successful import — from a snapshot restore or an ordinary file —
                 // makes that flow non-empty on its own, which is what hides the row.
-                TransferState.Done(importMessage(places.importBackup(text)))
+                val plan = places.importBackup(text)
+                // Only restoring the snapshot itself claims it, so staging may refresh
+                // it from here on. A generic file import says nothing about the
+                // snapshot and must not release an unowned one.
+                if (isSnapshot) {
+                    withContext(Dispatchers.IO) { snapshot.markOwned() }
+                    _snapshotOwned.value = true
+                }
+                TransferState.Done(importMessage(plan))
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
@@ -325,6 +351,7 @@ class SettingsViewModel(
     /** The user dismissed the dialog [previewImport] opened. Nothing changes. */
     fun dismissImportPreview() {
         pendingImportText = null
+        pendingIsSnapshot = false
         _importPreview.value = null
     }
 
@@ -383,6 +410,14 @@ class SettingsViewModel(
 /** How many affected place names the preview dialog names before falling back to
  * "and N more". Ten reads as a sample; the full list of up to 252 would not. */
 internal const val PREVIEW_SAMPLE_SIZE = 10
+
+/**
+ * The Restore row shows when a snapshot file exists and either the local history is
+ * empty (nothing to lose, the row's copy is true) or this install does not own the
+ * file yet (staging is frozen until it is claimed, so it must stay claimable).
+ */
+internal fun shouldOfferSnapshotRestore(present: Boolean, owned: Boolean, historyEmpty: Boolean): Boolean =
+    present && (historyEmpty || !owned)
 
 internal fun exportMessage(places: Int, removals: Int): String = buildString {
     append("Saved ")

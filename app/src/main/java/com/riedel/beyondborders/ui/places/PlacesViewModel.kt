@@ -11,6 +11,7 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaRegistry
@@ -42,6 +43,9 @@ enum class RegionMode { OFF, OFFICIAL, INFORMAL }
  * fixed regardless of how many regions exist.
  */
 enum class RegionBand { NONE, SOME, MOST, DONE }
+
+/** One pre-built heatmap layer: a hue slot (which region) at a band (how done). */
+data class RegionStyleKey(val slot: Int, val band: RegionBand)
 
 /** Off -> Informal -> Official -> Off, one tap at a time: the named groupings people
  * think in come first, the UN's list one tap later. */
@@ -314,7 +318,7 @@ class PlacesViewModel(
     /** Which place codes the map's region heatmap should paint in each band,
      * empty while the mode is off. Computed here for the same reason [visaBands]
      * is: panning the map should not re-bucket every region on every frame. */
-    val regionBands: StateFlow<Map<RegionBand, Set<String>>> =
+    val regionBands: StateFlow<Map<RegionStyleKey, Set<String>>> =
         combine(stats, _regionMode) { stats, mode -> regionBandCodes(mode, stats) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
@@ -333,7 +337,9 @@ class PlacesViewModel(
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
     val wishlistEasyLine: StateFlow<String?> =
-        combine(allPlaces, statuses, _visa) { places, st, visa -> computeWishlistEasyLine(places, st, visa) }
+        combine(allPlaces, statuses, _visa, settings.denominator) { places, st, visa, denom ->
+            computeWishlistEasyLine(places, st, visa, denom)
+        }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
@@ -493,14 +499,19 @@ internal fun leastCoveredContinent(continents: List<ContinentStat>): String? {
  * "9 of your 12 wishlist places need no embassy" — the one line neither the
  * travel history nor the visa asset can say alone. Null with nothing to join:
  * no visa data, no wishlist, or a wishlist with nothing easy in it.
+ *
+ * Follows the chosen [denominator] like [computeStats] does, so this line's "of your N
+ * wishlist places" agrees with the wishlist count on the stats card above it.
  */
 internal fun computeWishlistEasyLine(
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
     visa: VisaRegistry?,
+    denominator: Denominator = Denominator.ALL,
 ): String? {
     if (visa == null) return null
-    val wishlistCodes = statuses.filterValues { it == PlaceStatus.WISHLIST }.keys
+    val countedCodes = places.filter(denominator::includes).map { it.code }.toSet()
+    val wishlistCodes = statuses.filter { it.value == PlaceStatus.WISHLIST && it.key in countedCodes }.keys
     if (wishlistCodes.isEmpty()) return null
     val easy = wishlistCodes.count { code -> visa[code]?.isEasy == true }
     if (easy == 0) return null
@@ -561,7 +572,7 @@ internal fun computeStats(
         continents = continents,
         regions = regions,
         informalRegions = computeInformalRegionStats(countedCodes, statuses),
-        coverage = worldCoverage(places, statuses),
+        coverage = worldCoverage(counted, statuses),
     )
 }
 
@@ -592,6 +603,9 @@ internal fun computeInformalRegionStats(
  * fields the asset already carries (see `tools/geo/build_geo.py`), so this
  * needs no new asset field or download, only the join. Null until at least one
  * place with area or population behind it has been marked.
+ *
+ * Callers pass the denominator-filtered places (see [computeStats]), so the share is
+ * of the chosen set: with UN members only, Greenland's area is in neither side.
  */
 internal fun worldCoverage(places: List<Place>, statuses: Map<String, PlaceStatus>): String? {
     val totalArea = places.sumOf { it.areaKm2 }
@@ -658,20 +672,33 @@ internal fun noDataCodes(
 }
 
 /**
- * Bucket every region (or, in [RegionMode.INFORMAL], every named grouping) into
- * its completion band.
+ * Bucket every region (or, in [RegionMode.INFORMAL], every named grouping) by its
+ * hue slot ([RegionSlots]) and completion band, so the map can paint each region in
+ * its own colour at a strength that says how done it is.
  *
  * Returns an empty map when the mode is off, which the map reads the same way it
  * reads an empty visa-band map: paint nothing.
+ *
+ * Informal groupings overlap (Scandinavia sits inside the Nordics), but a place can
+ * only be painted once. The grouping listed first in [INFORMAL_REGIONS] claims it,
+ * so Norway, Sweden and Denmark show as Scandinavia and the Nordics layer keeps
+ * only Finland and Iceland. The order is the list's, not the stats' (those are
+ * re-sorted by progress), so a place does not change colour as you travel.
  */
-internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionBand, Set<String>> {
+internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionStyleKey, Set<String>> {
     val buckets = when (mode) {
         RegionMode.OFF -> return emptyMap()
-        RegionMode.OFFICIAL -> stats.regions.map { Triple(it.been, it.total, it.codes) }
-        RegionMode.INFORMAL -> stats.informalRegions.map { Triple(it.been, it.total, it.codes) }
+        RegionMode.OFFICIAL -> stats.regions.map {
+            Triple(RegionSlots.forOfficial(it.region), Pair(it.been, it.total), it.codes)
+        }
+        RegionMode.INFORMAL -> stats.informalRegions
+            .sortedBy { s -> INFORMAL_REGIONS.indexOfFirst { it.name == s.name }.let { if (it < 0) Int.MAX_VALUE else it } }
+            .map { Triple(RegionSlots.forInformal(it.name), Pair(it.been, it.total), it.codes) }
     }
-    val result = mutableMapOf<RegionBand, MutableSet<String>>()
-    buckets.forEach { (been, total, codes) ->
+    val result = mutableMapOf<RegionStyleKey, MutableSet<String>>()
+    val claimed = mutableSetOf<String>()
+    buckets.forEach { (slot, progress, codes) ->
+        val (been, total) = progress
         if (total == 0) return@forEach
         val band = when {
             been == 0 -> RegionBand.NONE
@@ -679,7 +706,8 @@ internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionBa
             been * 2 >= total -> RegionBand.MOST
             else -> RegionBand.SOME
         }
-        result.getOrPut(band) { mutableSetOf() }.addAll(codes)
+        val mine = codes.filter { claimed.add(it) }
+        if (mine.isNotEmpty()) result.getOrPut(RegionStyleKey(slot, band)) { mutableSetOf() }.addAll(mine)
     }
     return result
 }
@@ -842,8 +870,11 @@ data class CombinedRequirement(
  * curated fields (`note`, `confidence`, `sourceUrl`, `origin`, `datasetSaid`,
  * `officialUrl`, `officialFor`) all belong to the passport whose answer won.
  *
- * Ties go to the primary passport, so a user whose two passports agree sees
- * text identical to today's single-passport experience. One side missing a
+ * Ties on category go to the primary passport, so a user whose two passports agree
+ * sees text identical to today's single-passport experience, unless both state a
+ * number of days and the second allows strictly more: the longer stay is the less
+ * restrictive answer. A missing [VisaRequirement.days] is not read as zero, so it
+ * never loses a tie on its own. One side missing a
  * requirement means the side that has one wins.
  */
 internal fun combineRequirements(
@@ -854,7 +885,13 @@ internal fun combineRequirements(
     if (primary == null) return CombinedRequirement(second!!, fromPrimary = false)
     if (second == null) return CombinedRequirement(primary, fromPrimary = true)
 
-    // Lower ordinal wins; ties go to primary
-    val winner = if (primary.category.ordinal <= second.category.ordinal) primary else second
+    // Lower ordinal wins; on equal categories the longer stated stay wins, and
+    // anything still tied goes to primary.
+    val winner = when {
+        primary.category.ordinal != second.category.ordinal ->
+            if (primary.category.ordinal < second.category.ordinal) primary else second
+        primary.days != null && second.days != null && second.days > primary.days -> second
+        else -> primary
+    }
     return CombinedRequirement(winner, fromPrimary = winner === primary)
 }

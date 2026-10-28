@@ -10,6 +10,7 @@ import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.settings.Denominator
+import com.riedel.beyondborders.ui.theme.RegionSlots
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -140,17 +141,26 @@ class PlacesLogicTest {
 
     @Test
     fun `region bands bucket by completion, not by count`() {
-        assertEquals(emptyMap<RegionBand, Set<String>>(), regionBandCodes(RegionMode.OFF, TravelStats.EMPTY))
+        assertEquals(emptyMap<RegionStyleKey, Set<String>>(), regionBandCodes(RegionMode.OFF, TravelStats.EMPTY))
 
         val stats = computeStats(places, mapOf("DK" to PlaceStatus.VISITED, "FR" to PlaceStatus.VISITED))
         val official = regionBandCodes(RegionMode.OFFICIAL, stats)
         // Northern Europe is DK alone, fully done; Western Europe is FR alone, also
-        // done; North America (Greenland), Africa (Réunion) and Antarctica (Bouvet
-        // Island) are each their own untouched one-place region.
-        assertEquals(setOf("DK", "FR"), official[RegionBand.DONE])
-        assertEquals(setOf("GL", "RE", "BV"), official[RegionBand.NONE])
-        assertEquals(null, official[RegionBand.SOME])
-        assertEquals(null, official[RegionBand.MOST])
+        // done; Greenland, Réunion and Bouvet Island sit in regions of their own that
+        // are untouched. Each is keyed by its region's hue slot as well as its band.
+        assertEquals(
+            setOf("DK"),
+            official[RegionStyleKey(RegionSlots.forOfficial("Northern Europe"), RegionBand.DONE)],
+        )
+        assertEquals(
+            setOf("FR"),
+            official[RegionStyleKey(RegionSlots.forOfficial("Western Europe"), RegionBand.DONE)],
+        )
+        assertEquals(
+            setOf("GL", "RE", "BV"),
+            official.filterKeys { it.band == RegionBand.NONE }.values.flatten().toSet(),
+        )
+        assertTrue(official.keys.none { it.band == RegionBand.SOME || it.band == RegionBand.MOST })
     }
 
     @Test
@@ -164,11 +174,29 @@ class PlacesLogicTest {
         val stats = computeStats(benelux, statuses)
         val informal = regionBandCodes(RegionMode.INFORMAL, stats)
         // 1 of 3 Benelux countries: rounds down to SOME, not MOST.
-        assertEquals(setOf("BE", "NL", "LU"), informal[RegionBand.SOME])
+        assertEquals(setOf("BE", "NL", "LU"), informal[RegionStyleKey(RegionSlots.forInformal("Benelux"), RegionBand.SOME)])
 
         val twoOfThree = computeStats(benelux, mapOf("BE" to PlaceStatus.VISITED, "NL" to PlaceStatus.VISITED))
         val mostlyDone = regionBandCodes(RegionMode.INFORMAL, twoOfThree)
-        assertEquals(setOf("BE", "NL", "LU"), mostlyDone[RegionBand.MOST])
+        assertEquals(setOf("BE", "NL", "LU"), mostlyDone[RegionStyleKey(RegionSlots.forInformal("Benelux"), RegionBand.MOST)])
+    }
+
+    @Test
+    fun `an overlapping grouping is painted by the first one listed, once`() {
+        val nordic = listOf("NO", "SE", "DK", "FI", "IS").map { place(it, it, region = "Northern Europe") }
+        val stats = computeStats(nordic, mapOf("NO" to PlaceStatus.VISITED))
+        val informal = regionBandCodes(RegionMode.INFORMAL, stats)
+        // Scandinavia comes before the Nordics in INFORMAL_REGIONS, so it keeps NO, SE
+        // and DK (1 of 3: SOME) and the Nordics' own layer is left with FI and IS.
+        assertEquals(
+            setOf("NO", "SE", "DK"),
+            informal[RegionStyleKey(RegionSlots.forInformal("Scandinavia"), RegionBand.SOME)],
+        )
+        assertEquals(
+            setOf("FI", "IS"),
+            informal[RegionStyleKey(RegionSlots.forInformal("Nordics"), RegionBand.SOME)],
+        )
+        assertEquals(nordic.size, informal.values.sumOf { it.size })
     }
 
     @Test
@@ -473,7 +501,7 @@ class PlacesLogicTest {
     @Test
     fun `ties go to the primary passport`() {
         val primary = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 90)
-        val second = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 180)
+        val second = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 90)
 
         val combined = combineRequirements(primary, second)
         assertTrue(combined?.fromPrimary == true)
@@ -556,5 +584,94 @@ class PlacesLogicTest {
         assertEquals(RegionMode.INFORMAL, nextRegionMode(RegionMode.OFF))
         assertEquals(RegionMode.OFFICIAL, nextRegionMode(RegionMode.INFORMAL))
         assertEquals(RegionMode.OFF, nextRegionMode(RegionMode.OFFICIAL))
+    }
+
+    @Test
+    fun `equal categories prefer the passport that allows the longer stay`() {
+        val shorter = requirement(category = VisaCategory.VISA_FREE, days = 30)
+        val longer = requirement(category = VisaCategory.VISA_FREE, days = 90)
+
+        assertEquals(false, combineRequirements(shorter, longer)?.fromPrimary)
+        assertEquals(longer, combineRequirements(shorter, longer)?.winner)
+        assertEquals(true, combineRequirements(longer, shorter)?.fromPrimary)
+    }
+
+    @Test
+    fun `equal categories with equal or unstated days still go to the primary`() {
+        val a = requirement(category = VisaCategory.VISA_FREE, days = 90)
+        val b = requirement(category = VisaCategory.VISA_FREE, days = 90)
+        val unstated = requirement(category = VisaCategory.VISA_FREE, days = null)
+
+        assertEquals(true, combineRequirements(a, b)?.fromPrimary)
+        assertEquals(true, combineRequirements(unstated, a)?.fromPrimary)
+        assertEquals(true, combineRequirements(a, unstated)?.fromPrimary)
+    }
+
+    @Test
+    fun `a better category beats a longer stay`() {
+        val eta = requirement(category = VisaCategory.ETA, days = 180)
+        val free = requirement(category = VisaCategory.VISA_FREE, days = 30)
+        assertEquals(free, combineRequirements(eta, free)?.winner)
+    }
+
+    @Test
+    fun `coverage over a denominator-filtered set measures against that set`() {
+        val all = listOf(
+            place("FR", "France", areaKm2 = 500_000, popEst = 60_000_000),
+            place("GL", "Greenland", areaKm2 = 500_000, popEst = 60_000_000, unMember = false),
+        )
+        val statuses = mapOf("FR" to PlaceStatus.VISITED)
+        val unOnly = all.filter(Denominator.UN_MEMBER::includes)
+        assertEquals(
+            "50% of the world's land area, 50% of its population",
+            worldCoverage(all, statuses),
+        )
+        assertEquals(
+            "100% of the world's land area, 100% of its population",
+            worldCoverage(unOnly, statuses),
+        )
+        assertEquals(
+            "100% of the world's land area, 100% of its population",
+            computeStats(all, statuses, Denominator.UN_MEMBER).coverage,
+        )
+    }
+
+    @Test
+    fun `the wishlist join counts only places inside the chosen denominator`() {
+        val all = listOf(
+            place("FR", "France"),
+            place("GL", "Greenland", unMember = false),
+            place("BV", "Bouvet Island", uninhabited = true, unMember = false),
+        )
+        val visa = VisaRegistry.parse("""
+            {
+              "passport": "DE",
+              "asOf": "2026-02-17",
+              "dataset": {"name": "Test", "url": "https://example.org", "licence": "MIT"},
+              "iataUrl": "https://example.org/iata",
+              "requirements": [
+                {"code": "FR", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "GL", "category": "VISA_FREE", "source": "dataset"},
+                {"code": "BV", "category": "VISA_FREE", "source": "dataset"}
+              ]
+            }
+        """.trimIndent())
+        val statuses = mapOf(
+            "FR" to PlaceStatus.WISHLIST,
+            "GL" to PlaceStatus.WISHLIST,
+            "BV" to PlaceStatus.WISHLIST,
+        )
+        assertEquals(
+            "3 of your 3 wishlist places need no embassy",
+            computeWishlistEasyLine(all, statuses, visa),
+        )
+        assertEquals(
+            "1 of your 1 wishlist places need no embassy",
+            computeWishlistEasyLine(all, statuses, visa, Denominator.UN_MEMBER),
+        )
+        assertEquals(
+            "2 of your 2 wishlist places need no embassy",
+            computeWishlistEasyLine(all, statuses, visa, Denominator.INHABITED),
+        )
     }
 }
