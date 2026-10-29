@@ -126,7 +126,7 @@ object TravelBackup {
      * the user picked the wrong file and should be told, whereas one row missing an
      * `updatedAt` should not cost them the other 200.
      *
-     * @throws BackupFormatException if this is not an BeyondBorders backup, or is a
+     * @throws BackupFormatException if this is not a BeyondBorders backup, or is a
      *   newer one than this build understands.
      */
     fun decode(text: String, now: Long = System.currentTimeMillis()): Payload {
@@ -139,7 +139,7 @@ object TravelBackup {
         val format = root.optString("format")
         if (format != FORMAT) {
             throw BackupFormatException(
-                "This is not an BeyondBorders backup file.",
+                "This is not a BeyondBorders backup file.",
                 UiText.Res(R.string.backup_wrong_format),
             )
         }
