@@ -2,7 +2,6 @@ package com.riedel.beyondborders.ui.passport
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,16 +9,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -43,14 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,11 +47,6 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.leastCoveredContinent
-
-/** One-line tweakable: the ring is drawn at this size regardless of how the rest
- * of the screen reflows, so a phone-in-hand adjustment is a single number here. */
-private val RingDiameter = 168.dp
-private val RingStrokeWidth = 14.dp
 
 /** One bar's worth of a completion grid, [codes] carried along so a long press
  * can look up which places it covers without re-deriving membership from [Place]. */
@@ -93,9 +77,12 @@ fun StatsScreen(
     // nobody scans on arrival. Plain remember, not rememberSaveable — reopening
     // the screen collapsed again is not worth a process-death survivor.
     var showAllGroupings by remember { mutableStateOf(false) }
-    // Same idea for the locked region and grouping badges: ~45 of them, mostly locked.
-    var showAllBadges by remember { mutableStateOf(false) }
+    // Which collapsible badge groups are open. A new set on every toggle, so the
+    // state really changes each time (equal values would be a silent no-op).
+    var expandedBadgeGroups by remember { mutableStateOf(setOf<AchievementGroup>()) }
     val achievements = remember(places, statuses) { computeAchievements(places, statuses) }
+    val placesVisited = remember(places, statuses) { places.count { statuses[it.code]?.isBeen == true } }
+    val badgesUnlocked = remember(achievements) { achievements.count { it.unlocked } }
 
     // Zero insets throughout: this screen is drawn inside the root Scaffold's own
     // content padding (BeyondBordersRoot pads the passport tab before it composes),
@@ -123,7 +110,13 @@ fun StatsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            StatsRing(stats, Modifier.fillMaxWidth().padding(vertical = 16.dp))
+            StatsHero(
+                stats,
+                placesVisited = placesVisited,
+                badgesUnlocked = badgesUnlocked,
+                badgesTotal = achievements.size,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            )
 
             Text(
                 "Hold a bar to see which places are still missing.",
@@ -182,71 +175,16 @@ fun StatsScreen(
 
             AchievementsSection(
                 achievements,
-                showAll = showAllBadges,
-                onToggleShowAll = { showAllBadges = !showAllBadges },
+                expandedGroups = expandedBadgeGroups,
+                onToggleGroup = { g ->
+                    expandedBadgeGroups = if (g in expandedBadgeGroups) expandedBadgeGroups - g else expandedBadgeGroups + g
+                },
             )
         }
     }
 
     detail?.let { bucket ->
         BucketDetailDialog(bucket, places, statuses, onDismiss = { detail = null })
-    }
-}
-
-/** The ring: a full track plus a [TravelStats.percent]-sweep arc starting at twelve
- * o'clock, with the percentage centred inside it and the raw count underneath. */
-@Composable
-private fun StatsRing(stats: TravelStats, modifier: Modifier = Modifier) {
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val progressColor = MaterialTheme.colorScheme.primary
-
-    Column(
-        modifier = modifier
-            // One sentence for TalkBack rather than the ring being colour-only:
-            // clearAndSetSemantics so the Canvas underneath isn't also announced.
-            .clearAndSetSemantics {
-                contentDescription =
-                    "${stats.percent} percent of places visited, ${stats.been} of ${stats.total}"
-            },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(RingDiameter), contentAlignment = Alignment.Center) {
-            Canvas(Modifier.fillMaxSize()) {
-                val strokePx = RingStrokeWidth.toPx()
-                val diameter = size.minDimension - strokePx
-                val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
-                val arcSize = Size(diameter, diameter)
-                drawArc(
-                    color = trackColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokePx, cap = StrokeCap.Round),
-                )
-                drawArc(
-                    color = progressColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f * stats.percent / 100f,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokePx, cap = StrokeCap.Round),
-                )
-            }
-            Text(
-                "${stats.percent}%",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-        Text(
-            "${stats.been} of ${stats.total} places",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
-        )
     }
 }
 
@@ -273,7 +211,6 @@ private fun ShowAllGroupingsRow(
     expanded: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "Show all groupings",
 ) {
     val rotation by animateFloatAsState(if (expanded) 90f else 0f)
     Row(
@@ -285,7 +222,7 @@ private fun ShowAllGroupingsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            label,
+            "Show all groupings",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -408,130 +345,4 @@ private fun BucketDetailDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
-}
-
-/**
- * Badges are derived from the current statuses, so unticking a place can take one
- * away again. Regions and named groupings are many and mostly locked, so those two
- * sections show only what is unlocked until "Show all badges" is opened.
- */
-@Composable
-private fun AchievementsSection(
-    achievements: List<Achievement>,
-    showAll: Boolean,
-    onToggleShowAll: () -> Unit,
-) {
-    val unlocked = achievements.count { it.unlocked }
-    val collapsible = setOf(AchievementGroup.REGIONS, AchievementGroup.GROUPS)
-
-    Text(
-        "Achievements",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 24.dp),
-    )
-    Text(
-        "$unlocked of ${achievements.size} unlocked",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.primary,
-    )
-    Text(
-        "Badges follow your map as it is now: untick a place and a badge can go away again.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(bottom = 4.dp),
-    )
-
-    val byGroup = achievements.groupBy { it.group }
-    AchievementGroup.entries.forEach { group ->
-        val all = byGroup[group].orEmpty()
-        val shown = if (group in collapsible && !showAll) all.filter { it.unlocked } else all
-        if (shown.isEmpty()) return@forEach
-        Text(
-            group.label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            shown.chunked(2).forEach { pair ->
-                Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    pair.forEach { AchievementBadge(it, Modifier.weight(1f).fillMaxHeight()) }
-                    if (pair.size == 1) Spacer(Modifier.weight(1f))
-                }
-            }
-        }
-    }
-
-    if (achievements.any { it.group in collapsible && !it.unlocked }) {
-        ShowAllGroupingsRow(
-            expanded = showAll,
-            onToggle = onToggleShowAll,
-            modifier = Modifier.padding(top = 16.dp),
-            label = "Show locked regions and groupings",
-        )
-    }
-}
-
-/** Locked badges are dimmed with a thin progress bar; unlocked ones are full colour. */
-@Composable
-private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modifier) {
-    val unlocked = achievement.unlocked
-    val container = if (unlocked) MaterialTheme.colorScheme.primaryContainer
-    else MaterialTheme.colorScheme.surfaceVariant
-    val content = if (unlocked) MaterialTheme.colorScheme.onPrimaryContainer
-    else MaterialTheme.colorScheme.onSurfaceVariant
-    // One spoken line per badge: the visual state (colour, "x / y", progress bar) is
-    // otherwise read as loose fragments, and the bar says nothing at all.
-    val spoken = buildString {
-        append(achievement.title).append(", ")
-        append(if (unlocked) "unlocked" else "locked, ${achievement.progress} of ${achievement.target}")
-        append(". ").append(achievement.description)
-    }
-    Column(
-        modifier
-            .semantics(mergeDescendants = true) { contentDescription = spoken }
-            .background(container, RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            achievement.title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = content,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            achievement.description,
-            style = MaterialTheme.typography.bodySmall,
-            color = content,
-        )
-        if (unlocked) {
-            Text("Unlocked", style = MaterialTheme.typography.labelMedium, color = content)
-        } else {
-            Text(
-                "${achievement.progress} / ${achievement.target}",
-                style = MaterialTheme.typography.labelMedium,
-                color = content,
-            )
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(5.dp)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(3.dp))
-            ) {
-                val fraction = achievement.progress.toFloat() / achievement.target
-                if (fraction > 0f) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth(fraction)
-                            .height(5.dp)
-                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp))
-                    )
-                }
-            }
-        }
-    }
 }

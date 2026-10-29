@@ -91,8 +91,11 @@ The passport card's headline number opens a stats screen: a bar per continent, t
 least-covered continent and the next milestone, and a grid of achievement badges
 (counts, continents, regions, named groupings, territories, tiny places). Badges are
 derived from the current map, so unticking a place can take one away again; they ignore
-the Denominator setting and store nothing of their own. Regions and named groupings
-show only once unlocked until "Show locked regions and groupings" is opened. **Share** renders the map as an image in
+the Denominator setting and store nothing of their own. Each badge group has an icon and
+colour, and Regions and named groupings have their own headers ("Regions · 3 of 28") that
+expand in place to show the locked ones; earned badges are always visible. The hero card at the top shows
+the share of the world as a ring and a traveller rank (Newcomer up to Legend), which
+counts every place visited, like the badges. **Share** renders the map as an image in
 three styles: a caption bar, a corner badge, or a numbers-only stats card.
 
 The home-screen widget shows one headline number (countries, percent of the world or

@@ -61,7 +61,7 @@ class SettingsStore(context: Context) {
 
     private val _denominator = MutableStateFlow(
         runCatching { Denominator.valueOf(prefs.getString(KEY_DENOMINATOR, null) ?: "") }
-            .getOrDefault(Denominator.ALL)
+            .getOrDefault(Denominator.UN_MEMBER)
     )
     val denominator: StateFlow<Denominator> = _denominator.asStateFlow()
 
@@ -110,7 +110,7 @@ class SettingsStore(context: Context) {
         _themeMode.value = ThemeMode.SYSTEM
         _mapColors.value = MapColors.parse(visited = null, lived = null, wishlist = null)
         _mapBase.value = MapBase.DEFAULT
-        _denominator.value = Denominator.ALL
+        _denominator.value = Denominator.UN_MEMBER
         _hapticsEnabled.value = true
         _hasSeenWelcome.value = false
         _nationality.value = null
