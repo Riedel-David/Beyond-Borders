@@ -49,7 +49,6 @@ internal fun travelWidgetViews(
 
     // Hero number and label
     val headline = widgetHeadline(metric, stats)
-    // Not widgetLabel(): that one still holds the English literals and is outside this change.
     val label = context.getString(
         when (metric) {
             WidgetMetric.COUNTRIES -> R.string.share_tile_places_been

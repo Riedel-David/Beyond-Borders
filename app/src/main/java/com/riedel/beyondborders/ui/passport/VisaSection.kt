@@ -112,7 +112,7 @@ internal fun LazyListScope.visaSection(
                 FilterChip(
                     selected = option == filter,
                     onClick = { onFilter(option) },
-                    label = { Text(option.label) },
+                    label = { Text(option.text.asString()) },
                 )
             }
         }
@@ -541,7 +541,7 @@ private fun VisaUnavailable() {
 internal fun visaEmptyMessage(query: String, filter: VisaFilter): UiText =
     when {
         query.isNotBlank() -> UiText.Res(R.string.visa_empty_query, query)
-        filter != VisaFilter.All -> UiText.Res(R.string.visa_empty_filter, UiText.Plain(filter.label))
+        filter != VisaFilter.All -> UiText.Res(R.string.visa_empty_filter, filter.text)
         else -> UiText.Res(R.string.visa_empty_nothing)
     }
 
@@ -555,10 +555,6 @@ internal fun canClearVisaFilter(query: String, filter: VisaFilter): Boolean =
  * "which category is this" for the fast-scroll overlay — the visa list's headers are
  * never collapsible, so unlike [travelHeaderSlots] there is no skip to mirror.
  */
-internal fun visaHeaderSlots(rows: List<VisaRow>): List<String?> =
-    visaHeaderCategorySlots(rows).map { it?.label }
-
-/** The same slots as [visaHeaderSlots] by category, for callers that resolve the label themselves. */
 internal fun visaHeaderCategorySlots(rows: List<VisaRow>): List<VisaCategory?> {
     val slots = mutableListOf<VisaCategory?>()
     var lastHeader: VisaCategory? = null

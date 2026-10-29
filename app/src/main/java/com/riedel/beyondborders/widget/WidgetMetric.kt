@@ -24,11 +24,3 @@ internal fun widgetHeadline(metric: WidgetMetric, stats: TravelStats): String =
         WidgetMetric.PERCENT -> "${stats.percent}%"
         WidgetMetric.CONTINENTS -> "${stats.continentsTouched}"
     }
-
-/** The label beneath the hero number in the widget layouts. */
-internal fun widgetLabel(metric: WidgetMetric, stats: TravelStats): String =
-    when (metric) {
-        WidgetMetric.COUNTRIES -> "PLACES BEEN"
-        WidgetMetric.PERCENT -> "OF THE WORLD"
-        WidgetMetric.CONTINENTS -> "CONTINENTS"
-    }

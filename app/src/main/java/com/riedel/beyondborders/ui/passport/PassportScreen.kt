@@ -66,6 +66,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
@@ -92,6 +93,7 @@ import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.StatusFilter
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
 import com.riedel.beyondborders.ui.places.sectionHeader
 import com.riedel.beyondborders.ui.places.visaFilters
 
@@ -134,7 +136,7 @@ fun PassportScreen(
     val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
-    val wishlistEasyLine by viewModel.wishlistEasyLine.collectAsStateWithLifecycle()
+    val wishlistEasyText by viewModel.wishlistEasyText.collectAsStateWithLifecycle()
     // Derived from an asset that is read once, so a flow would be a subscription to
     // something that never changes twice.
     val filters = remember(visa) { visaFilters(visa) }
@@ -190,7 +192,8 @@ fun PassportScreen(
     // the collapse skip.
     // Remembered, not rebuilt per composition: this walks all 252 rows calling
     // sectionHeader on each, which is not something to redo while a finger is down.
-    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query) {
+    val resources = LocalResources.current
+    val headerSlots = remember(resources, mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query) {
         if (mode == PassportMode.VISA) {
             buildList {
                 add(null) // "mode"
@@ -201,7 +204,7 @@ fun PassportScreen(
                     add(null) // "visa-search"
                     add(null) // "visa-filters"
                     if (visaRows.isEmpty()) add(null) // "visa-empty"
-                    addAll(visaHeaderSlots(visaRows))
+                    addAll(visaHeaderCategorySlots(visaRows).map { it?.let { c -> resources.getString(c.labelRes) } })
                 }
             }
         } else {
@@ -258,7 +261,7 @@ fun PassportScreen(
         item("stats") {
             StatsCard(
                 stats = stats,
-                wishlistEasyLine = wishlistEasyLine,
+                wishlistEasyText = wishlistEasyText,
                 onClick = { showStatsDetail = true },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
@@ -285,7 +288,7 @@ fun PassportScreen(
                         FilterChip(
                             selected = filter == statusFilter,
                             onClick = { viewModel.setStatusFilter(filter) },
-                            label = { Text(filter.label) },
+                            label = { Text(filter.text.asString()) },
                         )
                     }
                 }
@@ -351,7 +354,7 @@ fun PassportScreen(
                 // swap rather than the reorder animateItem exists to animate.
                 stickyHeader("header-$header", contentType = "header") {
                     SectionHeader(
-                        text = header,
+                        text = sectionHeaderLabel(header),
                         collapsed = collapseKey in effectiveCollapsed,
                         onClick = { viewModel.toggleHeaderCollapsed(grouping, header) },
                     )
@@ -436,7 +439,7 @@ private fun ModeToggle(
                 // fitting and eliding on a 360 dp phone, and with two segments the
                 // selected one is already obvious from its fill.
                 icon = {},
-                label = { Text(option.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label = { Text(option.text.asString(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             )
         }
     }
@@ -662,7 +665,7 @@ private fun AzRail(
                 labels.forEach { label ->
                     val touched = label == touchedLabel
                     Text(
-                        text = label.take(1).uppercase(),
+                        text = sectionHeaderLabel(label).take(1).uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (touched) FontWeight.Bold else FontWeight.Normal,
                         color = if (touched) {
@@ -795,7 +798,7 @@ private fun EmptyPlacesState(
 @Composable
 private fun StatsCard(
     stats: TravelStats,
-    wishlistEasyLine: String?,
+    wishlistEasyText: UiText?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -855,25 +858,25 @@ private fun StatsCard(
             )
             // Two lines that only appear once they have something worth saying:
             // the nudge needs a continent partway done, the join needs a wishlist.
-            if (stats.coverage != null) {
+            if (stats.coverageText != null) {
                 Text(
-                    stats.coverage,
+                    stats.coverageText.asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (stats.nudge != null) {
+            if (stats.nudgeText != null) {
                 Text(
-                    stats.nudge,
+                    stats.nudgeText.asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (wishlistEasyLine != null) {
+            if (wishlistEasyText != null) {
                 Text(
-                    wishlistEasyLine,
+                    wishlistEasyText.asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
@@ -897,7 +900,7 @@ internal fun passportEmptyMessage(loading: Boolean, query: String, statusFilter:
     when {
         loading -> UiText.Res(R.string.passport_loading)
         query.isNotBlank() -> UiText.Res(R.string.passport_no_match_query, query)
-        statusFilter != StatusFilter.ALL -> UiText.Res(R.string.passport_no_match_filter, statusFilter.label)
+        statusFilter != StatusFilter.ALL -> UiText.Res(R.string.passport_no_match_filter, statusFilter.text)
         else -> UiText.Res(R.string.passport_nothing_matches)
     }
 
@@ -923,3 +926,8 @@ internal fun railLabels(headerSlots: List<String?>): List<String> =
  */
 internal fun railTargetIndex(headerSlots: List<String?>, label: String): Int? =
     headerSlots.indexOf(label).takeIf { it >= 0 }
+
+/** [sectionHeader]'s key shown as text: the uninhabited key is a stable constant, not the wording. */
+@Composable
+private fun sectionHeaderLabel(key: String): String =
+    if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited) else key

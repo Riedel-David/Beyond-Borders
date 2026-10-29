@@ -188,16 +188,16 @@ class VisaLogicTest {
     fun `the wishlist join line names the easy fraction of the whole wishlist`() {
         val statuses = mapOf("GL" to PlaceStatus.WISHLIST, "RU" to PlaceStatus.WISHLIST)
         assertEquals(
-            "1 of your 2 wishlist places need no embassy",
-            computeWishlistEasyLine(places, statuses, visa),
+            UiText.Plural(R.plurals.places_wishlist_easy, 2, 1, 2),
+            computeWishlistEasyText(places, statuses, visa),
         )
     }
 
     @Test
     fun `the wishlist join line is null with no visa asset, no wishlist, or nothing easy on it`() {
-        assertEquals(null, computeWishlistEasyLine(places, mapOf("GL" to PlaceStatus.WISHLIST), null))
-        assertEquals(null, computeWishlistEasyLine(places, emptyMap(), visa))
-        assertEquals(null, computeWishlistEasyLine(places, mapOf("RU" to PlaceStatus.WISHLIST), visa))
+        assertEquals(null, computeWishlistEasyText(places, mapOf("GL" to PlaceStatus.WISHLIST), null))
+        assertEquals(null, computeWishlistEasyText(places, emptyMap(), visa))
+        assertEquals(null, computeWishlistEasyText(places, mapOf("RU" to PlaceStatus.WISHLIST), visa))
     }
 
     // --- the chips -------------------------------------------------------------

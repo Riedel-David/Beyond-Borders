@@ -85,29 +85,3 @@ fun officialLinkText(requirement: VisaRequirement, nameOf: (String) -> String?):
     val name = nameOf(parent) ?: parent
     return UiText.Res(R.string.visa_official_link_for, name)
 }
-
-// --- String wrappers for callers not yet migrated to UiText (MapScreen) -------------
-// English only, by necessity: there is no Context here. Delete once MapScreen uses the
-// *Text functions above.
-
-fun requirementSummary(requirement: VisaRequirement, passportCode: String? = null): String = buildString {
-    append(requirement.category.label)
-    requirement.days?.let { append(" · $it days") }
-    passportCode?.let { append(" (${englishAdjective(it)} passport)") }
-}
-
-fun asOfNotice(visa: VisaRegistry): String =
-    "Data as of ${visa.asOf} for a ${englishAdjective(visa.passport)} passport — " +
-        "verify with the official government source before booking"
-
-fun asOfNotice(primary: VisaRegistry, second: VisaRegistry): String {
-    val olderDate = if (primary.asOf <= second.asOf) primary.asOf else second.asOf
-    return "Data as of $olderDate for ${englishAdjective(primary.passport)} and " +
-        "${englishAdjective(second.passport)} passports — verify with the official government source before booking"
-}
-
-private fun englishAdjective(isoCode: String) = when (isoCode) {
-    "DE" -> "German"
-    "GB" -> "British"
-    else -> isoCode
-}

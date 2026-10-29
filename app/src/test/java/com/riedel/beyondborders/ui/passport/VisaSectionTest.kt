@@ -33,7 +33,7 @@ class VisaSectionTest {
     @Test
     fun `an active visa filter names itself when there is no query`() {
         assertEquals(
-            UiText.Res(R.string.visa_empty_filter, UiText.Plain(VisaFilter.Easy.label)),
+            UiText.Res(R.string.visa_empty_filter, VisaFilter.Easy.text),
             visaEmptyMessage(query = "", filter = VisaFilter.Easy),
         )
     }
@@ -92,8 +92,8 @@ class VisaSectionTest {
             row("US", "United States", VisaCategory.E_VISA),
         )
         assertEquals(
-            listOf("Visa-free", "Visa-free", "Visa-free", "e-Visa", "e-Visa"),
-            visaHeaderSlots(rows),
+            listOf(VisaCategory.VISA_FREE, VisaCategory.VISA_FREE, VisaCategory.VISA_FREE, VisaCategory.E_VISA, VisaCategory.E_VISA),
+            visaHeaderCategorySlots(rows),
         )
     }
 }

@@ -196,7 +196,6 @@ private fun ConfigScreen(
                         onClick = { chosenTarget = option },
                         shape = SegmentedButtonDefaults.itemShape(index, WidgetTarget.entries.size),
                     ) {
-                        // WidgetTarget.label is the English original and lives outside this change.
                         Text(
                             stringResource(
                                 when (option) {

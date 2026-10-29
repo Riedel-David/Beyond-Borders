@@ -39,7 +39,7 @@ class PassportScreenTest {
     @Test
     fun `an active status filter names itself when there is no query`() {
         assertEquals(
-            UiText.Res(R.string.passport_no_match_filter, StatusFilter.BEEN.label),
+            UiText.Res(R.string.passport_no_match_filter, StatusFilter.BEEN.text),
             passportEmptyMessage(loading = false, query = "", statusFilter = StatusFilter.BEEN),
         )
     }

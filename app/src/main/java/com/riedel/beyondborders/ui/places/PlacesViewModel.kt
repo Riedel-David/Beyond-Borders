@@ -64,12 +64,12 @@ fun nextRegionMode(mode: RegionMode): RegionMode = when (mode) {
  * — and [LIVED] narrows to the handful inside it. A "Been" filter that hid the
  * places you have lived in would contradict the number at the top of the screen.
  */
-enum class StatusFilter(val label: String, val text: UiText) {
-    ALL("All", UiText.Res(R.string.places_filter_all)),
-    BEEN("Been", UiText.Res(R.string.places_filter_been)),
-    LIVED("Lived", UiText.Res(R.string.places_filter_lived)),
-    WISHLIST("Want", UiText.Res(R.string.places_filter_want)),
-    NONE("Not yet", UiText.Res(R.string.places_filter_none)),
+enum class StatusFilter(val text: UiText) {
+    ALL(UiText.Res(R.string.places_filter_all)),
+    BEEN(UiText.Res(R.string.places_filter_been)),
+    LIVED(UiText.Res(R.string.places_filter_lived)),
+    WISHLIST(UiText.Res(R.string.places_filter_want)),
+    NONE(UiText.Res(R.string.places_filter_none)),
 }
 
 /**
@@ -80,9 +80,9 @@ enum class StatusFilter(val label: String, val text: UiText) {
  * places; where else can I go without paperwork?" — is a mode switch away rather
  * than a navigation.
  */
-enum class PassportMode(val label: String, val text: UiText) {
-    TRAVEL("Where I've been", UiText.Res(R.string.places_mode_travel)),
-    VISA("Where I can go", UiText.Res(R.string.places_mode_visa)),
+enum class PassportMode(val text: UiText) {
+    TRAVEL(UiText.Res(R.string.places_mode_travel)),
+    VISA(UiText.Res(R.string.places_mode_visa)),
 }
 
 /**
@@ -93,38 +93,29 @@ enum class PassportMode(val label: String, val text: UiText) {
  * [VisaCategory.VISA_ON_ARRIVAL] together. [Category] narrows to exactly one.
  */
 sealed interface VisaFilter {
-    // [label] is the English original, kept so the passport screens still compile; they
-    // should read [text], and [label] goes once they do.
-    val label: String
     val text: UiText
 
     data object All : VisaFilter {
-        override val label = "All"
         override val text = UiText.Res(R.string.places_visa_filter_all)
     }
 
     data object Easy : VisaFilter {
-        override val label = "No embassy"
         override val text = UiText.Res(R.string.places_visa_filter_easy)
     }
 
     /** Wishlist places the visa asset says need no embassy — the join this app can
      * do offline that nothing else can, because it already owns both datasets. */
     data object WishlistEasy : VisaFilter {
-        override val label = "Wishlist, easy"
         override val text = UiText.Res(R.string.places_visa_filter_wishlist_easy)
     }
 
     /** Visa-free with a stay of 90 days or more — long enough to actually live somewhere. */
     data object LongStay : VisaFilter {
-        override val label = "90+ days"
         override val text = UiText.Res(R.string.places_visa_filter_long_stay)
     }
 
     data class Category(val category: VisaCategory) : VisaFilter {
-        override val label get() = category.label
-        // VisaCategory's wording belongs to the visa data layer; wrapped as-is until it has resources.
-        override val text get() = UiText.Plain(category.label)
+        override val text get() = UiText.Res(category.labelRes)
     }
 }
 
@@ -164,9 +155,7 @@ data class TravelStats(
     val regions: List<RegionStat> = emptyList(),
     val informalRegions: List<NamedGroupStat> = emptyList(),
     /** "11% of the world's land area, 47% of its population" — null while
-     * nothing is marked. See [worldCoverage]. */
-    val coverage: String? = null,
-    /** [coverage] as resource-backed text; the passport screens should read this one. */
+     * nothing is marked. See [worldCoverageText]. */
     val coverageText: UiText? = null,
 ) {
     /** Places you have set foot in. The headline number, and never smaller than [visited]. */
@@ -178,10 +167,7 @@ data class TravelStats(
     val continentsTouched: Int = continents.count { it.been > 0 }
 
     /** "2 places from finishing Europe" — null once every continent is either
-     * untouched or already finished. See [almostFinishedNudge]. */
-    val nudge: String? = almostFinishedNudge(continents)
-
-    /** [nudge] as resource-backed text; the passport screens should read this one. */
+     * untouched or already finished. See [almostFinishedNudgeText]. */
     val nudgeText: UiText? = almostFinishedNudgeText(continents)
 
     companion object {
@@ -356,13 +342,6 @@ class PlacesViewModel(
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
-    val wishlistEasyLine: StateFlow<String?> =
-        combine(allPlaces, statuses, _visa, settings.denominator) { places, st, visa, denom ->
-            computeWishlistEasyLine(places, st, visa, denom)
-        }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
-    /** [wishlistEasyLine] as resource-backed text; the passport screen should read this one. */
     val wishlistEasyText: StateFlow<UiText?> =
         combine(allPlaces, statuses, _visa, settings.denominator) { places, st, visa, denom ->
             computeWishlistEasyText(places, st, visa, denom)
@@ -492,14 +471,6 @@ class PlacesViewModel(
  * every continent is either untouched or already finished, since there is
  * nothing left to nudge towards.
  */
-internal fun almostFinishedNudge(continents: List<ContinentStat>): String? {
-    val candidate = nudgeCandidate(continents) ?: return null
-    val remaining = candidate.total - candidate.been
-    val noun = if (remaining == 1) "place" else "places"
-    return "$remaining $noun from finishing ${candidate.continent}"
-}
-
-/** [almostFinishedNudge] as resource-backed text. */
 internal fun almostFinishedNudgeText(continents: List<ContinentStat>): UiText? {
     val candidate = nudgeCandidate(continents) ?: return null
     val remaining = candidate.total - candidate.been
@@ -517,12 +488,6 @@ private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = co
  * Null with nothing marked at all (every continent 0/total says nothing worth a
  * line) and null once every continent is finished (nothing left to point at).
  */
-internal fun leastCoveredContinent(continents: List<ContinentStat>): String? {
-    val worst = leastCoveredCandidate(continents) ?: return null
-    return "${worst.continent} — ${worst.been} of ${worst.total}"
-}
-
-/** [leastCoveredContinent] as resource-backed text. */
 internal fun leastCoveredContinentText(continents: List<ContinentStat>): UiText? {
     val worst = leastCoveredCandidate(continents) ?: return null
     return UiText.Res(R.string.places_least_covered, worst.continent, worst.been, worst.total)
@@ -547,17 +512,6 @@ private fun leastCoveredCandidate(continents: List<ContinentStat>): ContinentSta
  * Follows the chosen [denominator] like [computeStats] does, so this line's "of your N
  * wishlist places" agrees with the wishlist count on the stats card above it.
  */
-internal fun computeWishlistEasyLine(
-    places: List<Place>,
-    statuses: Map<String, PlaceStatus>,
-    visa: VisaRegistry?,
-    denominator: Denominator = Denominator.ALL,
-): String? {
-    val (easy, wishlist) = wishlistEasyCounts(places, statuses, visa, denominator) ?: return null
-    return "$easy of your $wishlist wishlist places need no embassy"
-}
-
-/** [computeWishlistEasyLine] as resource-backed text. */
 internal fun computeWishlistEasyText(
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
@@ -637,7 +591,6 @@ internal fun computeStats(
         continents = continents,
         regions = regions,
         informalRegions = computeInformalRegionStats(countedCodes, statuses),
-        coverage = worldCoverage(counted, statuses),
         coverageText = worldCoverageText(counted, statuses),
     )
 }
@@ -673,12 +626,6 @@ internal fun computeInformalRegionStats(
  * Callers pass the denominator-filtered places (see [computeStats]), so the share is
  * of the chosen set: with UN members only, Greenland's area is in neither side.
  */
-internal fun worldCoverage(places: List<Place>, statuses: Map<String, PlaceStatus>): String? {
-    val (areaPercent, popPercent) = coveragePercents(places, statuses) ?: return null
-    return "$areaPercent% of the world's land area, $popPercent% of its population"
-}
-
-/** [worldCoverage] as resource-backed text. */
 internal fun worldCoverageText(places: List<Place>, statuses: Map<String, PlaceStatus>): UiText? {
     val (areaPercent, popPercent) = coveragePercents(places, statuses) ?: return null
     return UiText.Res(R.string.places_coverage, areaPercent, popPercent)

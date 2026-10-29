@@ -110,8 +110,8 @@ import com.riedel.beyondborders.ui.theme.MapPalette
 import com.riedel.beyondborders.ui.theme.RegionRamp
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.ui.theme.VisaRamp
-import com.riedel.beyondborders.ui.visa.asOfNotice
-import com.riedel.beyondborders.ui.visa.requirementSummary
+import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -1200,7 +1200,7 @@ private fun VisaLegend(
                     if (count > 0) {
                         CounterLegendRow(
                             ramp.colorFor(band),
-                            stringResource(R.string.map_legend_count_labeled, count, band.label),
+                            stringResource(R.string.map_legend_count_labeled, count, stringResource(band.labelRes)),
                         )
                     }
                 }
@@ -1253,7 +1253,7 @@ private fun VisaLegend(
         }
         if (visa != null) {
             Text(
-                if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
+                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1437,7 +1437,7 @@ private fun SelectedPlaceCard(
             )
             if (requirement != null) {
                 Text(
-                    requirementSummary(requirement, attributeTo),
+                    requirementSummaryText(requirement, attributeTo).asString(),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1454,7 +1454,7 @@ private fun SelectedPlaceCard(
                 }
                 if (requirement.confidence == VisaConfidence.LOW) {
                     Text(
-                        VisaConfidence.LOW.label,
+                        stringResource(VisaConfidence.LOW.labelRes),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error,
                     )

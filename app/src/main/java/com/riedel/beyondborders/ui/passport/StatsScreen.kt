@@ -54,7 +54,7 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
-import com.riedel.beyondborders.ui.places.leastCoveredContinent
+import com.riedel.beyondborders.ui.places.leastCoveredContinentText
 
 /** One bar's worth of a completion grid, [codes] carried along so a long press
  * can look up which places it covers without re-deriving membership from [Place]. */
@@ -162,21 +162,21 @@ fun StatsScreen(
                 onHold = { detail = it },
             )
 
-            val leastCovered = remember(stats.continents) { leastCoveredContinent(stats.continents) }
+            val leastCovered = remember(stats.continents) { leastCoveredContinentText(stats.continents) }
             if (leastCovered != null) {
                 LabeledStat(
                     label = stringResource(R.string.stats_least_covered),
-                    value = leastCovered,
+                    value = leastCovered.asString(),
                     valueColor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
-            // stats.nudge is already computed on TravelStats — recomputing it here
+            // stats.nudgeText is already computed on TravelStats — recomputing it here
             // from continents would be the same string built twice.
-            if (stats.nudge != null) {
+            if (stats.nudgeText != null) {
                 LabeledStat(
                     label = stringResource(R.string.stats_next_up),
-                    value = stats.nudge!!,
+                    value = stats.nudgeText.asString(),
                     valueColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = if (leastCovered != null) 12.dp else 16.dp),
                 )
