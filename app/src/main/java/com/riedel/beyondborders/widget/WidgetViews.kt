@@ -49,7 +49,14 @@ internal fun travelWidgetViews(
 
     // Hero number and label
     val headline = widgetHeadline(metric, stats)
-    val label = widgetLabel(metric, stats)
+    // Not widgetLabel(): that one still holds the English literals and is outside this change.
+    val label = context.getString(
+        when (metric) {
+            WidgetMetric.COUNTRIES -> R.string.share_tile_places_been
+            WidgetMetric.PERCENT -> R.string.share_of_the_world_caps
+            WidgetMetric.CONTINENTS -> R.string.share_tile_continents
+        }
+    )
     views.setTextViewText(R.id.widget_headline, headline)
     views.setTextViewText(R.id.widget_label, label)
 
@@ -111,7 +118,7 @@ internal fun travelWidgetViews(
         tileIds.forEachIndexed { index, (tile, value, label) ->
             views.setInt(tile, "setBackgroundResource", tileBackground)
             views.setTextViewText(value, tiles[index].first)
-            views.setTextViewText(label, tiles[index].second)
+            views.setTextViewText(label, tiles[index].second.asString(context))
             views.setTextColor(value, valueColor)
             views.setTextColor(label, labelColor)
         }

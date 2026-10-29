@@ -70,6 +70,7 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -80,7 +81,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.BounceFilterChip
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -242,13 +246,13 @@ fun MapScreen(
 
     fun reportShareFailure(retry: () -> Unit) {
         if (!onScreen) {
-            Toast.makeText(context.applicationContext, "Couldn't share the map", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext, context.getString(R.string.map_share_failed), Toast.LENGTH_SHORT).show()
             return
         }
         scope.launch {
             val result = snackbarHostState.showSnackbar(
-                message = "Couldn't share the map",
-                actionLabel = "Retry",
+                message = context.getString(R.string.map_share_failed),
+                actionLabel = context.getString(R.string.map_share_retry),
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) retry()
@@ -275,7 +279,7 @@ fun MapScreen(
         if (!started) {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = "Map isn't ready yet",
+                    message = context.getString(R.string.map_not_ready),
                     duration = SnackbarDuration.Short,
                 )
             }
@@ -356,6 +360,8 @@ fun MapScreen(
             // the two directions symmetric. The kind is what the transition keys on,
             // so the outgoing content keeps drawing its own labelled or compact form
             // while it fades out instead of jumping to the incoming one.
+            // Resolved out here because the semantics block below is not composable.
+            val legendDescription = travelLegendDescription(stats).asString()
             AnimatedContent(
                 targetState = mapLegendKind(
                     lens = lens,
@@ -389,16 +395,16 @@ fun MapScreen(
                     // Nothing marked yet, so the counter would say "0" and teach
                     // nothing. Say what to do instead.
                     MapLegendKind.NUDGE -> Text(
-                        "Tap a place to mark it",
+                        stringResource(R.string.map_legend_nudge),
                         style = MaterialTheme.typography.labelLarge,
                     )
                     MapLegendKind.COUNTER_LABELED -> Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        CounterLegendRow(palette.visited, stats.visited, "visited")
-                        if (stats.lived > 0) CounterLegendRow(palette.lived, stats.lived, "lived")
+                        CounterLegendRow(palette.visited, stringResource(R.string.map_legend_visited, stats.visited))
+                        if (stats.lived > 0) CounterLegendRow(palette.lived, stringResource(R.string.map_legend_lived, stats.lived))
                         if (stats.wishlist > 0) {
-                            CounterLegendRow(palette.wishlist, stats.wishlist, "wanted")
+                            CounterLegendRow(palette.wishlist, stringResource(R.string.map_legend_wanted, stats.wishlist))
                         }
                     }
                     MapLegendKind.COUNTER_DOTS -> Row(
@@ -409,7 +415,7 @@ fun MapScreen(
                         // one counts; clearAndSetSemantics replaces that with one
                         // sentence and stops the numbers being announced twice.
                         modifier = Modifier.clearAndSetSemantics {
-                            contentDescription = travelLegendDescription(stats)
+                            contentDescription = legendDescription
                         },
                     ) {
                         // One dot per map colour, and only for colours actually on the
@@ -459,7 +465,9 @@ fun MapScreen(
             ) {
                 Icon(
                     if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
-                    contentDescription = if (controlsExpanded) "Hide map controls" else "Show map controls",
+                    contentDescription = stringResource(
+                        if (controlsExpanded) R.string.map_controls_hide else R.string.map_controls_show,
+                    ),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -470,7 +478,7 @@ fun MapScreen(
             // rather than filter a list.
             MapPill(onClick = { viewModel.vibrate(); searchOpen = !searchOpen }) {
                 Text(
-                    if (searchOpen) "Close" else "Search",
+                    stringResource(if (searchOpen) R.string.map_search_close else R.string.map_search_open),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -490,11 +498,11 @@ fun MapScreen(
                         SearchField(
                             query = searchQuery,
                             onQuery = { searchQuery = it },
-                            label = "Find a place",
+                            label = stringResource(R.string.map_search_label),
                         )
                         if (searchQuery.isNotBlank() && searchMatches.isEmpty()) {
                             Text(
-                                "No matches",
+                                stringResource(R.string.map_search_no_matches),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
@@ -532,7 +540,7 @@ fun MapScreen(
             if (visa != null) {
                 MapPill(onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) }) {
                     Text(
-                        if (lens) "My travels" else "Visa",
+                        stringResource(if (lens) R.string.map_lens_travels else R.string.map_lens_visa),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -542,11 +550,13 @@ fun MapScreen(
             // choice — Off/Official/Informal is a single question, not three.
             MapPill(onClick = { viewModel.vibrate(); viewModel.setRegionMode(nextRegionMode(regionMode)) }) {
                 Text(
-                    when (regionMode) {
-                        RegionMode.OFF -> "Regions"
-                        RegionMode.OFFICIAL -> "Regions: UN"
-                        RegionMode.INFORMAL -> "Regions: named"
-                    },
+                    stringResource(
+                        when (regionMode) {
+                            RegionMode.OFF -> R.string.map_regions_off
+                            RegionMode.OFFICIAL -> R.string.map_regions_official
+                            RegionMode.INFORMAL -> R.string.map_regions_informal
+                        }
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -636,7 +646,7 @@ fun MapScreen(
                 .padding(16.dp),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ) {
-            Icon(Icons.Filled.Share, contentDescription = "Share")
+            Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.map_share_action))
         }
 
         if (showShareStyleDialog) {
@@ -675,7 +685,7 @@ private fun ShareStyleDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Share style") },
+        title = { Text(stringResource(R.string.map_share_style_title)) },
         text = {
             Column {
                 ShareCardStyle.entries.forEach { style ->
@@ -692,12 +702,12 @@ private fun ShareStyleDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                style.label,
+                                stringResource(style.labelRes),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                style.blurb,
+                                stringResource(style.blurbRes),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -706,7 +716,7 @@ private fun ShareStyleDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.map_share_cancel)) } },
     )
 }
 
@@ -1111,10 +1121,11 @@ private fun PlacesMapView(
         }
     }
 
+    val mapDescription = stringResource(R.string.map_description)
     AndroidView(
         factory = { mapView },
         modifier = modifier.semantics {
-            contentDescription = "Map of the world. Tap a country or territory to select it."
+            contentDescription = mapDescription
         },
         update = {
             controller.applyStatuses(statuses, lens, regionActive)
@@ -1180,16 +1191,22 @@ private fun VisaLegend(
     noDataCount: Int,
     labeled: Boolean,
 ) {
+    val collapsedSummary = visaLegendSummary(visa, noDataCount, secondVisa).asString()
     Column {
         if (labeled && visa != null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 VisaBand.entries.forEach { band ->
                     val count = visa.countByBand[band] ?: 0
-                    if (count > 0) CounterLegendRow(ramp.colorFor(band), count, band.label)
+                    if (count > 0) {
+                        CounterLegendRow(
+                            ramp.colorFor(band),
+                            stringResource(R.string.map_legend_count_labeled, count, band.label),
+                        )
+                    }
                 }
                 // Only shown when it paints something: DE's dataset has no gaps, so
                 // a row for a colour this passport never uses would be a riddle.
-                if (noDataCount > 0) CounterLegendRow(ramp.noData, noDataCount, "no data")
+                if (noDataCount > 0) CounterLegendRow(ramp.noData, stringResource(R.string.map_legend_no_data, noDataCount))
             }
         } else {
             Row(
@@ -1200,7 +1217,7 @@ private fun VisaLegend(
                 // never say a visa lens is even showing. The expanded, tap-labelled
                 // rows already speak for themselves via CounterLegendRow's own text.
                 modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = visaLegendSummary(visa, noDataCount, secondVisa)
+                    contentDescription = collapsedSummary
                 },
             ) {
                 // Separated dots, like the travel legend: the five bands are a
@@ -1225,7 +1242,11 @@ private fun VisaLegend(
                     }
                 }
                 Text(
-                    if (visa == null) "No visa data" else "${visa.visaFreeCount} visa-free",
+                    if (visa == null) {
+                        stringResource(R.string.map_visa_legend_none)
+                    } else {
+                        stringResource(R.string.map_visa_legend_free, visa.visaFreeCount)
+                    },
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
@@ -1279,27 +1300,33 @@ private fun RegionLegend(ramp: RegionRamp, land: Color, mode: RegionMode, stats:
                 }
             }
             Text(
-                if (mode == RegionMode.OFFICIAL) "Each colour is a region; stronger = more visited"
-                else "Each colour is a grouping; stronger = more visited",
+                stringResource(
+                    if (mode == RegionMode.OFFICIAL) R.string.map_region_legend_official
+                    else R.string.map_region_legend_informal
+                ),
                 style = MaterialTheme.typography.labelLarge,
             )
         }
         Text(
-            "$done of ${totals.size} " +
-                if (mode == RegionMode.OFFICIAL) "regions done" else "groupings done",
+            stringResource(
+                if (mode == RegionMode.OFFICIAL) R.string.map_region_done_official
+                else R.string.map_region_done_informal,
+                done,
+                totals.size,
+            ),
             style = MaterialTheme.typography.labelLarge,
         )
     }
 }
 
 @Composable
-private fun CounterLegendRow(color: Color, count: Int, label: String) {
+private fun CounterLegendRow(color: Color, text: String) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LegendDot(color)
-        Text("$count $label", style = MaterialTheme.typography.labelLarge)
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -1340,7 +1367,7 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "${info.been} / ${info.total} done",
+                stringResource(R.string.map_region_card_done, info.been, info.total),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 8.dp),
@@ -1438,11 +1465,9 @@ private fun SelectedPlaceCard(
                 // only a nudge to look it up, rather than the silent blank this
                 // used to leave on both the map and the card.
                 Text(
-                    if (hasSecondPassport) {
-                        "No data available for either passport — check official sources before travelling."
-                    } else {
-                        "No data available for this passport — check official sources before travelling."
-                    },
+                    stringResource(
+                        if (hasSecondPassport) R.string.map_no_data_either else R.string.map_no_data_this
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1461,17 +1486,17 @@ private fun SelectedPlaceCard(
                     // behind a gesture.
                     BounceFilterChip(
                         selected = status == PlaceStatus.VISITED,
-                        label = "Been",
+                        label = stringResource(R.string.map_chip_been),
                         onClick = { onToggle(PlaceStatus.VISITED) },
                     )
                     BounceFilterChip(
                         selected = status == PlaceStatus.LIVED,
-                        label = "Lived",
+                        label = stringResource(R.string.map_chip_lived),
                         onClick = { onToggle(PlaceStatus.LIVED) },
                     )
                     BounceFilterChip(
                         selected = status == PlaceStatus.WISHLIST,
-                        label = "Want",
+                        label = stringResource(R.string.map_chip_want),
                         onClick = { onToggle(PlaceStatus.WISHLIST) },
                     )
                 }
@@ -1544,11 +1569,11 @@ internal fun mapLegendKind(
  * dot row actually draws, so the sentence never mentions a colour that is not on
  * screen.
  */
-internal fun travelLegendDescription(stats: TravelStats): String {
-    val parts = mutableListOf("${stats.visited} visited")
-    if (stats.lived > 0) parts.add("${stats.lived} lived")
-    if (stats.wishlist > 0) parts.add("${stats.wishlist} wishlisted")
-    return parts.joinToString(", ")
+internal fun travelLegendDescription(stats: TravelStats): UiText {
+    val parts = mutableListOf<UiText>(UiText.Res(R.string.map_legend_visited, stats.visited))
+    if (stats.lived > 0) parts.add(UiText.Res(R.string.map_legend_lived, stats.lived))
+    if (stats.wishlist > 0) parts.add(UiText.Res(R.string.map_legend_wishlisted, stats.wishlist))
+    return parts.reduce { joined, part -> UiText.Res(R.string.map_join_comma, joined, part) }
 }
 
 /**
@@ -1560,17 +1585,15 @@ internal fun visaLegendSummary(
     visa: VisaRegistry?,
     noDataCount: Int,
     secondVisa: VisaRegistry? = null,
-): String {
+): UiText {
     if (visa == null) {
-        return if (secondVisa != null) {
-            "Visa lens: no visa data for your passports"
-        } else {
-            "Visa lens: no visa data for this passport"
-        }
+        return UiText.Res(
+            if (secondVisa != null) R.string.map_visa_summary_none_second else R.string.map_visa_summary_none_single
+        )
     }
     val bands = VisaBand.entries.count { (visa.countByBand[it] ?: 0) > 0 }
     val withNoData = if (noDataCount > 0) bands + 1 else bands
-    return "Visa lens: $withNoData bands shown, ${visa.visaFreeCount} visa-free"
+    return UiText.Plural(R.plurals.map_visa_summary, withNoData, withNoData, visa.visaFreeCount)
 }
 
 /**
