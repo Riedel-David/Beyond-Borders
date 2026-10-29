@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Passport list -->
+    <string name="passport_search_places">Search places</string>
+    <string name="passport_group_continent">By continent</string>
+    <string name="passport_group_region">By region</string>
+    <string name="passport_group_alphabetical">A-Z</string>
+    <string name="passport_state_collapsed">Collapsed</string>
+    <string name="passport_state_expanded">Expanded</string>
+    <string name="passport_chip_been">Been</string>
+    <string name="passport_chip_lived">Lived</string>
+    <string name="passport_chip_want">Want</string>
+    <string name="passport_mark_been">Mark %1$s as been</string>
+    <string name="passport_mark_lived">Mark %1$s as lived in</string>
+    <string name="passport_mark_want">Mark %1$s as wanted</string>
+    <string name="passport_clear">Clear</string>
+    <string name="passport_loading">Loading your places…</string>
+    <string name="passport_no_match_query">No places match “%1$s”.</string>
+    <string name="passport_no_match_filter">No places match the “%1$s” filter.</string>
+    <string name="passport_nothing_matches">Nothing matches.</string>
+    <string name="passport_card_action">View continents, regions and groupings</string>
+    <plurals name="passport_card_total">
+        <item quantity="one">of %1$d place · %2$d%%</item>
+        <item quantity="other">of %1$d places · %2$d%%</item>
+    </plurals>
+    <plurals name="passport_card_continents">
+        <item quantity="one">%1$d of %2$d continent</item>
+        <item quantity="other">%1$d of %2$d continents</item>
+    </plurals>
+    <string name="passport_card_lived">%1$d lived in</string>
+    <string name="passport_card_wishlist">%1$d on the wishlist</string>
+
+    <!-- Stats screen -->
+    <string name="stats_title">Stats</string>
+    <string name="stats_back">Back</string>
+    <string name="stats_hold_hint">Hold a bar to see which places are still missing.</string>
+    <string name="stats_continents">Continents</string>
+    <string name="stats_regions">Regions</string>
+    <string name="stats_named_groupings">Named groupings</string>
+    <string name="stats_least_covered">Least covered</string>
+    <string name="stats_next_up">Next up</string>
+    <string name="stats_show_all_groupings">Show all groupings</string>
+    <string name="stats_collapse">Collapse</string>
+    <string name="stats_expand">Expand</string>
+    <string name="stats_bar_details">Show details for %1$s</string>
+    <string name="stats_dialog_been">Been (%1$d)</string>
+    <string name="stats_dialog_missing">Still to go (%1$d)</string>
+    <string name="stats_dialog_close">Close</string>
+
+    <!-- Stats hero -->
+    <string name="stats_hero_percent">%1$d%%</string>
+    <plurals name="stats_hero_places">
+        <item quantity="one">%1$d of %2$d place</item>
+        <item quantity="other">%1$d of %2$d places</item>
+    </plurals>
+    <plurals name="stats_hero_badges">
+        <item quantity="one">%1$d of %2$d badge unlocked</item>
+        <item quantity="other">%1$d of %2$d badges unlocked</item>
+    </plurals>
+    <string name="stats_hero_description">%1$d percent of places visited, %2$d of %3$d. Rank %4$s. %5$s. %6$s.</string>
+
+    <!-- Traveller ranks -->
+    <string name="rank_newcomer">Newcomer</string>
+    <string name="rank_wanderer">Wanderer</string>
+    <string name="rank_explorer">Explorer</string>
+    <string name="rank_adventurer">Adventurer</string>
+    <string name="rank_globetrotter">Globetrotter</string>
+    <string name="rank_world_traveller">World traveller</string>
+    <string name="rank_legend">Legend</string>
+    <string name="rank_top_reached">Top rank reached</string>
+    <string name="rank_progress">%1$d more to reach %2$s</string>
+
+    <!-- Badge sections and cards -->
+    <string name="badge_recent">Recently unlocked</string>
+    <string name="badge_closest">Closest to unlocking</string>
+    <string name="badge_section_title">Achievements</string>
+    <string name="badge_section_hint">Badges follow your map as it is now: untick a place and a badge can go away again.</string>
+    <string name="badge_group_header">%1$s · %2$d of %3$d</string>
+    <string name="badge_show_details">Show details</string>
+    <string name="badge_unlocked">Unlocked</string>
+    <string name="badge_new">NEW</string>
+    <string name="badge_progress_slash">%1$d / %2$d</string>
+    <string name="badge_progress_of">%1$d of %2$d</string>
+    <string name="badge_spoken_unlocked">%1$s, unlocked. %2$s</string>
+    <string name="badge_spoken_new">%1$s, newly unlocked. %2$s</string>
+    <string name="badge_spoken_locked">%1$s, locked, %2$d of %3$d. %4$s</string>
+    <string name="badge_share">Share</string>
+    <string name="badge_share_failed">Couldn\'t share the badge</string>
+    <string name="badge_share_caption">I unlocked “%1$s” in Beyond Borders: %2$s</string>
+    <string name="badge_rank_line">%1$s · %2$s</string>
+    <plurals name="badge_places_count">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+    <string name="badge_celebrate_one">Unlocked: %1$s</string>
+    <string name="badge_celebrate_more">Unlocked: %1$s and %2$d more</string>
+
+    <!-- Badge groups -->
+    <string name="badge_group_counts">Places</string>
+    <string name="badge_group_continents">Continents</string>
+    <string name="badge_group_regions">Regions</string>
+    <string name="badge_group_groups">Named groupings</string>
+    <string name="badge_group_dependencies">Territories</string>
+    <string name="badge_group_non_un">Beyond the UN</string>
+    <string name="badge_group_tiny">Tiny places</string>
+    <string name="badge_group_giants">Giants</string>
+    <string name="badge_group_special">Special</string>
+    <string name="badge_group_lived">Lived</string>
+    <string name="badge_group_wishlist">Wishlist</string>
+
+    <!-- Badge titles and descriptions -->
+    <string name="badge_count_1_title">First stamp</string>
+    <string name="badge_count_1_desc">Mark your first place as been.</string>
+    <plurals name="badge_count_n_title">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+    <plurals name="badge_count_n_desc">
+        <item quantity="one">Be in %1$d place.</item>
+        <item quantity="other">Be in %1$d places.</item>
+    </plurals>
+    <plurals name="badge_continents_touch_title">
+        <item quantity="one">%1$d continent</item>
+        <item quantity="other">%1$d continents</item>
+    </plurals>
+    <plurals name="badge_continents_touch_desc">
+        <item quantity="one">Be somewhere on %1$d continent.</item>
+        <item quantity="other">Be somewhere on %1$d continents.</item>
+    </plurals>
+    <string name="badge_continent_complete_title">All of %1$s</string>
+    <string name="badge_continent_complete_desc">Be in every inhabited place in %1$s.</string>
+    <string name="badge_region_desc">Be in every inhabited place in %1$s (%2$d in all).</string>
+    <string name="badge_group_desc">Be in every inhabited place in %1$s: %2$s.</string>
+    <plurals name="badge_dependencies_title">
+        <item quantity="one">%1$d territory</item>
+        <item quantity="other">%1$d territories</item>
+    </plurals>
+    <plurals name="badge_dependencies_desc">
+        <item quantity="one">Be in %1$d place that belongs to another country.</item>
+        <item quantity="other">Be in %1$d places that belong to another country.</item>
+    </plurals>
+    <plurals name="badge_non_un_title">
+        <item quantity="one">%1$d outside the UN</item>
+        <item quantity="other">%1$d outside the UN</item>
+    </plurals>
+    <plurals name="badge_non_un_desc">
+        <item quantity="one">Be in %1$d place that is not a UN member or observer.</item>
+        <item quantity="other">Be in %1$d places that are not a UN member or observer.</item>
+    </plurals>
+    <plurals name="badge_tiny_title">
+        <item quantity="one">%1$d tiny place</item>
+        <item quantity="other">%1$d tiny places</item>
+    </plurals>
+    <plurals name="badge_tiny_desc">
+        <item quantity="one">Be in %1$d place under %2$d km².</item>
+        <item quantity="other">Be in %1$d places under %2$d km².</item>
+    </plurals>
+    <string name="badge_giant_1_title">A giant</string>
+    <string name="badge_giant_1_desc">Be in one of the %1$d largest places by area.</string>
+    <string name="badge_antarctica_title">The white continent</string>
+    <string name="badge_antarctica_desc">Set foot in Antarctica.</string>
+    <string name="badge_hemispheres_title">Four hemispheres</string>
+    <string name="badge_hemispheres_desc">Be in the north, south, east and west (by each place\'s centre point).</string>
+    <string name="badge_lived_1_title">Lived abroad</string>
+    <string name="badge_lived_3_title">Lived in %1$d places</string>
+    <plurals name="badge_lived_desc">
+        <item quantity="one">Mark %1$d place as lived.</item>
+        <item quantity="other">Mark %1$d places as lived.</item>
+    </plurals>
+    <string name="badge_wishlist_10_title">Dreamer</string>
+    <string name="badge_wishlist_10_desc">Put %1$d places on your wishlist.</string>
+</resources>

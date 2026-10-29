@@ -44,11 +44,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.leastCoveredContinent
 
@@ -95,6 +99,7 @@ fun StatsScreen(
     val seenUpdate = remember(achievements) { newlyUnlocked(seenOnOpen, achievements) }
     val upNext = remember(achievements) { nextUp(achievements) }
     val snackbarHost = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var celebrated by rememberSaveable { mutableStateOf(false) }
     // Keyed on the badges themselves, not just non-emptiness: statuses start as an
     // empty map, so the first pass can see every badge locked and persist an empty set.
@@ -106,7 +111,7 @@ fun StatsScreen(
         if (!celebrated) {
             celebrationMessage(seenUpdate.fresh)?.let {
                 celebrated = true
-                snackbarHost.showSnackbar(it)
+                snackbarHost.showSnackbar(it.asString(context))
             }
         }
     }
@@ -121,10 +126,10 @@ fun StatsScreen(
         snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
-                title = { Text("Stats") },
+                title = { Text(stringResource(R.string.stats_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.stats_back))
                     }
                 },
                 windowInsets = WindowInsets(0, 0, 0, 0),
@@ -147,12 +152,12 @@ fun StatsScreen(
             )
 
             Text(
-                "Hold a bar to see which places are still missing.",
+                stringResource(R.string.stats_hold_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             CompletionGrid(
-                "Continents",
+                stringResource(R.string.stats_continents),
                 stats.continents.map { Bucket(it.continent, it.been, it.total, it.codes) },
                 onHold = { detail = it },
             )
@@ -160,7 +165,7 @@ fun StatsScreen(
             val leastCovered = remember(stats.continents) { leastCoveredContinent(stats.continents) }
             if (leastCovered != null) {
                 LabeledStat(
-                    label = "Least covered",
+                    label = stringResource(R.string.stats_least_covered),
                     value = leastCovered,
                     valueColor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 16.dp),
@@ -170,7 +175,7 @@ fun StatsScreen(
             // from continents would be the same string built twice.
             if (stats.nudge != null) {
                 LabeledStat(
-                    label = "Next up",
+                    label = stringResource(R.string.stats_next_up),
                     value = stats.nudge!!,
                     valueColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = if (leastCovered != null) 12.dp else 16.dp),
@@ -189,12 +194,12 @@ fun StatsScreen(
             Column(Modifier.animateContentSize()) {
                 if (showAllGroupings) {
                     CompletionGrid(
-                        "Regions",
+                        stringResource(R.string.stats_regions),
                         stats.regions.map { Bucket(it.region, it.been, it.total, it.codes) },
                         onHold = { detail = it },
                     )
                     CompletionGrid(
-                        "Named groupings",
+                        stringResource(R.string.stats_named_groupings),
                         stats.informalRegions.map { Bucket(it.name, it.been, it.total, it.codes) },
                         onHold = { detail = it },
                     )
@@ -253,13 +258,13 @@ private fun ShowAllGroupingsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "Show all groupings",
+            stringResource(R.string.stats_show_all_groupings),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = if (expanded) "Collapse" else "Expand",
+            contentDescription = stringResource(if (expanded) R.string.stats_collapse else R.string.stats_expand),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.rotate(rotation),
         )
@@ -296,7 +301,7 @@ private fun CompletionBar(bucket: Bucket, onHold: (Bucket) -> Unit, modifier: Mo
             onLongClick = { onHold(bucket) },
             // Surfaces the long-press in TalkBack's actions menu; sighted behaviour
             // is unchanged.
-            onLongClickLabel = "Show details for ${bucket.label}",
+            onLongClickLabel = stringResource(R.string.stats_bar_details, bucket.label),
         ),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
@@ -357,7 +362,7 @@ private fun BucketDetailDialog(
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (been.isNotEmpty()) {
                     Text(
-                        "Been (${been.size})",
+                        stringResource(R.string.stats_dialog_been, been.size),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -365,7 +370,7 @@ private fun BucketDetailDialog(
                 }
                 if (missing.isNotEmpty()) {
                     Text(
-                        "Still to go (${missing.size})",
+                        stringResource(R.string.stats_dialog_missing, missing.size),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = if (been.isNotEmpty()) 12.dp else 0.dp),
@@ -374,6 +379,6 @@ private fun BucketDetailDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.stats_dialog_close)) } },
     )
 }
