@@ -95,7 +95,7 @@ the Denominator setting and store nothing of their own. Each badge group has an 
 colour, and Regions and named groupings have their own headers ("Regions · 3 of 28") that
 expand in place to show the locked ones; earned badges are always visible. The hero card at the top shows
 the share of the world as a ring and a traveller rank (Newcomer up to Legend), which
-counts every place visited, like the badges. **Share** renders the map as an image in
+counts every place visited, like the badges. Above the badge groups, "Closest to unlocking" shows the three nearest locked badges and "Recently unlocked" tags new ones; the first visit after an unlock also shows a one-time message. Which badges were already seen is kept on the device only. **Share** renders the map as an image in
 three styles: a caption bar, a corner badge, or a numbers-only stats card.
 
 The home-screen widget shows one headline number (countries, percent of the world or

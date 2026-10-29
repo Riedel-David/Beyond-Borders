@@ -116,6 +116,7 @@ class SettingsStore(context: Context) {
         _nationality.value = null
         _secondNationality.value = null
         _collapsedHeaders.value = emptySet()
+        _seenAchievements.value = null
         prefs.edit { clear() }
     }
 
@@ -163,6 +164,26 @@ class SettingsStore(context: Context) {
     fun setCollapsedHeaders(headers: Set<String>) {
         _collapsedHeaders.value = headers
         prefs.edit { putStringSet(KEY_COLLAPSED_HEADERS, headers) }
+    }
+
+    /**
+     * Ids of badges the Stats screen has already shown, so "recently unlocked" and the
+     * one-time celebration only cover what is new. `null` means never seeded, which is
+     * not the same as empty: settings are excluded from Auto Backup, so a restored phone
+     * starts at null and Stats seeds it with what is already unlocked instead of
+     * celebrating a whole backup's worth. Only Stats writes it, only [resetAll] clears it,
+     * and ids are never removed.
+     */
+    private val _seenAchievements = MutableStateFlow(
+        if (prefs.contains(KEY_SEEN_ACHIEVEMENTS)) {
+            prefs.getStringSet(KEY_SEEN_ACHIEVEMENTS, emptySet())?.toSet() ?: emptySet()
+        } else null
+    )
+    val seenAchievements: StateFlow<Set<String>?> = _seenAchievements.asStateFlow()
+
+    fun setSeenAchievements(ids: Set<String>) {
+        _seenAchievements.value = ids
+        prefs.edit { putStringSet(KEY_SEEN_ACHIEVEMENTS, ids) }
     }
 
     fun setThemeMode(mode: ThemeMode) {
@@ -234,6 +255,7 @@ class SettingsStore(context: Context) {
         const val KEY_NATIONALITY = "nationality"
         const val KEY_SECOND_NATIONALITY = "second_nationality"
         const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
+        const val KEY_SEEN_ACHIEVEMENTS = "seen_achievements"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"

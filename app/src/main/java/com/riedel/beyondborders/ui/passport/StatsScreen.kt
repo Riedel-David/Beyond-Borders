@@ -28,13 +28,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +70,8 @@ fun StatsScreen(
     stats: TravelStats,
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
+    seenAchievements: Set<String>?,
+    onSeenAchievements: (Set<String>) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,6 +89,27 @@ fun StatsScreen(
     val achievements = remember(places, statuses) { computeAchievements(places, statuses) }
     val placesVisited = remember(places, statuses) { places.count { statuses[it.code]?.isBeen == true } }
     val badgesUnlocked = remember(achievements) { achievements.count { it.unlocked } }
+    // The set as it was when the screen first opened, saved across rotation: the write
+    // below must not make the NEW tags vanish while the user is still looking at them.
+    val seenOnOpen = rememberSaveable { mutableStateOf(seenAchievements?.let { ArrayList(it) }) }.value?.toSet()
+    val seenUpdate = remember(achievements) { newlyUnlocked(seenOnOpen, achievements) }
+    val upNext = remember(achievements) { nextUp(achievements) }
+    val snackbarHost = remember { SnackbarHostState() }
+    var celebrated by rememberSaveable { mutableStateOf(false) }
+    // Keyed on the badges themselves, not just non-emptiness: statuses start as an
+    // empty map, so the first pass can see every badge locked and persist an empty set.
+    // Writing again on each change keeps the stored set equal to what has been shown,
+    // and seenOnOpen (still null in that case) keeps a restore from reading as "all new".
+    LaunchedEffect(seenUpdate) {
+        if (achievements.isEmpty()) return@LaunchedEffect
+        onSeenAchievements(seenUpdate.seen)
+        if (!celebrated) {
+            celebrationMessage(seenUpdate.fresh)?.let {
+                celebrated = true
+                snackbarHost.showSnackbar(it)
+            }
+        }
+    }
 
     // Zero insets throughout: this screen is drawn inside the root Scaffold's own
     // content padding (BeyondBordersRoot pads the passport tab before it composes),
@@ -91,6 +118,7 @@ fun StatsScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
                 title = { Text("Stats") },
@@ -176,6 +204,8 @@ fun StatsScreen(
             AchievementsSection(
                 achievements,
                 expandedGroups = expandedBadgeGroups,
+                nextUp = upNext,
+                recent = seenUpdate.fresh,
                 onToggleGroup = { g ->
                     expandedBadgeGroups = if (g in expandedBadgeGroups) expandedBadgeGroups - g else expandedBadgeGroups + g
                 },

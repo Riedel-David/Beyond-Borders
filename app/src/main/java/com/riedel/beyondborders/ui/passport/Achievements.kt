@@ -198,3 +198,34 @@ internal fun rankFor(placesVisited: Int): RankInfo {
 /** Unlocked and total badge count per group, for the section headers. */
 internal fun groupProgress(achievements: List<Achievement>): Map<AchievementGroup, Pair<Int, Int>> =
     achievements.groupBy { it.group }.mapValues { (_, list) -> list.count { it.unlocked } to list.size }
+
+/** The locked badges closest to done (some progress, highest share first, ties by id). */
+internal fun nextUp(achievements: List<Achievement>, limit: Int = 3): List<Achievement> =
+    achievements.filter { !it.unlocked && it.progress > 0 }
+        .sortedWith(
+            compareByDescending<Achievement> { it.progress.toDouble() / it.target.coerceAtLeast(1) }
+                .thenBy { it.id }
+        )
+        .take(limit)
+
+/** [fresh] badges to show as new, and the [seen] set to persist afterwards. */
+internal data class SeenUpdate(val fresh: List<Achievement>, val seen: Set<String>)
+
+/**
+ * Unlocked badges not yet in [seen]. A null [seen] means the set was never seeded (first
+ * run, or a restore, since settings are not backed up): everything unlocked right now is
+ * recorded as seen and nothing is new, rather than reading "empty" as "all new".
+ * Ids are only ever added, so a badge that goes away and returns is not new again.
+ */
+internal fun newlyUnlocked(seen: Set<String>?, achievements: List<Achievement>): SeenUpdate {
+    val unlocked = achievements.filter { it.unlocked }
+    val ids = unlocked.map { it.id }
+    if (seen == null) return SeenUpdate(emptyList(), ids.toSet())
+    return SeenUpdate(unlocked.filter { it.id !in seen }, seen + ids)
+}
+
+internal fun celebrationMessage(fresh: List<Achievement>): String? = when (fresh.size) {
+    0 -> null
+    1 -> "Unlocked: ${fresh[0].title}"
+    else -> "Unlocked: ${fresh[0].title} and ${fresh.size - 1} more"
+}
