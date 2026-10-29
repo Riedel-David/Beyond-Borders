@@ -1,0 +1,48 @@
+name: Visa data freshness
+
+# Opens an issue when the upstream visa dataset publishes a newer snapshot than the one
+# bundled in the app. It only reads the upstream README; it never scrapes passportindex.org
+# and changes nothing in the repo. Refreshing the data stays a manual step (docs/DATA.md).
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compare upstream "Last updated" with rules.DATASET["as_of"]
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/imorte/passport-index-data/main/README.md" -o "$RUNNER_TEMP/upstream-readme.md"
+          python3 -I - "$RUNNER_TEMP/upstream-readme.md" tools/visa/rules.py > "$RUNNER_TEMP/result.txt" <<'EOF'
+          import datetime, re, sys
+          readme = open(sys.argv[1], encoding="utf-8").read()
+          m = re.search(r"Last updated:\s*\**\s*(\d{1,2} \w+ \d{4})", readme)
+          if not m:
+              sys.exit("upstream README no longer has a 'Last updated' line; the check needs updating")
+          upstream = datetime.datetime.strptime(m.group(1), "%d %B %Y").date()
+          rules = open(sys.argv[2], encoding="utf-8").read()
+          a = re.search(r'"as_of":\s*"(\d{4}-\d{2}-\d{2})"', rules)
+          if not a:
+              sys.exit("rules.py has no DATASET as_of")
+          bundled = datetime.date.fromisoformat(a.group(1))
+          print(f"{upstream.isoformat()} {bundled.isoformat()} {'newer' if upstream > bundled else 'current'}")
+          EOF
+          read -r UPSTREAM BUNDLED STATE < "$RUNNER_TEMP/result.txt"
+          echo "upstream=$UPSTREAM bundled=$BUNDLED -> $STATE"
+          if [ "$STATE" = "newer" ]; then
+            TITLE="Visa data: upstream snapshot $UPSTREAM is newer than bundled $BUNDLED"
+            # One issue per upstream date: a weekly run must not reopen what is already tracked.
+            if [ -z "$(gh issue list --state all --search "\"$TITLE\" in:title" --json number --jq '.[].number')" ]; then
+              gh issue create --title "$TITLE" --body "imorte/passport-index-data reports **Last updated: $UPSTREAM**; the app bundles $BUNDLED (\`tools/visa/rules.py\`, \`DATASET.as_of\`). Refresh steps: docs/DATA.md. Re-review the territory OVERRIDES before shipping."
+            fi
+          fi
