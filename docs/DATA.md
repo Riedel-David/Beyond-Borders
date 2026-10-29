@@ -22,6 +22,14 @@ and every curated rule is still live — so the day the dataset starts covering 
 territory itself, the build says the override is dead instead of preserving a stale
 opinion forever.
 
+### Is a newer snapshot out?
+
+`.github/workflows/visa-freshness.yml` runs every Monday, and on demand from the Actions
+tab. It reads the "Last updated" date from the upstream README and opens an issue when
+that date is later than `DATASET["as_of"]` in `tools/visa/rules.py`. It only reads that
+one file and changes nothing in the repo: refreshing stays the manual review above, and
+`as_of` is updated by hand from the upstream README when you do.
+
 ## Regenerating the geo assets
 
 The three assets are committed, so a normal build never needs this. Run it only after
