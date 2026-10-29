@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.ui
 
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -36,9 +38,9 @@ import com.riedel.beyondborders.ui.settings.SettingsScreen
 import com.riedel.beyondborders.ui.welcome.WelcomeScreen
 import com.riedel.beyondborders.widget.WidgetIntent
 
-enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
-    MAP("Map", R.drawable.ic_tab_map),
-    PASSPORT("Passport", R.drawable.ic_tab_passport),
+enum class Tab(@param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
+    MAP(R.string.root_tab_map, R.drawable.ic_tab_map),
+    PASSPORT(R.string.root_tab_passport, R.drawable.ic_tab_passport),
 
     /**
      * A destination rather than the floating gear originally sketched: both
@@ -48,7 +50,7 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
      * import discoverable, which for the one piece of data in this app that cannot
      * be re-downloaded is worth a tab.
      */
-    SETTINGS("Settings", R.drawable.ic_settings),
+    SETTINGS(R.string.root_tab_settings, R.drawable.ic_settings),
 }
 
 /**
@@ -114,7 +116,7 @@ fun BeyondBordersRoot(
                         selected = entry == tab,
                         onClick = { selected = entry.ordinal },
                         icon = { Icon(painterResource(entry.icon), contentDescription = null) },
-                        label = { Text(entry.label) },
+                        label = { Text(stringResource(entry.label)) },
                     )
                 }
             }

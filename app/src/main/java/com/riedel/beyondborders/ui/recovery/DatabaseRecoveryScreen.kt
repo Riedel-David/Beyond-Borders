@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.ui.recovery
 
+import com.riedel.beyondborders.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -77,7 +79,7 @@ fun DatabaseRecoveryScreen(
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)
                         ?.use { DatabaseRecovery.exportTo(context, it) }
-                        ?: return@withContext "Couldn't open the file you chose."
+                        ?: return@withContext context.getString(R.string.recovery_open_failed)
                     null
                 }
             } catch (t: Throwable) {
@@ -102,21 +104,16 @@ fun DatabaseRecoveryScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                "Your travel data can't be opened",
+                stringResource(R.string.recovery_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                "This copy of Beyond Borders doesn't know how to read the data already " +
-                    "on your phone. That usually means an older version of the app is " +
-                    "installed over a newer one's data.",
+                stringResource(R.string.recovery_explanation),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                "Nothing has been deleted, and the app won't delete anything by itself. " +
-                    "Installing the newer version again should open it as normal. If you " +
-                    "can't, save a copy of the data first — it can be read back later, and " +
-                    "it's the only copy that exists on this phone.",
+                stringResource(R.string.recovery_reassurance),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
@@ -146,12 +143,12 @@ fun DatabaseRecoveryScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Save a copy")
+                    Text(stringResource(R.string.recovery_save_copy))
                 }
             }
             if (!hasData) {
                 Text(
-                    "There's no database file to copy.",
+                    stringResource(R.string.recovery_no_database),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -159,11 +156,11 @@ fun DatabaseRecoveryScreen(
 
             when {
                 saved == true -> Text(
-                    "Saved.",
+                    stringResource(R.string.recovery_saved),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 saveError != null -> Text(
-                    "Couldn't save: $saveError",
+                    stringResource(R.string.recovery_save_failed, saveError.orEmpty()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -171,7 +168,7 @@ fun DatabaseRecoveryScreen(
 
             if (wipeFailed) {
                 Text(
-                    "Couldn't delete the data. Nothing was changed that you can rely on; try again, or clear the app's storage in Android settings.",
+                    stringResource(R.string.recovery_wipe_failed),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -185,7 +182,7 @@ fun DatabaseRecoveryScreen(
                     contentColor = MaterialTheme.colorScheme.error,
                 ),
             ) {
-                Text("Delete the data and start fresh")
+                Text(stringResource(R.string.recovery_delete_start_fresh))
             }
         }
     }
@@ -193,16 +190,12 @@ fun DatabaseRecoveryScreen(
     if (confirming) {
         AlertDialog(
             onDismissRequest = { confirming = false },
-            title = { Text("Delete everything you've marked?") },
+            title = { Text(stringResource(R.string.recovery_confirm_title)) },
             text = {
                 Text(
-                    if (saved == true) {
-                        "You saved a copy, so this can be read back later. Every place " +
-                            "you've marked will be gone from the app itself."
-                    } else {
-                        "You haven't saved a copy. Every place you've ever marked will " +
-                            "be gone for good, and there is no undo."
-                    }
+                    stringResource(
+                        if (saved == true) R.string.recovery_confirm_saved else R.string.recovery_confirm_unsaved,
+                    )
                 )
             },
             confirmButton = {
@@ -224,11 +217,11 @@ fun DatabaseRecoveryScreen(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.recovery_delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirming = false }) { Text("Keep it") }
+                TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.recovery_keep)) }
             },
         )
     }
