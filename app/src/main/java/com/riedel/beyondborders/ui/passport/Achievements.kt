@@ -174,3 +174,27 @@ internal fun computeAchievements(
 }
 
 private fun slug(s: String) = s.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')
+
+
+/** A traveller rank. [next] and [remaining] are both null at the top rank. */
+internal data class RankInfo(val title: String, val next: String?, val remaining: Int?) {
+    /** The line under the title: how far the next rank is, or a closing word at the top. */
+    val progressLine: String
+        get() = if (next == null || remaining == null) "You have seen it all." else "$remaining more to reach $next"
+}
+
+/** Minimum places been for each rank, ascending. */
+private val Ranks = listOf(
+    0 to "Newcomer", 5 to "Wanderer", 15 to "Explorer", 30 to "Adventurer",
+    60 to "Globetrotter", 100 to "World traveller", 150 to "Legend",
+)
+
+internal fun rankFor(placesVisited: Int): RankInfo {
+    val index = Ranks.indexOfLast { placesVisited >= it.first }.coerceAtLeast(0)
+    val next = Ranks.getOrNull(index + 1)
+    return RankInfo(Ranks[index].second, next?.second, next?.let { it.first - placesVisited })
+}
+
+/** Unlocked and total badge count per group, for the section headers. */
+internal fun groupProgress(achievements: List<Achievement>): Map<AchievementGroup, Pair<Int, Int>> =
+    achievements.groupBy { it.group }.mapValues { (_, list) -> list.count { it.unlocked } to list.size }
