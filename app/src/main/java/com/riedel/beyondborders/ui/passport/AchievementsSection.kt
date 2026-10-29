@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.passport
 
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,29 +22,42 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 /** One distinct shape per group: the shape says what the badge is about, the hue only adds mood. */
 @DrawableRes
-private fun iconFor(group: AchievementGroup): Int = when (group) {
+internal fun iconFor(group: AchievementGroup): Int = when (group) {
     AchievementGroup.COUNTS -> R.drawable.ic_badge_globe
     AchievementGroup.CONTINENTS -> R.drawable.ic_badge_layers
     AchievementGroup.REGIONS -> R.drawable.ic_badge_compass
@@ -73,14 +87,21 @@ internal fun AchievementsSection(
     onToggleGroup: (AchievementGroup) -> Unit,
     nextUp: List<Achievement> = emptyList(),
     recent: List<Achievement> = emptyList(),
+    placesVisited: Int = 0,
 ) {
+    // By id, so the sheet follows the live list rather than a stale copy.
+    var openId by rememberSaveable { mutableStateOf<String?>(null) }
+    val onOpen: (Achievement) -> Unit = { openId = it.id }
+    achievements.firstOrNull { it.id == openId }?.let { badge ->
+        BadgeSheet(badge, placesVisited, onDismiss = { openId = null })
+    }
     if (recent.isNotEmpty()) {
         HighlightLabel("Recently unlocked")
-        BadgeRows(recent, newIds = recent.mapTo(HashSet()) { it.id })
+        BadgeRows(recent, onOpen, newIds = recent.mapTo(HashSet()) { it.id })
     }
     if (nextUp.isNotEmpty()) {
         HighlightLabel("Closest to unlocking")
-        BadgeRows(nextUp)
+        BadgeRows(nextUp, onOpen)
     }
     Text(
         "Achievements",
@@ -110,7 +131,7 @@ internal fun AchievementsSection(
             // locked ones after them.
             val earned = all.filter { it.unlocked }
             Column(Modifier.animateContentSize()) {
-                BadgeRows(if (expanded) earned + all.filter { !it.unlocked } else earned)
+                BadgeRows(if (expanded) earned + all.filter { !it.unlocked } else earned, onOpen)
             }
         } else {
             Text(
@@ -119,7 +140,7 @@ internal fun AchievementsSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
             )
-            BadgeRows(all)
+            BadgeRows(all, onOpen)
         }
     }
 }
@@ -163,11 +184,11 @@ private fun CollapsibleHeader(text: String, expanded: Boolean, onToggle: () -> U
 }
 
 @Composable
-private fun BadgeRows(badges: List<Achievement>, newIds: Set<String> = emptySet()) {
+private fun BadgeRows(badges: List<Achievement>, onOpen: (Achievement) -> Unit, newIds: Set<String> = emptySet()) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         badges.chunked(2).forEach { pair ->
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                pair.forEach { AchievementBadge(it, Modifier.weight(1f).fillMaxHeight(), isNew = it.id in newIds) }
+                pair.forEach { AchievementBadge(it, { onOpen(it) }, Modifier.weight(1f).fillMaxHeight(), isNew = it.id in newIds) }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
@@ -180,7 +201,7 @@ private fun BadgeRows(badges: List<Achievement>, newIds: Set<String> = emptySet(
  * strength either way: dimming it is what made the locked cards unreadable before.
  */
 @Composable
-private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modifier, isNew: Boolean = false) {
+private fun AchievementBadge(achievement: Achievement, onClick: () -> Unit, modifier: Modifier = Modifier, isNew: Boolean = false) {
     val unlocked = achievement.unlocked
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.surface.luminance() < 0.5f
@@ -199,6 +220,8 @@ private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modi
     Column(
         modifier
             .semantics(mergeDescendants = true) { contentDescription = spoken }
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClickLabel = "Show details", onClick = onClick)
             .background(container, RoundedCornerShape(12.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -276,6 +299,58 @@ private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modi
                             .background(accent, RoundedCornerShape(3.dp))
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The detail view behind a tap: the badge large, its progress, and, only once it is
+ * earned, a Share button. A locked badge has nothing to brag about yet.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> Unit) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val tone = badgeTone(badge.group)
+    val accent = Color(if (dark) tone.accentDark else tone.accentLight)
+    val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
+        Column(
+            Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(Modifier.size(88.dp).background(if (badge.unlocked) accent else MaterialTheme.colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(
+                    painterResource(iconFor(badge.group)),
+                    contentDescription = null,
+                    tint = if (badge.unlocked) glyph else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(48.dp),
+                )
+            }
+            Text(badge.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            Text(badge.description, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            Text(
+                badgeProgressText(badge),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (badge.unlocked) {
+                Button(
+                    onClick = { scope.launch {
+                        try {
+                            shareBadge(context, badge, placesVisited)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "Couldn't share the badge", Toast.LENGTH_SHORT).show()
+                        }
+                    } },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { Text("Share") }
             }
         }
     }

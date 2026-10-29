@@ -206,6 +206,7 @@ fun StatsScreen(
                 expandedGroups = expandedBadgeGroups,
                 nextUp = upNext,
                 recent = seenUpdate.fresh,
+                placesVisited = placesVisited,
                 onToggleGroup = { g ->
                     expandedBadgeGroups = if (g in expandedBadgeGroups) expandedBadgeGroups - g else expandedBadgeGroups + g
                 },
