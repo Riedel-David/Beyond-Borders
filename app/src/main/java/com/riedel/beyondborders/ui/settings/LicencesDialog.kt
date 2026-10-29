@@ -39,6 +39,17 @@ internal fun RepoLink(modifier: Modifier = Modifier) {
     ) { Text("github.com/Riedel-David/Beyond-Borders") }
 }
 
+// There is no crash reporting or analytics, so the issue tracker is the only way a
+// problem reaches the developer; keep it one tap from About.
+@Composable
+internal fun ReportProblemLink(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    TextButton(
+        onClick = { runCatching { uriHandler.openUri("$REPO_URL/issues") } },
+        modifier = modifier,
+    ) { Text("Report a problem") }
+}
+
 @Composable
 internal fun LicencesDialog(onDismiss: () -> Unit) {
     AlertDialog(
