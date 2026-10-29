@@ -88,7 +88,11 @@ before that can bring the places back; Android's backup settings can delete that
 ## The stats screen, share cards and widget
 
 The passport card's headline number opens a stats screen: a bar per continent, the
-least-covered continent and the next milestone. **Share** renders the map as an image in
+least-covered continent and the next milestone, and a grid of achievement badges
+(counts, continents, regions, named groupings, territories, tiny places). Badges are
+derived from the current map, so unticking a place can take one away again; they ignore
+the Denominator setting and store nothing of their own. Regions and named groupings
+show only once unlocked until "Show locked regions and groupings" is opened. **Share** renders the map as an image in
 three styles: a caption bar, a corner badge, or a numbers-only stats card.
 
 The home-screen widget shows one headline number (countries, percent of the world or
