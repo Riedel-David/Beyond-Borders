@@ -81,6 +81,8 @@ fun StatsScreen(
     // state really changes each time (equal values would be a silent no-op).
     var expandedBadgeGroups by remember { mutableStateOf(setOf<AchievementGroup>()) }
     val achievements = remember(places, statuses) { computeAchievements(places, statuses) }
+    val placesVisited = remember(places, statuses) { places.count { statuses[it.code]?.isBeen == true } }
+    val badgesUnlocked = remember(achievements) { achievements.count { it.unlocked } }
 
     // Zero insets throughout: this screen is drawn inside the root Scaffold's own
     // content padding (BeyondBordersRoot pads the passport tab before it composes),
@@ -110,8 +112,8 @@ fun StatsScreen(
         ) {
             StatsHero(
                 stats,
-                placesVisited = places.count { statuses[it.code]?.isBeen == true },
-                badgesUnlocked = achievements.count { it.unlocked },
+                placesVisited = placesVisited,
+                badgesUnlocked = badgesUnlocked,
                 badgesTotal = achievements.size,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             )

@@ -92,7 +92,8 @@ internal fun AchievementsSection(
         if (all.isEmpty()) return@forEach
         val (done, total) = progress.getValue(group)
         val header = "${group.label} · $done of $total"
-        if (group in Collapsible) {
+        // Nothing locked means nothing to reveal, so no dead chevron.
+        if (group in Collapsible && all.any { !it.unlocked }) {
             val expanded = group in expandedGroups
             CollapsibleHeader(header, expanded) { onToggleGroup(group) }
             // Earned badges stay visible under a collapsed header; opening it adds the
