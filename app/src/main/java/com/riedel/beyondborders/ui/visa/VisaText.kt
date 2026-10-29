@@ -1,7 +1,9 @@
 package com.riedel.beyondborders.ui.visa
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.ui.UiText
 
 /**
  * The words the map and the passport both use for a visa answer.
@@ -18,28 +20,25 @@ import com.riedel.beyondborders.data.visa.VisaRequirement
  * "Visa-free · 90 days (British passport)". The caller decides whether to
  * attribute; this function appends whenever the argument is provided.
  */
-fun requirementSummary(
+fun requirementSummaryText(
     requirement: VisaRequirement,
     passportCode: String? = null,
-): String = buildString {
-    append(requirement.category.label)
+): UiText {
+    var text: UiText = UiText.Res(requirement.category.labelRes)
     requirement.days?.let {
-        append(" · ")
-        append(it)
-        append(" days")
+        text = UiText.Res(R.string.visa_summary_with_days, text, UiText.Plural(R.plurals.visa_days, it, it))
     }
     passportCode?.let {
-        append(" (")
-        append(passportAdjective(it))
-        append(" passport)")
+        text = UiText.Res(R.string.visa_summary_with_passport, text, passportAdjective(it))
     }
+    return text
 }
 
 /** "German" for DE, "British" for GB — the adjective [asOfNotice] and the Settings picker use. */
-fun passportAdjective(isoCode: String): String = when (isoCode) {
-    "DE" -> "German"
-    "GB" -> "British"
-    else -> isoCode
+fun passportAdjective(isoCode: String): UiText = when (isoCode) {
+    "DE" -> UiText.Res(R.string.visa_adjective_de)
+    "GB" -> UiText.Res(R.string.visa_adjective_gb)
+    else -> UiText.Plain(isoCode)
 }
 
 /**
@@ -51,9 +50,8 @@ fun passportAdjective(isoCode: String): String = when (isoCode) {
  * now differ from the one the reader expects — an unstated assumption is exactly what
  * this notice exists to rule out.
  */
-fun asOfNotice(visa: VisaRegistry): String =
-    "Data as of ${visa.asOf} for a ${passportAdjective(visa.passport)} passport — " +
-        "verify with the official government source before booking"
+fun asOfNoticeText(visa: VisaRegistry): UiText =
+    UiText.Res(R.string.visa_as_of_notice, visa.asOf, passportAdjective(visa.passport))
 
 /**
  * The disclaimer for two passports, naming both and showing the older of the two
@@ -64,10 +62,14 @@ fun asOfNotice(visa: VisaRegistry): String =
  * here because `asOf` is ISO YYYY-MM-DD format; a format change would silently
  * pick the wrong date.
  */
-fun asOfNotice(primary: VisaRegistry, second: VisaRegistry): String {
+fun asOfNoticeText(primary: VisaRegistry, second: VisaRegistry): UiText {
     val olderDate = if (primary.asOf <= second.asOf) primary.asOf else second.asOf
-    return "Data as of $olderDate for ${passportAdjective(primary.passport)} and " +
-        "${passportAdjective(second.passport)} passports — verify with the official government source before booking"
+    return UiText.Res(
+        R.string.visa_as_of_notice_two,
+        olderDate,
+        passportAdjective(primary.passport),
+        passportAdjective(second.passport),
+    )
 }
 
 /**
@@ -78,8 +80,34 @@ fun asOfNotice(primary: VisaRegistry, second: VisaRegistry): String {
  * headed Dänemark would look like a bug in exactly the place this app claims to be
  * careful about.
  */
-fun officialLinkLabel(requirement: VisaRequirement, nameOf: (String) -> String?): String {
-    val parent = requirement.officialFor ?: return "Foreign Office advice"
+fun officialLinkText(requirement: VisaRequirement, nameOf: (String) -> String?): UiText {
+    val parent = requirement.officialFor ?: return UiText.Res(R.string.visa_official_link)
     val name = nameOf(parent) ?: parent
-    return "Foreign Office advice: $name"
+    return UiText.Res(R.string.visa_official_link_for, name)
+}
+
+// --- String wrappers for callers not yet migrated to UiText (MapScreen) -------------
+// English only, by necessity: there is no Context here. Delete once MapScreen uses the
+// *Text functions above.
+
+fun requirementSummary(requirement: VisaRequirement, passportCode: String? = null): String = buildString {
+    append(requirement.category.label)
+    requirement.days?.let { append(" · $it days") }
+    passportCode?.let { append(" (${englishAdjective(it)} passport)") }
+}
+
+fun asOfNotice(visa: VisaRegistry): String =
+    "Data as of ${visa.asOf} for a ${englishAdjective(visa.passport)} passport — " +
+        "verify with the official government source before booking"
+
+fun asOfNotice(primary: VisaRegistry, second: VisaRegistry): String {
+    val olderDate = if (primary.asOf <= second.asOf) primary.asOf else second.asOf
+    return "Data as of $olderDate for ${englishAdjective(primary.passport)} and " +
+        "${englishAdjective(second.passport)} passports — verify with the official government source before booking"
+}
+
+private fun englishAdjective(isoCode: String) = when (isoCode) {
+    "DE" -> "German"
+    "GB" -> "British"
+    else -> isoCode
 }

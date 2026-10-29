@@ -1,14 +1,16 @@
 package com.riedel.beyondborders.ui.places
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaRegistry
-import com.riedel.beyondborders.ui.visa.asOfNotice
-import com.riedel.beyondborders.ui.visa.officialLinkLabel
-import com.riedel.beyondborders.ui.visa.requirementSummary
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.officialLinkText
+import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -285,18 +287,27 @@ class VisaLogicTest {
 
     @Test
     fun `a summary states the day count only when there is one`() {
-        assertEquals("e-Visa · 30 days", requirementSummary(visa["IN"]!!))
+        assertEquals(
+            UiText.Res(
+                R.string.visa_summary_with_days,
+                UiText.Res(R.string.visa_category_e_visa),
+                UiText.Plural(R.plurals.visa_days, 30, 30),
+            ),
+            requirementSummaryText(visa["IN"]!!),
+        )
         // EU freedom of movement has no limit, and inventing 90 days would be the
         // exact class of error this feature exists to avoid.
-        assertEquals("Visa-free", requirementSummary(visa["GL"]!!))
+        assertEquals(UiText.Res(R.string.visa_category_visa_free), requirementSummaryText(visa["GL"]!!))
     }
 
     @Test
     fun `every visa surface can say how old the data is`() {
-        val notice = asOfNotice(visa)
-        assertTrue("the date has to be in it: $notice", notice.contains("2026-02-17"))
-        assertTrue("and the warning: $notice", notice.contains("verify", ignoreCase = true))
-        assertTrue("and which passport: $notice", notice.contains("German"))
+        // The "verify with the official source" warning lives in the string itself, so
+        // the id is the claim; the date and the passport are the arguments.
+        assertEquals(
+            UiText.Res(R.string.visa_as_of_notice, "2026-02-17", UiText.Res(R.string.visa_adjective_de)),
+            asOfNoticeText(visa),
+        )
     }
 
     /**
@@ -308,11 +319,11 @@ class VisaLogicTest {
     fun `a parent's advice page is labelled with the parent's name`() {
         val nameOf = { code: String -> places.firstOrNull { it.code == code }?.name }
         assertEquals(
-            "Foreign Office advice: Denmark",
-            officialLinkLabel(visa["GL"]!!, nameOf = { "Denmark" }),
+            UiText.Res(R.string.visa_official_link_for, "Denmark"),
+            officialLinkText(visa["GL"]!!, nameOf = { "Denmark" }),
         )
-        assertEquals("Foreign Office advice", officialLinkLabel(visa["US"]!!, nameOf))
+        assertEquals(UiText.Res(R.string.visa_official_link), officialLinkText(visa["US"]!!, nameOf))
         // An unknown parent falls back to its code rather than to "null".
-        assertEquals("Foreign Office advice: NO", officialLinkLabel(visa["BV"]!!, nameOf))
+        assertEquals(UiText.Res(R.string.visa_official_link_for, "NO"), officialLinkText(visa["BV"]!!, nameOf))
     }
 }

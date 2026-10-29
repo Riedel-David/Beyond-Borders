@@ -1,5 +1,8 @@
 package com.riedel.beyondborders.data.visa
 
+import androidx.annotation.StringRes
+import com.riedel.beyondborders.R
+
 /**
  * What one place asks of the bundled passport.
  *
@@ -65,17 +68,19 @@ data class VisaRequirement(
  * authority; filing that under [VISA_REQUIRED] would send someone looking for an
  * embassy counter that does not exist.
  *
+ * [label] is the English fallback for callers that cannot resolve [labelRes] yet.
+ *
  * The names match the asset's strings exactly, so [parse] can be a `valueOf`.
  */
-enum class VisaCategory(val label: String) {
-    HOME("Home"),
-    VISA_FREE("Visa-free"),
-    ETA("Travel authorisation"),
-    VISA_ON_ARRIVAL("Visa on arrival"),
-    E_VISA("e-Visa"),
-    VISA_REQUIRED("Visa required"),
-    PERMIT_REQUIRED("Permit required"),
-    NO_ADMISSION("No entry"),
+enum class VisaCategory(@StringRes val labelRes: Int, val label: String) {
+    HOME(R.string.visa_category_home, "Home"),
+    VISA_FREE(R.string.visa_category_visa_free, "Visa-free"),
+    ETA(R.string.visa_category_eta, "Travel authorisation"),
+    VISA_ON_ARRIVAL(R.string.visa_category_visa_on_arrival, "Visa on arrival"),
+    E_VISA(R.string.visa_category_e_visa, "e-Visa"),
+    VISA_REQUIRED(R.string.visa_category_visa_required, "Visa required"),
+    PERMIT_REQUIRED(R.string.visa_category_permit_required, "Permit required"),
+    NO_ADMISSION(R.string.visa_category_no_admission, "No entry"),
     ;
 
     companion object {
@@ -119,10 +124,10 @@ enum class VisaOrigin {
  * certain, its 30-day grant is not. Presenting all 53 in the same authoritative
  * voice would be the dishonest option.
  */
-enum class VisaConfidence(val label: String) {
-    HIGH("Well established"),
-    MEDIUM("Likely right, details may vary"),
-    LOW("Uncertain — check before booking"),
+enum class VisaConfidence(@StringRes val labelRes: Int, val label: String) {
+    HIGH(R.string.visa_confidence_high, "Well established"),
+    MEDIUM(R.string.visa_confidence_medium, "Likely right, details may vary"),
+    LOW(R.string.visa_confidence_low, "Uncertain — check before booking"),
     ;
 
     companion object {

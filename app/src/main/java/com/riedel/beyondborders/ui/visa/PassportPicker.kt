@@ -22,9 +22,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.asString
 
 /**
  * A button showing the current passport, opening a searchable list of every
@@ -37,13 +40,13 @@ fun PassportPickerButton(
     names: Map<String, String>,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
-    dialogTitle: String = "Choose a passport",
-    placeholder: String = "Choose a passport",
+    dialogTitle: String = stringResource(R.string.picker_choose_passport),
+    placeholder: String = stringResource(R.string.picker_choose_passport),
     exclude: Set<String> = emptySet(),
 ) {
     var open by remember { mutableStateOf(false) }
     OutlinedButton(onClick = { open = true }, modifier = modifier) {
-        Text(selected?.let { names[it] ?: passportAdjective(it) } ?: placeholder)
+        Text(selected?.let { names[it] ?: passportAdjective(it).asString() } ?: placeholder)
     }
     if (open) {
         PassportPickerDialog(
@@ -66,7 +69,7 @@ private fun PassportPickerDialog(
     selected: String?,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
-    title: String = "Choose a passport",
+    title: String = stringResource(R.string.picker_choose_passport),
     exclude: Set<String> = emptySet(),
 ) {
     var query by remember { mutableStateOf("") }
@@ -94,7 +97,7 @@ private fun PassportPickerDialog(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Search") },
+                    label = { Text(stringResource(R.string.picker_search)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
                 )

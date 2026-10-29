@@ -33,23 +33,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.visa.VisaBand
+import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.band
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.VisaRamp
-import com.riedel.beyondborders.ui.visa.asOfNotice
-import com.riedel.beyondborders.ui.visa.officialLinkLabel
-import com.riedel.beyondborders.ui.visa.requirementSummary
+import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.officialLinkText
+import com.riedel.beyondborders.ui.visa.requirementSummaryText
 
 /**
  * The passport's other mode: not where you have been, but where this passport lets
@@ -88,7 +93,7 @@ internal fun LazyListScope.visaSection(
         SearchField(
             query = query,
             onQuery = onQuery,
-            label = "Search destinations",
+            label = stringResource(R.string.visa_search_destinations),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
     }
@@ -120,7 +125,7 @@ internal fun LazyListScope.visaSection(
             // from a genuine zero here, unlike the travel list's async [places].
             Column(Modifier.padding(24.dp)) {
                 Text(
-                    visaEmptyMessage(query, filter),
+                    visaEmptyMessage(query, filter).asString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -132,7 +137,7 @@ internal fun LazyListScope.visaSection(
                         },
                         contentPadding = PaddingValues(vertical = 4.dp),
                     ) {
-                        Text("Clear")
+                        Text(stringResource(R.string.visa_clear))
                     }
                 }
             }
@@ -141,15 +146,15 @@ internal fun LazyListScope.visaSection(
 
     // Headers by category, inline, as in the travel list. Worth having even under a
     // single-category filter: it is the label the map's legend does not have room for.
-    var lastHeader: String? = null
+    var lastHeader: VisaCategory? = null
     rows.forEach { row ->
-        val header = row.requirement.category.label
+        val header = row.requirement.category
         if (header != lastHeader) {
             lastHeader = header
             // No animateItem here, for the reason the travel list's header gives: a
             // placement animation and the pin fight over the same offset mid-fling.
-            stickyHeader("visa-header-$header", contentType = "header") {
-                VisaSectionHeader(header, row.requirement.category.band)
+            stickyHeader("visa-header-${header.name}", contentType = "header") {
+                VisaSectionHeader(stringResource(header.labelRes), header.band)
             }
         }
         item("visa-${row.place.code}", contentType = "row") {
@@ -201,20 +206,20 @@ private fun VisaSummaryCard(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    "  of ${visa.requirements.size} places visa-free",
+                    stringResource(R.string.visa_summary_visa_free_of, visa.requirements.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
             }
             Text(
-                "${visa.easyCount} reachable without an embassy appointment",
+                stringResource(R.string.visa_summary_easy, visa.easyCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             BandBar(visa, placesTotal, ramp, Modifier.padding(top = 12.dp))
             Text(
-                if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
+                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 10.dp),
@@ -222,7 +227,7 @@ private fun VisaSummaryCard(
             // Attribution as a link rather than a line of small print: the licence
             // asks for the credit, and someone checking an answer deserves to be able
             // to reach the thing the answer came from.
-            LinkText("${visa.datasetName} · ${visa.datasetLicence}", visa.datasetUrl)
+            LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
         }
     }
 }
@@ -275,9 +280,9 @@ private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifi
         // across a 360 dp phone, and a colour with a number but no word is a riddle.
         val legend = VisaBand.entries
             .filter { (visa.countByBand[it] ?: 0) > 0 }
-            .map { band -> Triple(ramp.colorFor(band), band.label, visa.countByBand[band] ?: 0) } +
+            .map { band -> Triple(ramp.colorFor(band), stringResource(band.labelRes), visa.countByBand[band] ?: 0) } +
             listOfNotNull(
-                if (noDataCount > 0) Triple(ramp.noData, "No data", noDataCount) else null,
+                if (noDataCount > 0) Triple(ramp.noData, stringResource(R.string.visa_band_no_data), noDataCount) else null,
             )
         legend.chunked(2).forEach { pair ->
             Row(Modifier.fillMaxWidth()) {
@@ -294,7 +299,7 @@ private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifi
                                 .background(color)
                         )
                         Text(
-                            "$label $count",
+                            stringResource(R.string.visa_legend_item, label, count),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -383,14 +388,13 @@ private fun VisaListRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                var summary = requirementSummaryText(row.requirement, attributeTo).asString()
+                // "Visa-free and I have never been" is the row worth acting
+                // on, so the ones already crossed off say so.
+                if (row.status.isBeen) summary = stringResource(R.string.visa_row_been, summary)
+                if (row.status == PlaceStatus.WISHLIST) summary = stringResource(R.string.visa_row_wishlist, summary)
                 Text(
-                    buildString {
-                        append(requirementSummary(row.requirement, attributeTo))
-                        // "Visa-free and I have never been" is the row worth acting
-                        // on, so the ones already crossed off say so.
-                        if (row.status.isBeen) append(" · been")
-                        if (row.status == PlaceStatus.WISHLIST) append(" · on the wishlist")
-                    },
+                    summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -400,7 +404,7 @@ private fun VisaListRow(
             // to find out which one is shaky.
             if (row.requirement.confidence == VisaConfidence.LOW) {
                 Text(
-                    "check",
+                    stringResource(R.string.visa_row_check),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -455,14 +459,14 @@ private fun VisaDetail(
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
-                        confidence.label,
+                        stringResource(confidence.labelRes),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             } else {
                 Text(
-                    confidence.label,
+                    stringResource(confidence.labelRes),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -472,13 +476,13 @@ private fun VisaDetail(
         // app's answer is the wrong one, the reader can see there is a second one.
         if (requirement.origin == VisaOrigin.CORRECTION && requirement.datasetSaid != null) {
             Text(
-                "${visa.datasetName} says \"${requirement.datasetSaid}\" — corrected here",
+                stringResource(R.string.visa_correction, visa.datasetName, requirement.datasetSaid),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
-            if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
+            (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
             // labelSmall — one step below the LOW-confidence warning's
             // labelMedium, at full-strength onSurfaceVariant. The separation is
             // size, not contrast: cutting this colour's alpha would put a
@@ -489,12 +493,12 @@ private fun VisaDetail(
             modifier = Modifier.padding(top = 4.dp),
         )
         requirement.officialUrl?.let { url ->
-            LinkText(officialLinkLabel(requirement, nameOf), url)
+            LinkText(officialLinkText(requirement, nameOf).asString(), url)
         }
         // Named for what it is. The IATA Travel Centre is one form for the whole
         // world, so calling it "IATA: Suriname" would promise a page that does not
         // exist.
-        LinkText("IATA Travel Centre (search there)", visa.iataUrl)
+        LinkText(stringResource(R.string.visa_iata_link), visa.iataUrl)
     }
 }
 
@@ -519,10 +523,9 @@ private fun LinkText(label: String, url: String) {
 @Composable
 private fun VisaUnavailable() {
     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("No visa data", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.visa_unavailable_title), style = MaterialTheme.typography.titleMedium)
         Text(
-            "The bundled visa list could not be read, so this mode has nothing to " +
-                "show. Your travel map is unaffected.",
+            stringResource(R.string.visa_unavailable_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -535,11 +538,11 @@ private fun VisaUnavailable() {
  * earlier). So the only two causes left are a query and a filter, and either
  * is worth naming — "Nothing matches" alone does not say what to undo.
  */
-internal fun visaEmptyMessage(query: String, filter: VisaFilter): String =
+internal fun visaEmptyMessage(query: String, filter: VisaFilter): UiText =
     when {
-        query.isNotBlank() -> "No destinations match “$query”."
-        filter != VisaFilter.All -> "No destinations match the “${filter.label}” filter."
-        else -> "Nothing matches."
+        query.isNotBlank() -> UiText.Res(R.string.visa_empty_query, query)
+        filter != VisaFilter.All -> UiText.Res(R.string.visa_empty_filter, UiText.Plain(filter.label))
+        else -> UiText.Res(R.string.visa_empty_nothing)
     }
 
 /** A "Clear" affordance only makes sense once there is something to clear. */
@@ -552,11 +555,15 @@ internal fun canClearVisaFilter(query: String, filter: VisaFilter): Boolean =
  * "which category is this" for the fast-scroll overlay — the visa list's headers are
  * never collapsible, so unlike [travelHeaderSlots] there is no skip to mirror.
  */
-internal fun visaHeaderSlots(rows: List<VisaRow>): List<String?> {
-    val slots = mutableListOf<String?>()
-    var lastHeader: String? = null
+internal fun visaHeaderSlots(rows: List<VisaRow>): List<String?> =
+    visaHeaderCategorySlots(rows).map { it?.label }
+
+/** The same slots as [visaHeaderSlots] by category, for callers that resolve the label themselves. */
+internal fun visaHeaderCategorySlots(rows: List<VisaRow>): List<VisaCategory?> {
+    val slots = mutableListOf<VisaCategory?>()
+    var lastHeader: VisaCategory? = null
     rows.forEach { row ->
-        val header = row.requirement.category.label
+        val header = row.requirement.category
         if (header != lastHeader) {
             lastHeader = header
             slots += header
