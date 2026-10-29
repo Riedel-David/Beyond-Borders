@@ -2,10 +2,13 @@ package com.riedel.beyondborders.ui.settings
 
 import android.content.ContentResolver
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.data.backup.BackupFormatException
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.CloudSnapshot
 import com.riedel.beyondborders.data.backup.TravelBackup
@@ -19,6 +22,7 @@ import com.riedel.beyondborders.settings.MapHue
 import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.SettingsStore
 import com.riedel.beyondborders.settings.ThemeMode
+import com.riedel.beyondborders.ui.UiText
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.time.LocalDate
@@ -38,8 +42,8 @@ import kotlinx.coroutines.withContext
 sealed interface TransferState {
     data object Idle : TransferState
     data object Busy : TransferState
-    data class Done(val message: String) : TransferState
-    data class Failed(val message: String) : TransferState
+    data class Done(val message: UiText) : TransferState
+    data class Failed(val message: UiText) : TransferState
 }
 
 /**
@@ -205,7 +209,7 @@ class SettingsViewModel(
                 _snapshotOwned.value = false
                 TransferState.Idle
             } catch (e: Exception) {
-                TransferState.Failed(e.message ?: "Couldn't delete everything.")
+                TransferState.Failed(failureText(e, R.string.backup_delete_failed))
             }
         }
     }
@@ -222,7 +226,7 @@ class SettingsViewModel(
                     // backup leaves its tail behind and produces a file that is
                     // valid JSON followed by garbage.
                     val stream = resolver.openOutputStream(uri, "wt")
-                        ?: throw IOException("The file could not be opened for writing.")
+                        ?: throw TransferException(UiText.Res(R.string.backup_write_open_failed))
                     stream.use { it.write(export.json.toByteArray()) }
                 }
                 TransferState.Done(exportMessage(export.places, export.removals))
@@ -231,7 +235,7 @@ class SettingsViewModel(
                 // know nothing about, and every plausible failure — permission
                 // revoked, SD card pulled, provider crash — should be a sentence on
                 // screen rather than a crash on a screen full of settings.
-                TransferState.Failed(e.message ?: "The export failed.")
+                TransferState.Failed(failureText(e, R.string.backup_export_failed))
             }
         }
     }
@@ -255,7 +259,7 @@ class SettingsViewModel(
                 // more so: this is where a picked file is first read and parsed, so an
                 // OutOfMemoryError or a StackOverflowError from nested JSON surfaces
                 // here first and should be a sentence on screen, not a crash.
-                _transfer.value = TransferState.Failed(t.message ?: "The import failed.")
+                _transfer.value = TransferState.Failed(failureText(t, R.string.backup_import_failed))
             }
         }
     }
@@ -275,7 +279,7 @@ class SettingsViewModel(
             val text = withContext(Dispatchers.IO) { snapshot.read() }
             if (text == null) {
                 _snapshotFilePresent.value = false
-                _transfer.value = TransferState.Failed("That snapshot isn't there anymore.")
+                _transfer.value = TransferState.Failed(UiText.Res(R.string.backup_snapshot_gone))
                 return@launch
             }
             try {
@@ -283,7 +287,7 @@ class SettingsViewModel(
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
-                _transfer.value = TransferState.Failed(t.message ?: "The import failed.")
+                _transfer.value = TransferState.Failed(failureText(t, R.string.backup_import_failed))
             }
         }
     }
@@ -343,7 +347,7 @@ class SettingsViewModel(
                 // being a crash instead of a sentence on screen. importBackup decodes
                 // the text again rather than trusting the preview's plan, so this
                 // arm is reachable here and not only in [previewImport].
-                TransferState.Failed(t.message ?: "The import failed.")
+                TransferState.Failed(failureText(t, R.string.backup_import_failed))
             }
         }
     }
@@ -371,7 +375,7 @@ class SettingsViewModel(
      */
     private fun readText(uri: Uri): String {
         val stream = resolver.openInputStream(uri)
-            ?: throw IOException("The file could not be opened for reading.")
+            ?: throw TransferException(UiText.Res(R.string.backup_read_open_failed))
         stream.use { input ->
             val buffer = ByteArrayOutputStream()
             val chunk = ByteArray(16 * 1024)
@@ -380,7 +384,7 @@ class SettingsViewModel(
                 if (read < 0) break
                 buffer.write(chunk, 0, read)
                 if (buffer.size() > MAX_IMPORT_BYTES) {
-                    throw IOException("That file is far too large to be an BeyondBorders backup.")
+                    throw TransferException(UiText.Res(R.string.backup_too_large))
                 }
             }
             return buffer.toString(Charsets.UTF_8.name())
@@ -419,69 +423,77 @@ internal const val PREVIEW_SAMPLE_SIZE = 10
 internal fun shouldOfferSnapshotRestore(present: Boolean, owned: Boolean, historyEmpty: Boolean): Boolean =
     present && (historyEmpty || !owned)
 
-internal fun exportMessage(places: Int, removals: Int): String = buildString {
-    append("Saved ")
-    append(places)
-    append(if (places == 1) " place" else " places")
+internal fun exportMessage(places: Int, removals: Int): UiText {
+    val placesText = UiText.Plural(R.plurals.backup_places, places, places)
     // Only mentioned when there are any: "and 0 removals" is noise, but silently
     // writing rows the user cannot see would be worse.
-    if (removals > 0) {
-        append(" and ")
-        append(removals)
-        append(if (removals == 1) " removal" else " removals")
-    }
-    append(".")
+    if (removals == 0) return UiText.Res(R.string.backup_saved, placesText)
+    return UiText.Res(
+        R.string.backup_saved_with_removals,
+        placesText,
+        UiText.Plural(R.plurals.backup_removals, removals, removals),
+    )
 }
 
-internal fun importMessage(plan: BackupMerge.Plan): String = buildString {
-    val changed = plan.added + plan.updated
-    if (changed == 0) {
-        append("Nothing to change — everything in that file is already here.")
-    } else {
-        append("Imported ")
-        val parts = buildList {
-            if (plan.added > 0) add("${plan.added} new")
-            if (plan.updated > 0) add("${plan.updated} updated")
+/** Up to five of [names], with a trailing "…" when there were more. */
+private fun namedSample(names: List<String>): String =
+    names.take(5).joinToString(", ") + if (names.size > 5) ", …" else ""
+
+internal fun importMessage(plan: BackupMerge.Plan): UiText {
+    // Each clause is its own sentence resource, joined at the end, so a translation
+    // can reorder the words inside one but never has to split a sentence in two.
+    val sentences = buildList<UiText> {
+        val changed = plan.added + plan.updated
+        if (changed == 0) {
+            add(UiText.Res(R.string.backup_import_nothing))
+        } else {
+            add(
+                when {
+                    plan.updated == 0 -> UiText.Plural(R.plurals.backup_imported_new, plan.added, plan.added)
+                    plan.added == 0 -> UiText.Plural(R.plurals.backup_imported_updated, plan.updated, plan.updated)
+                    else -> UiText.Res(R.string.backup_imported_both, plan.added, plan.updated)
+                },
+            )
+            if (plan.unchanged > 0) add(UiText.Res(R.string.backup_already_current, plan.unchanged))
         }
-        append(parts.joinToString(" and "))
-        append(if (changed == 1) " place." else " places.")
-        if (plan.unchanged > 0) {
-            append(" ")
-            append(plan.unchanged)
-            append(" already current.")
+        if (plan.unknownCodes.isNotEmpty()) {
+            // Worth naming rather than counting: an unknown code almost always means
+            // the file came from a build with a different place list, and knowing
+            // which ones were dropped is the only way to tell whether that matters.
+            val n = plan.unknownCodes.size
+            add(UiText.Plural(R.plurals.backup_skipped_codes, n, n, namedSample(plan.unknownCodes)))
+        }
+        if (plan.unknownStatuses.isNotEmpty()) {
+            // Named for the same reason, and urgent for a different one: an unrecognised
+            // status means the file was written by a newer build, so those places still
+            // exist somewhere and the user needs to know this phone did not take them.
+            // The count is rows and the list is distinct words, so "2 entries" with one
+            // word named is normal rather than a bug.
+            val n = plan.unknownStatuses.size
+            val names = plan.unknownStatuses.distinct()
+            val id = if (names.size == 1) R.plurals.backup_skipped_status_one_word
+            else R.plurals.backup_skipped_status_many_words
+            add(UiText.Plural(id, n, n, namedSample(names)))
+        }
+        if (plan.unreadableRows > 0) {
+            // Nothing to name — a blank code or a missing timestamp carries no identity
+            // worth showing — so this stays a bare count, unlike the two clauses above.
+            add(UiText.Plural(R.plurals.backup_unreadable_rows, plan.unreadableRows, plan.unreadableRows))
         }
     }
-    if (plan.unknownCodes.isNotEmpty()) {
-        // Worth naming rather than counting: an unknown code almost always means
-        // the file came from a build with a different place list, and knowing
-        // which ones were dropped is the only way to tell whether that matters.
-        append(" Skipped ")
-        append(plan.unknownCodes.size)
-        append(if (plan.unknownCodes.size == 1) " unknown code: " else " unknown codes: ")
-        append(plan.unknownCodes.take(5).joinToString(", "))
-        if (plan.unknownCodes.size > 5) append(", …")
-        append(".")
-    }
-    if (plan.unknownStatuses.isNotEmpty()) {
-        // Named for the same reason, and urgent for a different one: an unrecognised
-        // status means the file was written by a newer build, so those places still
-        // exist somewhere and the user needs to know this phone did not take them.
-        // The count is rows and the list is distinct words, so "2 entries" with one
-        // word named is normal rather than a bug.
-        append(" Skipped ")
-        append(plan.unknownStatuses.size)
-        append(if (plan.unknownStatuses.size == 1) " entry" else " entries")
-        val names = plan.unknownStatuses.distinct()
-        append(if (names.size == 1) " with an unrecognised status: " else " with unrecognised statuses: ")
-        append(names.take(5).joinToString(", "))
-        if (names.size > 5) append(", …")
-        append(".")
-    }
-    if (plan.unreadableRows > 0) {
-        // Nothing to name — a blank code or a missing timestamp carries no identity
-        // worth showing — so this stays a bare count, unlike the two clauses above.
-        append(" ")
-        append(plan.unreadableRows)
-        append(if (plan.unreadableRows == 1) " row could not be read." else " rows could not be read.")
-    }
+    return sentences.reduce { acc, next -> UiText.Res(R.string.backup_sentence_join, acc, next) }
+}
+
+/**
+ * An error whose message is already written for the user. Exceptions from the platform
+ * carry English text of their own, which is shown as-is; the ones this class raises
+ * itself are resources so that they follow the app's language.
+ */
+internal class TransferException(val text: UiText) : IOException()
+
+internal fun failureText(t: Throwable, @StringRes fallback: Int): UiText = when {
+    t is TransferException -> t.text
+    t is BackupFormatException -> t.userText
+    t.message != null -> UiText.Plain(t.message!!)
+    else -> UiText.Res(fallback)
 }
