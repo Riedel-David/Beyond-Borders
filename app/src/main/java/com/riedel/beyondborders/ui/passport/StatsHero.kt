@@ -38,16 +38,17 @@ private val SmallRingStrokeWidth = 7.dp
 
 /**
  * The top of the Stats screen: the share of the world visited as a ring, the
- * traveller rank earned by the same count, and how many badges are unlocked.
+ * traveller rank (every place visited, whatever the Denominator, like the badges), and how many badges are unlocked.
  */
 @Composable
 internal fun StatsHero(
     stats: TravelStats,
+    placesVisited: Int,
     badgesUnlocked: Int,
     badgesTotal: Int,
     modifier: Modifier = Modifier,
 ) {
-    val rank = rankFor(stats.been)
+    val rank = rankFor(placesVisited)
     val container = MaterialTheme.colorScheme.surfaceVariant
     val onContainer = MaterialTheme.colorScheme.onSurfaceVariant
     val track = MaterialTheme.colorScheme.surface
@@ -119,13 +120,13 @@ internal fun StatsHero(
 /** A full track plus a [fraction]-sweep arc starting at twelve o'clock. */
 @Composable
 private fun Ring(diameter: Dp, strokeWidth: Dp, fraction: Float, track: Color, progress: Color) {
-    Canvas(Modifier.size(diameter).fillMaxSize()) {
+    Canvas(Modifier.size(diameter)) {
         val strokePx = strokeWidth.toPx()
         val d = size.minDimension - strokePx
         val topLeft = Offset((size.width - d) / 2f, (size.height - d) / 2f)
         val arcSize = Size(d, d)
         val stroke = Stroke(width = strokePx, cap = StrokeCap.Round)
         drawArc(track, -90f, 360f, false, topLeft, arcSize, style = stroke)
-        if (fraction > 0f) drawArc(progress, -90f, 360f * fraction, false, topLeft, arcSize, style = stroke)
+        if (fraction > 0f) drawArc(progress, -90f, 360f * fraction.coerceAtMost(1f), false, topLeft, arcSize, style = stroke)
     }
 }

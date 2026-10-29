@@ -110,6 +110,7 @@ fun StatsScreen(
         ) {
             StatsHero(
                 stats,
+                placesVisited = places.count { statuses[it.code]?.isBeen == true },
                 badgesUnlocked = achievements.count { it.unlocked },
                 badgesTotal = achievements.size,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),

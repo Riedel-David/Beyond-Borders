@@ -233,7 +233,7 @@ private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modi
                     .height(5.dp)
                     .background(scheme.surface, RoundedCornerShape(3.dp))
             ) {
-                val fraction = achievement.progress.toFloat() / achievement.target
+                val fraction = (achievement.progress.toFloat() / achievement.target.coerceAtLeast(1)).coerceIn(0f, 1f)
                 if (fraction > 0f) {
                     Box(
                         Modifier
