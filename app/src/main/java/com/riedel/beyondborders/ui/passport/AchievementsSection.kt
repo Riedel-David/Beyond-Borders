@@ -71,7 +71,17 @@ internal fun AchievementsSection(
     achievements: List<Achievement>,
     expandedGroups: Set<AchievementGroup>,
     onToggleGroup: (AchievementGroup) -> Unit,
+    nextUp: List<Achievement> = emptyList(),
+    recent: List<Achievement> = emptyList(),
 ) {
+    if (recent.isNotEmpty()) {
+        HighlightLabel("Recently unlocked")
+        BadgeRows(recent, newIds = recent.mapTo(HashSet()) { it.id })
+    }
+    if (nextUp.isNotEmpty()) {
+        HighlightLabel("Closest to unlocking")
+        BadgeRows(nextUp)
+    }
     Text(
         "Achievements",
         style = MaterialTheme.typography.titleMedium,
@@ -115,6 +125,16 @@ internal fun AchievementsSection(
 }
 
 @Composable
+private fun HighlightLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
 private fun CollapsibleHeader(text: String, expanded: Boolean, onToggle: () -> Unit) {
     val rotation by animateFloatAsState(if (expanded) 90f else 0f)
     Row(
@@ -143,11 +163,11 @@ private fun CollapsibleHeader(text: String, expanded: Boolean, onToggle: () -> U
 }
 
 @Composable
-private fun BadgeRows(badges: List<Achievement>) {
+private fun BadgeRows(badges: List<Achievement>, newIds: Set<String> = emptySet()) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         badges.chunked(2).forEach { pair ->
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                pair.forEach { AchievementBadge(it, Modifier.weight(1f).fillMaxHeight()) }
+                pair.forEach { AchievementBadge(it, Modifier.weight(1f).fillMaxHeight(), isNew = it.id in newIds) }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
@@ -160,7 +180,7 @@ private fun BadgeRows(badges: List<Achievement>) {
  * strength either way: dimming it is what made the locked cards unreadable before.
  */
 @Composable
-private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modifier) {
+private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modifier, isNew: Boolean = false) {
     val unlocked = achievement.unlocked
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.surface.luminance() < 0.5f
@@ -173,7 +193,7 @@ private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modi
     // otherwise read as loose fragments, and the bar says nothing at all.
     val spoken = buildString {
         append(achievement.title).append(", ")
-        append(if (unlocked) "unlocked" else "locked, ${achievement.progress} of ${achievement.target}")
+        append(if (unlocked) (if (isNew) "newly unlocked" else "unlocked") else "locked, ${achievement.progress} of ${achievement.target}")
         append(". ").append(achievement.description)
     }
     Column(
@@ -221,7 +241,20 @@ private fun AchievementBadge(achievement: Achievement, modifier: Modifier = Modi
         }
         Text(achievement.description, style = MaterialTheme.typography.bodySmall, color = content)
         if (unlocked) {
-            Text("Unlocked", style = MaterialTheme.typography.labelMedium, color = content)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Unlocked", style = MaterialTheme.typography.labelMedium, color = content)
+                if (isNew) {
+                    Text(
+                        "NEW",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = glyph,
+                        modifier = Modifier
+                            .background(accent, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
         } else {
             Text(
                 "${achievement.progress} / ${achievement.target}",

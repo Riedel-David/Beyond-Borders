@@ -238,6 +238,10 @@ class PlacesViewModel(
      */
     val collapsedHeaders: StateFlow<Set<String>> = settings.collapsedHeaders
 
+    val seenAchievements: StateFlow<Set<String>?> = settings.seenAchievements
+
+    fun setSeenAchievements(ids: Set<String>) = settings.setSeenAchievements(ids)
+
     /** Called by the map and passport screens on every mark. Goes straight to the
      * platform Vibrator rather than Compose's performHapticFeedback, which many
      * phones gate behind a separate, often-off "touch feedback" setting. */

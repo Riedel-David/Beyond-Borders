@@ -170,6 +170,8 @@ fun PassportScreen(
             stats = stats,
             places = places,
             statuses = statuses,
+            seenAchievements = viewModel.seenAchievements.value,
+            onSeenAchievements = viewModel::setSeenAchievements,
             onBack = { showStatsDetail = false },
             modifier = modifier,
         )

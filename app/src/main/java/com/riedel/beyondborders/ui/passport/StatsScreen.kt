@@ -28,10 +28,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +69,8 @@ fun StatsScreen(
     stats: TravelStats,
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
+    seenAchievements: Set<String>?,
+    onSeenAchievements: (Set<String>) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,6 +88,19 @@ fun StatsScreen(
     val achievements = remember(places, statuses) { computeAchievements(places, statuses) }
     val placesVisited = remember(places, statuses) { places.count { statuses[it.code]?.isBeen == true } }
     val badgesUnlocked = remember(achievements) { achievements.count { it.unlocked } }
+    // The set as it was when the screen opened: writing it below must not make the
+    // NEW tags vanish while the user is still looking at them.
+    val seenOnOpen = remember { seenAchievements }
+    val seenUpdate = remember(achievements) { newlyUnlocked(seenOnOpen, achievements) }
+    val upNext = remember(achievements) { nextUp(achievements) }
+    val snackbarHost = remember { SnackbarHostState() }
+    // Keyed on non-emptiness so a first composition before the places have loaded
+    // (no badges at all) does not record an empty set and seed nothing.
+    LaunchedEffect(achievements.isNotEmpty()) {
+        if (achievements.isEmpty()) return@LaunchedEffect
+        onSeenAchievements(seenUpdate.seen)
+        celebrationMessage(seenUpdate.fresh)?.let { snackbarHost.showSnackbar(it) }
+    }
 
     // Zero insets throughout: this screen is drawn inside the root Scaffold's own
     // content padding (BeyondBordersRoot pads the passport tab before it composes),
@@ -91,6 +109,7 @@ fun StatsScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
             TopAppBar(
                 title = { Text("Stats") },
@@ -176,6 +195,8 @@ fun StatsScreen(
             AchievementsSection(
                 achievements,
                 expandedGroups = expandedBadgeGroups,
+                nextUp = upNext,
+                recent = seenUpdate.fresh,
                 onToggleGroup = { g ->
                     expandedBadgeGroups = if (g in expandedBadgeGroups) expandedBadgeGroups - g else expandedBadgeGroups + g
                 },
