@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,18 +89,26 @@ fun StatsScreen(
     val achievements = remember(places, statuses) { computeAchievements(places, statuses) }
     val placesVisited = remember(places, statuses) { places.count { statuses[it.code]?.isBeen == true } }
     val badgesUnlocked = remember(achievements) { achievements.count { it.unlocked } }
-    // The set as it was when the screen opened: writing it below must not make the
-    // NEW tags vanish while the user is still looking at them.
-    val seenOnOpen = remember { seenAchievements }
+    // The set as it was when the screen first opened, saved across rotation: the write
+    // below must not make the NEW tags vanish while the user is still looking at them.
+    val seenOnOpen = rememberSaveable { mutableStateOf(seenAchievements?.let { ArrayList(it) }) }.value?.toSet()
     val seenUpdate = remember(achievements) { newlyUnlocked(seenOnOpen, achievements) }
     val upNext = remember(achievements) { nextUp(achievements) }
     val snackbarHost = remember { SnackbarHostState() }
-    // Keyed on non-emptiness so a first composition before the places have loaded
-    // (no badges at all) does not record an empty set and seed nothing.
-    LaunchedEffect(achievements.isNotEmpty()) {
+    var celebrated by rememberSaveable { mutableStateOf(false) }
+    // Keyed on the badges themselves, not just non-emptiness: statuses start as an
+    // empty map, so the first pass can see every badge locked and persist an empty set.
+    // Writing again on each change keeps the stored set equal to what has been shown,
+    // and seenOnOpen (still null in that case) keeps a restore from reading as "all new".
+    LaunchedEffect(seenUpdate) {
         if (achievements.isEmpty()) return@LaunchedEffect
         onSeenAchievements(seenUpdate.seen)
-        celebrationMessage(seenUpdate.fresh)?.let { snackbarHost.showSnackbar(it) }
+        if (!celebrated) {
+            celebrationMessage(seenUpdate.fresh)?.let {
+                celebrated = true
+                snackbarHost.showSnackbar(it)
+            }
+        }
     }
 
     // Zero insets throughout: this screen is drawn inside the root Scaffold's own
