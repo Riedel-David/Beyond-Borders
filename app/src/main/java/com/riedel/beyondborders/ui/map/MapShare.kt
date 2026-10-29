@@ -59,13 +59,13 @@ private const val SHARE_RETENTION_MS = 24L * 60 * 60 * 1000
  * this file's class, and `android.graphics` is a throwing stub in host-JVM tests —
  * one `Color.rgb` here takes the pure text builders' tests down with it.
  */
-private val BrandAzure = 0xFF1E6FE3.toInt()
-private val BrandDeep = 0xFF0A2E67.toInt()
+internal val BrandAzure = 0xFF1E6FE3.toInt()
+internal val BrandDeep = 0xFF0A2E67.toInt()
 private val BrandTeal = 0xFF0F8A7E.toInt()
-private val BrandInk = 0xFF070B14.toInt()
+internal val BrandInk = 0xFF070B14.toInt()
 
 /** Letterspaced, so it reads as a wordmark rather than as a sentence. */
-private const val WORDMARK = "BEYOND BORDERS"
+internal const val WORDMARK = "BEYOND BORDERS"
 
 /**
  * The detail line: what was counted, without repeating the percentage that every
@@ -107,7 +107,7 @@ private fun pluralize(count: Int, singular: String): String =
  * but only its middle 72 are guaranteed visible, so it is drawn 1.5× the tile and
  * centre-cropped — the same framing every launcher mask applies.
  */
-private fun drawLogoTile(canvas: Canvas, logo: Drawable?, left: Float, top: Float, size: Float) {
+internal fun drawLogoTile(canvas: Canvas, logo: Drawable?, left: Float, top: Float, size: Float) {
     val radius = size * 0.28f
     val save = canvas.save()
     canvas.clipPath(
@@ -132,7 +132,7 @@ private fun drawLogoTile(canvas: Canvas, logo: Drawable?, left: Float, top: Floa
     canvas.restoreToCount(save)
 }
 
-private fun wordmarkPaint(textSize: Float, alpha: Int): Paint =
+internal fun wordmarkPaint(textSize: Float, alpha: Int): Paint =
     Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(alpha, 255, 255, 255)
         this.textSize = textSize
@@ -141,14 +141,14 @@ private fun wordmarkPaint(textSize: Float, alpha: Int): Paint =
     }
 
 /** Heavier than [Typeface.DEFAULT_BOLD]; for the numbers that carry a card. */
-private fun numberPaint(textSize: Float, alpha: Int = 255): Paint =
+internal fun numberPaint(textSize: Float, alpha: Int = 255): Paint =
     Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(alpha, 255, 255, 255)
         this.textSize = textSize
         typeface = Typeface.create(Typeface.SANS_SERIF, 800, false)
     }
 
-private fun bodyPaint(textSize: Float, alpha: Int): Paint =
+internal fun bodyPaint(textSize: Float, alpha: Int): Paint =
     Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(alpha, 255, 255, 255)
         this.textSize = textSize
@@ -160,7 +160,7 @@ private fun bodyPaint(textSize: Float, alpha: Int): Paint =
  * 70%; the caller resets it per line) and, if it
  * still doesn't fit, truncates with an ellipsis.
  */
-private fun fitToWidth(text: String, paint: Paint, maxWidth: Float): String {
+internal fun fitToWidth(text: String, paint: Paint, maxWidth: Float): String {
     val minSize = paint.textSize * 0.7f
     while (paint.measureText(text) > maxWidth && paint.textSize > minSize) {
         paint.textSize = paint.textSize * 0.95f
@@ -173,7 +173,7 @@ private fun fitToWidth(text: String, paint: Paint, maxWidth: Float): String {
 }
 
 /** Height of one line of [this] paint, ascent to descent. */
-private fun Paint.lineHeight(): Float = fontMetrics.let { it.descent - it.ascent }
+internal fun Paint.lineHeight(): Float = fontMetrics.let { it.descent - it.ascent }
 
 /**
  * Draws two lines of text stacked at [x], with the pair's centre at [centerY].
@@ -500,7 +500,7 @@ internal fun mapShareStatsCard(stats: TravelStats, logo: Drawable? = null): Bitm
  * The launcher icon, for the brand mark every style draws. Null only if the
  * lookup fails; [drawLogoTile] copes.
  */
-private fun appLogo(context: Context): Drawable? =
+internal fun appLogo(context: Context): Drawable? =
     ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
 
 /**
@@ -549,7 +549,7 @@ suspend fun shareStatsCard(context: Context, stats: TravelStats) {
  * reads it when the mail is sent, so the earlier attachment quietly became a
  * zero-byte failure the moment a second share started.
  */
-private suspend fun shareBitmap(context: Context, bitmap: Bitmap) {
+internal suspend fun shareBitmap(context: Context, bitmap: Bitmap, caption: String? = null) {
     val file = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "shared").apply { mkdirs() }
         val cutoff = System.currentTimeMillis() - SHARE_RETENTION_MS
@@ -565,6 +565,7 @@ private suspend fun shareBitmap(context: Context, bitmap: Bitmap) {
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, uri)
         putExtra(Intent.EXTRA_TITLE, "Beyond Borders")
+        if (caption != null) putExtra(Intent.EXTRA_TEXT, caption)
         // The Sharesheet's image preview reads clipData, not the EXTRA_STREAM
         // extra alone — without it several targets fall back to a generic file
         // icon instead of the actual thumbnail.
