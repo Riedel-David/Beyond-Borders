@@ -37,7 +37,8 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
   opens a stats screen: per-continent bars, your least-covered continent, the next milestone.
 - **Passport visas** — where any of about 200 passports goes, offline. DE gets a full
   252-place curated answer; a second passport is optional, and the easier of its two
-  answers wins.
+  answers wins. A snapshot that can be out of date: confirm entry rules with
+  [the official source](#data-and-licences) before you travel.
 - **Share** — your travels as an image in one of three styles: the map with a caption bar,
   the map with a corner badge, or a numbers-only stats card.
 - **Home-screen widget** — configurable per instance: headline metric and card background.
@@ -71,7 +72,8 @@ from the last several years.
 
 The app has no network permission, so it cannot check for updates itself. Watch the
 Releases page, or point [Obtainium](https://github.com/ImranR98/Obtainium) at this
-repository to be notified of new versions.
+repository to be notified of new versions (Obtainium is untested with this app's release
+files, so treat that as a suggestion).
 
 ## Build and run
 
