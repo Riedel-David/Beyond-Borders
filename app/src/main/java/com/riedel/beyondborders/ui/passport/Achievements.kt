@@ -180,7 +180,7 @@ private fun slug(s: String) = s.lowercase().replace(Regex("[^a-z0-9]+"), "_").tr
 internal data class RankInfo(val title: String, val next: String?, val remaining: Int?) {
     /** The line under the title: how far the next rank is, or a closing word at the top. */
     val progressLine: String
-        get() = if (next == null || remaining == null) "You have seen it all." else "$remaining more to reach $next"
+        get() = if (next == null || remaining == null) "Top rank reached" else "$remaining more to reach $next"
 }
 
 /** Minimum places been for each rank, ascending. */

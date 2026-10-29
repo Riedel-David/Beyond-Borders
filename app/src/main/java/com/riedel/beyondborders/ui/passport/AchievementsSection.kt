@@ -1,7 +1,6 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -27,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -85,8 +85,8 @@ internal fun AchievementsSection(
         modifier = Modifier.padding(bottom = 4.dp),
     )
 
-    val byGroup = achievements.groupBy { it.group }
-    val progress = groupProgress(achievements)
+    val byGroup = remember(achievements) { achievements.groupBy { it.group } }
+    val progress = remember(achievements) { groupProgress(achievements) }
     AchievementGroup.entries.forEach { group ->
         val all = byGroup[group].orEmpty()
         if (all.isEmpty()) return@forEach
@@ -95,7 +95,12 @@ internal fun AchievementsSection(
         if (group in Collapsible) {
             val expanded = group in expandedGroups
             CollapsibleHeader(header, expanded) { onToggleGroup(group) }
-            AnimatedVisibility(expanded, modifier = Modifier.animateContentSize()) { BadgeRows(all) }
+            // Earned badges stay visible under a collapsed header; opening it adds the
+            // locked ones after them.
+            val earned = all.filter { it.unlocked }
+            Column(Modifier.animateContentSize()) {
+                BadgeRows(if (expanded) earned + all.filter { !it.unlocked } else earned)
+            }
         } else {
             Text(
                 header,

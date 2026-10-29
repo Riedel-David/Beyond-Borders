@@ -31,7 +31,7 @@ class RankTest {
         val r = rankFor(200)
         assertNull(r.next)
         assertNull(r.remaining)
-        assertEquals("You have seen it all.", r.progressLine)
+        assertEquals("Top rank reached", r.progressLine)
     }
 
     @Test

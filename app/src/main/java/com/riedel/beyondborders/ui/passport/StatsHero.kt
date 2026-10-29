@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +60,7 @@ internal fun StatsHero(
             .clearAndSetSemantics {
                 contentDescription =
                     "${stats.percent} percent of places visited, ${stats.been} of ${stats.total}. " +
-                    "Rank ${rank.title}. ${rank.progressLine}. " +
+                    "Rank ${rank.title}. ${rank.progressLine.trimEnd('.')}. " +
                     "$badgesUnlocked of $badgesTotal badges unlocked."
             }
             .background(container, RoundedCornerShape(20.dp))
@@ -69,20 +70,22 @@ internal fun StatsHero(
     ) {
         Box(Modifier.size(RingDiameter), contentAlignment = Alignment.Center) {
             Ring(RingDiameter, RingStrokeWidth, stats.percent / 100f, track, progress)
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "${stats.percent}%",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = onContainer,
-                )
-                Text(
-                    "${stats.been} of ${stats.total}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onContainer,
-                )
-            }
+            // Sized from dp, not sp: the ring interior is fixed, so the number inside it
+            // must not grow with the user's font scale. The count sits below instead.
+            Text(
+                "${stats.percent}%",
+                style = MaterialTheme.typography.displaySmall,
+                fontSize = with(LocalDensity.current) { 36.dp.toSp() },
+                fontWeight = FontWeight.SemiBold,
+                color = onContainer,
+            )
         }
+        Text(
+            "${stats.been} of ${stats.total} places",
+            style = MaterialTheme.typography.bodyMedium,
+            color = onContainer,
+            modifier = Modifier.padding(top = 8.dp),
+        )
         Text(
             rank.title,
             style = MaterialTheme.typography.headlineSmall,

@@ -42,4 +42,26 @@ class BadgeStyleTest {
         val accents = AchievementGroup.entries.map { badgeTone(it).accentLight }
         assertEquals(accents.size, accents.toSet().size)
     }
+
+    // Reference Material 3 baseline values; the app may use dynamic colour, so these
+    // are a check on the hues chosen, not on every possible wallpaper.
+    private val surfaceLight = 0xFFFFFBFE.toInt()
+    private val surfaceDark = 0xFF1C1B1F.toInt()
+    private val mutedLight = 0xFF49454F.toInt()
+    private val mutedDark = 0xFFCAC4D0.toInt()
+
+    @Test
+    fun `locked progress fill stands out from the surface it sits on in both themes`() {
+        for (g in AchievementGroup.entries) {
+            val t = badgeTone(g)
+            assertTrue("$g light", contrastRatio(t.accentLight, surfaceLight) >= 3.0)
+            assertTrue("$g dark", contrastRatio(t.accentDark, surfaceDark) >= 3.0)
+        }
+    }
+
+    @Test
+    fun `muted locked icon is readable against its circle in both themes`() {
+        assertTrue(contrastRatio(mutedLight, surfaceLight) >= 4.5)
+        assertTrue(contrastRatio(mutedDark, surfaceDark) >= 4.5)
+    }
 }

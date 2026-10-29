@@ -208,7 +208,6 @@ private fun ShowAllGroupingsRow(
     expanded: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "Show all groupings",
 ) {
     val rotation by animateFloatAsState(if (expanded) 90f else 0f)
     Row(
@@ -220,7 +219,7 @@ private fun ShowAllGroupingsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            label,
+            "Show all groupings",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
