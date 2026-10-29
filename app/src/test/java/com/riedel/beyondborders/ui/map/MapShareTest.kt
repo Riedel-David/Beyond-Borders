@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.ui.map
 
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.places.ContinentStat
 import com.riedel.beyondborders.ui.places.TravelStats
 import org.junit.Assert.assertEquals
@@ -19,7 +21,7 @@ class MapShareTest {
                 ContinentStat("Africa", been = 0, total = 54),
             ),
         )
-        assertEquals("2 of 252 · 1 continent", mapShareDetail(stats))
+        assertEquals(UiText.Plural(R.plurals.share_detail, 1, 2, 252, 1), mapShareDetail(stats))
     }
 
     @Test
@@ -34,7 +36,7 @@ class MapShareTest {
                 ContinentStat("Africa", been = 0, total = 54),
             ),
         )
-        assertEquals("1 of 252 · 1 continent", mapShareDetail(oneContinent))
+        assertEquals(UiText.Plural(R.plurals.share_detail, 1, 1, 252, 1), mapShareDetail(oneContinent))
 
         val twoContinents = TravelStats(
             visited = 2,
@@ -46,22 +48,33 @@ class MapShareTest {
                 ContinentStat("Africa", been = 1, total = 54),
             ),
         )
-        assertEquals("2 of 252 · 2 continents", mapShareDetail(twoContinents))
+        assertEquals(UiText.Plural(R.plurals.share_detail, 2, 2, 252, 2), mapShareDetail(twoContinents))
     }
 
     @Test
     fun `stamp text is the short form with percentage and fraction`() {
-        assertEquals("15% · 40/252", mapShareStamp(statsWith(visited = 35, lived = 5, wishlist = 10)))
+        assertEquals(UiText.Res(R.string.share_stamp, 15, 40, 252), mapShareStamp(statsWith(visited = 35, lived = 5, wishlist = 10)))
     }
 
     @Test
     fun `the third stat tile prefers somewhere lived over the wish list`() {
         val lived = statsWith(visited = 35, lived = 5, wishlist = 10)
-        assertEquals(listOf("40" to "PLACES BEEN", "3" to "CONTINENTS", "5" to "LIVED IN"), shareStatTiles(lived))
+        assertEquals(
+            listOf(
+                "40" to UiText.Res(R.string.share_tile_places_been),
+                "3" to UiText.Res(R.string.share_tile_continents),
+                "5" to UiText.Res(R.string.share_tile_lived),
+            ),
+            shareStatTiles(lived),
+        )
 
         val neverLived = statsWith(visited = 40, lived = 0, wishlist = 10)
         assertEquals(
-            listOf("40" to "PLACES BEEN", "3" to "CONTINENTS", "10" to "WISH LIST"),
+            listOf(
+                "40" to UiText.Res(R.string.share_tile_places_been),
+                "3" to UiText.Res(R.string.share_tile_continents),
+                "10" to UiText.Res(R.string.share_tile_wishlist),
+            ),
             shareStatTiles(neverLived),
         )
     }

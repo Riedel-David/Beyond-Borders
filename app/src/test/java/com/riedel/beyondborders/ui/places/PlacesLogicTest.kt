@@ -9,7 +9,9 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.settings.Denominator
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -673,5 +675,45 @@ class PlacesLogicTest {
             "2 of your 2 wishlist places need no embassy",
             computeWishlistEasyLine(all, statuses, visa, Denominator.INHABITED),
         )
+    }
+
+    @Test
+    fun `the resource-backed nudge carries the remaining count as the plural quantity`() {
+        val europe = ContinentStat("Europe", been = 40, total = 44)
+        assertEquals(UiText.Plural(R.plurals.places_nudge, 4, 4, "Europe"), almostFinishedNudgeText(listOf(europe)))
+        val oceania = ContinentStat("Oceania", been = 13, total = 14)
+        assertEquals(UiText.Plural(R.plurals.places_nudge, 1, 1, "Oceania"), almostFinishedNudgeText(listOf(oceania)))
+        assertNull(almostFinishedNudgeText(listOf(ContinentStat("Europe", been = 44, total = 44))))
+    }
+
+    @Test
+    fun `the resource-backed least covered line matches the string one`() {
+        val continents = listOf(
+            ContinentStat("Europe", been = 40, total = 44),
+            ContinentStat("Africa", been = 1, total = 54),
+        )
+        assertEquals(UiText.Res(R.string.places_least_covered, "Africa", 1, 54), leastCoveredContinentText(continents))
+        assertNull(leastCoveredContinentText(listOf(ContinentStat("Europe", been = 0, total = 44))))
+    }
+
+    @Test
+    fun `the resource-backed coverage line carries both percentages`() {
+        val withGeo = listOf(
+            place("DK", "Denmark", areaKm2 = 43_000, popEst = 6_000_000),
+            place("FR", "France", areaKm2 = 550_000, popEst = 65_000_000),
+            place("RU", "Russia", areaKm2 = 407_000, popEst = 144_000_000),
+        )
+        assertEquals(
+            UiText.Res(R.string.places_coverage, 4, 2),
+            worldCoverageText(withGeo, mapOf("DK" to PlaceStatus.VISITED)),
+        )
+        assertNull(worldCoverageText(withGeo, emptyMap()))
+    }
+
+    @Test
+    fun `the filters carry resource ids, not English`() {
+        assertEquals(UiText.Res(R.string.places_filter_want), StatusFilter.WISHLIST.text)
+        assertEquals(UiText.Res(R.string.places_mode_visa), PassportMode.VISA.text)
+        assertEquals(UiText.Res(R.string.places_visa_filter_easy), VisaFilter.Easy.text)
     }
 }

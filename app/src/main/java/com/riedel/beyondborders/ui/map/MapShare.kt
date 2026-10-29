@@ -13,9 +13,11 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.places.TravelStats
 import java.io.File
 import java.io.FileOutputStream
@@ -32,10 +34,10 @@ import kotlinx.coroutines.withContext
  * entirely and composes a full card. Parameterising the rest would mean a layout
  * engine for three fixed cases.
  */
-enum class ShareCardStyle(val label: String, val blurb: String) {
-    BAR("Caption bar", "Logo and stats along the bottom"),
-    STAMP("Corner badge", "Compact top-left badge"),
-    STATS_ONLY("Stats card", "Just the numbers, no map"),
+enum class ShareCardStyle(@StringRes val labelRes: Int, @StringRes val blurbRes: Int) {
+    BAR(R.string.share_style_bar_label, R.string.share_style_bar_blurb),
+    STAMP(R.string.share_style_stamp_label, R.string.share_style_stamp_blurb),
+    STATS_ONLY(R.string.share_style_stats_label, R.string.share_style_stats_blurb),
 }
 
 /**
@@ -72,15 +74,17 @@ internal const val WORDMARK = "BEYOND BORDERS"
  * style already shows in a bigger size. "been", not "visited": a place lived in
  * must count here too, matching every other count this app shows.
  */
-internal fun mapShareDetail(stats: TravelStats): String =
-    "${stats.been} of ${stats.total} · " +
-        "${stats.continentsTouched} ${pluralize(stats.continentsTouched, "continent")}"
+internal fun mapShareDetail(stats: TravelStats): UiText =
+    UiText.Plural(
+        R.plurals.share_detail, stats.continentsTouched,
+        stats.been, stats.total, stats.continentsTouched,
+    )
 
 /**
  * Short form for the stamp: percentage and fraction only.
  */
-internal fun mapShareStamp(stats: TravelStats): String =
-    "${stats.percent}% · ${stats.been}/${stats.total}"
+internal fun mapShareStamp(stats: TravelStats): UiText =
+    UiText.Res(R.string.share_stamp, stats.percent, stats.been, stats.total)
 
 /**
  * The three figures the stats card puts in tiles, as value-and-label pairs.
@@ -88,14 +92,15 @@ internal fun mapShareStamp(stats: TravelStats): String =
  * The third tile earns its place: somewhere lived is the rarer and more
  * interesting fact, so it displaces the wish list whenever there is one.
  */
-internal fun shareStatTiles(stats: TravelStats): List<Pair<String, String>> = listOf(
-    "${stats.been}" to "PLACES BEEN",
-    "${stats.continentsTouched}" to "CONTINENTS",
-    if (stats.lived > 0) "${stats.lived}" to "LIVED IN" else "${stats.wishlist}" to "WISH LIST",
+internal fun shareStatTiles(stats: TravelStats): List<Pair<String, UiText>> = listOf(
+    "${stats.been}" to UiText.Res(R.string.share_tile_places_been),
+    "${stats.continentsTouched}" to UiText.Res(R.string.share_tile_continents),
+    if (stats.lived > 0) {
+        "${stats.lived}" to UiText.Res(R.string.share_tile_lived)
+    } else {
+        "${stats.wishlist}" to UiText.Res(R.string.share_tile_wishlist)
+    },
 )
-
-private fun pluralize(count: Int, singular: String): String =
-    if (count == 1) singular else "${singular}s"
 
 // --- brand furniture --------------------------------------------------------
 
@@ -253,6 +258,7 @@ private fun drawProgressBar(
  * metadata or crops the share sheet's preview; overlaid chrome would not.
  */
 private fun withCaption(
+    context: Context,
     bitmap: Bitmap,
     style: ShareCardStyle,
     stats: TravelStats,
@@ -261,8 +267,8 @@ private fun withCaption(
     val out = bitmap.copy(Bitmap.Config.ARGB_8888, true)
     val canvas = Canvas(out)
     when (style) {
-        ShareCardStyle.BAR -> drawCaptionBar(canvas, out.width, out.height, stats, logo)
-        ShareCardStyle.STAMP -> drawCornerBadge(canvas, out.width, stats, logo)
+        ShareCardStyle.BAR -> drawCaptionBar(context, canvas, out.width, out.height, stats, logo)
+        ShareCardStyle.STAMP -> drawCornerBadge(context, canvas, out.width, stats, logo)
         ShareCardStyle.STATS_ONLY -> Unit // Never wraps a map bitmap; see mapShareStatsCard.
     }
     return out
@@ -277,6 +283,7 @@ private fun withCaption(
  * the snapshot happens to end on, including a pale ocean.
  */
 private fun drawCaptionBar(
+    context: Context,
     canvas: Canvas,
     width: Int,
     height: Int,
@@ -318,7 +325,7 @@ private fun drawCaptionBar(
         canvas,
         x = w - pad,
         centerY = tileMid,
-        first = "OF THE WORLD" to wordmarkPaint(tile * 0.19f, 165)
+        first = context.getString(R.string.share_of_the_world_caps) to wordmarkPaint(tile * 0.19f, 165)
             .apply { textAlign = Paint.Align.RIGHT },
         second = "${stats.percent}%" to numberPaint(tile * 0.56f)
             .apply { textAlign = Paint.Align.RIGHT },
@@ -330,7 +337,7 @@ private fun drawCaptionBar(
         x = pad + tile + pad * 0.55f,
         centerY = tileMid,
         first = WORDMARK to wordmarkPaint(tile * 0.30f, 255),
-        second = mapShareDetail(stats) to bodyPaint(tile * 0.27f, 205),
+        second = mapShareDetail(stats).asString(context) to bodyPaint(tile * 0.27f, 205),
         gap = tile * 0.05f,
     )
 
@@ -341,7 +348,7 @@ private fun drawCaptionBar(
  * The corner badge: icon, wordmark and the short stat in a rounded card sized to
  * its own text, for when the map itself is the point and the numbers are a note.
  */
-private fun drawCornerBadge(canvas: Canvas, width: Int, stats: TravelStats, logo: Drawable?) {
+private fun drawCornerBadge(context: Context, canvas: Canvas, width: Int, stats: TravelStats, logo: Drawable?) {
     val w = width.toFloat()
     val inset = w * 0.04f
     val tile = w * 0.095f
@@ -349,7 +356,7 @@ private fun drawCornerBadge(canvas: Canvas, width: Int, stats: TravelStats, logo
 
     val namePaint = wordmarkPaint(tile * 0.22f, 175)
     val valuePaint = numberPaint(tile * 0.36f)
-    val valueText = mapShareStamp(stats)
+    val valueText = mapShareStamp(stats).asString(context)
 
     val textWidth = maxOf(namePaint.measureText(WORDMARK), valuePaint.measureText(valueText))
     val badgeWidth = padIn + tile + padIn * 0.75f + textWidth + padIn
@@ -391,7 +398,7 @@ private const val STATS_CARD_HEIGHT = 1350
  * footer, flowing down from the top with the footer pinned to the bottom, so a
  * missing nudge or coverage line only changes the whitespace above it.
  */
-internal fun mapShareStatsCard(stats: TravelStats, logo: Drawable? = null): Bitmap {
+internal fun mapShareStatsCard(context: Context, stats: TravelStats, logo: Drawable? = null): Bitmap {
     val out = Bitmap.createBitmap(STATS_CARD_WIDTH, STATS_CARD_HEIGHT, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
     val w = out.width.toFloat()
@@ -433,7 +440,7 @@ internal fun mapShareStatsCard(stats: TravelStats, logo: Drawable? = null): Bitm
     var cursor = pad + tile + w * 0.10f
     canvas.drawText("${stats.percent}%", pad, cursor - heroPaint.fontMetrics.ascent, heroPaint)
     cursor += heroPaint.lineHeight()
-    canvas.drawText("of the world", pad, cursor - heroSubPaint.fontMetrics.ascent, heroSubPaint)
+    canvas.drawText(context.getString(R.string.share_of_the_world), pad, cursor - heroSubPaint.fontMetrics.ascent, heroSubPaint)
     cursor += heroSubPaint.lineHeight() + w * 0.055f
 
     val barHeight = w * 0.018f
@@ -462,12 +469,12 @@ internal fun mapShareStatsCard(stats: TravelStats, logo: Drawable? = null): Bitm
             x = left + tileWidth / 2f + labelPaint.letterSpacingNudge(),
             centerY = cursor + tileHeight / 2f,
             first = value to valuePaint,
-            second = label to labelPaint,
+            second = label.asString(context) to labelPaint,
             gap = w * 0.008f,
         )
     }
 
-    val footer = listOfNotNull(stats.nudge, stats.coverage)
+    val footer = listOfNotNull(stats.nudgeText, stats.coverageText).map { it.asString(context) }
     if (footer.isNotEmpty()) {
         val footerPaint = bodyPaint(w * 0.034f, 155)
         val lineGap = footerPaint.lineHeight() * 1.25f
@@ -514,7 +521,7 @@ suspend fun shareMapSnapshot(
     style: ShareCardStyle,
 ) {
     // Copying and drawing a full-screen bitmap is tens of milliseconds of pure CPU.
-    val captioned = withContext(Dispatchers.Default) { withCaption(bitmap, style, stats, appLogo(context)) }
+    val captioned = withContext(Dispatchers.Default) { withCaption(context, bitmap, style, stats, appLogo(context)) }
     try {
         shareBitmap(context, captioned)
     } finally {
@@ -530,7 +537,7 @@ suspend fun shareMapSnapshot(
  * numbers — see [mapShareStatsCard].
  */
 suspend fun shareStatsCard(context: Context, stats: TravelStats) {
-    val card = withContext(Dispatchers.Default) { mapShareStatsCard(stats, appLogo(context)) }
+    val card = withContext(Dispatchers.Default) { mapShareStatsCard(context, stats, appLogo(context)) }
     shareBitmap(context, card)
 }
 

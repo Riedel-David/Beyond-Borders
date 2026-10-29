@@ -1,6 +1,8 @@
 package com.riedel.beyondborders.ui.map
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.visa.VisaRegistry
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.places.TravelStats
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -23,13 +25,21 @@ class MapLegendAccessibilityTest {
 
     @Test
     fun `travel legend names visited without mentioning bands that are not drawn`() {
-        assertEquals("40 visited", travelLegendDescription(stats(visited = 40)))
+        assertEquals(UiText.Res(R.string.map_legend_visited, 40), travelLegendDescription(stats(visited = 40)))
     }
 
     @Test
     fun `travel legend adds lived and wishlisted only once they are drawn`() {
         assertEquals(
-            "40 visited, 3 lived, 7 wishlisted",
+            UiText.Res(
+                R.string.map_join_comma,
+                UiText.Res(
+                    R.string.map_join_comma,
+                    UiText.Res(R.string.map_legend_visited, 40),
+                    UiText.Res(R.string.map_legend_lived, 3),
+                ),
+                UiText.Res(R.string.map_legend_wishlisted, 7),
+            ),
             travelLegendDescription(stats(visited = 40, lived = 3, wishlist = 7)),
         )
     }
@@ -53,14 +63,14 @@ class MapLegendAccessibilityTest {
 
     @Test
     fun `visa legend without an asset says so rather than describing empty dots`() {
-        assertEquals("Visa lens: no visa data for this passport", visaLegendSummary(null, noDataCount = 0))
+        assertEquals(UiText.Res(R.string.map_visa_summary_none_single), visaLegendSummary(null, noDataCount = 0))
     }
 
     @Test
     fun `visa legend counts the bands actually drawn plus the visa-free headline`() {
         val registry = registryWith("FR" to "VISA_FREE", "US" to "ETA", "CN" to "VISA_REQUIRED")
         assertEquals(
-            "Visa lens: 3 bands shown, 1 visa-free",
+            UiText.Plural(R.plurals.map_visa_summary, 3, 3, 1),
             visaLegendSummary(registry, noDataCount = 0),
         )
     }
@@ -69,7 +79,7 @@ class MapLegendAccessibilityTest {
     fun `visa legend adds the no-data band only when the map actually paints one`() {
         val registry = registryWith("FR" to "VISA_FREE")
         assertEquals(
-            "Visa lens: 2 bands shown, 1 visa-free",
+            UiText.Plural(R.plurals.map_visa_summary, 2, 2, 1),
             visaLegendSummary(registry, noDataCount = 5),
         )
     }
