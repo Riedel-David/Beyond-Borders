@@ -306,7 +306,13 @@ private fun CompletionGrid(title: String, bars: List<Bucket>, onHold: (Bucket) -
 @Composable
 private fun CompletionBar(bucket: Bucket, onHold: (Bucket) -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier.combinedClickable(onClick = {}, onLongClick = { onHold(bucket) }),
+        modifier.combinedClickable(
+            onClick = {},
+            onLongClick = { onHold(bucket) },
+            // Surfaces the long-press in TalkBack's actions menu; sighted behaviour
+            // is unchanged.
+            onLongClickLabel = "Show details for ${bucket.label}",
+        ),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Row {

@@ -27,13 +27,15 @@ object WidgetPrefs {
         metric: WidgetMetric,
         filledBackground: Boolean,
         target: WidgetTarget,
-    ) {
+    ): Boolean =
+        // commit(), not apply(): apply never reports failure, and the config screen must
+        // not answer RESULT_OK for a choice that did not reach disk. Blocking, so call
+        // it off the main thread.
         prefs(context).edit()
             .putString(metricKey(widgetId), metric.storageValue)
             .putString(targetKey(widgetId), target.storageValue)
             .putBoolean(backgroundKey(widgetId), filledBackground)
-            .apply()
-    }
+            .commit()
 
     /**
      * Move one widget's choices from [oldId] to [newId], for

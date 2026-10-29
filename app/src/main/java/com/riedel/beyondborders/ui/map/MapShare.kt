@@ -155,6 +155,23 @@ private fun bodyPaint(textSize: Float, alpha: Int): Paint =
         typeface = Typeface.create("sans-serif", Typeface.NORMAL)
     }
 
+/**
+ * [text] unchanged if it fits [maxWidth]; otherwise shrinks [paint]'s size (down to
+ * 70%; the caller resets it per line) and, if it
+ * still doesn't fit, truncates with an ellipsis.
+ */
+private fun fitToWidth(text: String, paint: Paint, maxWidth: Float): String {
+    val minSize = paint.textSize * 0.7f
+    while (paint.measureText(text) > maxWidth && paint.textSize > minSize) {
+        paint.textSize = paint.textSize * 0.95f
+    }
+    if (paint.measureText(text) <= maxWidth) return text
+    val ellipsis = "\u2026"
+    val room = maxWidth - paint.measureText(ellipsis)
+    val count = paint.breakText(text, true, room.coerceAtLeast(0f), null)
+    return text.take(count).trimEnd() + ellipsis
+}
+
 /** Height of one line of [this] paint, ascent to descent. */
 private fun Paint.lineHeight(): Float = fontMetrics.let { it.descent - it.ascent }
 
@@ -459,9 +476,14 @@ internal fun mapShareStatsCard(stats: TravelStats, logo: Drawable? = null): Bitm
             pad, footerTop - w * 0.045f, contentRight, footerTop - w * 0.045f,
             Paint().apply { color = Color.argb(28, 255, 255, 255) },
         )
+        val footerSize = footerPaint.textSize
         footer.forEachIndexed { index, line ->
+            footerPaint.textSize = footerSize
+            // A long coverage line at 100% (or a long nudge) must not run off the
+            // card: shrink first, then cut with an ellipsis as the last resort.
+            val fitted = fitToWidth(line, footerPaint, contentRight - pad)
             canvas.drawText(
-                line,
+                fitted,
                 pad,
                 footerTop + lineGap * index - footerPaint.fontMetrics.ascent,
                 footerPaint,
@@ -491,7 +513,8 @@ suspend fun shareMapSnapshot(
     stats: TravelStats,
     style: ShareCardStyle,
 ) {
-    val captioned = withCaption(bitmap, style, stats, appLogo(context))
+    // Copying and drawing a full-screen bitmap is tens of milliseconds of pure CPU.
+    val captioned = withContext(Dispatchers.Default) { withCaption(bitmap, style, stats, appLogo(context)) }
     try {
         shareBitmap(context, captioned)
     } finally {
@@ -507,7 +530,8 @@ suspend fun shareMapSnapshot(
  * numbers — see [mapShareStatsCard].
  */
 suspend fun shareStatsCard(context: Context, stats: TravelStats) {
-    shareBitmap(context, mapShareStatsCard(stats, appLogo(context)))
+    val card = withContext(Dispatchers.Default) { mapShareStatsCard(stats, appLogo(context)) }
+    shareBitmap(context, card)
 }
 
 /**

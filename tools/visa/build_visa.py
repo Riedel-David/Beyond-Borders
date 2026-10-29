@@ -355,8 +355,8 @@ def build(passport: str, source: Path, advice: Path | None) -> int:
         "iataUrl": rules.IATA_TRAVEL_CENTRE,
         "requirements": entries,
     }
-    # DE keeps the historical bare filename — it is still the sole passport the
-    # app loads until the Kotlin side of the switcher picks a nationality.
+    # DE keeps the historical bare filename (visa.json); every other passport is
+    # visa_<iso2>.json, and all 199 ship in the app.
     out = ASSETS / ("visa.json" if passport == "DE" else f"visa_{passport.lower()}.json")
     out.write_text(
         json.dumps(asset, separators=(",", ":"), ensure_ascii=False),

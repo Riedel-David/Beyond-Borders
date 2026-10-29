@@ -30,4 +30,32 @@ class CloudSnapshotTest {
     fun `an export with only removals is not staged, because there is nothing to restore`() {
         assertFalse(shouldStageSnapshot(export(places = 0, removals = 2)))
     }
+
+    @Test
+    fun `a snapshot nobody here wrote is never replaced`() {
+        assertFalse(mayReplaceSnapshot(snapshotExists = true, owned = false))
+    }
+
+    @Test
+    fun `a snapshot this install wrote may be replaced`() {
+        assertTrue(mayReplaceSnapshot(snapshotExists = true, owned = true))
+    }
+
+    @Test
+    fun `with no snapshot on disk staging is allowed whether or not the marker exists`() {
+        assertTrue(mayReplaceSnapshot(snapshotExists = false, owned = false))
+        assertTrue(mayReplaceSnapshot(snapshotExists = false, owned = true))
+    }
+
+    @Test
+    fun `a legacy snapshot is adopted only on an in-place update with local history`() {
+        assertTrue(shouldAdoptLegacySnapshot(true, owned = false, updatedInPlace = true, localHasHistory = true))
+        assertFalse(shouldAdoptLegacySnapshot(true, owned = false, updatedInPlace = false, localHasHistory = true))
+        assertFalse(shouldAdoptLegacySnapshot(false, owned = false, updatedInPlace = true, localHasHistory = true))
+    }
+
+    @Test
+    fun `an unowned snapshot over an empty database is never adopted`() {
+        assertFalse(shouldAdoptLegacySnapshot(true, owned = false, updatedInPlace = true, localHasHistory = false))
+    }
 }

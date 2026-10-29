@@ -49,7 +49,7 @@ import java.time.LocalDate
 @Composable
 fun DatabaseRecoveryScreen(
     detail: String,
-    onWipe: () -> Unit,
+    onWipe: suspend () -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -64,6 +64,8 @@ fun DatabaseRecoveryScreen(
     // anyway, since the launcher callback would be gone with it. All this guards
     // against is a second tap while the coroutine above is still running.
     var saving by remember { mutableStateOf(false) }
+    var wiping by remember { mutableStateOf(false) }
+    var wipeFailed by remember { mutableStateOf(false) }
 
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")
@@ -167,8 +169,17 @@ fun DatabaseRecoveryScreen(
                 )
             }
 
+            if (wipeFailed) {
+                Text(
+                    "Couldn't delete the data. Nothing was changed that you can rely on; try again, or clear the app's storage in Android settings.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
             TextButton(
                 onClick = { confirming = true },
+                enabled = !saving && !wiping,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = MaterialTheme.colorScheme.error,
@@ -198,7 +209,16 @@ fun DatabaseRecoveryScreen(
                 TextButton(
                     onClick = {
                         confirming = false
-                        onWipe()
+                        wiping = true
+                        wipeFailed = false
+                        scope.launch {
+                            val ok = try {
+                                onWipe()
+                            } finally {
+                                wiping = false
+                            }
+                            wipeFailed = !ok
+                        }
                     },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
