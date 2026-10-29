@@ -605,7 +605,7 @@ private fun AzRail(
                     .clearAndSetSemantics {},
             ) {
                 ScrubPill(
-                    text = touchedLabel!!,
+                    text = sectionHeaderLabel(touchedLabel!!),
                     railWidthDp = RailWidthDp,
                 )
             }

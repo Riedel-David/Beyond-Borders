@@ -41,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -88,6 +89,11 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             snapshot = container.cloudSnapshot,
         ),
     )
+    // Read from the bundled registry so the labels cannot drift from the data.
+    val placeCounts by produceState(0 to 0) {
+        val all = container.places.places()
+        value = all.size to all.count { it.unMember }
+    }
 
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
@@ -224,13 +230,11 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 options = Denominator.entries,
                 selected = denominator,
                 label = { d ->
-                    stringResource(
-                        when (d) {
-                            Denominator.ALL -> R.string.settings_denominator_all
-                            Denominator.UN_MEMBER -> R.string.settings_denominator_un
-                            Denominator.INHABITED -> R.string.settings_denominator_inhabited
-                        },
-                    )
+                    when (d) {
+                        Denominator.ALL -> stringResource(R.string.settings_denominator_all, placeCounts.first)
+                        Denominator.UN_MEMBER -> stringResource(R.string.settings_denominator_un, placeCounts.second)
+                        Denominator.INHABITED -> stringResource(R.string.settings_denominator_inhabited)
+                    }
                 },
                 onSelect = viewModel::setDenominator,
             )

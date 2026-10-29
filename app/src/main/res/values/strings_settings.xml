@@ -6,7 +6,7 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all 252, not just the 195 in the UN.</string>
+    <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all %1$d, not just the %2$d in the UN.</string>
     <string name="welcome_privacy">Nothing you mark is ever sent to us. No account, no server, no network — export a backup yourself whenever you want one. (Android\'s own device backup may still include it, if you have that switched on.)</string>
     <string name="welcome_passport_hint">Visa requirements are for one passport at a time. Pick yours — you can change it later in Settings.</string>
     <string name="welcome_get_started">Get started</string>
@@ -64,8 +64,8 @@
 
     <string name="settings_counting_title">Counting places</string>
     <string name="settings_counting_detail">\"How many countries have you been to\" has no one answer. Pick which one the passport tab counts against.</string>
-    <string name="settings_denominator_all">All 252</string>
-    <string name="settings_denominator_un">195 UN</string>
+    <string name="settings_denominator_all">All %1$d</string>
+    <string name="settings_denominator_un">%1$d UN</string>
     <string name="settings_denominator_inhabited">Inhabited</string>
 
     <string name="settings_background_title">Map background</string>

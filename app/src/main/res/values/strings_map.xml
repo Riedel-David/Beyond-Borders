@@ -27,7 +27,7 @@
     <string name="map_visa_summary_none_second">Visa lens: no visa data for your passports</string>
     <string name="map_visa_summary_none_single">Visa lens: no visa data for this passport</string>
     <plurals name="map_visa_summary">
-        <item quantity="one">Visa lens: %1$d bands shown, %2$d visa-free</item>
+        <item quantity="one">Visa lens: %1$d band shown, %2$d visa-free</item>
         <item quantity="other">Visa lens: %1$d bands shown, %2$d visa-free</item>
     </plurals>
 
@@ -96,12 +96,15 @@
     </plurals>
     <string name="places_least_covered">%1$s — %2$d of %3$d</string>
     <plurals name="places_wishlist_easy">
-        <item quantity="one">%1$d of your %2$d wishlist places need no embassy</item>
+        <item quantity="one">%1$d of your %2$d wishlist place needs no embassy</item>
         <item quantity="other">%1$d of your %2$d wishlist places need no embassy</item>
     </plurals>
     <string name="places_coverage">%1$d%% of the world\'s land area, %2$d%% of its population</string>
 
     <!-- Widget configuration screen -->
+    <string name="widget_label_places_been">PLACES BEEN</string>
+    <string name="widget_label_of_the_world">OF THE WORLD</string>
+    <string name="widget_label_continents">CONTINENTS</string>
     <string name="widget_cfg_metric_title">What should the widget show?</string>
     <string name="widget_cfg_metric_countries">Countries</string>
     <string name="widget_cfg_metric_percent">Percent</string>

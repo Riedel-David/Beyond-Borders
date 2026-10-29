@@ -222,8 +222,10 @@ object TravelBackup {
         if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 }
 
-/** The file is not something this app can import, with a reason fit to show a user. */
-/** [message] is for logs and tests; [userText] is what the settings screen shows. */
+/**
+ * The file is not something this app can import, with a reason fit to show a user:
+ * [message] is for logs and tests; [userText] is what the settings screen shows.
+ */
 class BackupFormatException(message: String, val userText: UiText, cause: Throwable? = null) :
     Exception(message, cause)
 

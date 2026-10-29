@@ -31,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ fun DatabaseRecoveryScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     // Saveable, not plain remember: this screen is the only route to the bytes, and
     // a theme or font-scale change recreates the Activity. Losing "Saved." would tell
@@ -79,7 +81,7 @@ fun DatabaseRecoveryScreen(
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)
                         ?.use { DatabaseRecovery.exportTo(context, it) }
-                        ?: return@withContext context.getString(R.string.recovery_open_failed)
+                        ?: return@withContext resources.getString(R.string.recovery_open_failed)
                     null
                 }
             } catch (t: Throwable) {

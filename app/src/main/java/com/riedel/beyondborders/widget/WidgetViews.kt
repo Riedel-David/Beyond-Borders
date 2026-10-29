@@ -51,9 +51,9 @@ internal fun travelWidgetViews(
     val headline = widgetHeadline(metric, stats)
     val label = context.getString(
         when (metric) {
-            WidgetMetric.COUNTRIES -> R.string.share_tile_places_been
-            WidgetMetric.PERCENT -> R.string.share_of_the_world_caps
-            WidgetMetric.CONTINENTS -> R.string.share_tile_continents
+            WidgetMetric.COUNTRIES -> R.string.widget_label_places_been
+            WidgetMetric.PERCENT -> R.string.widget_label_of_the_world
+            WidgetMetric.CONTINENTS -> R.string.widget_label_continents
         }
     )
     views.setTextViewText(R.id.widget_headline, headline)

@@ -58,7 +58,7 @@ internal fun StatsHero(
     val badgesLine = pluralStringResource(R.plurals.stats_hero_badges, badgesTotal, badgesUnlocked, badgesTotal)
     val description = stringResource(
         R.string.stats_hero_description,
-        stats.percent, stats.been, stats.total, rankTitle, rankProgress.trimEnd('.'), badgesLine,
+        stats.percent, stats.been, stats.total, rankTitle, rankProgress, badgesLine,
     )
     val container = MaterialTheme.colorScheme.surfaceVariant
     val onContainer = MaterialTheme.colorScheme.onSurfaceVariant

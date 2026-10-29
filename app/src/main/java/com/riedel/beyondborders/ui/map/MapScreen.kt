@@ -68,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -193,6 +194,7 @@ fun MapScreen(
     val controller = remember { PlacesMapController() }
     val selected = selectedCode?.let(viewModel::placeOf)
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     // rememberSaveable because the root disposes this screen on a tab switch (the
     // SaveableStateProvider above it restores these on return).
@@ -246,13 +248,13 @@ fun MapScreen(
 
     fun reportShareFailure(retry: () -> Unit) {
         if (!onScreen) {
-            Toast.makeText(context.applicationContext, context.getString(R.string.map_share_failed), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext, resources.getString(R.string.map_share_failed), Toast.LENGTH_SHORT).show()
             return
         }
         scope.launch {
             val result = snackbarHostState.showSnackbar(
-                message = context.getString(R.string.map_share_failed),
-                actionLabel = context.getString(R.string.map_share_retry),
+                message = resources.getString(R.string.map_share_failed),
+                actionLabel = resources.getString(R.string.map_share_retry),
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) retry()
@@ -279,7 +281,7 @@ fun MapScreen(
         if (!started) {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = context.getString(R.string.map_not_ready),
+                    message = resources.getString(R.string.map_not_ready),
                     duration = SnackbarDuration.Short,
                 )
             }
@@ -360,8 +362,6 @@ fun MapScreen(
             // the two directions symmetric. The kind is what the transition keys on,
             // so the outgoing content keeps drawing its own labelled or compact form
             // while it fades out instead of jumping to the incoming one.
-            // Resolved out here because the semantics block below is not composable.
-            val legendDescription = travelLegendDescription(stats).asString()
             AnimatedContent(
                 targetState = mapLegendKind(
                     lens = lens,
@@ -407,30 +407,34 @@ fun MapScreen(
                             CounterLegendRow(palette.wishlist, stringResource(R.string.map_legend_wanted, stats.wishlist))
                         }
                     }
-                    MapLegendKind.COUNTER_DOTS -> Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        // TalkBack would otherwise read the dots and bare numbers as
-                        // separate nodes ("40 · 3 · 7") with nothing to say what each
-                        // one counts; clearAndSetSemantics replaces that with one
-                        // sentence and stops the numbers being announced twice.
-                        modifier = Modifier.clearAndSetSemantics {
-                            contentDescription = legendDescription
-                        },
-                    ) {
-                        // One dot per map colour, and only for colours actually on the
-                        // map: this is a legend, so it counts each status strictly
-                        // rather than showing the combined "been" total the passport
-                        // leads with.
-                        LegendDot(palette.visited)
-                        Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
-                        if (stats.lived > 0) {
-                            LegendDot(palette.lived)
-                            Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
-                        }
-                        if (stats.wishlist > 0) {
-                            LegendDot(palette.wishlist)
-                            Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                    MapLegendKind.COUNTER_DOTS -> {
+                        // Resolved here because the semantics block below is not composable.
+                        val legendDescription = travelLegendDescription(stats).asString()
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            // TalkBack would otherwise read the dots and bare numbers as
+                            // separate nodes ("40 · 3 · 7") with nothing to say what each
+                            // one counts; clearAndSetSemantics replaces that with one
+                            // sentence and stops the numbers being announced twice.
+                            modifier = Modifier.clearAndSetSemantics {
+                                contentDescription = legendDescription
+                            },
+                        ) {
+                            // One dot per map colour, and only for colours actually on the
+                            // map: this is a legend, so it counts each status strictly
+                            // rather than showing the combined "been" total the passport
+                            // leads with.
+                            LegendDot(palette.visited)
+                            Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
+                            if (stats.lived > 0) {
+                                LegendDot(palette.lived)
+                                Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
+                            }
+                            if (stats.wishlist > 0) {
+                                LegendDot(palette.wishlist)
+                                Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                            }
                         }
                     }
                 }
@@ -1191,7 +1195,6 @@ private fun VisaLegend(
     noDataCount: Int,
     labeled: Boolean,
 ) {
-    val collapsedSummary = visaLegendSummary(visa, noDataCount, secondVisa).asString()
     Column {
         if (labeled && visa != null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1209,6 +1212,7 @@ private fun VisaLegend(
                 if (noDataCount > 0) CounterLegendRow(ramp.noData, stringResource(R.string.map_legend_no_data, noDataCount))
             }
         } else {
+            val collapsedSummary = visaLegendSummary(visa, noDataCount, secondVisa).asString()
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,

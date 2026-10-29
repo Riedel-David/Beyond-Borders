@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -322,6 +323,7 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
     val accent = Color(if (dark) tone.accentDark else tone.accentLight)
     val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
         Column(
@@ -352,7 +354,7 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
                         } catch (e: CancellationException) {
                             throw e
                         } catch (_: Exception) {
-                            Toast.makeText(context, context.getString(R.string.badge_share_failed), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, resources.getString(R.string.badge_share_failed), Toast.LENGTH_SHORT).show()
                         }
                     } },
                     modifier = Modifier.padding(top = 8.dp),

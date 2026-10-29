@@ -59,6 +59,8 @@ fun WelcomeScreen(
     nationality: String?,
     onNationalityChange: (String) -> Unit,
     passportNames: Map<String, String>,
+    placeCount: Int,
+    unMemberCount: Int,
     onGetStarted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -103,7 +105,7 @@ fun WelcomeScreen(
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    stringResource(R.string.welcome_intro),
+                    stringResource(R.string.welcome_intro, placeCount, unMemberCount),
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 16.dp),

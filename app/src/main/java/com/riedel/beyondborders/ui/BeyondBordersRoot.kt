@@ -71,14 +71,19 @@ fun BeyondBordersRoot(
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
         var passportNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+        var placeCounts by remember { mutableStateOf(0 to 0) }
         LaunchedEffect(Unit) {
             val codes = container.visa.availablePassports()
             passportNames = codes.associateWith { code -> container.places.place(code)?.name ?: code }
+            val all = container.places.places()
+            placeCounts = all.size to all.count { it.unMember }
         }
         WelcomeScreen(
             nationality = nationality,
             onNationalityChange = container.settings::setNationality,
             passportNames = passportNames,
+            placeCount = placeCounts.first,
+            unMemberCount = placeCounts.second,
             onGetStarted = container.settings::setHasSeenWelcome,
             modifier = modifier,
         )
