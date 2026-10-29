@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.ui.passport
 
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -7,7 +9,7 @@ import org.junit.Test
 class SeenAchievementsTest {
 
     private fun badge(id: String, progress: Int, target: Int, title: String = id) =
-        Achievement(id, title, "", progress, target, AchievementGroup.COUNTS)
+        Achievement(id, UiText.Plain(title), UiText.Plain(""), progress, target, AchievementGroup.COUNTS)
 
     @Test
     fun `next up takes the three highest ratios among locked badges with progress`() {
@@ -60,9 +62,9 @@ class SeenAchievementsTest {
     @Test
     fun `celebration message names one badge or counts the rest`() {
         assertNull(celebrationMessage(emptyList()))
-        assertEquals("Unlocked: X", celebrationMessage(listOf(badge("x", 1, 1, "X"))))
+        assertEquals(UiText.Res(R.string.badge_celebrate_one, UiText.Plain("X")), celebrationMessage(listOf(badge("x", 1, 1, "X"))))
         assertEquals(
-            "Unlocked: X and 2 more",
+            UiText.Res(R.string.badge_celebrate_more, UiText.Plain("X"), 2),
             celebrationMessage(listOf(badge("x", 1, 1, "X"), badge("y", 1, 1), badge("z", 1, 1))),
         )
     }

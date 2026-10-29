@@ -10,6 +10,8 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.map.BrandDeep
 import com.riedel.beyondborders.ui.map.BrandInk
 import com.riedel.beyondborders.ui.map.WORDMARK
@@ -29,16 +31,23 @@ private const val BADGE_CARD_SIZE = 1080
 // --- text -------------------------------------------------------------------
 
 /** "Explorer · 42 places": the rank and the count it was earned with. */
-internal fun badgeRankLine(placesVisited: Int): String =
-    "${rankFor(placesVisited).title} · $placesVisited ${if (placesVisited == 1) "place" else "places"}"
+internal fun badgeRankLine(placesVisited: Int): UiText = UiText.Res(
+    R.string.badge_rank_line,
+    rankFor(placesVisited).title,
+    UiText.Plural(R.plurals.badge_places_count, placesVisited, placesVisited),
+)
 
 /** "3 of 10" while locked; a finished badge just says so. */
-internal fun badgeProgressText(achievement: Achievement): String =
-    if (achievement.unlocked) "Unlocked" else "${achievement.progress} of ${achievement.target}"
+internal fun badgeProgressText(achievement: Achievement): UiText =
+    if (achievement.unlocked) {
+        UiText.Res(R.string.badge_unlocked)
+    } else {
+        UiText.Res(R.string.badge_progress_of, achievement.progress, achievement.target)
+    }
 
 /** The text that travels with the image, for targets that show a message beside it. */
-internal fun badgeShareCaption(achievement: Achievement): String =
-    "I unlocked “${achievement.title}” in Beyond Borders: ${achievement.description}"
+internal fun badgeShareCaption(achievement: Achievement): UiText =
+    UiText.Res(R.string.badge_share_caption, achievement.title, achievement.description)
 
 // --- card -------------------------------------------------------------------
 
@@ -85,6 +94,7 @@ private fun wrapText(text: String, paint: Paint, maxWidth: Float, maxLines: Int)
  * leave the card top-heavy; long text wraps, then ellipsizes, never clips.
  */
 internal fun badgeShareCard(
+    context: Context,
     achievement: Achievement,
     placesVisited: Int,
     icon: Drawable?,
@@ -127,7 +137,7 @@ internal fun badgeShareCard(
 
     // Footer: a hairline and the rank line, pinned to the bottom.
     val rankPaint = bodyPaint(w * 0.040f, 200).apply { textAlign = Paint.Align.CENTER }
-    val rankText = fitToWidth(badgeRankLine(placesVisited), rankPaint, textWidth)
+    val rankText = fitToWidth(badgeRankLine(placesVisited).asString(context), rankPaint, textWidth)
     val footerTop = h - pad - rankPaint.lineHeight() - w * 0.04f
     canvas.drawLine(pad, footerTop, w - pad, footerTop, Paint().apply { color = Color.argb(28, 255, 255, 255) })
     canvas.drawText(
@@ -138,8 +148,8 @@ internal fun badgeShareCard(
     val circle = w * 0.27f
     val titlePaint = numberPaint(w * 0.068f).apply { textAlign = Paint.Align.CENTER }
     val descPaint = bodyPaint(w * 0.037f, 205).apply { textAlign = Paint.Align.CENTER }
-    val titleLines = wrapText(achievement.title, titlePaint, textWidth, 2)
-    val descLines = wrapText(achievement.description, descPaint, textWidth, 3)
+    val titleLines = wrapText(achievement.title.asString(context), titlePaint, textWidth, 2)
+    val descLines = wrapText(achievement.description.asString(context), descPaint, textWidth, 3)
     val gapCircle = w * 0.05f
     val gapTitle = w * 0.025f
     val titleLH = titlePaint.lineHeight() * 1.0f
@@ -187,7 +197,7 @@ internal fun badgeShareCard(
 internal suspend fun shareBadge(context: Context, achievement: Achievement, placesVisited: Int) {
     val card = withContext(Dispatchers.Default) {
         val icon = ContextCompat.getDrawable(context, iconFor(achievement.group))
-        badgeShareCard(achievement, placesVisited, icon, appLogo(context))
+        badgeShareCard(context, achievement, placesVisited, icon, appLogo(context))
     }
-    shareBitmap(context, card, badgeShareCaption(achievement))
+    shareBitmap(context, card, badgeShareCaption(achievement).asString(context))
 }
