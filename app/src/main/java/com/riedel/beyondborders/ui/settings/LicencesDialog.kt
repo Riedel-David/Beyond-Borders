@@ -26,7 +26,7 @@ private val LICENCE_LINES = listOf(
     UiText.Res(R.string.settings_licence_map) to UiText.Plain("MapLibre Native (BSD-2-Clause)"),
     UiText.Res(R.string.settings_licence_borders) to UiText.Plain("Natural Earth (public domain)"),
     UiText.Res(R.string.settings_licence_labels) to UiText.Plain("Noto Sans (SIL OFL 1.1)"),
-    UiText.Res(R.string.settings_licence_flags) to UiText.Plain("flag-icons (MIT)"),
+    UiText.Res(R.string.settings_licence_flags) to UiText.Plain("country-flags, Wikimedia Commons (public domain)"),
     UiText.Res(R.string.settings_licence_visa) to UiText.Res(R.string.settings_licence_visa_body),
     UiText.Res(R.string.settings_licence_advice) to UiText.Res(R.string.settings_licence_advice_body),
     UiText.Res(R.string.settings_licence_libraries) to

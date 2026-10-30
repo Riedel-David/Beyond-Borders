@@ -13,8 +13,10 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +33,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -43,6 +47,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -1393,8 +1398,10 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
 }
 
 /**
- * What a tap opens: a full-width banner over the bottom edge with the place's flag
- * as its background under a dark scrim. Deliberately not a modal sheet: the map stays
+ * What a tap opens: a full-width banner over the bottom edge. The flag sits beside the
+ * name as a crisp thumbnail at its true aspect ratio, and the background is a diagonal
+ * gradient of the flag's own dominant colours, darkened until white text reads on it
+ * (plain dark for places without a flag). Deliberately not a modal sheet: the map stays
  * visible and interactive, so tapping a second country just swaps the banner
  * instead of forcing a dismiss first.
  *
@@ -1416,61 +1423,78 @@ private fun SelectedPlaceCard(
     modifier: Modifier = Modifier,
 ) {
     val flag = rememberPlaceFlag(place.code)
-    // The scrim is always dark, so the content is themed dark whatever the app theme is:
-    // chips and secondary text would otherwise be near-invisible over a flag in light mode.
+    // The colours are always darkened for white text, so the content is themed dark
+    // whatever the app theme is: chips and secondary text would otherwise be
+    // near-invisible over a flag in light mode.
     MaterialTheme(colorScheme = darkColorScheme(), typography = MaterialTheme.typography) {
+    val colors = flag?.colors.orEmpty().map { Color(it) }
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .background(Color(0xFF1B1B1F))
+            .background(
+                when (colors.size) {
+                    0 -> Brush.linearGradient(listOf(Color(0xFF1B1B1F), Color(0xFF1B1B1F)))
+                    1 -> Brush.linearGradient(listOf(colors[0], colors[0]))
+                    else -> Brush.linearGradient(colors)
+                }
+            )
             .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
-        // Places without a flag (or while it decodes) keep the plain dark banner.
-        flag?.let {
-            Image(
-                bitmap = it,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
-            )
-        }
-        Box(
-            Modifier.matchParentSize().background(
-                Brush.verticalGradient(listOf(Color(0x99000000), Color(0xE6000000)))
-            )
-        )
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                place.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                buildString {
-                    append(place.code)
-                    append(" · ")
-                    append(place.continent)
-                    // Shown only where it says something new: "Greenland (Denmark)"
-                    // is the point of this app, "France (France)" is noise.
-                    if (place.sovereign != place.name) {
-                        append(" · ")
-                        append(place.sovereign)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // No flag (or still decoding): no slot at all. With one, the slot is a
+                // fixed width so the text does not shift between a wide and a square flag.
+                flag?.let {
+                    val (w, h) = flagThumbSize(it.bitmap.width, it.bitmap.height, 64f, 40f)
+                    val shape = RoundedCornerShape(4.dp)
+                    Box(Modifier.width(64.dp), contentAlignment = Alignment.Center) {
+                        Image(
+                            bitmap = it.bitmap,
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .size(w.dp, h.dp)
+                                .clip(shape)
+                                .border(1.dp, Color.White.copy(alpha = 0.25f), shape),
+                        )
                     }
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                // Two lines, fixed: one line ellipsises the sovereign away, and
-                // the sovereign is the fact this app exists to surface — Sint
-                // Maarten being Dutch is the point, not decoration. minLines
-                // alongside maxLines pins the card's height at two lines
-                // regardless of which place is selected.
-                minLines = 2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+                    Spacer(Modifier.width(12.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                Text(
+                    place.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    buildString {
+                        append(place.code)
+                        append(" · ")
+                        append(place.continent)
+                        // Shown only where it says something new: "Greenland (Denmark)"
+                        // is the point of this app, "France (France)" is noise.
+                        if (place.sovereign != place.name) {
+                            append(" · ")
+                            append(place.sovereign)
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Two lines, fixed: one line ellipsises the sovereign away, and
+                    // the sovereign is the fact this app exists to surface — Sint
+                    // Maarten being Dutch is the point, not decoration. minLines
+                    // alongside maxLines pins the card's height at two lines
+                    // regardless of which place is selected.
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                }
+            }
             if (requirement != null) {
                 Text(
                     requirementSummaryText(requirement, attributeTo).asString(),
@@ -1520,21 +1544,28 @@ private fun SelectedPlaceCard(
                     // once the card's padding is taken off, and a wrapped or
                     // scrolling row of three would hide one of the three answers
                     // behind a gesture.
-                    BounceFilterChip(
-                        selected = status == PlaceStatus.VISITED,
-                        label = stringResource(R.string.map_chip_been),
-                        onClick = { onToggle(PlaceStatus.VISITED) },
+                    //
+                    // Own colours rather than the theme's: the theme's grey outline
+                    // vanishes into a saturated flag red. A dark wash with a light rim
+                    // reads on any flag colour, and the selected chip inverts to white.
+                    val chipColors = FilterChipDefaults.filterChipColors(
+                        containerColor = Color.Black.copy(alpha = 0.3f),
+                        labelColor = Color.White,
+                        selectedContainerColor = Color.White,
+                        selectedLabelColor = Color(0xFF1B1B1F),
                     )
-                    BounceFilterChip(
-                        selected = status == PlaceStatus.LIVED,
-                        label = stringResource(R.string.map_chip_lived),
-                        onClick = { onToggle(PlaceStatus.LIVED) },
+                    @Composable
+                    fun StatusChip(target: PlaceStatus, label: String) = BounceFilterChip(
+                        selected = status == target,
+                        label = label,
+                        onClick = { onToggle(target) },
+                        colors = chipColors,
+                        border = if (status == target) null
+                            else BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
                     )
-                    BounceFilterChip(
-                        selected = status == PlaceStatus.WISHLIST,
-                        label = stringResource(R.string.map_chip_want),
-                        onClick = { onToggle(PlaceStatus.WISHLIST) },
-                    )
+                    StatusChip(PlaceStatus.VISITED, stringResource(R.string.map_chip_been))
+                    StatusChip(PlaceStatus.LIVED, stringResource(R.string.map_chip_lived))
+                    StatusChip(PlaceStatus.WISHLIST, stringResource(R.string.map_chip_want))
                 }
             }
         }
