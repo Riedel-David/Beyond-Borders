@@ -13,6 +13,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -51,6 +53,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -65,8 +68,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -603,9 +608,7 @@ fun MapScreen(
             exit = fadeOut(tween(140)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(contentPadding)
-                // Same FAB-clearance reasoning as the region card above.
-                .padding(start = 12.dp, top = 12.dp, end = 88.dp, bottom = 12.dp),
+                .padding(contentPadding),
         ) {
             (selected ?: lastSelected)?.let { place ->
                 // Carried into the card whenever the lens is on, so a tap answers
@@ -640,7 +643,8 @@ fun MapScreen(
 
         // The region/selection cards above anchor to BottomCenter and reserve an
         // end inset (see their modifiers) so this FAB's corner stays clear of them.
-        FloatingActionButton(
+        // Hidden while a place is selected: the flag banner owns the bottom edge then.
+        if (selected == null) FloatingActionButton(
             onClick = {
                 viewModel.vibrate()
                 showShareStyleDialog = true
@@ -1389,8 +1393,9 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
 }
 
 /**
- * What a tap opens. Deliberately a card and not a modal sheet: the map stays
- * visible and interactive, so tapping a second country just swaps the card
+ * What a tap opens: a full-width banner over the bottom edge with the place's flag
+ * as its background under a dark scrim. Deliberately not a modal sheet: the map stays
+ * visible and interactive, so tapping a second country just swaps the banner
  * instead of forcing a dismiss first.
  *
  * It carries no Close button either, for the same reason: a tap on open ocean
@@ -1410,12 +1415,31 @@ private fun SelectedPlaceCard(
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+    val flag = rememberPlaceFlag(place.code)
+    // The scrim is always dark, so the content is themed dark whatever the app theme is:
+    // chips and secondary text would otherwise be near-invisible over a flag in light mode.
+    MaterialTheme(colorScheme = darkColorScheme(), typography = MaterialTheme.typography) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .background(Color(0xFF1B1B1F))
+            .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
+        // Places without a flag (or while it decodes) keep the plain dark banner.
+        flag?.let {
+            Image(
+                bitmap = it,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+        Box(
+            Modifier.matchParentSize().background(
+                Brush.verticalGradient(listOf(Color(0x99000000), Color(0xE6000000)))
+            )
+        )
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 place.name,
@@ -1514,6 +1538,7 @@ private fun SelectedPlaceCard(
                 }
             }
         }
+    }
     }
 }
 

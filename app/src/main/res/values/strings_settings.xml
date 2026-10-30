@@ -130,6 +130,7 @@
     <string name="settings_licence_map">Map</string>
     <string name="settings_licence_borders">Borders</string>
     <string name="settings_licence_labels">Labels</string>
+    <string name="settings_licence_flags">Flags</string>
     <string name="settings_licence_visa">Visa data</string>
     <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>
     <string name="settings_licence_advice">Official advice links</string>
