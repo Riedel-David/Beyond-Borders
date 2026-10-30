@@ -12,8 +12,8 @@ import org.json.JSONObject
  * other passport), parsed once with the platform's org.json.
  *
  * One passport at a time, not the whole matrix in one asset: all 199 passports
- * ship (~5 MB of JSON in total), `visa.json` for DE (the curated one, with its 53
- * territory overrides) and one `visa_<code>.json` for each of the 198 others
+ * ship (~5 MB of JSON in total), `visa.json` for DE (the curated one, with its
+ * hand-written territory answers) and one `visa_<code>.json` for each of the 198 others
  * (generic programme-based territory answers where a real rule applies, no
  * answer where it doesn't — see tools/visa/rules.py).
  */
@@ -25,6 +25,12 @@ class VisaRegistry private constructor(
     val datasetName: String,
     val datasetUrl: String,
     val datasetLicence: String,
+    /** CC BY-SA asks for a link to the licence; null in an asset written before it was recorded. */
+    val licenceUrl: String? = null,
+    /** The Wikipedia article this passport's answers were read from. */
+    val sourceUrl: String? = null,
+    /** That article's revision, for the attribution trail. */
+    val sourceRevision: String? = null,
     /**
      * The IATA Travel Centre. One hub for every destination rather than a deep
      * link, because it is a form — the UI names it honestly.
@@ -123,6 +129,12 @@ class VisaRegistry private constructor(
                 datasetName = dataset.getString("name"),
                 datasetUrl = dataset.getString("url"),
                 datasetLicence = dataset.getString("licence"),
+                licenceUrl = dataset.optStringOrNull("licenceUrl"),
+                sourceUrl = dataset.optStringOrNull("sourceUrl"),
+                // A number in the shipped assets (a Wikipedia revision id); org.json refuses
+                // getString on it.
+                sourceRevision = if (dataset.has("sourceRevision") && !dataset.isNull("sourceRevision"))
+                    dataset.get("sourceRevision").toString() else null,
                 iataUrl = root.getString("iataUrl"),
                 requirements = out,
             )

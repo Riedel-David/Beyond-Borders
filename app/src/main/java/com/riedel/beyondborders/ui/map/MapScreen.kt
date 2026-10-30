@@ -105,6 +105,7 @@ import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
 import com.riedel.beyondborders.ui.places.RegionStyleKey
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.nextRegionMode
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.MapPalette
@@ -1195,11 +1196,14 @@ private fun VisaLegend(
     noDataCount: Int,
     labeled: Boolean,
 ) {
+    // The combined bands, as painted: with two passports the primary's own counts
+    // would leave a drawn band without a legend entry.
+    val counts = remember(visa, secondVisa) { combinedBandCounts(visa, secondVisa) }
     Column {
         if (labeled && visa != null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 VisaBand.entries.forEach { band ->
-                    val count = visa.countByBand[band] ?: 0
+                    val count = counts[band] ?: 0
                     if (count > 0) {
                         CounterLegendRow(
                             ramp.colorFor(band),
@@ -1224,17 +1228,21 @@ private fun VisaLegend(
                     contentDescription = collapsedSummary
                 },
             ) {
-                // Separated dots, like the travel legend: the five bands are a
+                // Separated dots, like the travel legend: the bands are a
                 // categorical set now, not an ordered scale, so nothing here should
-                // read as a sequence of adjacent steps.
+                // read as a sequence of adjacent steps. Empty bands get no dot, as in
+                // the expanded legend and visaLegendSummary: a dot matching no place
+                // (DE has no CHECK rows) would be a riddle.
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     VisaBand.entries.forEach { band ->
-                        Box(
-                            Modifier
-                                .size(10.dp)
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .background(ramp.colorFor(band))
-                        )
+                        if ((counts[band] ?: 0) > 0) {
+                            Box(
+                                Modifier
+                                    .size(10.dp)
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .background(ramp.colorFor(band))
+                            )
+                        }
                     }
                     if (noDataCount > 0) {
                         Box(
@@ -1249,7 +1257,7 @@ private fun VisaLegend(
                     if (visa == null) {
                         stringResource(R.string.map_visa_legend_none)
                     } else {
-                        stringResource(R.string.map_visa_legend_free, visa.visaFreeCount)
+                        stringResource(R.string.map_visa_legend_free, counts[VisaBand.VISA_FREE] ?: 0)
                     },
                     style = MaterialTheme.typography.labelLarge,
                 )
@@ -1595,9 +1603,10 @@ internal fun visaLegendSummary(
             if (secondVisa != null) R.string.map_visa_summary_none_second else R.string.map_visa_summary_none_single
         )
     }
-    val bands = VisaBand.entries.count { (visa.countByBand[it] ?: 0) > 0 }
+    val counts = combinedBandCounts(visa, secondVisa)
+    val bands = VisaBand.entries.count { (counts[it] ?: 0) > 0 }
     val withNoData = if (noDataCount > 0) bands + 1 else bands
-    return UiText.Plural(R.plurals.map_visa_summary, withNoData, withNoData, visa.visaFreeCount)
+    return UiText.Plural(R.plurals.map_visa_summary, withNoData, withNoData, counts[VisaBand.VISA_FREE] ?: 0)
 }
 
 /**

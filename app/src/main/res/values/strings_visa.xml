@@ -7,6 +7,7 @@
     <string name="visa_category_visa_on_arrival">Visa on arrival</string>
     <string name="visa_category_e_visa">e-Visa</string>
     <string name="visa_category_visa_required">Visa required</string>
+    <string name="visa_category_check">Check requirements</string>
     <string name="visa_category_permit_required">Permit required</string>
     <string name="visa_category_no_admission">No entry</string>
 
@@ -15,6 +16,7 @@
     <string name="visa_band_eta">e-Ticket/ETA</string>
     <string name="visa_band_visa_on_arrival">On arrival</string>
     <string name="visa_band_visa_required">Apply first</string>
+    <string name="visa_band_check">Check</string>
     <string name="visa_band_closed">Closed</string>
     <string name="visa_band_no_data">No data</string>
 
@@ -59,6 +61,8 @@
     <string name="visa_summary_easy">%1$d reachable without an embassy appointment</string>
     <string name="visa_legend_item">%1$s %2$d</string>
     <string name="visa_dataset_credit">%1$s · %2$s</string>
+    <string name="visa_licence_link">Licence</string>
+    <string name="visa_source_link">Source: %1$s article</string>
     <string name="visa_correction">%1$s says \"%2$s\" — corrected here</string>
 
     <!-- Passport picker -->

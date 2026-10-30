@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +51,8 @@ import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
+import com.riedel.beyondborders.ui.places.combinedBandCounts
+import com.riedel.beyondborders.ui.places.combinedTotals
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
@@ -191,6 +194,8 @@ private fun VisaSummaryCard(
     modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
+    // Combined with the second passport, like the bar below and the map.
+    val totals = remember(visa, secondVisa) { combinedTotals(visa, secondVisa) }
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -200,24 +205,24 @@ private fun VisaSummaryCard(
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "${visa.visaFreeCount}",
+                    "${totals.visaFree}",
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    stringResource(R.string.visa_summary_visa_free_of, visa.requirements.size),
+                    stringResource(R.string.visa_summary_visa_free_of, totals.answered),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
             }
             Text(
-                stringResource(R.string.visa_summary_easy, visa.easyCount),
+                stringResource(R.string.visa_summary_easy, totals.easy),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            BandBar(visa, placesTotal, ramp, Modifier.padding(top = 12.dp))
+            BandBar(visa, secondVisa, placesTotal, ramp, Modifier.padding(top = 12.dp))
             Text(
                 (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
                 style = MaterialTheme.typography.labelSmall,
@@ -228,6 +233,15 @@ private fun VisaSummaryCard(
             // asks for the credit, and someone checking an answer deserves to be able
             // to reach the thing the answer came from.
             LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
+            // CC BY-SA asks for a link to the licence and to what the data came from:
+            // upstream's own page for the licence, and the Wikipedia article each
+            // viewed passport's answers were read from.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
+                listOfNotNull(visa, secondVisa).forEach { v ->
+                    v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
+                }
+            }
         }
     }
 }
@@ -244,8 +258,17 @@ private fun VisaSummaryCard(
  * to be the whole world.
  */
 @Composable
-private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifier: Modifier = Modifier) {
-    val noDataCount = placesTotal - visa.requirements.size
+private fun BandBar(
+    visa: VisaRegistry,
+    secondVisa: VisaRegistry?,
+    placesTotal: Int,
+    ramp: VisaRamp,
+    modifier: Modifier = Modifier,
+) {
+    // The combined bands the map paints, so a band with two passports is never
+    // missing from the bar and the grey segment is what neither passport answers.
+    val counts = remember(visa, secondVisa) { combinedBandCounts(visa, secondVisa) }
+    val noDataCount = placesTotal - counts.values.sum()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             Modifier
@@ -254,7 +277,7 @@ private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifi
                 .clip(MaterialTheme.shapes.extraSmall),
         ) {
             VisaBand.entries.forEach { band ->
-                val count = visa.countByBand[band] ?: 0
+                val count = counts[band] ?: 0
                 // A band with no places contributes no weight at all: Compose treats
                 // a zero weight as an error, and a hairline segment would read as a
                 // rounding artefact anyway.
@@ -279,8 +302,8 @@ private fun BandBar(visa: VisaRegistry, placesTotal: Int, ramp: VisaRamp, modifi
         // Two per row, as the continent bars are: four labels side by side do not fit
         // across a 360 dp phone, and a colour with a number but no word is a riddle.
         val legend = VisaBand.entries
-            .filter { (visa.countByBand[it] ?: 0) > 0 }
-            .map { band -> Triple(ramp.colorFor(band), stringResource(band.labelRes), visa.countByBand[band] ?: 0) } +
+            .filter { (counts[it] ?: 0) > 0 }
+            .map { band -> Triple(ramp.colorFor(band), stringResource(band.labelRes), counts[band] ?: 0) } +
             listOfNotNull(
                 if (noDataCount > 0) Triple(ramp.noData, stringResource(R.string.visa_band_no_data), noDataCount) else null,
             )

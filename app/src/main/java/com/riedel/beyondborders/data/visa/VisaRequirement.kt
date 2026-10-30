@@ -63,6 +63,13 @@ data class VisaRequirement(
  * because an ETA is a near-instant online yes/no while a visa on arrival is a
  * queue, a fee in cash and an official's discretion.
  *
+ * [CHECK] is the dataset's `special` status: the rule is real but does not fit any
+ * other category (a tourist card, an invitation, a travel ban), so the row's own note
+ * is the answer. It sorts after [VISA_REQUIRED] and before the permit regimes. With
+ * two passports the lower ordinal wins, so a definite visa path on the other passport
+ * beats it, while it beats a definite permit or refusal: it is not assumed to be as
+ * closed as those.
+ *
  * [PERMIT_REQUIRED] is ours rather than the dataset's. The seven uninhabited
  * places need permission from a research programme or a nature-reserve
  * authority; filing that under [VISA_REQUIRED] would send someone looking for an
@@ -77,6 +84,7 @@ enum class VisaCategory(@StringRes val labelRes: Int) {
     VISA_ON_ARRIVAL(R.string.visa_category_visa_on_arrival),
     E_VISA(R.string.visa_category_e_visa),
     VISA_REQUIRED(R.string.visa_category_visa_required),
+    CHECK(R.string.visa_category_check),
     PERMIT_REQUIRED(R.string.visa_category_permit_required),
     NO_ADMISSION(R.string.visa_category_no_admission),
     ;
@@ -94,7 +102,7 @@ enum class VisaCategory(@StringRes val labelRes: Int) {
 
 /** Where a requirement came from, which the app shows rather than hides. */
 enum class VisaOrigin {
-    /** Straight out of the Passport Index row. */
+    /** Straight out of the dataset row. */
     DATASET,
 
     /** Hand-written in tools/visa/rules.py, because the dataset has no row. */

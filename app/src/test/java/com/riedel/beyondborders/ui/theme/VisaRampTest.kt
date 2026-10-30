@@ -14,11 +14,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The visa lens paints a *categorical* set now: five named hues, one per band, with
+ * The visa lens paints a *categorical* set now: six named hues, one per band, with
  * no order between them for a colour to carry.
  *
  * That makes the accessibility bar pairwise rather than neighbour-to-neighbour — every
- * one of the ten pairs has to stay visible and stay apart, not just each band and the
+ * one of the fifteen pairs has to stay visible and stay apart, not just each band and the
  * one next to it in a sequence. It is also the harder bar to clear on purpose: this
  * palette includes green and red together, which the single-hue ramp this replaced
  * ruled out for the exact reason `no two bands collapse under dichromacy simulation`
@@ -191,8 +191,8 @@ class VisaRampTest {
 
     @Test
     fun `every band is something a category actually maps to`() {
-        // A band with no categories would spend a fifth of the palette saying
-        // nothing, and there are only five bands to give.
+        // A band with no categories would spend a sixth of the palette saying
+        // nothing, and there are only six bands to give.
         assertEquals(
             VisaBand.entries.toSet(),
             VisaCategory.entries.map { it.band }.toSet(),

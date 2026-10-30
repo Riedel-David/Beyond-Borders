@@ -131,7 +131,7 @@
     <string name="settings_licence_borders">Borders</string>
     <string name="settings_licence_labels">Labels</string>
     <string name="settings_licence_visa">Visa data</string>
-    <string name="settings_licence_visa_body">Passport Index Data (MIT), see THIRD_PARTY_NOTICES.md in the repository</string>
+    <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>
     <string name="settings_licence_advice">Official advice links</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (German Federal Foreign Office)</string>
     <string name="settings_licence_libraries">Libraries</string>

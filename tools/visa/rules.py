@@ -1,33 +1,41 @@
-"""Curation rules that turn the Passport Index matrix into BeyondBorders visa data.
+"""Curation rules that turn the Visa-requirements dataset into BeyondBorders visa data.
 
 Why this file exists
 --------------------
-The Passport Index matrix is 199 passports x 199 destinations. Those 199
-destinations are sovereign states. BeyondBorders has 252 places, because the whole
-point of the place registry is that Greenland is not Denmark
-and French Guiana is not France.
+The dataset (https://github.com/Riedel-David/Visa-requirements, derived from
+Wikipedia's "Visa requirements for ... citizens" articles) has one JSON file per
+passport, about 200 of them. Its destinations are mostly states plus a good many
+territories, but it is organised the way Wikipedia is, not the way our place
+registry is: BeyondBorders has 252 places, because the whole point of the registry
+is that Greenland is not Denmark and French Guiana is not France.
 
-So 53 of our places have no row in the dataset at all, and they are exactly the
-ones a passport app normally gets wrong. Guadeloupe is inside the EU; Greenland
-and the Faroes are outside both the EU and Schengen; Jersey now needs a UK ETA
-while Gibraltar does not; American Samoa does not accept ESTA even though Guam
+Coverage is patchy per passport. Many passports have no whole-country row (`area`
+null) for a given territory, and a few territories have no row for any passport
+(Bouvet, Heard and McDonald, Western Sahara). Those gaps are exactly the places a
+passport app normally gets wrong. Guadeloupe is inside the EU; Jersey now needs a UK
+ETA while Gibraltar does not; American Samoa does not accept ESTA even though Guam
 does. None of that falls out of any rule — it has to be written down one entry at
-a time, which is what OVERRIDES below is.
+a time, which is what PROGRAMS (for DE) and GENERIC_RULE (for the rest) are.
 
 Guiding rules
 -------------
 1. The dataset wins wherever it has an answer. An override that shadows a
    dataset row is a CORRECTION and must say so, so that the day upstream fixes
    it, the build tells us the correction is dead instead of quietly preserving a
-   stale opinion forever.
+   stale opinion forever. The generic tier is the one exception: it is a
+   fallback applied to ~200 passports with different gaps, so it is silently
+   skipped where a passport has a row, and the build checks instead that every
+   generic rule still fires for at least one passport.
 2. Every override cites a source, by key into SOURCES. Keys are shared because
    most of these entries rest on the same handful of documents: "EU outermost
    region" settles five places at once, and pretending otherwise would mean five
    invented URLs.
 3. Every override carries a CONFIDENCE. This file is hand-written, so some of it
    is worth less than the rest, and the app shows the difference rather than
-   presenting all 53 in the same authoritative voice.
-4. Two passports today, DE and GB. See PASSPORTS below for why a third one is
+   presenting the hand-written answers in the same authoritative voice
+   as the dataset's.
+4. One curated passport today, DE; every other passport gets the generic tier
+   (GENERIC_RULE). See PASSPORTS below for why a second curated one is
    real curation work, not a config flag.
 
 This is a navigation aid, not a source of truth. Entry rules depend on residence,
@@ -40,14 +48,14 @@ check-in desk that disagrees.
 #
 # Not a placeholder for a future switcher bolted on top. The dataset would
 # happily ship whole (~600 kB of CSV, ~400 kB as JSON) and give 199 passports
-# their 199 answers. But the 53 places below need real curation per passport,
+# their 199 answers. But the places below that the dataset lacks need real curation per passport,
 # and it does not generalise by copying: "Guadeloupe is visa-free" is true
 # because of EU freedom of movement, which a Brazilian passport does not have.
-# PROGRAMS (below) is what makes a switcher affordable — most of the 53
+# PROGRAMS (below) is what makes a switcher affordable — most of those
 # answers are program memberships (EU/Schengen freedom of movement, UK ETA
 # exemption, US Visa Waiver Program, ...) shared across several passports, not
-# 53 independent per-passport facts. PASSPORTS is the declared roster; DE and
-# GB both have program memberships filled in.
+# independent per-passport facts. PASSPORTS is the declared roster of curated
+# passports (DE only); every other passport uses the generic tier.
 #
 # PASSPORT is which one this run of build_visa.py resolves by default; pass
 # --passport to build a different one from PASSPORTS.
@@ -69,24 +77,99 @@ CTA_MEMBERS = ("GB", "IE")
 # ---------------------------------------------------------------------------
 # The dataset.
 #
-# The plan names ilyankou/passport-index-dataset. That repo was archived in
-# January 2025 and its README points at this fork for February 2026 onwards.
-# The fork is also MIT rather than CC BY-SA, which removes the redistribution
-# constraint flagged as unchecked.
+# Our own: Riedel-David/Visa-requirements, published on GitHub Pages. We read the
+# per-passport JSON rather than the tidy CSV because the CSV has no day counts.
+# The build always downloads the latest publication, which is not reproducible by
+# itself, so it records the index's `generated_at` and every passport's
+# `source_revision` (see build_visa.py, ASSET_SOURCES.md).
 #
-# The switch is not cosmetic: the archived data still gave Germans 180 visa-free
-# days to GB, but the UK ETA has applied to EU nationals since 2025. This fork
-# has GB as `eta`.
+# Licence is CC BY-SA 4.0 (Wikipedia contributors), so the assets are an adaptation
+# and carry the same share-alike obligation — see THIRD_PARTY_NOTICES.md.
 # ---------------------------------------------------------------------------
 DATASET = {
-    "name": "Passport Index Data",
-    "url": "https://github.com/imorte/passport-index-data",
-    "file": "passport-index-tidy-iso2.csv",
-    "licence": "MIT",
-    # From the fork's README ("Last updated: 17 February 2026"), not from the
-    # file's mtime, which would change on every clone.
-    "as_of": "2026-02-17",
+    "name": "Visa requirements (Wikipedia contributors)",
+    "url": "https://github.com/Riedel-David/Visa-requirements",
+    "pages": "https://riedel-david.github.io/Visa-requirements/",
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "schema_major": 1,
 }
+
+# Upstream destination codes that are not places in our registry. Named here so
+# an unknown code is a build failure and these are a decision. Each must still
+# occur in the data, or the entry is stale.
+IGNORED_DESTINATIONS = {
+    "XA": "Abkhazia — not a place in the registry",
+    "XO": "South Ossetia — not a place in the registry",
+    "XT": "Transnistria — not a place in the registry",
+    "XW": "Sahrawi Arab Democratic Republic — not a place in the registry "
+          "(Western Sahara itself is EH)",
+}
+
+# Wikipedia files some places under a section name instead of a whole-country row,
+# so upstream has `area` set and no `area == null` record. For these four the area
+# *is* the place (it is the only record for that destination and its text is the
+# place's own name), and the previous dataset answered them, so dropping them would
+# be a regression. Deliberately NOT extended to Falklands, Pitcairn, BVI etc.: those
+# are hand-curated for DE and left silent for the generic tier on purpose.
+AREA_IS_WHOLE_PLACE = {
+    "TW": ("Taiwan", "Taiwan (Republic of China)"),
+    "PS": ("Palestine", "State of Palestine", "Palestinian Territory"),
+    "MO": ("Macau",),
+    "CW": ("Curacao",),
+    # Taiwan's own passport files China as `special` under this area (the
+    # Mainland Travel Permit); it is the whole-country answer, there is no other.
+    "CN": ("(People's Republic of)",),
+}
+
+# Whole sovereign states filed under an area instead of `area == null`. Wikipedia's
+# tables say "Australia and territories" or "United Kingdom and Crown dependencies",
+# and upstream keeps the suffix as `area`, so a passport can have NO null record for
+# AU/GB/FR/DK/NZ/CN. Of the ~110 distinct non-null `area` strings in the dataset,
+# these two (checked across data/passports/*.json) are the whole-state markers; the
+# decision for every other family is:
+#   * a named sub-area (Svalbard, Galápagos, Tibet, Crimea, Kish Island, Baikonur,
+#     Clipperton, 'Akrotiri and Dhekelia', Antarctic claims, ...): NOT the state.
+#   * a territory with its own registry place (Greenland, Faroe Islands, Åland,
+#     Bonaire, French Polynesia, Guam, ...): that place's row, not its sovereign's.
+#   * a name for a place (Taiwan, Palestine, Macau, Curacao, China's own area):
+#     AREA_IS_WHOLE_PLACE above.
+#   * typographic variants of the above (parentheses, '&nbsp;', ', ' lists): ignored.
+# Used only when there is exactly one such record and no null record.
+WHOLE_SOVEREIGN_AREAS = ("and territories", "and Crown dependencies")
+
+# (passport, destination) pairs upstream has no usable row for although the
+# destination is a sovereign place, so the host test and the build do not demand
+# them. Everything else must resolve. Reported upstream rather than curated here.
+#   * EH, AQ, XK, XS, XN, TW as destinations: the articles of most passports have no
+#     row for them (EH 199 of 199 passports, AQ 172, XN/XS 56, XK 40, TW 39).
+#     DE gets EH/AQ/XK/XS/XN/TW from PROGRAMS or has them in the dataset.
+#   * HR -> the EU/EEA/CH states: Croatia's own article lists no free-movement rows.
+#   * EC -> CU and HK -> CN: single rows missing from those articles.
+SOVEREIGN_GAP_DESTINATIONS = ("EH", "AQ", "XK", "XS", "XN", "TW")
+# GAP_FILLS: the one gap that is a fact rather than a mystery. Croatia is an EU
+# member, so free movement into the other EU states and the EEA/Switzerland is law;
+# upstream's article for HR has no such rows at all. passport -> place -> answer, used
+# like a generic-tier entry (so a dataset row would win, and the liveness check
+# fails once upstream fills these in).
+_HR_FREE = ("VISA_FREE", None, "high", "eu_movement",
+            "EU/EEA/Swiss freedom of movement for EU citizens: no visa, no time "
+            "limit.")
+GAP_FILLS = {
+    "HR": {c: _HR_FREE for c in
+           [m for m in EU_MEMBERS if m != "HR"] + list(SCHENGEN_NON_EU)},
+}
+SOVEREIGN_GAP_PAIRS = frozenset(
+    [("HR", c) for c in (
+        "AT BE BG CY CZ DK EE FI FR DE GR HU IS IE IT LV LI LT LU MT NL NO PL PT "
+        "RO SK SI ES SE CH").split()]
+    + [("EC", "CU"), ("HK", "CN")]
+)
+
+# A passport with fewer dataset answers than this is not shipped: its article is a
+# stub (Northern Cyprus has 2), and a picker entry that answers almost nothing is
+# worse than none. The shipped passports start at ~190.
+MIN_DATASET_ROWS = 150
 
 # ---------------------------------------------------------------------------
 # CATEGORIES, ordered.
@@ -111,22 +194,70 @@ CATEGORIES = [
     "VISA_ON_ARRIVAL",
     "E_VISA",
     "VISA_REQUIRED",
+    "CHECK",            # the dataset's `special`: read the note
     "PERMIT_REQUIRED",  # ours: research/reserve permission, not a visa
     "NO_ADMISSION",
 ]
 
-# The dataset's vocabulary, mapped onto the above. A bare integer in the
-# Requirement column means visa-free for that many days and is handled in the
-# build script; -1 is the diagonal (a passport against its own country).
+# The dataset's `status` vocabulary (passport.schema.json), mapped onto the above.
+# `allowed_stay_days` becomes the day count for VISA_FREE only: for an eta, evisa or
+# visa on arrival it is the stay granted, not a visa-free allowance, and the app's
+# "N days visa-free" wording would be wrong. HOME has no upstream row (a passport
+# has no row for its own country), so the build adds it.
 REQUIREMENT_CATEGORY = {
-    "visa free": "VISA_FREE",
+    "visa_free": "VISA_FREE",
     "eta": "ETA",
-    "visa on arrival": "VISA_ON_ARRIVAL",
-    "e-visa": "E_VISA",
-    "visa required": "VISA_REQUIRED",
-    "no admission": "NO_ADMISSION",
-    "-1": "HOME",
+    "visa_on_arrival": "VISA_ON_ARRIVAL",
+    "evisa": "E_VISA",
+    "visa_required": "VISA_REQUIRED",
+    "permit_required": "PERMIT_REQUIRED",
+    "admission_refused": "NO_ADMISSION",
+    # Upstream's catch-all (tourist card, invitation, "travel banned" by the
+    # passport's own government, ...): its own CHECK category, always at low
+    # confidence with upstream's note.
+    "special": "CHECK",
 }
+
+# ETA_RULES. Upstream's `status` is "the least restrictive option", and it files two
+# kinds of pre-travel authorisation under `visa_free`, so the old dataset's `eta`
+# answers (ESTA, Canada's eTA) would silently become "visa-free":
+#   * `alternative_statuses` contains "eta" (36 of the 37 are Canada's eTA, the
+#     other Mozambique's): the eTA is a requirement, not an alternative.
+#   * the US and its Visa Waiver territories are `visa_free` with the ESTA only
+#     mentioned in `notes`. There is no structured signal, so these four
+#     destinations are matched on the literal "ESTA" in the note. This is the one
+#     place the build reads free text, and only to promote visa_free to ETA.
+# Both are workarounds for the upstream data model; if upstream starts emitting
+# `eta` for these, the build fails with "matched no record" and the rule goes.
+ESTA_DESTINATIONS = ("US", "PR", "GU", "MP")
+ESTA_MARKER = "ESTA"
+# The same free text also says who does NOT need one: Canada's US row begins "ESTA
+# exempt. Canadian passport holders do not have to get an ESTA." A regex, searched
+# first and in the lower-cased note, covering the wordings an exemption can take
+# ("ESTA exempt", "ESTA not required/needed", "No ESTA required", "not required to
+# obtain an ESTA", "do not have to get / need an ESTA"). Only Canada's occurs in
+# the data today; the rest keep a rewording from shipping as ETA.
+ESTA_NEGATIONS = (
+    r"esta[ -]exempt|exempt from[^.\n]*\besta"
+    r"|\bno esta\b"
+    r"|\besta\b[^.\n]*\b(not|never)\b[^.\n]*\b(required|needed|necessary)\b"
+    r"|\b(not|never)\b[^.\n]*\b(required|needed|necessary)\b[^.\n]*\besta\b"
+    r"|\bdo(es)? not (have|need) to[^.\n]*\besta\b"
+    r"|\bdo(es)? not (need|require)\b[^.\n]*\besta\b"
+)
+# What a note mentioning ESTA must look like to count as a requirement ("ESTA
+# required", "ESTA is valid for 2 years", "ESTA (valid ...) required", "(ESTA) online").
+# A note matching neither this nor ESTA_NEGATIONS fails the build, so a reworded
+# exemption cannot quietly ship as ETA.
+# "not" between ESTA and the verb disqualifies it, so "ESTA not required" is never one.
+ESTA_REQUIRED = r"esta(?:(?!\bnot\b)[^.\n])*\b(required|valid|apply)\b|\(esta\)"
+# A CHECK note ships at most about this many characters (see trim_note).
+NOTE_MAX_CHARS = 280
+SPECIAL_STATUS = "special"
+SPECIAL_FALLBACK_NOTE = (
+    "The dataset lists a special case here without further detail. Check the "
+    "destination's official entry requirements before booking."
+)
 
 CONFIDENCE = ("high", "medium", "low")
 
@@ -137,7 +268,7 @@ CONFIDENCE = ("high", "medium", "low")
 # page for that country. Their country pages live at
 # /de/service/laender/<german-slug>-node/..., and the slugs are not derivable:
 # Türkei is `tuerkei` but the United States is not `vereinigtestaaten`. Guessing
-# 252 of them would ship a pile of 404s.
+# all 252 of them would ship a pile of 404s.
 #
 # But they publish https://www.auswaertiges-amt.de/opendata/travelwarning as
 # JSON, keyed by content id, with an ISO 3166-1 alpha-2 code and the German name
@@ -211,7 +342,7 @@ IATA_TRAVEL_CENTRE = (
 # ---------------------------------------------------------------------------
 # SOURCES: what the overrides rest on.
 #
-# Deliberately few. Most of the 53 are decided by one structural fact — this is
+# Deliberately few. Most of these are decided by one structural fact — this is
 # an EU outermost region, this is inside the Australian migration zone — and one
 # good link for the family beats 46 guessed URLs, most of which would be dead
 # within a year.
@@ -224,6 +355,11 @@ SOURCES = {
         "https://www.auswaertiges-amt.de/de/service/laender",
         "Auswärtiges Amt country and travel information (German, authoritative "
         "for German nationals)",
+    ),
+    "eu_movement": (
+        "https://europa.eu/youreurope/citizens/travel/entry-exit/index_en.htm",
+        "Your Europe: EU citizens travel to other EU/EEA countries and "
+        "Switzerland without a visa",
     ),
     "eu_omr": (
         "https://ec.europa.eu/regional_policy/policy/themes/outermost-regions_en",
@@ -301,10 +437,10 @@ SOURCES = {
 }
 
 # ---------------------------------------------------------------------------
-# PROGRAMS: the 53 places the dataset has no row for, grouped by the real-world
+# PROGRAMS: the places the dataset has no row for, grouped by the real-world
 # fact that decides their answer — an EU/Schengen relationship, a UK ETA
 # exemption, US Visa Waiver Program membership, a treaty permit — rather than
-# 53 independent per-passport facts.
+# independent per-passport facts.
 #
 # Each program declares "members": the passports for which its "places" table
 # is the actual curated answer. A place's value is normally one shared 5-tuple
@@ -316,7 +452,7 @@ SOURCES = {
 # places is a rules.py bug, not a silent gap.
 #
 # GB's entries below come from a research pass against gov.uk, esta.cbp.dhs.gov
-# and immi.homeaffairs.gov.au (2026-08). Most of the 53 turned out to be
+# and immi.homeaffairs.gov.au (2026-08). Most of them turned out to be
 # identical in substance to DE's answer once the wording is fixed — same
 # category, same days, just "German" swapped for "British". A handful
 # genuinely differ: the UK Crown Dependencies are HOME for GB (Common Travel
@@ -351,22 +487,6 @@ PROGRAMS = {
                    "time limit — but outside Schengen, so expect a passport "
                    "check on arrival even on a domestic flight from mainland "
                    "France."),
-            "GP": ("VISA_FREE", None, "high", "eu_omr",
-                   "EU outermost region. Freedom of movement, no visa — "
-                   "outside Schengen, so there is a border check on "
-                   "arrival."),
-            "MQ": ("VISA_FREE", None, "high", "eu_omr",
-                   "EU outermost region. Freedom of movement, no visa — "
-                   "outside Schengen, so there is a border check on "
-                   "arrival."),
-            "RE": ("VISA_FREE", None, "high", "eu_omr",
-                   "EU outermost region. Freedom of movement, no visa — "
-                   "outside Schengen, so there is a border check on "
-                   "arrival."),
-            "YT": ("VISA_FREE", None, "high", "eu_omr",
-                   "EU outermost region. Freedom of movement, no visa — "
-                   "outside Schengen, so there is a border check on "
-                   "arrival."),
         },
     },
 
@@ -377,25 +497,11 @@ PROGRAMS = {
             "PF": ("VISA_FREE", 90, "high", "eu_oct",
                    "French collectivity outside the EU. EU nationals enter "
                    "without a visa for up to three months."),
-            "NC": ("VISA_FREE", 90, "high", "eu_oct",
-                   "French collectivity outside the EU. EU nationals enter "
-                   "without a visa for up to three months."),
-            "BL": ("VISA_FREE", 90, "medium", "eu_oct",
-                   "French collectivity outside the EU. EU nationals enter "
-                   "without a visa; three months is the usual limit."),
             "MF": ("VISA_FREE", 90, "medium", "eu_oct",
                    "French side of the island, a collectivity outside the "
                    "EU. EU nationals enter without a visa. Sint Maarten next "
                    "door is Dutch and listed separately; the land border is "
                    "open."),
-            "PM": ("VISA_FREE", 90, "medium", "eu_oct",
-                   "French collectivity off Newfoundland, outside the EU. "
-                   "EU nationals enter without a visa. Most routes go "
-                   "through Canada, which needs its own eTA."),
-            "WF": ("VISA_FREE", 90, "medium", "eu_oct",
-                   "French collectivity outside the EU. EU nationals enter "
-                   "without a visa. Reached only via New Caledonia or "
-                   "Fiji."),
         },
     },
 
@@ -405,13 +511,6 @@ PROGRAMS = {
     "nl_caribbean": {
         "members": ("DE",),
         "places": {
-            "AW": ("VISA_FREE", 30, "medium", "nl_caribbean",
-                   "Outside the EU. No visa for German nationals; entry is "
-                   "normally granted for 30 days and can be extended on the "
-                   "island."),
-            "CW": ("VISA_FREE", 30, "medium", "nl_caribbean",
-                   "Outside the EU. No visa for German nationals; entry is "
-                   "normally granted for 30 days."),
             "SX": ("VISA_FREE", 90, "medium", "nl_caribbean",
                    "Dutch side of the island, outside the EU. No visa for "
                    "German nationals. Saint Martin next door is French and "
@@ -420,23 +519,6 @@ PROGRAMS = {
                    "Bonaire, Saba and Sint Eustatius — Dutch special "
                    "municipalities, outside the EU. No visa for German "
                    "nationals."),
-        },
-    },
-
-    # --- Kingdom of Denmark: outside the EU and outside Schengen -----------
-    # The other named test case. The trap is the reverse of the usual one:
-    # people assume a Schengen visa covers Greenland. It does not.
-    "dk_realm": {
-        "members": ("DE",),
-        "places": {
-            "GL": ("VISA_FREE", 90, "high", "dk_realm",
-                   "Outside the EU and outside Schengen — a Schengen visa "
-                   "is not valid here. German nationals need no visa; take "
-                   "a passport, not an ID card."),
-            "FO": ("VISA_FREE", 90, "high", "dk_realm",
-                   "Outside the EU and outside Schengen — a Schengen visa "
-                   "is not valid here. German nationals need no visa; take "
-                   "a passport."),
         },
     },
 
@@ -460,25 +542,6 @@ PROGRAMS = {
         },
     },
 
-    # --- UK Crown Dependencies: inside the Common Travel Area, so ETA ------
-    # The distinction people get wrong: the UK ETA covers these three, but none
-    # of the Overseas Territories below.
-    "uk_eta": {
-        "members": ("DE",),
-        "places": {
-            "JE": ("ETA", None, "high", "uk_eta",
-                   "Inside the Common Travel Area, so the UK ETA applies to "
-                   "German nationals here just as it does in Britain."),
-            "GG": ("ETA", None, "high", "uk_eta",
-                   "Inside the Common Travel Area, so the UK ETA applies to "
-                   "German nationals here just as it does in Britain. "
-                   "Alderney and Sark are part of the Bailiwick."),
-            "IM": ("ETA", None, "high", "uk_eta",
-                   "Inside the Common Travel Area, so the UK ETA applies to "
-                   "German nationals here just as it does in Britain."),
-        },
-    },
-
     # --- British Overseas Territories: own immigration, no UK ETA ----------
     "uk_ot": {
         "members": ("DE",),
@@ -488,29 +551,10 @@ PROGRAMS = {
                    "No visa for German nationals, and the UK ETA does not "
                    "apply. The land border with Spain is a Schengen external "
                    "border."),
-            "BM": ("VISA_FREE", 90, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "rules. No visa for German nationals; the UK ETA does "
-                   "not apply."),
-            "KY": ("VISA_FREE", 30, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "rules. No visa for German nationals; entry is normally "
-                   "granted for 30 days and can be extended locally."),
-            "TC": ("VISA_FREE", 90, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "rules. No visa for German nationals."),
             "VG": ("VISA_FREE", 30, "medium", "aa",
                    "British Overseas Territory with its own immigration "
                    "rules. No visa for German nationals. Not the same place "
                    "as the US Virgin Islands, which need an ESTA."),
-            "AI": ("VISA_FREE", 90, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "rules. No visa for German nationals."),
-            "MS": ("VISA_FREE", 180, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "rules. No visa for German nationals; 180 days matches "
-                   "the UK government's own Montserrat travel advice. Half "
-                   "the island is an exclusion zone around the volcano."),
             "FK": ("VISA_FREE", 30, "medium", "aa",
                    "British Overseas Territory with its own immigration "
                    "ordinance. No visa for German nationals; a visitor "
@@ -538,52 +582,10 @@ PROGRAMS = {
     "us_territory": {
         "members": ("DE",),
         "places": {
-            "PR": ("ETA", 90, "high", "esta",
-                   "US immigration applies in full, so German nationals "
-                   "need an ESTA exactly as for the mainland."),
             "VI": ("ETA", 90, "high", "esta",
                    "US immigration applies in full, so German nationals "
                    "need an ESTA. Not the same place as the British Virgin "
                    "Islands."),
-            "GU": ("ETA", 90, "high", "esta",
-                   "US immigration applies. Germany is a Visa Waiver "
-                   "Program country, so an ESTA is the route in — the "
-                   "separate Guam-CNMI waiver is for other nationalities."),
-            "MP": ("ETA", 90, "high", "esta",
-                   "US immigration applies. Germany is a Visa Waiver "
-                   "Program country, so an ESTA is the route in."),
-            # The one everybody gets wrong, including most visa maps.
-            "AS": ("VISA_FREE", 30, "low", "aa",
-                   "American Samoa runs its own immigration and an ESTA is "
-                   "NOT valid here. Visa-waiver nationals are normally "
-                   "admitted for 30 days with a passport, onward ticket and "
-                   "proof of funds, but the rules are administered locally "
-                   "and change without notice. Verify before booking — this "
-                   "entry is the least certain in the app."),
-        },
-    },
-
-    # --- New Zealand realm -------------------------------------------------
-    "nz_realm": {
-        "members": ("DE",),
-        "places": {
-            "CK": ("VISA_FREE", 31, "medium", "aa",
-                   "Self-governing in free association with New Zealand, "
-                   "with its own entry rules. No visa for German nationals; "
-                   "31 days is the usual grant. A New Zealand NZeTA is "
-                   "needed for the transit through Auckland."),
-            "NU": ("VISA_FREE", 30, "medium", "aa",
-                   "Self-governing in free association with New Zealand. "
-                   "No visa for German nationals. Reached only via "
-                   "Auckland, which needs an NZeTA."),
-            "TK": ("VISA_FREE", None, "low", "aa",
-                   "No airport: access is by boat from Samoa, and visitors "
-                   "need a travel permit from the Tokelau Liaison Office in "
-                   "Apia, which can take a month or two to process. No "
-                   "fixed day limit could be confirmed for non-NZ visitors, "
-                   "and access has been reported closed to visitors at "
-                   "times — check current status before planning any trip "
-                   "here."),
         },
     },
 
@@ -617,17 +619,6 @@ PROGRAMS = {
                    "terms. The Polisario-administered interior is a "
                    "different matter and not somewhere you arrive as a "
                    "tourist."),
-            "XN": ("VISA_FREE", 90, "medium", "aa",
-                   "Northern Cyprus runs its own entry control and normally "
-                   "stamps a separate slip rather than the passport. No "
-                   "visa for German nationals. Arriving directly (via "
-                   "Türkiye) counts as an illegal entry in the Republic of "
-                   "Cyprus's view; crossing at Nicosia does not."),
-            "XS": ("VISA_ON_ARRIVAL", 30, "medium", "aa",
-                   "Somaliland issues its own visas and does not recognise "
-                   "Somali ones. A visa on arrival at Hargeisa is the usual "
-                   "route, or one of the liaison offices in advance. Somali "
-                   "visas are not valid here and vice versa."),
         },
     },
 
@@ -641,11 +632,6 @@ PROGRAMS = {
                    "here need an Umweltbundesamt permit under the Antarctic "
                    "Treaty's Environmental Protocol. Joining a licensed "
                    "cruise means the operator holds it."),
-            "GS": ("PERMIT_REQUIRED", None, "high", "gsgssi",
-                   "A visit permit from the Commissioner is required in "
-                   "advance, and is normally arranged by an "
-                   "expedition-cruise operator. There is no scheduled "
-                   "transport and no visa."),
             "TF": ("PERMIT_REQUIRED", None, "high", "aa",
                    "Crozet, Kerguelen, Amsterdam, Saint-Paul and Adélie "
                    "Land. Access needs the prefect's authorisation and a "
@@ -659,13 +645,6 @@ PROGRAMS = {
                    "A Norwegian nature reserve with no harbour and no "
                    "airstrip. Landing needs Norwegian Polar Institute "
                    "permission and happens only for research."),
-            "IO": ("PERMIT_REQUIRED", None, "high", "aa",
-                   "Diego Garcia is a joint UK-US military base and the "
-                   "rest of the Chagos Archipelago is a marine protected "
-                   "area. A permit from the British Indian Ocean Territory "
-                   "administration is required and tourism is not "
-                   "permitted. Sovereignty is being transferred to "
-                   "Mauritius, which may change all of this."),
             "UM": ("PERMIT_REQUIRED", None, "high", "aa",
                    "Nine scattered islands and atolls — Midway, Wake, "
                    "Johnston, Palmyra and the rest. Most are National "
@@ -679,11 +658,11 @@ PROGRAMS = {
 
 # ---------------------------------------------------------------------------
 # GENERIC_RULE: how any passport that is *not* in PASSPORTS gets an answer for
-# the 53 places PROGRAMS curates for DE.
+# the places PROGRAMS curates for DE.
 #
 # DE's curated answers above are real research — a person read gov documents
 # per place. There is no such budget for the other ~198 passports, so this is
-# a different, cheaper and honestly-labelled kind of answer: most of the 53
+# a different, cheaper and honestly-labelled kind of answer: most of the
 # places are legally tied to a real sovereign state (French Guiana to France,
 # Greenland to Denmark, the Crown Dependencies to the UK, ...), so a
 # passport's own real dataset answer for *that* sovereign is a reasonable
@@ -944,15 +923,95 @@ def _generic_overrides_for(
 # ---------------------------------------------------------------------------
 # CORRECTIONS: overrides that shadow a row the dataset *does* have.
 #
-# Empty, and that is the goal. The one correction this file was written to hold
-# — GB as `eta` rather than 180 visa-free days — became unnecessary when we moved
-# off the archived dataset, which is the clearest possible argument for the move.
+# Keyed by passport, then place. Every entry is a running disagreement with
+# upstream, so the build fails once upstream agrees (same category and days),
+# forcing the entry out again rather than letting our opinion outlive the reason
+# for it. Same 5-tuple shape as PROGRAMS.
 #
-# Anything added here is a running disagreement with upstream, so the build
-# fails once upstream agrees, forcing the entry out again rather than letting our
-# opinion outlive the reason for it. Same shape as OVERRIDES.
+# When upstream started covering places that were hand-curated for DE, an entry
+# was deleted if upstream's answer was the same or better, and kept here only if
+# the curated answer carries something upstream lacks or gets wrong:
+#   NC      upstream gives no day limit; curated has the three months (high).
+#   GL, FO  upstream gives no day limit; curated also carries the warning that a
+#           Schengen visa is not valid here, which is why these two are the app's
+#           named test cases.
+#   JE GG IM upstream says visa-free; the UK ETA applies to Germans in the Crown
+#           Dependencies exactly as in Britain (high).
+#   AS      upstream says ETA; American Samoa runs its own immigration and ESTA
+#           is not valid (low, and says so).
+# For GB and IE the Crown Dependencies are HOME (Common Travel Area), where
+# upstream only says visa-free.
 # ---------------------------------------------------------------------------
-CORRECTIONS = {}
+_CTA = GENERIC_RULE["uk_eta"]["cta_answer"]
+
+# ANNOTATIONS: upstream's answer stands (category and days come from the dataset row),
+# but the old hand-curation carried a warning the app would otherwise lose, because
+# the app only shows a note for `special` rows. passport -> place -> (confidence,
+# source, note). Not corrections: nothing here disagrees with upstream, so there is
+# nothing for the build to expire; the build only checks that the row still exists
+# and is not `special` (whose note is upstream's own). DE only, since the notes were
+# written about German travellers' routes.
+ANNOTATIONS = {
+    "DE": {
+        "CK": ("medium", "aa",
+               "A New Zealand NZeTA is needed for the transit through Auckland."),
+        "NU": ("medium", "aa", "Reached only via Auckland, which needs an NZeTA."),
+        "PM": ("medium", "eu_oct",
+               "Most routes go through Canada, which needs its own eTA."),
+        "MS": ("medium", "aa",
+               "Half the island is an exclusion zone around the volcano."),
+        "XN": ("medium", "aa",
+               "Northern Cyprus runs its own entry control and normally stamps a "
+               "separate slip rather than the passport. Arriving directly (via "
+               "Türkiye) counts as an illegal entry in the Republic of Cyprus's "
+               "view; crossing at Nicosia does not."),
+        "IO": ("high", "aa",
+               "Diego Garcia is a joint UK-US military base and the rest of the "
+               "Chagos Archipelago is a marine protected area; tourism is not "
+               "permitted. Sovereignty is being transferred to Mauritius, which "
+               "may change all of this."),
+        "TK": ("low", "aa",
+               "No airport: access is by boat from Samoa, and visitors need a "
+               "travel permit from the Tokelau Liaison Office in Apia, which can "
+               "take a month or two to process. Access has been reported closed to "
+               "visitors at times, so check current status before planning any "
+               "trip here."),
+    },
+}
+
+CORRECTIONS = {
+    "DE": {
+        "NC": ("VISA_FREE", 90, "high", "eu_oct",
+               "French collectivity outside the EU. EU nationals enter "
+               "without a visa for up to three months."),
+        "GL": ("VISA_FREE", 90, "high", "dk_realm",
+               "Outside the EU and outside Schengen — a Schengen visa is not "
+               "valid here. German nationals need no visa; take a passport, "
+               "not an ID card."),
+        "FO": ("VISA_FREE", 90, "high", "dk_realm",
+               "Outside the EU and outside Schengen — a Schengen visa is not "
+               "valid here. German nationals need no visa; take a passport."),
+        "JE": ("ETA", None, "high", "uk_eta",
+               "Inside the Common Travel Area, so the UK ETA applies to "
+               "German nationals here just as it does in Britain."),
+        "GG": ("ETA", None, "high", "uk_eta",
+               "Inside the Common Travel Area, so the UK ETA applies to "
+               "German nationals here just as it does in Britain. Alderney "
+               "and Sark are part of the Bailiwick."),
+        "IM": ("ETA", None, "high", "uk_eta",
+               "Inside the Common Travel Area, so the UK ETA applies to "
+               "German nationals here just as it does in Britain."),
+        "AS": ("VISA_FREE", 30, "low", "aa",
+               "American Samoa runs its own immigration and an ESTA is NOT "
+               "valid here. Visa-waiver nationals are normally admitted for "
+               "30 days with a passport, onward ticket and proof of funds, "
+               "but the rules are administered locally and change without "
+               "notice. Verify before booking — this entry is the least "
+               "certain in the app."),
+    },
+    "GB": {code: _CTA for code in GENERIC_RULE["uk_eta"]["places"]},
+    "IE": {code: _CTA for code in GENERIC_RULE["uk_eta"]["places"]},
+}
 
 # ---------------------------------------------------------------------------
 # ASSERTIONS: the "done when" clause, made executable.
@@ -1000,14 +1059,18 @@ EXPECTED = {
         "RU": ("E_VISA", "e-visa since 2023"),
         "AQ": ("PERMIT_REQUIRED", "a treaty permit, not a visa"),
     },
-    "FR": {
+    # NL rather than FR: upstream now has FR rows for Jersey and American Samoa, so
+    # France no longer exercises the generic tier for them. The Netherlands has
+    # neither row and is an EU member, which is what these cases need.
+    "NL": {
         # EU membership: a real fact, not a borrowed lookup.
         "GF": ("VISA_FREE", "EU outermost region — EU membership gives freedom of movement"),
-        # uk_eta's generic mapping: France is not in the CTA, so this comes
-        # from France's own (dataset) GB requirement, not from a CTA HOME.
-        "JE": ("ETA", "not in the CTA — derived from France's own UK requirement"),
-        # us_territory's generic reference: derived from France's own US row.
-        "GU": ("ETA", "US territory — derived from France's own US (ESTA) requirement"),
+        # uk_eta's generic mapping: the Netherlands is not in the CTA, so this comes
+        # from its own (dataset) GB requirement, not from a CTA HOME.
+        "JE": ("ETA", "not in the CTA — derived from the Netherlands' own UK requirement"),
+        # us_territory's generic reference: derived from the Netherlands' own US row
+        # (visa_free with an ESTA, promoted to ETA by ESTA_DESTINATIONS).
+        "GU": ("ETA", "US territory — derived from the Netherlands' own US (ESTA) requirement"),
         # The trap this whole generic tier exists to avoid: Guam gets an
         # answer from the US reference, American Samoa deliberately does not.
         "AS": (None, "American Samoa runs its own immigration; no generic answer even though Guam has one"),

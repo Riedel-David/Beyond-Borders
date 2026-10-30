@@ -77,7 +77,9 @@ class VisaAssetTest {
     fun `Greenland is answered on its own terms`() {
         val greenland = visa["GL"]!!
         assertEquals(VisaCategory.VISA_FREE, greenland.category)
-        assertEquals(VisaOrigin.CURATED, greenland.origin)
+        // The dataset now has a Greenland row of its own (visa-free, no Schengen
+        // warning), so the curated answer is a correction of it, not a gap-filler.
+        assertEquals(VisaOrigin.CORRECTION, greenland.origin)
         assertNotNull("Greenland's answer needs its note", greenland.note)
         assertNotNull("a curated answer needs a source", greenland.sourceUrl)
         // The one thing about the answer that is not Denmark's: the note has to say so.
@@ -123,7 +125,15 @@ class VisaAssetTest {
             .filter { it.category == VisaCategory.PERMIT_REQUIRED }
             .map { it.code }
             .toSet()
-        assertEquals(uninhabited, permit)
+        // The dataset also asks for permits for inhabited places (Tokelau, South
+        // Georgia, ...). The uninhabited places must all be here, and anything else
+        // here must be upstream's own answer, never a hand-written permit claim.
+        assertTrue("uninhabited places missing from the permit set", permit.containsAll(uninhabited))
+        val extra = visa.requirements.filter { it.code in permit - uninhabited }
+        assertTrue(
+            "hand-written permit answers for inhabited places: ${extra.filter { it.origin != VisaOrigin.DATASET }.map { it.code }}",
+            extra.all { it.origin == VisaOrigin.DATASET },
+        )
     }
 
     // --- honesty about where an answer came from ------------------------------
@@ -146,16 +156,29 @@ class VisaAssetTest {
     /**
      * The converse, which matters just as much: a row straight out of the dataset must
      * not carry a note or a confidence, because both would read as research that
-     * nobody did.
+     * nobody did. Two exceptions, both written by the build for a stated reason: a
+     * [VisaCategory.CHECK] row carries the dataset's own note (that note *is* its
+     * answer), and the few ANNOTATIONS in rules.py add a warning to a row whose
+     * category stays upstream's. Those are listed here so a new one is a decision.
      */
     @Test
     fun `a dataset row does not dress itself up as researched`() {
+        val annotated = setOf("CK", "NU", "PM", "MS", "XN", "IO", "TK")
         visa.requirements
             .filter { it.origin == VisaOrigin.DATASET }
             .forEach { requirement ->
-                assertNull("${requirement.code} has a note it did not earn", requirement.note)
-                assertNull("${requirement.code} claims a confidence", requirement.confidence)
-                assertNull("${requirement.code} claims a source", requirement.sourceUrl)
+                if (requirement.category == VisaCategory.CHECK) {
+                    assertNotNull("${requirement.code} CHECK without a note", requirement.note)
+                    assertEquals(VisaConfidence.LOW, requirement.confidence)
+                } else if (requirement.code in annotated) {
+                    assertNotNull("${requirement.code} annotation lost its note", requirement.note)
+                    assertNotNull("${requirement.code} annotation has no confidence", requirement.confidence)
+                    assertNotNull("${requirement.code} annotation has no source", requirement.sourceUrl)
+                } else {
+                    assertNull("${requirement.code} has a note it did not earn", requirement.note)
+                    assertNull("${requirement.code} claims a confidence", requirement.confidence)
+                    assertNull("${requirement.code} claims a source", requirement.sourceUrl)
+                }
             }
     }
 
@@ -246,7 +269,10 @@ class VisaAssetTest {
         )
         // Every band the lens can paint has something in it, or a quarter of the ramp
         // is spent saying nothing.
-        VisaBand.entries.forEach { band ->
+        // CHECK is the exception: it exists only where the dataset has a `special`
+        // row for the passport, and DE has none (VisaAssetCoverageTest and the logic
+        // tests cover that band).
+        (VisaBand.entries - VisaBand.CHECK).forEach { band ->
             assertTrue("no places in band $band", (visa.countByBand[band] ?: 0) > 0)
         }
         assertEquals(visa.requirements.size, visa.countByBand.values.sum())
