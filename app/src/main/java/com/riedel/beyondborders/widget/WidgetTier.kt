@@ -8,7 +8,7 @@ enum class WidgetTier {
     MEDIUM,
     /** COMPACT with the wordmark beside the logo, for a narrow widget that is tall enough. */
     NAMED,
-    /** Hero beside three one-line stat tiles, for a box wide enough for WIDE but too short. */
+    /** Hero beside three one-line stat tiles, for a box too short for MEDIUM and WIDE. */
     STRIP,
     /** MEDIUM's content with the three stat tiles in a column beside it. */
     WIDE,

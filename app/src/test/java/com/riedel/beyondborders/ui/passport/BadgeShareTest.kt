@@ -64,4 +64,10 @@ class BadgeShareTest {
         assertEquals(1080, badgeCardHeight(1920, 1080))
         assertEquals(1080, badgeCardHeight(0, 0))
     }
+
+    @Test
+    fun `card is never taller than 9 by 21, whatever window it is shared from`() {
+        assertEquals(2520, badgeCardHeight(400, 2600))
+        assertEquals(2520, badgeCardHeight(1080, 2520))
+    }
 }

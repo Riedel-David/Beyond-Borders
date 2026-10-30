@@ -2,7 +2,8 @@
 <!-- WIDE's idea for a box too short for it: HyperOS places a "3x2" as about 193x132 dp,
      where WIDE's stacked tiles need 186. Each tile is one line (value, then label) instead
      of two, the wordmark and the progress bar go, and the padding drops to 12 dp. The tile
-     column is 96 dp because "PLACES BEEN" is the longest label; the hero auto-sizes into
+     column is 96 dp because "PLACES BEEN" is the longest label, and the tile labels
+     auto-size down so a three-digit count still leaves it whole; the hero auto-sizes into
      what is left. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
@@ -87,11 +88,15 @@
 
             <TextView
                 android:id="@+id/widget_tile_1_label"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
                 android:maxLines="1"
-                android:ellipsize="end"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="6sp"
+                android:autoSizeMaxTextSize="8sp"
+                android:autoSizeStepGranularity="1sp"
                 android:textColor="#9DFFFFFF"
                 android:textSize="8sp"
                 android:fontFamily="sans-serif-medium"
@@ -122,11 +127,15 @@
 
             <TextView
                 android:id="@+id/widget_tile_2_label"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
                 android:maxLines="1"
-                android:ellipsize="end"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="6sp"
+                android:autoSizeMaxTextSize="8sp"
+                android:autoSizeStepGranularity="1sp"
                 android:textColor="#9DFFFFFF"
                 android:textSize="8sp"
                 android:fontFamily="sans-serif-medium"
@@ -157,11 +166,15 @@
 
             <TextView
                 android:id="@+id/widget_tile_3_label"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
                 android:maxLines="1"
-                android:ellipsize="end"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="6sp"
+                android:autoSizeMaxTextSize="8sp"
+                android:autoSizeStepGranularity="1sp"
                 android:textColor="#9DFFFFFF"
                 android:textSize="8sp"
                 android:fontFamily="sans-serif-medium"

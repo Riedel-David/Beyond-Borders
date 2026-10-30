@@ -28,16 +28,19 @@ import kotlinx.coroutines.withContext
 
 private const val BADGE_CARD_SIZE = 1080
 
+/** 9:21, the tallest phone aspect; a freeform window can report anything. */
+private const val BADGE_CARD_MAX_HEIGHT = 2520
+
 /**
  * The card's height for a screen of [screenWidthPx] x [screenHeightPx]: the screen's own
  * aspect at the card's width, so it is the same shape as the map snapshot. A square card
  * posted to a full-screen target (a story, a status) gets black bars; never shorter than
- * square, so an odd display cannot make a landscape card.
+ * square nor taller than 9:21, so an odd window cannot make a landscape or a 30 MB card.
  */
 internal fun badgeCardHeight(screenWidthPx: Int, screenHeightPx: Int): Int {
     if (screenWidthPx <= 0) return BADGE_CARD_SIZE
     val scaled = BADGE_CARD_SIZE.toLong() * screenHeightPx / screenWidthPx
-    return scaled.toInt().coerceAtLeast(BADGE_CARD_SIZE)
+    return scaled.coerceIn(BADGE_CARD_SIZE.toLong(), BADGE_CARD_MAX_HEIGHT.toLong()).toInt()
 }
 
 // --- text -------------------------------------------------------------------
@@ -128,37 +131,11 @@ internal fun badgeShareCard(
             shader = LinearGradient(0f, 0f, w, h, BrandDeep, BrandInk, Shader.TileMode.CLAMP)
         },
     )
-    // The group's own colour as the light source, so each badge's card has its mood.
-    canvas.drawRect(
-        0f, 0f, w, h,
-        Paint().apply {
-            shader = RadialGradient(
-                w / 2f, h * 0.38f, w * 0.7f,
-                (tone.accentDark and 0x00FFFFFF) or (70 shl 24), Color.TRANSPARENT, Shader.TileMode.CLAMP,
-            )
-        },
-    )
-
     val tile = w * 0.10f
-    drawLogoTile(canvas, logo, pad, pad, tile)
-    val headerPaint = wordmarkPaint(w * 0.033f, 220)
-    canvas.drawText(
-        WORDMARK,
-        pad + tile + w * 0.035f,
-        pad + tile / 2f - headerPaint.lineHeight() / 2f - headerPaint.fontMetrics.ascent,
-        headerPaint,
-    )
-
-    // Footer: a hairline and the rank line, pinned to the bottom.
     val rankPaint = bodyPaint(w * 0.040f, 200).apply { textAlign = Paint.Align.CENTER }
-    val rankText = fitToWidth(badgeRankLine(placesVisited).asString(context), rankPaint, textWidth)
     val footerTop = h - pad - rankPaint.lineHeight() - w * 0.04f
-    canvas.drawLine(pad, footerTop, w - pad, footerTop, Paint().apply { color = Color.argb(28, 255, 255, 255) })
-    canvas.drawText(
-        rankText, w / 2f, h - pad - rankPaint.fontMetrics.descent, rankPaint,
-    )
 
-    // Centre block: circle, title, description.
+    // Centre block: circle, title, description, centred between header and footer.
     val circle = w * 0.27f
     val titlePaint = numberPaint(w * 0.068f).apply { textAlign = Paint.Align.CENTER }
     val descPaint = bodyPaint(w * 0.037f, 205).apply { textAlign = Paint.Align.CENTER }
@@ -172,9 +149,38 @@ internal fun badgeShareCard(
     val headerBottom = pad + tile
     val available = footerTop - headerBottom
     var cursor = headerBottom + ((available - blockHeight) / 2f).coerceAtLeast(w * 0.02f)
-
     val cx = w / 2f
     val cy = cursor + circle / 2f
+
+    // The group's own colour as the light source, so each badge's card has its mood.
+    // Centred on the circle: the card's height follows the screen, so a fixed fraction
+    // of it drifts off the badge on a tall card.
+    canvas.drawRect(
+        0f, 0f, w, h,
+        Paint().apply {
+            shader = RadialGradient(
+                cx, cy, w * 0.7f,
+                (tone.accentDark and 0x00FFFFFF) or (70 shl 24), Color.TRANSPARENT, Shader.TileMode.CLAMP,
+            )
+        },
+    )
+
+    drawLogoTile(canvas, logo, pad, pad, tile)
+    val headerPaint = wordmarkPaint(w * 0.033f, 220)
+    canvas.drawText(
+        WORDMARK,
+        pad + tile + w * 0.035f,
+        pad + tile / 2f - headerPaint.lineHeight() / 2f - headerPaint.fontMetrics.ascent,
+        headerPaint,
+    )
+
+    // Footer: a hairline and the rank line, pinned to the bottom.
+    val rankText = fitToWidth(badgeRankLine(placesVisited).asString(context), rankPaint, textWidth)
+    canvas.drawLine(pad, footerTop, w - pad, footerTop, Paint().apply { color = Color.argb(28, 255, 255, 255) })
+    canvas.drawText(
+        rankText, w / 2f, h - pad - rankPaint.fontMetrics.descent, rankPaint,
+    )
+
     canvas.drawCircle(
         cx, cy, circle / 2f + w * 0.018f,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {

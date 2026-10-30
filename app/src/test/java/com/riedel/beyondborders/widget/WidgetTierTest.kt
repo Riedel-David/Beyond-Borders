@@ -20,7 +20,6 @@ class WidgetTierTest {
     fun `WIDE when wide enough for LARGE but too short for it`() {
         assertEquals(WidgetTier.WIDE, widgetTier(290, 260))
         assertEquals(WidgetTier.WIDE, widgetTier(290, 186))
-        assertEquals(WidgetTier.STRIP, widgetTier(290, 185))
         assertEquals(WidgetTier.WIDE, widgetTier(220, 313))
         assertEquals(WidgetTier.WIDE, widgetTier(205, 186))
         assertEquals(WidgetTier.MEDIUM, widgetTier(204, 186))
@@ -96,6 +95,9 @@ class WidgetTierTest {
         assertEquals(WidgetTier.NAMED, widgetTier(189, 130))
         assertEquals(WidgetTier.COMPACT, widgetTier(190, 119))
         assertEquals(WidgetTier.MEDIUM, widgetTier(190, 186))
+        assertEquals(WidgetTier.STRIP, widgetTier(290, 185))
+        assertEquals(WidgetTier.STRIP, widgetTier(205, 185))
+        assertEquals(WidgetTier.STRIP, widgetTier(204, 185))
     }
 
     @Test
