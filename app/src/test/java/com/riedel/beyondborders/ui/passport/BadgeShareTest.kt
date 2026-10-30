@@ -52,4 +52,16 @@ class BadgeShareTest {
         val b = badge(10)
         assertEquals(UiText.Res(R.string.badge_share_caption, b.title, b.description), badgeShareCaption(b))
     }
+
+    @Test
+    fun `card height follows the screen aspect at the card width`() {
+        assertEquals(2400, badgeCardHeight(1080, 2400))
+        assertEquals(2160, badgeCardHeight(1440, 2880))
+    }
+
+    @Test
+    fun `card is never shorter than square`() {
+        assertEquals(1080, badgeCardHeight(1920, 1080))
+        assertEquals(1080, badgeCardHeight(0, 0))
+    }
 }

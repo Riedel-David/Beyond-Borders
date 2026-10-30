@@ -28,6 +28,18 @@ import kotlinx.coroutines.withContext
 
 private const val BADGE_CARD_SIZE = 1080
 
+/**
+ * The card's height for a screen of [screenWidthPx] x [screenHeightPx]: the screen's own
+ * aspect at the card's width, so it is the same shape as the map snapshot. A square card
+ * posted to a full-screen target (a story, a status) gets black bars; never shorter than
+ * square, so an odd display cannot make a landscape card.
+ */
+internal fun badgeCardHeight(screenWidthPx: Int, screenHeightPx: Int): Int {
+    if (screenWidthPx <= 0) return BADGE_CARD_SIZE
+    val scaled = BADGE_CARD_SIZE.toLong() * screenHeightPx / screenWidthPx
+    return scaled.toInt().coerceAtLeast(BADGE_CARD_SIZE)
+}
+
 // --- text -------------------------------------------------------------------
 
 /** "Explorer · 42 places": the rank and the count it was earned with. */
@@ -85,8 +97,9 @@ private fun wrapText(text: String, paint: Paint, maxWidth: Float, maxLines: Int)
 }
 
 /**
- * A square card for one unlocked badge: brand header, the group's icon on a circle in
- * its colour, title, description, and the traveller rank along the bottom.
+ * A card for one unlocked badge, [BADGE_CARD_SIZE] wide and [heightPx] tall: brand header,
+ * the group's icon on a circle in its colour, title, description, and the traveller rank
+ * along the bottom.
  *
  * Like the stats card it is a fixed palette and not themed, so the circle uses the
  * group's dark-theme accent (the bright one) on the brand's dark ground. The block
@@ -99,8 +112,9 @@ internal fun badgeShareCard(
     placesVisited: Int,
     icon: Drawable?,
     logo: Drawable? = null,
+    heightPx: Int = BADGE_CARD_SIZE,
 ): Bitmap {
-    val out = Bitmap.createBitmap(BADGE_CARD_SIZE, BADGE_CARD_SIZE, Bitmap.Config.ARGB_8888)
+    val out = Bitmap.createBitmap(BADGE_CARD_SIZE, heightPx, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
     val w = out.width.toFloat()
     val h = out.height.toFloat()
@@ -197,7 +211,11 @@ internal fun badgeShareCard(
 internal suspend fun shareBadge(context: Context, achievement: Achievement, placesVisited: Int) {
     val card = withContext(Dispatchers.Default) {
         val icon = ContextCompat.getDrawable(context, iconFor(achievement.group))
-        badgeShareCard(context, achievement, placesVisited, icon, appLogo(context))
+        val screen = context.resources.displayMetrics
+        badgeShareCard(
+            context, achievement, placesVisited, icon, appLogo(context),
+            badgeCardHeight(screen.widthPixels, screen.heightPixels),
+        )
     }
     shareBitmap(context, card, badgeShareCaption(achievement).asString(context))
 }
