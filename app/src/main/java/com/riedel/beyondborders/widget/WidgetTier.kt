@@ -8,6 +8,8 @@ enum class WidgetTier {
     MEDIUM,
     /** COMPACT with the wordmark beside the logo, for a narrow widget that is tall enough. */
     NAMED,
+    /** Hero beside three one-line stat tiles, for a box wide enough for WIDE but too short. */
+    STRIP,
     /** MEDIUM's content with the three stat tiles in a column beside it. */
     WIDE,
     /** Adds three stat tiles beneath the progress bar. */
@@ -34,14 +36,17 @@ private const val NAMED_MIN_HEIGHT_DP = 130
 private const val NAMED_MIN_WIDTH_DP = 100
 private const val MEDIUM_MIN_WIDTH_DP = 180
 private const val MEDIUM_MIN_HEIGHT_DP = 186
+private const val STRIP_MIN_WIDTH_DP = 190
+private const val STRIP_MIN_HEIGHT_DP = 120
 
 /**
  * Picks the widget tier from its size, following the options bundle thresholds.
  *
  * LARGE at ≥ 290 dp wide and ≥ 261 dp tall; WIDE at ≥ 205 dp wide and ≥ 186 dp tall (the
  * tiles sit beside the hero, so it needs only MEDIUM's height; a One UI 3x2 reports
- * 220x202); MEDIUM for the 180-204 dp widths between; NAMED when narrower but ≥ 130 dp
- * tall; COMPACT otherwise. WIDE's width and NAMED's height are estimates from the
+ * 220x202); MEDIUM for the 180-204 dp widths between; STRIP below MEDIUM's height but
+ * ≥ 190x120 dp (HyperOS places a 3x2 at 193x132 and 209x148); NAMED when narrower but
+ * ≥ 130 dp tall; COMPACT otherwise. WIDE's width and NAMED's height are estimates from the
  * layouts' dimensions,
  * not yet measured. LARGE's width is set by its narrowest stat tile label rather than by
  * its height: below ~290 dp the three tiles are too narrow for "CONTINENTS", which is a
@@ -51,6 +56,7 @@ internal fun widgetTier(minWidthDp: Int, minHeightDp: Int): WidgetTier = when {
     minWidthDp >= LARGE_MIN_WIDTH_DP && minHeightDp >= LARGE_MIN_HEIGHT_DP -> WidgetTier.LARGE
     minWidthDp >= WIDE_MIN_WIDTH_DP && minHeightDp >= MEDIUM_MIN_HEIGHT_DP -> WidgetTier.WIDE
     minWidthDp >= MEDIUM_MIN_WIDTH_DP && minHeightDp >= MEDIUM_MIN_HEIGHT_DP -> WidgetTier.MEDIUM
+    minWidthDp >= STRIP_MIN_WIDTH_DP && minHeightDp >= STRIP_MIN_HEIGHT_DP -> WidgetTier.STRIP
     minWidthDp >= NAMED_MIN_WIDTH_DP && minHeightDp >= NAMED_MIN_HEIGHT_DP -> WidgetTier.NAMED
     else -> WidgetTier.COMPACT
 }

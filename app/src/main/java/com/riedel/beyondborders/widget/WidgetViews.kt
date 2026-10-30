@@ -31,6 +31,7 @@ internal fun travelWidgetViews(
         WidgetTier.COMPACT, WidgetTier.NAMED -> R.layout.travel_widget_compact
         WidgetTier.MEDIUM -> R.layout.travel_widget_medium
         WidgetTier.WIDE -> R.layout.travel_widget_wide
+        WidgetTier.STRIP -> R.layout.travel_widget_strip
         WidgetTier.LARGE -> R.layout.travel_widget_large
     }
 
@@ -81,26 +82,25 @@ internal fun travelWidgetViews(
     )
     views.setImageViewBitmap(R.id.widget_logo, logoBitmap)
 
-    // COMPACT shares its layout with NAMED and hides the wordmark; the rest of the tiers
-    // add the progress bar as well.
+    // COMPACT shares its layout with NAMED and hides the wordmark; STRIP's layout has
+    // neither wordmark nor progress bar. A RemoteViews call on an id the layout lacks
+    // fails the whole update, so each of these is gated on the tiers that carry the view.
     if (tier == WidgetTier.COMPACT) {
         views.setViewVisibility(R.id.widget_wordmark, View.GONE)
-    } else {
-
+    } else if (tier != WidgetTier.STRIP) {
         views.setTextColor(
             R.id.widget_wordmark,
             if (filled) 0xDBFFFFFF.toInt() else context.getColor(R.color.widget_quiet_muted),
         )
-
         if (tier != WidgetTier.NAMED) {
             views.setProgressBar(R.id.widget_progress, 100, widgetProgressValue(stats.percent), false)
         }
     }
 
-    // WIDE and LARGE add the three stat tiles. shareStatTiles returns exactly three pairs;
+    // WIDE, LARGE and STRIP add the three stat tiles. shareStatTiles returns exactly three pairs;
     // indexing [0][1][2] is safe today but if that ever changes the widget silently
     // keeps a stale count (updateOne is wrapped in catch (_: Exception)).
-    if (tier == WidgetTier.LARGE || tier == WidgetTier.WIDE) {
+    if (tier == WidgetTier.LARGE || tier == WidgetTier.WIDE || tier == WidgetTier.STRIP) {
         val tiles = shareStatTiles(stats)
         val tileIds = listOf(
             Triple(R.id.widget_tile_1, R.id.widget_tile_1_value, R.id.widget_tile_1_label),

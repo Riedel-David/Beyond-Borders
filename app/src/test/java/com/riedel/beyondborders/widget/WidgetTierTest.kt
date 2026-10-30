@@ -20,7 +20,7 @@ class WidgetTierTest {
     fun `WIDE when wide enough for LARGE but too short for it`() {
         assertEquals(WidgetTier.WIDE, widgetTier(290, 260))
         assertEquals(WidgetTier.WIDE, widgetTier(290, 186))
-        assertEquals(WidgetTier.NAMED, widgetTier(290, 185))
+        assertEquals(WidgetTier.STRIP, widgetTier(290, 185))
         assertEquals(WidgetTier.WIDE, widgetTier(220, 313))
         assertEquals(WidgetTier.WIDE, widgetTier(205, 186))
         assertEquals(WidgetTier.MEDIUM, widgetTier(204, 186))
@@ -80,6 +80,22 @@ class WidgetTierTest {
         assertEquals(WidgetTier.LARGE, widgetTier(290, 261))
         assertEquals(WidgetTier.WIDE, widgetTier(289, 261))
         assertEquals(WidgetTier.WIDE, widgetTier(290, 260))
+    }
+
+    @Test
+    fun `a real HyperOS 3x2 is STRIP, which the tile layouts are too tall for`() {
+        // Measured from the options bundle on a Xiaomi 22101316UG: the two placed widgets
+        // report 193x132 and 209x148 dp. STRIP's layout measures 111 dp tall.
+        assertEquals(WidgetTier.STRIP, widgetTier(193, 132))
+        assertEquals(WidgetTier.STRIP, widgetTier(209, 148))
+    }
+
+    @Test
+    fun `STRIP boundary cases`() {
+        assertEquals(WidgetTier.STRIP, widgetTier(190, 120))
+        assertEquals(WidgetTier.NAMED, widgetTier(189, 130))
+        assertEquals(WidgetTier.COMPACT, widgetTier(190, 119))
+        assertEquals(WidgetTier.MEDIUM, widgetTier(190, 186))
     }
 
     @Test
