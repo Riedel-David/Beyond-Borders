@@ -58,9 +58,10 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,6 +76,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -117,6 +119,7 @@ import com.riedel.beyondborders.ui.places.RegionStyleKey
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.nextRegionMode
+import com.riedel.beyondborders.ui.theme.BeyondBordersDark
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.MapPalette
 import com.riedel.beyondborders.ui.theme.RegionRamp
@@ -164,6 +167,9 @@ private fun MapCamera.toCameraPosition(): CameraPosition = CameraPosition.Builde
  * around the finger.
  */
 private const val TAP_SLOP_DP = 16f
+
+// The banner's background for a place without a flag, and the selected chip's label.
+private val BANNER_FALLBACK_COLOR = Color(0xFF1B1B1F)
 
 /** Outlives the Map tab; see the share functions in [MapScreen]. */
 // lazy: Dispatchers.Main throws on the host JVM, and a top-level initialiser would
@@ -646,21 +652,27 @@ fun MapScreen(
             }
         }
 
-        // The region/selection cards above anchor to BottomCenter and reserve an
-        // end inset (see their modifiers) so this FAB's corner stays clear of them.
-        // Hidden while a place is selected: the flag banner owns the bottom edge then.
-        if (selected == null) FloatingActionButton(
-            onClick = {
-                viewModel.vibrate()
-                showShareStyleDialog = true
-            },
+        // The region card reserves an end inset for this FAB. The selection banner is
+        // full-width, so the FAB is hidden while a place is selected and only fades back
+        // in after the banner has finished fading out (delay = the banner's 140 ms exit).
+        AnimatedVisibility(
+            visible = selected == null,
+            enter = fadeIn(tween(120, delayMillis = 140)),
+            exit = fadeOut(tween(80)),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(contentPadding)
                 .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
         ) {
-            Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.map_share_action))
+            FloatingActionButton(
+                onClick = {
+                    viewModel.vibrate()
+                    showShareStyleDialog = true
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.map_share_action))
+            }
         }
 
         if (showShareStyleDialog) {
@@ -1423,21 +1435,24 @@ private fun SelectedPlaceCard(
     modifier: Modifier = Modifier,
 ) {
     val flag = rememberPlaceFlag(place.code)
-    // The colours are always darkened for white text, so the content is themed dark
-    // whatever the app theme is: chips and secondary text would otherwise be
-    // near-invisible over a flag in light mode.
-    MaterialTheme(colorScheme = darkColorScheme(), typography = MaterialTheme.typography) {
+    // The colours are always darkened for light text, so the content is themed dark
+    // (the app's own dark scheme, which the contrast maths is sized for) whatever the
+    // app theme is: chips and secondary text would otherwise be near-invisible over a
+    // flag in light mode. LocalContentColor is reset because the outer theme's dark ink
+    // would otherwise reach texts that name no colour.
+    MaterialTheme(colorScheme = BeyondBordersDark) {
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
     val colors = flag?.colors.orEmpty().map { Color(it) }
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .background(
-                when (colors.size) {
-                    0 -> Brush.linearGradient(listOf(Color(0xFF1B1B1F), Color(0xFF1B1B1F)))
-                    1 -> Brush.linearGradient(listOf(colors[0], colors[0]))
-                    else -> Brush.linearGradient(colors)
-                }
+            // A plain Box, unlike the Card it replaced, does not consume touches: without
+            // this, taps on its empty areas fall through to the map beneath.
+            .pointerInput(Unit) {}
+            .then(
+                if (colors.size >= 2) Modifier.background(Brush.linearGradient(colors))
+                else Modifier.background(colors.firstOrNull() ?: BANNER_FALLBACK_COLOR)
             )
             .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
@@ -1465,7 +1480,6 @@ private fun SelectedPlaceCard(
                 Text(
                     place.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -1552,7 +1566,7 @@ private fun SelectedPlaceCard(
                         containerColor = Color.Black.copy(alpha = 0.3f),
                         labelColor = Color.White,
                         selectedContainerColor = Color.White,
-                        selectedLabelColor = Color(0xFF1B1B1F),
+                        selectedLabelColor = BANNER_FALLBACK_COLOR,
                     )
                     @Composable
                     fun StatusChip(target: PlaceStatus, label: String) = BounceFilterChip(
@@ -1569,6 +1583,7 @@ private fun SelectedPlaceCard(
                 }
             }
         }
+    }
     }
     }
 }

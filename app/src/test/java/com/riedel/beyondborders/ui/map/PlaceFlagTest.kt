@@ -36,7 +36,8 @@ class PlaceFlagTest {
     private val red = 0xFFB22234.toInt()
     private val white = 0xFFFFFFFF.toInt()
 
-    private fun contrastWithWhite(argb: Int) = 1.05 / (relativeLuminance(argb) + 0.05)
+    private fun contrastWithSecondaryText(argb: Int) =
+        (relativeLuminance(BANNER_SECONDARY_TEXT_ARGB) + 0.05) / (relativeLuminance(argb) + 0.05)
 
     @Test
     fun `a US-like flag yields navy red and white in order of area`() {
@@ -68,17 +69,17 @@ class PlaceFlagTest {
     }
 
     @Test
-    fun `darkening gives white text at least 4 point 5 to 1 contrast`() {
+    fun `darkening gives the banner's grey secondary text at least 4 point 5 to 1 contrast`() {
         for (c in listOf(white, 0xFFFFD100.toInt(), 0xFFFF0000.toInt(), navy)) {
-            assertTrue(contrastWithWhite(darkenForWhiteText(c)) >= 4.5)
+            assertTrue(contrastWithSecondaryText(darkenForBannerText(c)) >= 4.5)
         }
     }
 
     @Test
     fun `an already dark colour is left unchanged`() {
         val dark = 0xFF1B1B1F.toInt()
-        assertEquals(dark, darkenForWhiteText(dark))
-        assertEquals(navy, darkenForWhiteText(navy))
+        assertEquals(dark, darkenForBannerText(dark))
+        assertEquals(navy, darkenForBannerText(navy))
     }
 
     @Test

@@ -15,6 +15,7 @@ import hashlib, json, os, subprocess, sys, tarfile, urllib.request
 
 COMMIT = "c09927e63705529bbf59ca6684cd9b23225dddad"
 URL = f"https://api.github.com/repos/hampusborgos/country-flags/tarball/{COMMIT}"
+TARBALL_SHA256 = "fc34d6635d21a63579268bb37eb5449c4971667cde308cfcfb44104cd961a285"
 HEIGHT = 120
 
 
@@ -25,7 +26,9 @@ def main(work, out, places):
     os.makedirs(work, exist_ok=True)
     tgz = os.path.join(work, "cf.tgz")
     urllib.request.urlretrieve(URL, tgz)
-    print("tarball sha256", hashlib.sha256(open(tgz, "rb").read()).hexdigest())
+    got = hashlib.sha256(open(tgz, "rb").read()).hexdigest()
+    if got != TARBALL_SHA256:
+        sys.exit(f"tarball sha256 mismatch: expected {TARBALL_SHA256}, got {got}")
     svgs = {}
     with tarfile.open(tgz) as t:
         for m in t.getmembers():

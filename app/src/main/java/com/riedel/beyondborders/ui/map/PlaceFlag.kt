@@ -5,7 +5,10 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -40,7 +43,7 @@ private suspend fun loadFlag(context: Context, code: String): PlaceFlag? {
                 ?: return@runCatching null
             val px = IntArray(bmp.width * bmp.height)
             bmp.getPixels(px, 0, bmp.width, 0, 0, bmp.width, bmp.height)
-            PlaceFlag(bmp.asImageBitmap(), dominantColors(px).map(::darkenForWhiteText))
+            PlaceFlag(bmp.asImageBitmap(), dominantColors(px).map(::darkenForBannerText))
         }.getOrNull()
     }
     if (flag != null) flagCache.put(path, flag)
@@ -51,8 +54,12 @@ private suspend fun loadFlag(context: Context, code: String): PlaceFlag? {
 @Composable
 internal fun rememberPlaceFlag(code: String?): PlaceFlag? {
     val context = LocalContext.current.applicationContext
-    val flag by produceState<PlaceFlag?>(null, code) {
-        value = if (code == null) null else loadFlag(context, code)
+    val path = flagAssetPath(code)
+    // Seeded from the cache and keyed on the code: a cached flag is there in the very
+    // first frame (no slot-less frame that jumps), and a new code never shows the old flag.
+    var flag by remember(code) { mutableStateOf(path?.let { flagCache.get(it) }) }
+    LaunchedEffect(code) {
+        if (flag == null && code != null) flag = loadFlag(context, code)
     }
     return flag
 }
@@ -111,11 +118,13 @@ internal fun dominantColors(argb: IntArray, max: Int = 3): List<Int> {
 // RGB distance of 60 (of 441 possible): separates navy from red from white, merges shades.
 private const val NEAR_DUPLICATE_DISTANCE_SQ = 60 * 60
 
-// Sized for the banner's dimmest text, not its title: the meta line is the dark scheme's
-// onSurfaceVariant (#CAC4D0, luminance ~0.566), and 4.5:1 for that needs
-// 0.616 / (L + 0.05) >= 4.5. White then gets ~8:1. Sized for white alone, the meta line
-// came out at ~2.6:1.
-private const val MAX_LUMINANCE_FOR_WHITE_TEXT = 0.616 / 4.5 - 0.05
+// Sized for the banner's dimmest text, not its title: the meta line is the app's dark
+// onSurfaceVariant (#C0C6D0, luminance ~0.562), and 4.5:1 for that needs
+// (L_text + 0.05) / (L + 0.05) >= 4.5. White then gets ~8:1. Sized for white alone, the
+// meta line came out at ~2.6:1.
+internal const val BANNER_SECONDARY_TEXT_ARGB = 0xFFC0C6D0.toInt()
+private val MAX_LUMINANCE_FOR_BANNER_TEXT =
+    (relativeLuminance(BANNER_SECONDARY_TEXT_ARGB) + 0.05) / 4.5 - 0.05
 
 private fun srgbToLinear(c: Int): Double {
     val v = c / 255.0
@@ -131,7 +140,7 @@ internal fun relativeLuminance(argb: Int): Double =
  * [argb] blended toward black, in 5% steps, until the banner's grey secondary text (and
  * so, with room to spare, its white title) reaches the WCAG AA ratio of 4.5:1. A colour that already passes comes back unchanged (and opaque).
  */
-internal fun darkenForWhiteText(argb: Int): Int {
+internal fun darkenForBannerText(argb: Int): Int {
     val opaque = argb or (0xFF shl 24)
     for (step in 0..20) {
         val keep = 1.0 - step * 0.05
@@ -139,7 +148,7 @@ internal fun darkenForWhiteText(argb: Int): Int {
         val g = (((opaque shr 8) and 0xFF) * keep).toInt()
         val b = ((opaque and 0xFF) * keep).toInt()
         val c = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
-        if (relativeLuminance(c) <= MAX_LUMINANCE_FOR_WHITE_TEXT) return c
+        if (relativeLuminance(c) <= MAX_LUMINANCE_FOR_BANNER_TEXT) return c
     }
     return 0xFF000000.toInt()
 }

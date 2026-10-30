@@ -31,6 +31,14 @@ Map geometry (`places.geojson`, `places.json`, `places_labels.geojson`) derives 
 Natural Earth, <https://www.naturalearthdata.com/>. Natural Earth is in the public
 domain; no attribution is required, and it is given here as a courtesy.
 
+## Country flags (public domain)
+
+The flag images in `assets/flags/` are rendered from the SVGs of
+hampusborgos/country-flags, <https://github.com/hampusborgos/country-flags>
+(pinned to commit `c09927e63705529bbf59ca6684cd9b23225dddad`), whose sources are
+Wikimedia Commons. The flags are in the public domain; no attribution is required,
+and it is given here as a courtesy.
+
 ## Noto Sans (SIL Open Font License 1.1)
 
 Map labels use glyph atlases generated from Noto Sans Regular,
