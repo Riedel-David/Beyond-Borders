@@ -1,12 +1,8 @@
 package com.riedel.beyondborders.ui.settings
 
-import com.riedel.beyondborders.ui.asString
-import com.riedel.beyondborders.ui.UiText
-import com.riedel.beyondborders.R
-import androidx.compose.ui.res.stringResource
-import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,7 +37,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.settings.Denominator
@@ -65,6 +62,8 @@ import com.riedel.beyondborders.settings.MapColors
 import com.riedel.beyondborders.settings.MapHue
 import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.ThemeMode
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
 
@@ -76,7 +75,12 @@ import com.riedel.beyondborders.ui.visa.PassportPickerButton
  * works.
  */
 @Composable
-fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    container: AppContainer,
+    placeCount: Int,
+    unMemberCount: Int,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val viewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.factory(
@@ -89,11 +93,6 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             snapshot = container.cloudSnapshot,
         ),
     )
-    // Read from the bundled registry so the labels cannot drift from the data.
-    val placeCounts by produceState(0 to 0) {
-        val all = container.places.places()
-        value = all.size to all.count { it.unMember }
-    }
 
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
@@ -231,8 +230,14 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 selected = denominator,
                 label = { d ->
                     when (d) {
-                        Denominator.ALL -> stringResource(R.string.settings_denominator_all, placeCounts.first)
-                        Denominator.UN_MEMBER -> stringResource(R.string.settings_denominator_un, placeCounts.second)
+                        // The counts come from the shared registry, which may not have loaded
+                        // yet: a bare label rather than "All 0".
+                        Denominator.ALL ->
+                            if (placeCount > 0) stringResource(R.string.settings_denominator_all, placeCount)
+                            else stringResource(R.string.settings_denominator_all_bare)
+                        Denominator.UN_MEMBER ->
+                            if (unMemberCount > 0) stringResource(R.string.settings_denominator_un, unMemberCount)
+                            else stringResource(R.string.settings_denominator_un_bare)
                         Denominator.INHABITED -> stringResource(R.string.settings_denominator_inhabited)
                     }
                 },

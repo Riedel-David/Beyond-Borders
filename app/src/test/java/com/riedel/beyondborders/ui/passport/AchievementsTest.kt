@@ -5,8 +5,8 @@ import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.PlaceRegistry
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
-import java.io.File
 import com.riedel.beyondborders.ui.UiText
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

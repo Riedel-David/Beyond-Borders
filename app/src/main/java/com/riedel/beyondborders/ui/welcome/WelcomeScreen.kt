@@ -1,6 +1,5 @@
 package com.riedel.beyondborders.ui.welcome
 
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -105,7 +105,11 @@ fun WelcomeScreen(
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    stringResource(R.string.welcome_intro, placeCount, unMemberCount),
+                    if (placeCount > 0 && unMemberCount > 0) {
+                        stringResource(R.string.welcome_intro, placeCount, unMemberCount)
+                    } else {
+                        stringResource(R.string.welcome_intro_bare)
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 16.dp),

@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.places
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -9,7 +10,6 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
-import com.riedel.beyondborders.R
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots

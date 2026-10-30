@@ -1,7 +1,6 @@
 package com.riedel.beyondborders.widget
 
 import android.app.Activity
-import androidx.compose.ui.res.stringResource
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
@@ -35,12 +34,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.lifecycleScope
-import com.riedel.beyondborders.R
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BeyondBordersApp
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.computeStats
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme

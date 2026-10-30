@@ -66,7 +66,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
@@ -80,20 +79,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.delay
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
+import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
+import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.BounceFilterChip
-import com.riedel.beyondborders.ui.UiText
-import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.StatusFilter
 import com.riedel.beyondborders.ui.places.TravelStats
-import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
 import com.riedel.beyondborders.ui.places.sectionHeader
 import com.riedel.beyondborders.ui.places.visaFilters
 
@@ -192,8 +192,7 @@ fun PassportScreen(
     // the collapse skip.
     // Remembered, not rebuilt per composition: this walks all 252 rows calling
     // sectionHeader on each, which is not something to redo while a finger is down.
-    val resources = LocalResources.current
-    val headerSlots = remember(resources, mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query) {
+    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query) {
         if (mode == PassportMode.VISA) {
             buildList {
                 add(null) // "mode"
@@ -204,7 +203,7 @@ fun PassportScreen(
                     add(null) // "visa-search"
                     add(null) // "visa-filters"
                     if (visaRows.isEmpty()) add(null) // "visa-empty"
-                    addAll(visaHeaderCategorySlots(visaRows).map { it?.let { c -> resources.getString(c.labelRes) } })
+                    addAll(visaHeaderCategorySlots(visaRows).map { it?.name })
                 }
             }
         } else {
@@ -927,7 +926,11 @@ internal fun railLabels(headerSlots: List<String?>): List<String> =
 internal fun railTargetIndex(headerSlots: List<String?>, label: String): Int? =
     headerSlots.indexOf(label).takeIf { it >= 0 }
 
-/** [sectionHeader]'s key shown as text: the uninhabited key is a stable constant, not the wording. */
+/**
+ * A header slot key shown as text. Keys are stable (the uninhabited constant, a
+ * [VisaCategory] name, or a letter); only here, at draw time, do they become wording.
+ */
 @Composable
 private fun sectionHeaderLabel(key: String): String =
-    if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited) else key
+    if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited)
+    else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) } ?: key

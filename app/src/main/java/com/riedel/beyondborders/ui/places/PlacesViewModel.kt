@@ -12,6 +12,7 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
@@ -21,7 +22,6 @@ import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.SettingsStore
-import com.riedel.beyondborders.ui.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

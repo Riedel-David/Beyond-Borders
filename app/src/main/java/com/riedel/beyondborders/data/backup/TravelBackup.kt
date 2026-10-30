@@ -1,8 +1,8 @@
 package com.riedel.beyondborders.data.backup
 
-import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.UiText
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject

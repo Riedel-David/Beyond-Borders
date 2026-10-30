@@ -68,9 +68,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -84,8 +84,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.BounceFilterChip
-import com.riedel.beyondborders.ui.UiText
-import com.riedel.beyondborders.ui.asString
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -98,6 +96,8 @@ import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.passport.SearchField
 import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel

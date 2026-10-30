@@ -1,8 +1,7 @@
 package com.riedel.beyondborders.ui
 
-import androidx.compose.ui.res.stringResource
-import androidx.annotation.StringRes
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -27,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
@@ -68,22 +68,29 @@ fun BeyondBordersRoot(
     modifier: Modifier = Modifier,
 ) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
+    // Hoisted above the welcome gate so the welcome screen, the map, the passport and
+    // Settings all read the one registry copy the ViewModel holds. It starts empty and
+    // fills asynchronously, so the counts below are 0 until it has loaded and every
+    // consumer treats 0 as "not yet" rather than printing it.
+    val placesViewModel: PlacesViewModel = viewModel(
+        factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
+    )
+    val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
+    val placeCount = allPlaces.size
+    val unMemberCount = remember(allPlaces) { allPlaces.count { it.unMember } }
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
         var passportNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-        var placeCounts by remember { mutableStateOf(0 to 0) }
         LaunchedEffect(Unit) {
             val codes = container.visa.availablePassports()
             passportNames = codes.associateWith { code -> container.places.place(code)?.name ?: code }
-            val all = container.places.places()
-            placeCounts = all.size to all.count { it.unMember }
         }
         WelcomeScreen(
             nationality = nationality,
             onNationalityChange = container.settings::setNationality,
             passportNames = passportNames,
-            placeCount = placeCounts.first,
-            unMemberCount = placeCounts.second,
+            placeCount = placeCount,
+            unMemberCount = unMemberCount,
             onGetStarted = container.settings::setHasSeenWelcome,
             modifier = modifier,
         )
@@ -105,12 +112,6 @@ fun BeyondBordersRoot(
         }
     }
     val tab = Tab.entries[selected]
-
-    // Hoisted to the root so the map and the passport share one instance: marking
-    // a country on one is instantly visible on the other, with no syncing.
-    val placesViewModel: PlacesViewModel = viewModel(
-        factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
-    )
 
     Scaffold(
         modifier = modifier,
@@ -153,7 +154,7 @@ fun BeyondBordersRoot(
                         )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
-                        SettingsScreen(container)
+                        SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount)
                     }
                 }
             }

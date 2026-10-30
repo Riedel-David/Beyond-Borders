@@ -1,9 +1,5 @@
 package com.riedel.beyondborders.ui.settings
 
-import com.riedel.beyondborders.ui.asString
-import com.riedel.beyondborders.ui.UiText
-import com.riedel.beyondborders.R
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -16,8 +12,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 
 // Licence names are proper nouns and stay as plain text; only the headings and the two
 // bodies that are sentences are resources.
