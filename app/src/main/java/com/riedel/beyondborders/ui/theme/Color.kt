@@ -138,15 +138,16 @@ data class MapPalette(
 )
 
 /**
- * The visa lens' colour set: five named hues, one per band.
+ * The visa lens' colour set: six named hues, one per band.
  *
  * A *categorical* scheme now, not a sequential one — [VisaBand] stopped being an
  * openness ramp when [VisaBand.ETA] and [VisaBand.VISA_ON_ARRIVAL] split apart, so
  * there is no longer one "harder" direction for intensity to carry. Green for
- * visa-free, blue for an ETA, orange for on-arrival, red for apply-first and a
- * neutral grey for closed is the nameable, memorable set — deliberately including
- * green and red together, which the ramp this replaced ruled out for exactly the
- * red/green colour-vision-deficiency collision that risks.
+ * visa-free, blue for an ETA, orange for on-arrival, red for apply-first, indigo (pale
+ * lavender in dark) for "check requirements" and a neutral grey for closed is the
+ * nameable, memorable set — deliberately including green and red together, which the
+ * ramp this replaced ruled out for exactly the red/green colour-vision-deficiency
+ * collision that risks.
  *
  * That risk is why every value here is tuned, not just picked: green and red survive
  * simulated deuteranopia (the commonest dichromacy, and the one that confuses these
@@ -163,12 +164,13 @@ data class VisaRamp(
     val eta: Color,
     val visaOnArrival: Color,
     val visaRequired: Color,
+    val check: Color,
     val closed: Color,
     /**
      * Places this passport's dataset has no answer for at all — an "honest gap",
-     * not a sixth band: it never comes from a [VisaBand], only from a place absent
-     * from [com.riedel.beyondborders.data.visa.VisaRegistry] entirely, so it
-     * stays a plain field here rather than another [VisaBand.entries] case.
+     * not a band: it never comes from a [VisaBand], only from a place absent from
+     * [com.riedel.beyondborders.data.visa.VisaRegistry] entirely, so it stays a
+     * plain field here rather than another [VisaBand.entries] case.
      */
     val noData: Color,
     /**
@@ -186,6 +188,7 @@ data class VisaRamp(
         VisaBand.ETA -> eta
         VisaBand.VISA_ON_ARRIVAL -> visaOnArrival
         VisaBand.VISA_REQUIRED -> visaRequired
+        VisaBand.CHECK -> check
         VisaBand.CLOSED -> closed
     }
 }
@@ -204,6 +207,7 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
         eta = Color(0xFF50AADF),
         visaOnArrival = Color(0xFFF28B3C),
         visaRequired = Color(0xFFD35E64),
+        check = Color(0xFFE5D6F5),
         closed = Color(0xFFCAC7CA),
         noData = Color(0xFF9AA0A8),
         selectedOutline = Color(0xFFF7FAFF),
@@ -215,6 +219,7 @@ private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
         eta = Color(0xFF3C6997),
         visaOnArrival = Color(0xFF463113),
         visaRequired = Color(0xFF310B08),
+        check = Color(0xFF5844C1),
         closed = Color(0xFF4B4B49),
         noData = Color(0xFF6B6D70),
         selectedOutline = Color(0xFF05080C),

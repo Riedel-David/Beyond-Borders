@@ -1,7 +1,7 @@
 package com.riedel.beyondborders.data.visa
 
 /**
- * The five groups the *map* paints. The list keeps all eight [VisaCategory] values.
+ * The six groups the *map* paints. The list keeps every [VisaCategory] value.
  *
  * Fewer bands than categories, and not as a shortcut. Eight fills on a world map is
  * a legend to study, not a map to read; the map answers "roughly, where can I go" and
@@ -32,6 +32,13 @@ enum class VisaBand(val label: String) {
     VISA_REQUIRED("Apply first"),
 
     /**
+     * [VisaCategory.CHECK]: the dataset has a rule that fits no other band (tourist
+     * card, invitation, travel ban). Its own hue rather than "Closed" or "Apply
+     * first", because we do not know which of those it is.
+     */
+    CHECK("Check"),
+
+    /**
      * [VisaCategory.PERMIT_REQUIRED] and [VisaCategory.NO_ADMISSION]. Merged because
      * for either passport this is a handful of permit regimes and at most one or two
      * refusals, so splitting it further would spend a whole band on almost nothing.
@@ -46,5 +53,6 @@ val VisaCategory.band: VisaBand
         VisaCategory.ETA -> VisaBand.ETA
         VisaCategory.VISA_ON_ARRIVAL -> VisaBand.VISA_ON_ARRIVAL
         VisaCategory.E_VISA, VisaCategory.VISA_REQUIRED -> VisaBand.VISA_REQUIRED
+        VisaCategory.CHECK -> VisaBand.CHECK
         VisaCategory.PERMIT_REQUIRED, VisaCategory.NO_ADMISSION -> VisaBand.CLOSED
     }

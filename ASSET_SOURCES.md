@@ -35,19 +35,39 @@ unpinned; only the upstream URL and the curation step are traceable.
 
 ## Visa requirements — `tools/visa/build_visa.py`
 
-Built from the "Passport Index Data" fork at
-`https://github.com/imorte/passport-index-data` (file
-`passport-index-tidy-iso2.csv`, MIT licence), as of that fork's README date
-2026-02-17 (recorded in `tools/visa/rules.py`, `DATASET["as_of"]`, deliberately not
-the file's mtime since that changes on every clone). `visa.json` is the DE
-(default) passport; each `visa_<iso2>.json` is the same build for that passport
-code. The DE build additionally folds in the German Foreign Office's travel-warning
-open data (`https://www.auswaertiges-amt.de/opendata/travelwarning`). On top of
-both feeds, `tools/visa/rules.py` applies hand-written corrections and curated
-entries (see that file for individual citations) — the exact commit of the
-upstream CSV used for the currently-committed assets is not recorded, so, as with
-the geo assets, only the upstream URL and the as-of date are traceable, not an
-exact snapshot.
+Built from the Visa-requirements dataset,
+<https://github.com/Riedel-David/Visa-requirements>, published at
+<https://riedel-david.github.io/Visa-requirements/> (`index.json` and
+`passports/<ISO2>.json`). It is itself derived from Wikipedia's "Visa requirements for
+... citizens" articles by Wikipedia contributors and is licensed **CC BY-SA 4.0**
+(<https://creativecommons.org/licenses/by-sa/4.0/>); the `visa*.json` assets are an
+adaptation of it and are shared under the same licence, see
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). To cite: "Wikipedia contributors,
+*Visa requirements for <nationality> citizens*, Wikipedia, The Free Encyclopedia,
+revision <id>" — the article URL and revision of each passport are in its asset
+(`dataset.sourceUrl`, `dataset.sourceRevision`), and the article's page history lists
+the contributors.
+
+`build_visa.py` always downloads the latest publication into `tools/visa/cache/`
+(gitignored), so a rebuild is not reproducible from this repository alone. What the
+committed assets were built from is therefore recorded instead:
+
+- index.json `generated_at` (also each asset's `asOf`, as a date) and each passport's
+  Wikipedia `source_revision`: both are written by the build into
+  [`docs/visa-source-revisions.txt`](docs/visa-source-revisions.txt), which is the one
+  place to read them. Each asset also carries its own `source_revision`.
+
+`python3 tools/visa/build_visa.py --source DIR` builds offline from a directory holding
+`index.json` and `passports/` (a checkout's `data/`, or the cached download). Only the
+whole-country record (`area` null) of each passport is read, plus four places Wikipedia
+files under an area name (see `AREA_IS_WHOLE_PLACE` in `tools/visa/rules.py`).
+A passport whose article yields fewer than 150 answers (today only Northern Cyprus) is not
+shipped and is named in the revisions file. `visa.json` is the DE (default) passport; each `visa_<iso2>.json` is the same build for
+that passport code. The DE build additionally folds in the German Foreign Office's
+travel-warning open data (`https://www.auswaertiges-amt.de/opendata/travelwarning`). On
+top of both feeds, `tools/visa/rules.py` applies hand-written corrections and curated
+entries (see that file for individual citations). The Foreign Office JSON is likewise
+downloaded fresh and not pinned.
 
 The SHA-256 of every `visa*.json` is recorded in
 [`docs/visa-checksums.txt`](docs/visa-checksums.txt), regenerated with:

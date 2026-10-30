@@ -5,6 +5,7 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.ui.visa.asOfNotice
 import com.riedel.beyondborders.ui.visa.officialLinkLabel
@@ -62,9 +63,12 @@ class VisaLogicTest {
           "passport": "DE",
           "asOf": "2026-02-17",
           "dataset": {
-            "name": "Passport Index Data",
+            "name": "Visa requirements (Wikipedia contributors)",
             "url": "https://example.org/dataset",
-            "licence": "MIT"
+            "licence": "CC BY-SA 4.0",
+            "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "sourceUrl": "https://en.wikipedia.org/wiki/Visa_requirements_for_German_citizens",
+            "sourceRevision": 1234567
           },
           "iataUrl": "https://example.org/iata",
           "requirements": [
@@ -81,7 +85,9 @@ class VisaLogicTest {
             {"code": "BV", "category": "PERMIT_REQUIRED", "source": "curated",
              "confidence": "medium", "note": "Nature reserve.",
              "sourceUrl": "https://example.org/bv", "officialUrl": "https://example.org/no",
-             "officialFor": "NO"}
+             "officialFor": "NO"},
+            {"code": "KP", "category": "CHECK", "source": "dataset", "confidence": "low",
+             "note": "Travel banned by the passport's own government."}
           ]
         }
         """.trimIndent()
@@ -94,6 +100,45 @@ class VisaLogicTest {
     ) = buildVisaRows(places, visa, null, statuses, query, filter).map { it.place.code }
 
     // --- the list --------------------------------------------------------------
+
+    private fun reg(passport: String, vararg rows: Pair<String, String>) = VisaRegistry.parse(
+        """{"passport":"$passport","asOf":"2026-01-01",
+        "dataset":{"name":"n","url":"https://e.org","licence":"L"},"iataUrl":"https://e.org",
+        "requirements":[${rows.joinToString(",") { """{"code":"${it.first}","category":"${it.second}","source":"dataset"}""" }}]}"""
+    )
+
+    @Test
+    fun `headline totals and chips come from the combined passports`() {
+        val primary = reg("DE", "FR" to "VISA_FREE", "KP" to "VISA_REQUIRED", "CN" to "NO_ADMISSION")
+        val second = reg("GB", "KP" to "VISA_FREE", "IN" to "ETA", "CN" to "CHECK")
+        // KP: the second passport's visa-free wins; CN: CHECK beats the refusal; IN only on the second.
+        assertEquals(CombinedTotals(answered = 4, visaFree = 2, easy = 3), combinedTotals(primary, second))
+        assertEquals(CombinedTotals(3, 1, 1), combinedTotals(primary, null))
+        assertEquals(
+            listOf(VisaCategory.VISA_FREE, VisaCategory.ETA, VisaCategory.CHECK),
+            visaFilters(primary, second).filterIsInstance<VisaFilter.Category>().map { it.category },
+        )
+        // No chip for a category the combined list no longer contains (VISA_REQUIRED, NO_ADMISSION).
+        assertEquals(
+            setOf(VisaCategory.VISA_FREE, VisaCategory.ETA, VisaCategory.CHECK),
+            combinedCategoryCounts(primary, second).keys,
+        )
+    }
+
+    @Test
+    fun `the attribution fields and a CHECK row survive parsing`() {
+        assertEquals("CC BY-SA 4.0", visa.datasetLicence)
+        assertEquals("https://creativecommons.org/licenses/by-sa/4.0/", visa.licenceUrl)
+        assertEquals(
+            "https://en.wikipedia.org/wiki/Visa_requirements_for_German_citizens",
+            visa.sourceUrl,
+        )
+        assertEquals("1234567", visa.sourceRevision)
+        val kp = visa["KP"]!!
+        assertEquals(VisaCategory.CHECK, kp.category)
+        assertEquals(VisaConfidence.LOW, kp.confidence)
+        assertEquals("Travel banned by the passport's own government.", kp.note)
+    }
 
     /**
      * The ordering *is* the feature: "where can I go" has to be answerable by looking
@@ -211,6 +256,7 @@ class VisaLogicTest {
                 VisaCategory.ETA,
                 VisaCategory.E_VISA,
                 VisaCategory.VISA_REQUIRED,
+                VisaCategory.CHECK,
                 VisaCategory.PERMIT_REQUIRED,
             ),
             labels.filterIsInstance<VisaFilter.Category>().map { it.category },
@@ -239,8 +285,8 @@ class VisaLogicTest {
     }
 
     /**
-     * Five bands out of eight categories, and the grouping is the map's whole claim:
-     * "roughly, where can I go" is a picture, and eight colours is a legend.
+     * Six bands out of nine categories, and the grouping is the map's whole claim:
+     * "roughly, where can I go" is a picture, and nine colours is a legend.
      */
     @Test
     fun `each band collects the categories the ramp merges`() {

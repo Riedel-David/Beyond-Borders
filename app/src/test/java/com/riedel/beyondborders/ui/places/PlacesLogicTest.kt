@@ -498,6 +498,40 @@ class PlacesLogicTest {
         assertEquals(VisaConfidence.HIGH, combined?.winner?.confidence)
     }
 
+    /** Enum order: ..., E_VISA, VISA_REQUIRED, CHECK, PERMIT_REQUIRED, NO_ADMISSION. */
+    @Test
+    fun `with two passports CHECK loses to a visa and beats a permit or refusal`() {
+        fun winner(a: VisaCategory, b: VisaCategory) = listOf(
+            combineRequirements(requirement(category = a), requirement(category = b))?.winner?.category,
+            combineRequirements(requirement(category = b), requirement(category = a))?.winner?.category,
+        )
+        assertEquals(listOf(VisaCategory.VISA_REQUIRED, VisaCategory.VISA_REQUIRED),
+            winner(VisaCategory.CHECK, VisaCategory.VISA_REQUIRED))
+        assertEquals(listOf(VisaCategory.E_VISA, VisaCategory.E_VISA),
+            winner(VisaCategory.CHECK, VisaCategory.E_VISA))
+        assertEquals(listOf(VisaCategory.CHECK, VisaCategory.CHECK),
+            winner(VisaCategory.CHECK, VisaCategory.PERMIT_REQUIRED))
+        assertEquals(listOf(VisaCategory.CHECK, VisaCategory.CHECK),
+            winner(VisaCategory.CHECK, VisaCategory.NO_ADMISSION))
+    }
+
+    @Test
+    fun `legend counts are the combined bands the map paints`() {
+        fun reg(passport: String, vararg rows: Pair<String, String>) = VisaRegistry.parse(
+            """{"passport":"$passport","asOf":"2026-01-01",
+            "dataset":{"name":"n","url":"https://e.org","licence":"L"},"iataUrl":"https://e.org",
+            "requirements":[${rows.joinToString(",") { """{"code":"${it.first}","category":"${it.second}","source":"dataset"}""" }}]}"""
+        )
+        val primary = reg("DE", "FR" to "VISA_FREE", "KP" to "VISA_REQUIRED", "RU" to "NO_ADMISSION")
+        val second = reg("GB", "KP" to "CHECK", "RU" to "CHECK", "CN" to "CHECK")
+        val counts = combinedBandCounts(primary, second)
+        assertEquals(1, counts[VisaBand.VISA_FREE])
+        assertEquals(1, counts[VisaBand.VISA_REQUIRED])   // KP: the visa beats CHECK
+        assertEquals(2, counts[VisaBand.CHECK])           // RU and CN
+        assertEquals(bandCodes(primary, second, true).mapValues { it.value.size }, counts)
+        assertEquals(emptyMap<VisaBand, Int>(), combinedBandCounts(null, second))
+    }
+
     @Test
     fun `ties go to the primary passport`() {
         val primary = requirement(code = "FR", category = VisaCategory.VISA_FREE, days = 90)

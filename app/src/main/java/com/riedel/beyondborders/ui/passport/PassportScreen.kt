@@ -132,7 +132,7 @@ fun PassportScreen(
     val wishlistEasyLine by viewModel.wishlistEasyLine.collectAsStateWithLifecycle()
     // Derived from an asset that is read once, so a flow would be a subscription to
     // something that never changes twice.
-    val filters = remember(visa) { visaFilters(visa) }
+    val filters = remember(visa, secondVisa) { visaFilters(visa, secondVisa) }
     // Persisted, and prefixed with the grouping's name, so a header collapsed by
     // continent survives closing the app but does not carry over, by coincidence
     // of the same string, into region or A-Z grouping.

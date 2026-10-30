@@ -30,14 +30,14 @@ it earns its place.
 ## Where the passport gets you
 
 Passport → **Where I can go** answers the other half of the question the map answers,
-entirely offline, for any passport in a searchable picker over about 200 Passport Index
-passports. A German passport gets the full, hand-curated 252-destination answer; every
+entirely offline, for any passport in a searchable picker over about 200
+passports. A German passport gets the full 252-destination answer (the dataset's rows plus hand-written answers for the places it lacks); every
 other passport gets a generic, programme-based answer wherever a rule applies, and an
 honest grey gap where none does.
 
-The interesting part is not the dataset — it is the up to 53 places per passport that the
-dataset does not cover. The Passport Index matrix is 199 sovereign states; Beyond
-Borders has 252 places, because the whole point of this app is that Greenland is not
+The interesting part is not the dataset — it is the places per passport that the
+dataset does not cover. The dataset follows Wikipedia's per-nationality articles, which
+cover most territories only patchily; Beyond Borders has 252 places, because the whole point of this app is that Greenland is not
 Denmark. Those are hand-written in [`tools/visa/rules.py`](../tools/visa/rules.py), one
 entry at a time, and they are exactly the ones other apps get wrong:
 

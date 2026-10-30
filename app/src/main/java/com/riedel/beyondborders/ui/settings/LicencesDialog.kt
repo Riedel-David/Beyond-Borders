@@ -20,7 +20,7 @@ private val LICENCE_LINES = listOf(
     "Map" to "MapLibre Native (BSD-2-Clause)",
     "Borders" to "Natural Earth (public domain)",
     "Labels" to "Noto Sans (SIL OFL 1.1)",
-    "Visa data" to "Passport Index Data (MIT), see THIRD_PARTY_NOTICES.md in the repository",
+    "Visa data" to "Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository",
     "Official advice links" to "Auswärtiges Amt (German Federal Foreign Office)",
     "Libraries" to "AndroidX, Jetpack Compose, Room, Kotlin coroutines (Apache-2.0)",
 )

@@ -651,6 +651,40 @@ internal fun bandCodes(
         .mapValues { (_, codes) -> codes.toSet() }
 }
 
+/** The better answer per place across both passports, as the list and the map show it. */
+private fun combinedWinners(visa: VisaRegistry?, secondVisa: VisaRegistry?): List<VisaRequirement> {
+    if (visa == null) return emptyList()
+    val codes = visa.requirements.map { it.code } + (secondVisa?.requirements?.map { it.code } ?: emptyList())
+    return codes.toSet().mapNotNull { combineRequirements(visa[it], secondVisa?.get(it))?.winner }
+}
+
+/** How many places have each category once the two passports are combined. */
+internal fun combinedCategoryCounts(
+    visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
+): Map<VisaCategory, Int> =
+    combinedWinners(visa, secondVisa).groupingBy { it.category }.eachCount()
+
+/** The headline numbers of the combined result: places answered, visa-free, and easy. */
+internal data class CombinedTotals(val answered: Int, val visaFree: Int, val easy: Int)
+
+internal fun combinedTotals(visa: VisaRegistry?, secondVisa: VisaRegistry?): CombinedTotals {
+    val winners = combinedWinners(visa, secondVisa)
+    return CombinedTotals(winners.size, winners.count { it.isVisaFree }, winners.count { it.isEasy })
+}
+
+/**
+ * How many places the map paints in each band, from the same combined result as
+ * [bandCodes]. The legends and the summary bar read this rather than one registry's
+ * own counts, so with two passports a band the map draws always has a legend entry
+ * and the numbers add up to what is painted.
+ */
+internal fun combinedBandCounts(
+    visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
+): Map<VisaBand, Int> =
+    bandCodes(visa, secondVisa, lens = true).mapValues { it.value.size }
+
 /**
  * Every place this passport's [VisaRegistry] has no requirement for at all.
  *
@@ -727,8 +761,11 @@ internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionSt
  * [VisaCategory.HOME] is left out on purpose: it is one place, it is the passport's
  * own country, and the user knows they can go home.
  */
-internal fun visaFilters(visa: VisaRegistry?): List<VisaFilter> {
+internal fun visaFilters(visa: VisaRegistry?, secondVisa: VisaRegistry? = null): List<VisaFilter> {
     if (visa == null) return emptyList()
+    // From the combined result the list itself shows, so with two passports every
+    // category in the list has a chip and no chip is empty.
+    val counts = combinedCategoryCounts(visa, secondVisa)
     return buildList {
         add(VisaFilter.All)
         add(VisaFilter.Easy)
@@ -736,7 +773,7 @@ internal fun visaFilters(visa: VisaRegistry?): List<VisaFilter> {
         add(VisaFilter.LongStay)
         VisaCategory.entries.forEach { category ->
             if (category == VisaCategory.HOME) return@forEach
-            if ((visa.countByCategory[category] ?: 0) > 0) add(VisaFilter.Category(category))
+            if ((counts[category] ?: 0) > 0) add(VisaFilter.Category(category))
         }
     }
 }
@@ -868,9 +905,12 @@ data class CombinedRequirement(
 /**
  * Combine two passports' requirements for one place, choosing the less restrictive.
  *
- * The rule is comparison on [VisaCategory.ordinal], which [VisaCategory]'s own KDoc
- * documents as load-bearing and monotonic in how much can go wrong before the
- * border. Returns the whole winning requirement — never a synthesized one — so
+ * The rule is comparison on [VisaCategory.ordinal] (documented as load-bearing, lower
+ * is better), so the traveller is shown the best path either passport offers: HOME,
+ * VISA_FREE, ETA, VISA_ON_ARRIVAL, E_VISA, VISA_REQUIRED, CHECK, PERMIT_REQUIRED,
+ * NO_ADMISSION. A definite visa path therefore beats the other passport's unknown
+ * CHECK, and CHECK beats a definite permit or refusal, which is the same order
+ * buildVisaRows sorts by. Returns the whole winning requirement — never a synthesized one — so
  * curated fields (`note`, `confidence`, `sourceUrl`, `origin`, `datasetSaid`,
  * `officialUrl`, `officialFor`) all belong to the passport whose answer won.
  *
