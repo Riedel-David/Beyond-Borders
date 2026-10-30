@@ -10,6 +10,8 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.map.BrandDeep
 import com.riedel.beyondborders.ui.map.BrandInk
 import com.riedel.beyondborders.ui.map.WORDMARK
@@ -26,19 +28,41 @@ import kotlinx.coroutines.withContext
 
 private const val BADGE_CARD_SIZE = 1080
 
+/** 9:21, the tallest phone aspect; a freeform window can report anything. */
+private const val BADGE_CARD_MAX_HEIGHT = 2520
+
+/**
+ * The card's height for a screen of [screenWidthPx] x [screenHeightPx]: the screen's own
+ * aspect at the card's width, so it is the same shape as the map snapshot. A square card
+ * posted to a full-screen target (a story, a status) gets black bars; never shorter than
+ * square nor taller than 9:21, so an odd window cannot make a landscape or a 30 MB card.
+ */
+internal fun badgeCardHeight(screenWidthPx: Int, screenHeightPx: Int): Int {
+    if (screenWidthPx <= 0) return BADGE_CARD_SIZE
+    val scaled = BADGE_CARD_SIZE.toLong() * screenHeightPx / screenWidthPx
+    return scaled.coerceIn(BADGE_CARD_SIZE.toLong(), BADGE_CARD_MAX_HEIGHT.toLong()).toInt()
+}
+
 // --- text -------------------------------------------------------------------
 
 /** "Explorer · 42 places": the rank and the count it was earned with. */
-internal fun badgeRankLine(placesVisited: Int): String =
-    "${rankFor(placesVisited).title} · $placesVisited ${if (placesVisited == 1) "place" else "places"}"
+internal fun badgeRankLine(placesVisited: Int): UiText = UiText.Res(
+    R.string.badge_rank_line,
+    rankFor(placesVisited).title,
+    UiText.Plural(R.plurals.badge_places_count, placesVisited, placesVisited),
+)
 
 /** "3 of 10" while locked; a finished badge just says so. */
-internal fun badgeProgressText(achievement: Achievement): String =
-    if (achievement.unlocked) "Unlocked" else "${achievement.progress} of ${achievement.target}"
+internal fun badgeProgressText(achievement: Achievement): UiText =
+    if (achievement.unlocked) {
+        UiText.Res(R.string.badge_unlocked)
+    } else {
+        UiText.Res(R.string.badge_progress_of, achievement.progress, achievement.target)
+    }
 
 /** The text that travels with the image, for targets that show a message beside it. */
-internal fun badgeShareCaption(achievement: Achievement): String =
-    "I unlocked “${achievement.title}” in Beyond Borders: ${achievement.description}"
+internal fun badgeShareCaption(achievement: Achievement): UiText =
+    UiText.Res(R.string.badge_share_caption, achievement.title, achievement.description)
 
 // --- card -------------------------------------------------------------------
 
@@ -76,8 +100,9 @@ private fun wrapText(text: String, paint: Paint, maxWidth: Float, maxLines: Int)
 }
 
 /**
- * A square card for one unlocked badge: brand header, the group's icon on a circle in
- * its colour, title, description, and the traveller rank along the bottom.
+ * A card for one unlocked badge, [BADGE_CARD_SIZE] wide and [heightPx] tall: brand header,
+ * the group's icon on a circle in its colour, title, description, and the traveller rank
+ * along the bottom.
  *
  * Like the stats card it is a fixed palette and not themed, so the circle uses the
  * group's dark-theme accent (the bright one) on the brand's dark ground. The block
@@ -85,12 +110,14 @@ private fun wrapText(text: String, paint: Paint, maxWidth: Float, maxLines: Int)
  * leave the card top-heavy; long text wraps, then ellipsizes, never clips.
  */
 internal fun badgeShareCard(
+    context: Context,
     achievement: Achievement,
     placesVisited: Int,
     icon: Drawable?,
     logo: Drawable? = null,
+    heightPx: Int = BADGE_CARD_SIZE,
 ): Bitmap {
-    val out = Bitmap.createBitmap(BADGE_CARD_SIZE, BADGE_CARD_SIZE, Bitmap.Config.ARGB_8888)
+    val out = Bitmap.createBitmap(BADGE_CARD_SIZE, heightPx, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
     val w = out.width.toFloat()
     val h = out.height.toFloat()
@@ -104,18 +131,40 @@ internal fun badgeShareCard(
             shader = LinearGradient(0f, 0f, w, h, BrandDeep, BrandInk, Shader.TileMode.CLAMP)
         },
     )
+    val tile = w * 0.10f
+    val rankPaint = bodyPaint(w * 0.040f, 200).apply { textAlign = Paint.Align.CENTER }
+    val footerTop = h - pad - rankPaint.lineHeight() - w * 0.04f
+
+    // Centre block: circle, title, description, centred between header and footer.
+    val circle = w * 0.27f
+    val titlePaint = numberPaint(w * 0.068f).apply { textAlign = Paint.Align.CENTER }
+    val descPaint = bodyPaint(w * 0.037f, 205).apply { textAlign = Paint.Align.CENTER }
+    val titleLines = wrapText(achievement.title.asString(context), titlePaint, textWidth, 2)
+    val descLines = wrapText(achievement.description.asString(context), descPaint, textWidth, 3)
+    val gapCircle = w * 0.05f
+    val gapTitle = w * 0.025f
+    val titleLH = titlePaint.lineHeight() * 1.0f
+    val descLH = descPaint.lineHeight() * 1.1f
+    val blockHeight = circle + gapCircle + titleLH * titleLines.size + gapTitle + descLH * descLines.size
+    val headerBottom = pad + tile
+    val available = footerTop - headerBottom
+    var cursor = headerBottom + ((available - blockHeight) / 2f).coerceAtLeast(w * 0.02f)
+    val cx = w / 2f
+    val cy = cursor + circle / 2f
+
     // The group's own colour as the light source, so each badge's card has its mood.
+    // Centred on the circle: the card's height follows the screen, so a fixed fraction
+    // of it drifts off the badge on a tall card.
     canvas.drawRect(
         0f, 0f, w, h,
         Paint().apply {
             shader = RadialGradient(
-                w / 2f, h * 0.38f, w * 0.7f,
+                cx, cy, w * 0.7f,
                 (tone.accentDark and 0x00FFFFFF) or (70 shl 24), Color.TRANSPARENT, Shader.TileMode.CLAMP,
             )
         },
     )
 
-    val tile = w * 0.10f
     drawLogoTile(canvas, logo, pad, pad, tile)
     val headerPaint = wordmarkPaint(w * 0.033f, 220)
     canvas.drawText(
@@ -126,31 +175,12 @@ internal fun badgeShareCard(
     )
 
     // Footer: a hairline and the rank line, pinned to the bottom.
-    val rankPaint = bodyPaint(w * 0.040f, 200).apply { textAlign = Paint.Align.CENTER }
-    val rankText = fitToWidth(badgeRankLine(placesVisited), rankPaint, textWidth)
-    val footerTop = h - pad - rankPaint.lineHeight() - w * 0.04f
+    val rankText = fitToWidth(badgeRankLine(placesVisited).asString(context), rankPaint, textWidth)
     canvas.drawLine(pad, footerTop, w - pad, footerTop, Paint().apply { color = Color.argb(28, 255, 255, 255) })
     canvas.drawText(
         rankText, w / 2f, h - pad - rankPaint.fontMetrics.descent, rankPaint,
     )
 
-    // Centre block: circle, title, description.
-    val circle = w * 0.27f
-    val titlePaint = numberPaint(w * 0.068f).apply { textAlign = Paint.Align.CENTER }
-    val descPaint = bodyPaint(w * 0.037f, 205).apply { textAlign = Paint.Align.CENTER }
-    val titleLines = wrapText(achievement.title, titlePaint, textWidth, 2)
-    val descLines = wrapText(achievement.description, descPaint, textWidth, 3)
-    val gapCircle = w * 0.05f
-    val gapTitle = w * 0.025f
-    val titleLH = titlePaint.lineHeight() * 1.0f
-    val descLH = descPaint.lineHeight() * 1.1f
-    val blockHeight = circle + gapCircle + titleLH * titleLines.size + gapTitle + descLH * descLines.size
-    val headerBottom = pad + tile
-    val available = footerTop - headerBottom
-    var cursor = headerBottom + ((available - blockHeight) / 2f).coerceAtLeast(w * 0.02f)
-
-    val cx = w / 2f
-    val cy = cursor + circle / 2f
     canvas.drawCircle(
         cx, cy, circle / 2f + w * 0.018f,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -187,7 +217,11 @@ internal fun badgeShareCard(
 internal suspend fun shareBadge(context: Context, achievement: Achievement, placesVisited: Int) {
     val card = withContext(Dispatchers.Default) {
         val icon = ContextCompat.getDrawable(context, iconFor(achievement.group))
-        badgeShareCard(achievement, placesVisited, icon, appLogo(context))
+        val screen = context.resources.displayMetrics
+        badgeShareCard(
+            context, achievement, placesVisited, icon, appLogo(context),
+            badgeCardHeight(screen.widthPixels, screen.heightPixels),
+        )
     }
-    shareBitmap(context, card, badgeShareCaption(achievement))
+    shareBitmap(context, card, badgeShareCaption(achievement).asString(context))
 }

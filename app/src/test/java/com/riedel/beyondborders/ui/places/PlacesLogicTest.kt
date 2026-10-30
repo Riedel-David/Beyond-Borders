@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.places
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -10,6 +11,7 @@ import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.settings.Denominator
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -304,13 +306,13 @@ class PlacesLogicTest {
             ContinentStat("Antarctica", been = 0, total = 5),
         )
         // Europe is 4 away, Africa is 53 away, Antarctica is untouched and skipped.
-        assertEquals("4 places from finishing Europe", almostFinishedNudge(continents))
+        assertEquals(UiText.Plural(R.plurals.places_nudge, 4, 4, "Europe"), almostFinishedNudgeText(continents))
     }
 
     @Test
     fun `the nudge says place, singular, with one to go`() {
         val continents = listOf(ContinentStat("Oceania", been = 13, total = 14))
-        assertEquals("1 place from finishing Oceania", almostFinishedNudge(continents))
+        assertEquals(UiText.Plural(R.plurals.places_nudge, 1, 1, "Oceania"), almostFinishedNudgeText(continents))
     }
 
     @Test
@@ -319,7 +321,7 @@ class PlacesLogicTest {
             ContinentStat("Europe", been = 44, total = 44),
             ContinentStat("Africa", been = 0, total = 54),
         )
-        assertEquals(null, almostFinishedNudge(continents))
+        assertEquals(null, almostFinishedNudgeText(continents))
     }
 
     @Test
@@ -329,7 +331,7 @@ class PlacesLogicTest {
             ContinentStat("Africa", been = 1, total = 54),
         )
         // Africa is 1/54, a far worse ratio than Europe's 40/44.
-        assertEquals("Africa — 1 of 54", leastCoveredContinent(continents))
+        assertEquals(UiText.Res(R.string.places_least_covered, "Africa", 1, 54), leastCoveredContinentText(continents))
     }
 
     @Test
@@ -340,7 +342,7 @@ class PlacesLogicTest {
             ContinentStat("Antarctica", been = 1, total = 2),
         )
         // All three are 50% - Antarctica wins on the smaller been count.
-        assertEquals("Antarctica — 1 of 2", leastCoveredContinent(continents))
+        assertEquals(UiText.Res(R.string.places_least_covered, "Antarctica", 1, 2), leastCoveredContinentText(continents))
     }
 
     @Test
@@ -349,7 +351,7 @@ class PlacesLogicTest {
             ContinentStat("Europe", been = 1, total = 44),
             ContinentStat("Antarctica", been = 0, total = 0),
         )
-        assertEquals("Europe — 1 of 44", leastCoveredContinent(continents))
+        assertEquals(UiText.Res(R.string.places_least_covered, "Europe", 1, 44), leastCoveredContinentText(continents))
     }
 
     @Test
@@ -358,7 +360,7 @@ class PlacesLogicTest {
             ContinentStat("Europe", been = 0, total = 44),
             ContinentStat("Africa", been = 0, total = 54),
         )
-        assertEquals(null, leastCoveredContinent(continents))
+        assertEquals(null, leastCoveredContinentText(continents))
     }
 
     @Test
@@ -367,7 +369,7 @@ class PlacesLogicTest {
             ContinentStat("Europe", been = 44, total = 44),
             ContinentStat("Oceania", been = 14, total = 14),
         )
-        assertEquals(null, leastCoveredContinent(continents))
+        assertEquals(null, leastCoveredContinentText(continents))
     }
 
     @Test
@@ -380,23 +382,23 @@ class PlacesLogicTest {
         // Total area 1,000,000; total pop 215,000,000. Marking Denmark alone:
         // 43,000 / 1,000,000 = 4%; 6,000,000 / 215,000,000 rounds down to 2%.
         assertEquals(
-            "4% of the world's land area, 2% of its population",
-            worldCoverage(withGeo, mapOf("DK" to PlaceStatus.VISITED)),
+            UiText.Res(R.string.places_coverage, 4, 2),
+            worldCoverageText(withGeo, mapOf("DK" to PlaceStatus.VISITED)),
         )
     }
 
     @Test
     fun `coverage is null with nothing marked, or with an asset carrying no area or population`() {
         val withGeo = listOf(place("DK", "Denmark", areaKm2 = 43_000, popEst = 6_000_000))
-        assertEquals(null, worldCoverage(withGeo, emptyMap()))
-        assertEquals(null, worldCoverage(places, mapOf("DK" to PlaceStatus.VISITED)))
+        assertEquals(null, worldCoverageText(withGeo, emptyMap()))
+        assertEquals(null, worldCoverageText(places, mapOf("DK" to PlaceStatus.VISITED)))
     }
 
     @Test
     fun `the wishlist join needs a visa asset and a wishlist`() {
         val statuses = mapOf("DK" to PlaceStatus.WISHLIST)
-        assertEquals(null, computeWishlistEasyLine(places, statuses, visa = null))
-        assertEquals(null, computeWishlistEasyLine(places, emptyMap(), visa = null))
+        assertEquals(null, computeWishlistEasyText(places, statuses, visa = null))
+        assertEquals(null, computeWishlistEasyText(places, emptyMap(), visa = null))
     }
 
     @Test
@@ -496,6 +498,40 @@ class PlacesLogicTest {
         assertEquals(curated, combined?.winner)
         assertEquals("Hand-curated note", combined?.winner?.note)
         assertEquals(VisaConfidence.HIGH, combined?.winner?.confidence)
+    }
+
+    /** Enum order: ..., E_VISA, VISA_REQUIRED, CHECK, PERMIT_REQUIRED, NO_ADMISSION. */
+    @Test
+    fun `with two passports CHECK loses to a visa and beats a permit or refusal`() {
+        fun winner(a: VisaCategory, b: VisaCategory) = listOf(
+            combineRequirements(requirement(category = a), requirement(category = b))?.winner?.category,
+            combineRequirements(requirement(category = b), requirement(category = a))?.winner?.category,
+        )
+        assertEquals(listOf(VisaCategory.VISA_REQUIRED, VisaCategory.VISA_REQUIRED),
+            winner(VisaCategory.CHECK, VisaCategory.VISA_REQUIRED))
+        assertEquals(listOf(VisaCategory.E_VISA, VisaCategory.E_VISA),
+            winner(VisaCategory.CHECK, VisaCategory.E_VISA))
+        assertEquals(listOf(VisaCategory.CHECK, VisaCategory.CHECK),
+            winner(VisaCategory.CHECK, VisaCategory.PERMIT_REQUIRED))
+        assertEquals(listOf(VisaCategory.CHECK, VisaCategory.CHECK),
+            winner(VisaCategory.CHECK, VisaCategory.NO_ADMISSION))
+    }
+
+    @Test
+    fun `legend counts are the combined bands the map paints`() {
+        fun reg(passport: String, vararg rows: Pair<String, String>) = VisaRegistry.parse(
+            """{"passport":"$passport","asOf":"2026-01-01",
+            "dataset":{"name":"n","url":"https://e.org","licence":"L"},"iataUrl":"https://e.org",
+            "requirements":[${rows.joinToString(",") { """{"code":"${it.first}","category":"${it.second}","source":"dataset"}""" }}]}"""
+        )
+        val primary = reg("DE", "FR" to "VISA_FREE", "KP" to "VISA_REQUIRED", "RU" to "NO_ADMISSION")
+        val second = reg("GB", "KP" to "CHECK", "RU" to "CHECK", "CN" to "CHECK")
+        val counts = combinedBandCounts(primary, second)
+        assertEquals(1, counts[VisaBand.VISA_FREE])
+        assertEquals(1, counts[VisaBand.VISA_REQUIRED])   // KP: the visa beats CHECK
+        assertEquals(2, counts[VisaBand.CHECK])           // RU and CN
+        assertEquals(bandCodes(primary, second, true).mapValues { it.value.size }, counts)
+        assertEquals(emptyMap<VisaBand, Int>(), combinedBandCounts(null, second))
     }
 
     @Test
@@ -623,16 +659,16 @@ class PlacesLogicTest {
         val statuses = mapOf("FR" to PlaceStatus.VISITED)
         val unOnly = all.filter(Denominator.UN_MEMBER::includes)
         assertEquals(
-            "50% of the world's land area, 50% of its population",
-            worldCoverage(all, statuses),
+            UiText.Res(R.string.places_coverage, 50, 50),
+            worldCoverageText(all, statuses),
         )
         assertEquals(
-            "100% of the world's land area, 100% of its population",
-            worldCoverage(unOnly, statuses),
+            UiText.Res(R.string.places_coverage, 100, 100),
+            worldCoverageText(unOnly, statuses),
         )
         assertEquals(
-            "100% of the world's land area, 100% of its population",
-            computeStats(all, statuses, Denominator.UN_MEMBER).coverage,
+            UiText.Res(R.string.places_coverage, 100, 100),
+            computeStats(all, statuses, Denominator.UN_MEMBER).coverageText,
         )
     }
 
@@ -662,16 +698,23 @@ class PlacesLogicTest {
             "BV" to PlaceStatus.WISHLIST,
         )
         assertEquals(
-            "3 of your 3 wishlist places need no embassy",
-            computeWishlistEasyLine(all, statuses, visa),
+            UiText.Plural(R.plurals.places_wishlist_easy, 3, 3, 3),
+            computeWishlistEasyText(all, statuses, visa),
         )
         assertEquals(
-            "1 of your 1 wishlist places need no embassy",
-            computeWishlistEasyLine(all, statuses, visa, Denominator.UN_MEMBER),
+            UiText.Plural(R.plurals.places_wishlist_easy, 1, 1, 1),
+            computeWishlistEasyText(all, statuses, visa, Denominator.UN_MEMBER),
         )
         assertEquals(
-            "2 of your 2 wishlist places need no embassy",
-            computeWishlistEasyLine(all, statuses, visa, Denominator.INHABITED),
+            UiText.Plural(R.plurals.places_wishlist_easy, 2, 2, 2),
+            computeWishlistEasyText(all, statuses, visa, Denominator.INHABITED),
         )
+    }
+
+    @Test
+    fun `the filters carry resource ids, not English`() {
+        assertEquals(UiText.Res(R.string.places_filter_want), StatusFilter.WISHLIST.text)
+        assertEquals(UiText.Res(R.string.places_mode_visa), PassportMode.VISA.text)
+        assertEquals(UiText.Res(R.string.places_visa_filter_easy), VisaFilter.Easy.text)
     }
 }

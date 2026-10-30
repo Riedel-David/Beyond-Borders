@@ -21,12 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
 
 /** One-line tweakable: the rings are drawn at these sizes regardless of how the rest
@@ -49,6 +53,13 @@ internal fun StatsHero(
     modifier: Modifier = Modifier,
 ) {
     val rank = rankFor(placesVisited)
+    val rankTitle = rank.title.asString()
+    val rankProgress = rank.progressLine.asString()
+    val badgesLine = pluralStringResource(R.plurals.stats_hero_badges, badgesTotal, badgesUnlocked, badgesTotal)
+    val description = stringResource(
+        R.string.stats_hero_description,
+        stats.percent, stats.been, stats.total, rankTitle, rankProgress, badgesLine,
+    )
     val container = MaterialTheme.colorScheme.surfaceVariant
     val onContainer = MaterialTheme.colorScheme.onSurfaceVariant
     val track = MaterialTheme.colorScheme.surface
@@ -59,10 +70,7 @@ internal fun StatsHero(
             // One sentence for TalkBack rather than rings that are colour-only:
             // clearAndSetSemantics so the Canvases underneath aren't also announced.
             .clearAndSetSemantics {
-                contentDescription =
-                    "${stats.percent} percent of places visited, ${stats.been} of ${stats.total}. " +
-                    "Rank ${rank.title}. ${rank.progressLine.trimEnd('.')}. " +
-                    "$badgesUnlocked of $badgesTotal badges unlocked."
+                contentDescription = description
             }
             .background(container, RoundedCornerShape(20.dp))
             .padding(horizontal = 16.dp, vertical = 20.dp),
@@ -74,7 +82,7 @@ internal fun StatsHero(
             // Sized from dp, not sp: the ring interior is fixed, so the number inside it
             // must not grow with the user's font scale. The count sits below instead.
             Text(
-                "${stats.percent}%",
+                stringResource(R.string.stats_hero_percent, stats.percent),
                 style = MaterialTheme.typography.displaySmall,
                 fontSize = with(LocalDensity.current) { 36.dp.toSp() },
                 fontWeight = FontWeight.SemiBold,
@@ -82,13 +90,13 @@ internal fun StatsHero(
             )
         }
         Text(
-            "${stats.been} of ${stats.total} places",
+            pluralStringResource(R.plurals.stats_hero_places, stats.total, stats.been, stats.total),
             style = MaterialTheme.typography.bodyMedium,
             color = onContainer,
             modifier = Modifier.padding(top = 8.dp),
         )
         Text(
-            rank.title,
+            rankTitle,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = onContainer,
@@ -96,7 +104,7 @@ internal fun StatsHero(
             modifier = Modifier.padding(top = 12.dp),
         )
         Text(
-            rank.progressLine,
+            rankProgress,
             style = MaterialTheme.typography.bodyMedium,
             color = onContainer,
             textAlign = TextAlign.Center,
@@ -109,7 +117,7 @@ internal fun StatsHero(
             val fraction = if (badgesTotal == 0) 0f else badgesUnlocked.toFloat() / badgesTotal
             Ring(SmallRingDiameter, SmallRingStrokeWidth, fraction, track, progress)
             Text(
-                "$badgesUnlocked of $badgesTotal badges unlocked",
+                badgesLine,
                 style = MaterialTheme.typography.bodyMedium,
                 color = onContainer,
             )

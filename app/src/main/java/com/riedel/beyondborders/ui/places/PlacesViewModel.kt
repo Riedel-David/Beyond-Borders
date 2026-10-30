@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.core.Haptics
 import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
@@ -62,12 +64,12 @@ fun nextRegionMode(mode: RegionMode): RegionMode = when (mode) {
  * — and [LIVED] narrows to the handful inside it. A "Been" filter that hid the
  * places you have lived in would contradict the number at the top of the screen.
  */
-enum class StatusFilter(val label: String) {
-    ALL("All"),
-    BEEN("Been"),
-    LIVED("Lived"),
-    WISHLIST("Want"),
-    NONE("Not yet"),
+enum class StatusFilter(val text: UiText) {
+    ALL(UiText.Res(R.string.places_filter_all)),
+    BEEN(UiText.Res(R.string.places_filter_been)),
+    LIVED(UiText.Res(R.string.places_filter_lived)),
+    WISHLIST(UiText.Res(R.string.places_filter_want)),
+    NONE(UiText.Res(R.string.places_filter_none)),
 }
 
 /**
@@ -78,9 +80,9 @@ enum class StatusFilter(val label: String) {
  * places; where else can I go without paperwork?" — is a mode switch away rather
  * than a navigation.
  */
-enum class PassportMode(val label: String) {
-    TRAVEL("Where I've been"),
-    VISA("Where I can go"),
+enum class PassportMode(val text: UiText) {
+    TRAVEL(UiText.Res(R.string.places_mode_travel)),
+    VISA(UiText.Res(R.string.places_mode_visa)),
 }
 
 /**
@@ -91,29 +93,29 @@ enum class PassportMode(val label: String) {
  * [VisaCategory.VISA_ON_ARRIVAL] together. [Category] narrows to exactly one.
  */
 sealed interface VisaFilter {
-    val label: String
+    val text: UiText
 
     data object All : VisaFilter {
-        override val label = "All"
+        override val text = UiText.Res(R.string.places_visa_filter_all)
     }
 
     data object Easy : VisaFilter {
-        override val label = "No embassy"
+        override val text = UiText.Res(R.string.places_visa_filter_easy)
     }
 
     /** Wishlist places the visa asset says need no embassy — the join this app can
      * do offline that nothing else can, because it already owns both datasets. */
     data object WishlistEasy : VisaFilter {
-        override val label = "Wishlist, easy"
+        override val text = UiText.Res(R.string.places_visa_filter_wishlist_easy)
     }
 
     /** Visa-free with a stay of 90 days or more — long enough to actually live somewhere. */
     data object LongStay : VisaFilter {
-        override val label = "90+ days"
+        override val text = UiText.Res(R.string.places_visa_filter_long_stay)
     }
 
     data class Category(val category: VisaCategory) : VisaFilter {
-        override val label get() = category.label
+        override val text get() = UiText.Res(category.labelRes)
     }
 }
 
@@ -153,8 +155,8 @@ data class TravelStats(
     val regions: List<RegionStat> = emptyList(),
     val informalRegions: List<NamedGroupStat> = emptyList(),
     /** "11% of the world's land area, 47% of its population" — null while
-     * nothing is marked. See [worldCoverage]. */
-    val coverage: String? = null,
+     * nothing is marked. See [worldCoverageText]. */
+    val coverageText: UiText? = null,
 ) {
     /** Places you have set foot in. The headline number, and never smaller than [visited]. */
     val been: Int = visited + lived
@@ -165,8 +167,8 @@ data class TravelStats(
     val continentsTouched: Int = continents.count { it.been > 0 }
 
     /** "2 places from finishing Europe" — null once every continent is either
-     * untouched or already finished. See [almostFinishedNudge]. */
-    val nudge: String? = almostFinishedNudge(continents)
+     * untouched or already finished. See [almostFinishedNudgeText]. */
+    val nudgeText: UiText? = almostFinishedNudgeText(continents)
 
     companion object {
         val EMPTY = TravelStats(0, 0, 0, 0, emptyList())
@@ -340,9 +342,9 @@ class PlacesViewModel(
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
-    val wishlistEasyLine: StateFlow<String?> =
+    val wishlistEasyText: StateFlow<UiText?> =
         combine(allPlaces, statuses, _visa, settings.denominator) { places, st, visa, denom ->
-            computeWishlistEasyLine(places, st, visa, denom)
+            computeWishlistEasyText(places, st, visa, denom)
         }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -469,15 +471,15 @@ class PlacesViewModel(
  * every continent is either untouched or already finished, since there is
  * nothing left to nudge towards.
  */
-internal fun almostFinishedNudge(continents: List<ContinentStat>): String? {
-    val candidate = continents
-        .filter { it.been > 0 && it.been < it.total }
-        .minWithOrNull(compareBy({ it.total - it.been }, { it.continent }))
-        ?: return null
+internal fun almostFinishedNudgeText(continents: List<ContinentStat>): UiText? {
+    val candidate = nudgeCandidate(continents) ?: return null
     val remaining = candidate.total - candidate.been
-    val noun = if (remaining == 1) "place" else "places"
-    return "$remaining $noun from finishing ${candidate.continent}"
+    return UiText.Plural(R.plurals.places_nudge, remaining, remaining, candidate.continent)
 }
+
+private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = continents
+    .filter { it.been > 0 && it.been < it.total }
+    .minWithOrNull(compareBy({ it.total - it.been }, { it.continent }))
 
 /**
  * "Oceania — 2 of 25" — the continent furthest from done, for the stats screen's
@@ -486,17 +488,20 @@ internal fun almostFinishedNudge(continents: List<ContinentStat>): String? {
  * Null with nothing marked at all (every continent 0/total says nothing worth a
  * line) and null once every continent is finished (nothing left to point at).
  */
-internal fun leastCoveredContinent(continents: List<ContinentStat>): String? {
+internal fun leastCoveredContinentText(continents: List<ContinentStat>): UiText? {
+    val worst = leastCoveredCandidate(continents) ?: return null
+    return UiText.Res(R.string.places_least_covered, worst.continent, worst.been, worst.total)
+}
+
+private fun leastCoveredCandidate(continents: List<ContinentStat>): ContinentStat? {
     if (continents.all { it.been == 0 }) return null
-    val worst = continents
+    return continents
         .filter { it.total > 0 && it.been < it.total }
         .minWithOrNull(compareBy(
             { it.been.toDouble() / it.total },
             { it.been },
             { it.continent },
         ))
-        ?: return null
-    return "${worst.continent} — ${worst.been} of ${worst.total}"
 }
 
 /**
@@ -507,19 +512,29 @@ internal fun leastCoveredContinent(continents: List<ContinentStat>): String? {
  * Follows the chosen [denominator] like [computeStats] does, so this line's "of your N
  * wishlist places" agrees with the wishlist count on the stats card above it.
  */
-internal fun computeWishlistEasyLine(
+internal fun computeWishlistEasyText(
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
     visa: VisaRegistry?,
     denominator: Denominator = Denominator.ALL,
-): String? {
+): UiText? {
+    val (easy, wishlist) = wishlistEasyCounts(places, statuses, visa, denominator) ?: return null
+    return UiText.Plural(R.plurals.places_wishlist_easy, wishlist, easy, wishlist)
+}
+
+private fun wishlistEasyCounts(
+    places: List<Place>,
+    statuses: Map<String, PlaceStatus>,
+    visa: VisaRegistry?,
+    denominator: Denominator,
+): Pair<Int, Int>? {
     if (visa == null) return null
     val countedCodes = places.filter(denominator::includes).map { it.code }.toSet()
     val wishlistCodes = statuses.filter { it.value == PlaceStatus.WISHLIST && it.key in countedCodes }.keys
     if (wishlistCodes.isEmpty()) return null
     val easy = wishlistCodes.count { code -> visa[code]?.isEasy == true }
     if (easy == 0) return null
-    return "$easy of your ${wishlistCodes.size} wishlist places need no embassy"
+    return easy to wishlistCodes.size
 }
 
 /** Whether [place] counts towards the chosen [Denominator]. */
@@ -576,7 +591,7 @@ internal fun computeStats(
         continents = continents,
         regions = regions,
         informalRegions = computeInformalRegionStats(countedCodes, statuses),
-        coverage = worldCoverage(counted, statuses),
+        coverageText = worldCoverageText(counted, statuses),
     )
 }
 
@@ -611,7 +626,12 @@ internal fun computeInformalRegionStats(
  * Callers pass the denominator-filtered places (see [computeStats]), so the share is
  * of the chosen set: with UN members only, Greenland's area is in neither side.
  */
-internal fun worldCoverage(places: List<Place>, statuses: Map<String, PlaceStatus>): String? {
+internal fun worldCoverageText(places: List<Place>, statuses: Map<String, PlaceStatus>): UiText? {
+    val (areaPercent, popPercent) = coveragePercents(places, statuses) ?: return null
+    return UiText.Res(R.string.places_coverage, areaPercent, popPercent)
+}
+
+private fun coveragePercents(places: List<Place>, statuses: Map<String, PlaceStatus>): Pair<Int, Int>? {
     val totalArea = places.sumOf { it.areaKm2 }
     val totalPop = places.sumOf { it.popEst }
     if (totalArea == 0L || totalPop == 0L) return null
@@ -619,9 +639,7 @@ internal fun worldCoverage(places: List<Place>, statuses: Map<String, PlaceStatu
     val beenArea = been.sumOf { it.areaKm2 }
     val beenPop = been.sumOf { it.popEst }
     if (beenArea == 0L && beenPop == 0L) return null
-    val areaPercent = (beenArea * 100 / totalArea).toInt()
-    val popPercent = (beenPop * 100 / totalPop).toInt()
-    return "$areaPercent% of the world's land area, $popPercent% of its population"
+    return (beenArea * 100 / totalArea).toInt() to (beenPop * 100 / totalPop).toInt()
 }
 
 /**
@@ -650,6 +668,40 @@ internal fun bandCodes(
         .groupBy({ it.second }, { it.first })
         .mapValues { (_, codes) -> codes.toSet() }
 }
+
+/** The better answer per place across both passports, as the list and the map show it. */
+private fun combinedWinners(visa: VisaRegistry?, secondVisa: VisaRegistry?): List<VisaRequirement> {
+    if (visa == null) return emptyList()
+    val codes = visa.requirements.map { it.code } + (secondVisa?.requirements?.map { it.code } ?: emptyList())
+    return codes.toSet().mapNotNull { combineRequirements(visa[it], secondVisa?.get(it))?.winner }
+}
+
+/** How many places have each category once the two passports are combined. */
+internal fun combinedCategoryCounts(
+    visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
+): Map<VisaCategory, Int> =
+    combinedWinners(visa, secondVisa).groupingBy { it.category }.eachCount()
+
+/** The headline numbers of the combined result: places answered, visa-free, and easy. */
+internal data class CombinedTotals(val answered: Int, val visaFree: Int, val easy: Int)
+
+internal fun combinedTotals(visa: VisaRegistry?, secondVisa: VisaRegistry?): CombinedTotals {
+    val winners = combinedWinners(visa, secondVisa)
+    return CombinedTotals(winners.size, winners.count { it.isVisaFree }, winners.count { it.isEasy })
+}
+
+/**
+ * How many places the map paints in each band, from the same combined result as
+ * [bandCodes]. The legends and the summary bar read this rather than one registry's
+ * own counts, so with two passports a band the map draws always has a legend entry
+ * and the numbers add up to what is painted.
+ */
+internal fun combinedBandCounts(
+    visa: VisaRegistry?,
+    secondVisa: VisaRegistry?,
+): Map<VisaBand, Int> =
+    bandCodes(visa, secondVisa, lens = true).mapValues { it.value.size }
 
 /**
  * Every place this passport's [VisaRegistry] has no requirement for at all.
@@ -727,8 +779,11 @@ internal fun regionBandCodes(mode: RegionMode, stats: TravelStats): Map<RegionSt
  * [VisaCategory.HOME] is left out on purpose: it is one place, it is the passport's
  * own country, and the user knows they can go home.
  */
-internal fun visaFilters(visa: VisaRegistry?): List<VisaFilter> {
+internal fun visaFilters(visa: VisaRegistry?, secondVisa: VisaRegistry? = null): List<VisaFilter> {
     if (visa == null) return emptyList()
+    // From the combined result the list itself shows, so with two passports every
+    // category in the list has a chip and no chip is empty.
+    val counts = combinedCategoryCounts(visa, secondVisa)
     return buildList {
         add(VisaFilter.All)
         add(VisaFilter.Easy)
@@ -736,7 +791,7 @@ internal fun visaFilters(visa: VisaRegistry?): List<VisaFilter> {
         add(VisaFilter.LongStay)
         VisaCategory.entries.forEach { category ->
             if (category == VisaCategory.HOME) return@forEach
-            if ((visa.countByCategory[category] ?: 0) > 0) add(VisaFilter.Category(category))
+            if ((counts[category] ?: 0) > 0) add(VisaFilter.Category(category))
         }
     }
 }
@@ -868,9 +923,12 @@ data class CombinedRequirement(
 /**
  * Combine two passports' requirements for one place, choosing the less restrictive.
  *
- * The rule is comparison on [VisaCategory.ordinal], which [VisaCategory]'s own KDoc
- * documents as load-bearing and monotonic in how much can go wrong before the
- * border. Returns the whole winning requirement — never a synthesized one — so
+ * The rule is comparison on [VisaCategory.ordinal] (documented as load-bearing, lower
+ * is better), so the traveller is shown the best path either passport offers: HOME,
+ * VISA_FREE, ETA, VISA_ON_ARRIVAL, E_VISA, VISA_REQUIRED, CHECK, PERMIT_REQUIRED,
+ * NO_ADMISSION. A definite visa path therefore beats the other passport's unknown
+ * CHECK, and CHECK beats a definite permit or refusal, which is the same order
+ * buildVisaRows sorts by. Returns the whole winning requirement — never a synthesized one — so
  * curated fields (`note`, `confidence`, `sourceUrl`, `origin`, `datasetSaid`,
  * `officialUrl`, `officialFor`) all belong to the passport whose answer won.
  *

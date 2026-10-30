@@ -6,10 +6,10 @@ package com.riedel.beyondborders.widget
  * somewhere: an intent with no destination just resumes whatever the app was last
  * showing, which is not "open the map".
  */
-enum class WidgetTarget(val storageValue: String, val label: String) {
-    MAP("map", "Map"),
-    PASSPORT("passport", "Passport"),
-    STATS("stats", "Stats"),
+enum class WidgetTarget(val storageValue: String) {
+    MAP("map"),
+    PASSPORT("passport"),
+    STATS("stats"),
     ;
 
     companion object {

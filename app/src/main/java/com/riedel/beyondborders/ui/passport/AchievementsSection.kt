@@ -43,7 +43,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.asString
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -96,21 +99,21 @@ internal fun AchievementsSection(
         BadgeSheet(badge, placesVisited, onDismiss = { openId = null })
     }
     if (recent.isNotEmpty()) {
-        HighlightLabel("Recently unlocked")
+        HighlightLabel(stringResource(R.string.badge_recent))
         BadgeRows(recent, onOpen, newIds = recent.mapTo(HashSet()) { it.id })
     }
     if (nextUp.isNotEmpty()) {
-        HighlightLabel("Closest to unlocking")
+        HighlightLabel(stringResource(R.string.badge_closest))
         BadgeRows(nextUp, onOpen)
     }
     Text(
-        "Achievements",
+        stringResource(R.string.badge_section_title),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 24.dp),
     )
     Text(
-        "Badges follow your map as it is now: untick a place and a badge can go away again.",
+        stringResource(R.string.badge_section_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(bottom = 4.dp),
@@ -122,7 +125,7 @@ internal fun AchievementsSection(
         val all = byGroup[group].orEmpty()
         if (all.isEmpty()) return@forEach
         val (done, total) = progress.getValue(group)
-        val header = "${group.label} · $done of $total"
+        val header = stringResource(R.string.badge_group_header, stringResource(group.label), done, total)
         // Nothing locked means nothing to reveal, so no dead chevron.
         if (group in Collapsible && all.any { !it.unlocked }) {
             val expanded = group in expandedGroups
@@ -158,12 +161,14 @@ private fun HighlightLabel(text: String) {
 @Composable
 private fun CollapsibleHeader(text: String, expanded: Boolean, onToggle: () -> Unit) {
     val rotation by animateFloatAsState(if (expanded) 90f else 0f)
+    val expandedText = stringResource(R.string.passport_state_expanded)
+    val collapsedText = stringResource(R.string.passport_state_collapsed)
     Row(
         Modifier
             .padding(top = 8.dp)
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
+            .semantics { stateDescription = if (expanded) expandedText else collapsedText }
             .clickable(role = Role.Button, onClick = onToggle),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -212,16 +217,18 @@ private fun AchievementBadge(achievement: Achievement, onClick: () -> Unit, modi
     val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
     // One spoken line per badge: the visual state (colour, "x / y", progress bar) is
     // otherwise read as loose fragments, and the bar says nothing at all.
-    val spoken = buildString {
-        append(achievement.title).append(", ")
-        append(if (unlocked) (if (isNew) "newly unlocked" else "unlocked") else "locked, ${achievement.progress} of ${achievement.target}")
-        append(". ").append(achievement.description)
+    val title = achievement.title.asString()
+    val description = achievement.description.asString()
+    val spoken = when {
+        !unlocked -> stringResource(R.string.badge_spoken_locked, title, achievement.progress, achievement.target, description)
+        isNew -> stringResource(R.string.badge_spoken_new, title, description)
+        else -> stringResource(R.string.badge_spoken_unlocked, title, description)
     }
     Column(
         modifier
             .semantics(mergeDescendants = true) { contentDescription = spoken }
             .clip(RoundedCornerShape(12.dp))
-            .clickable(role = Role.Button, onClickLabel = "Show details", onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = stringResource(R.string.badge_show_details), onClick = onClick)
             .background(container, RoundedCornerShape(12.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -255,20 +262,20 @@ private fun AchievementBadge(achievement: Achievement, onClick: () -> Unit, modi
                 }
             }
             Text(
-                achievement.title,
+                title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = content,
                 modifier = Modifier.weight(1f),
             )
         }
-        Text(achievement.description, style = MaterialTheme.typography.bodySmall, color = content)
+        Text(description, style = MaterialTheme.typography.bodySmall, color = content)
         if (unlocked) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Unlocked", style = MaterialTheme.typography.labelMedium, color = content)
+                Text(stringResource(R.string.badge_unlocked), style = MaterialTheme.typography.labelMedium, color = content)
                 if (isNew) {
                     Text(
-                        "NEW",
+                        stringResource(R.string.badge_new),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = glyph,
@@ -280,7 +287,7 @@ private fun AchievementBadge(achievement: Achievement, onClick: () -> Unit, modi
             }
         } else {
             Text(
-                "${achievement.progress} / ${achievement.target}",
+                stringResource(R.string.badge_progress_slash, achievement.progress, achievement.target),
                 style = MaterialTheme.typography.labelMedium,
                 color = content,
             )
@@ -316,6 +323,7 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
     val accent = Color(if (dark) tone.accentDark else tone.accentLight)
     val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
         Column(
@@ -331,10 +339,10 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
                     modifier = Modifier.size(48.dp),
                 )
             }
-            Text(badge.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            Text(badge.description, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            Text(badge.title.asString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            Text(badge.description.asString(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
             Text(
-                badgeProgressText(badge),
+                badgeProgressText(badge).asString(),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -346,11 +354,11 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
                         } catch (e: CancellationException) {
                             throw e
                         } catch (_: Exception) {
-                            Toast.makeText(context, "Couldn't share the badge", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, resources.getString(R.string.badge_share_failed), Toast.LENGTH_SHORT).show()
                         }
                     } },
                     modifier = Modifier.padding(top = 8.dp),
-                ) { Text("Share") }
+                ) { Text(stringResource(R.string.badge_share)) }
             }
         }
     }

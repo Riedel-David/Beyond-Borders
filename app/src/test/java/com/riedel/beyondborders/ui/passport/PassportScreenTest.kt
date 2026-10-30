@@ -1,8 +1,10 @@
 package com.riedel.beyondborders.ui.passport
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.StatusFilter
@@ -21,7 +23,7 @@ class PassportScreenTest {
     @Test
     fun `loading takes priority over a query while the registry has not populated yet`() {
         assertEquals(
-            "Loading your places…",
+            UiText.Res(R.string.passport_loading),
             passportEmptyMessage(loading = true, query = "atlantis", statusFilter = StatusFilter.BEEN),
         )
     }
@@ -29,7 +31,7 @@ class PassportScreenTest {
     @Test
     fun `an active query names itself in the empty state`() {
         assertEquals(
-            "No places match “atlantis”.",
+            UiText.Res(R.string.passport_no_match_query, "atlantis"),
             passportEmptyMessage(loading = false, query = "atlantis", statusFilter = StatusFilter.ALL),
         )
     }
@@ -37,7 +39,7 @@ class PassportScreenTest {
     @Test
     fun `an active status filter names itself when there is no query`() {
         assertEquals(
-            "No places match the “Been” filter.",
+            UiText.Res(R.string.passport_no_match_filter, StatusFilter.BEEN.text),
             passportEmptyMessage(loading = false, query = "", statusFilter = StatusFilter.BEEN),
         )
     }
@@ -45,7 +47,7 @@ class PassportScreenTest {
     @Test
     fun `nothing matches is the fallback once loaded with no query or filter active`() {
         assertEquals(
-            "Nothing matches.",
+            UiText.Res(R.string.passport_nothing_matches),
             passportEmptyMessage(loading = false, query = "", statusFilter = StatusFilter.ALL),
         )
     }

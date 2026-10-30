@@ -1,6 +1,8 @@
 package com.riedel.beyondborders.data.backup
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.UiText
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -124,29 +126,36 @@ object TravelBackup {
      * the user picked the wrong file and should be told, whereas one row missing an
      * `updatedAt` should not cost them the other 200.
      *
-     * @throws BackupFormatException if this is not an BeyondBorders backup, or is a
+     * @throws BackupFormatException if this is not a BeyondBorders backup, or is a
      *   newer one than this build understands.
      */
     fun decode(text: String, now: Long = System.currentTimeMillis()): Payload {
         val root = try {
             JSONObject(text)
         } catch (e: JSONException) {
-            throw BackupFormatException("This file is not JSON.", e)
+            throw BackupFormatException("This file is not JSON.", UiText.Res(R.string.backup_not_json), e)
         }
 
         val format = root.optString("format")
         if (format != FORMAT) {
-            throw BackupFormatException("This is not an BeyondBorders backup file.")
+            throw BackupFormatException(
+                "This is not a BeyondBorders backup file.",
+                UiText.Res(R.string.backup_wrong_format),
+            )
         }
         val version = root.optInt("version", 0)
         if (version > VERSION) {
             throw BackupFormatException(
-                "This backup was written by a newer version of BeyondBorders (format $version)."
+                "This backup was written by a newer version of BeyondBorders (format $version).",
+                UiText.Res(R.string.backup_newer_version, version),
             )
         }
 
         val array = root.optJSONArray("places")
-            ?: throw BackupFormatException("The backup has no places in it.")
+            ?: throw BackupFormatException(
+                "The backup has no places in it.",
+                UiText.Res(R.string.backup_no_places),
+            )
 
         val entries = ArrayList<Entry>(array.length())
         val unknownStatuses = ArrayList<String>()
@@ -213,8 +222,12 @@ object TravelBackup {
         if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 }
 
-/** The file is not something this app can import, with a reason fit to show a user. */
-class BackupFormatException(message: String, cause: Throwable? = null) : Exception(message, cause)
+/**
+ * The file is not something this app can import, with a reason fit to show a user:
+ * [message] is for logs and tests; [userText] is what the settings screen shows.
+ */
+class BackupFormatException(message: String, val userText: UiText, cause: Throwable? = null) :
+    Exception(message, cause)
 
 /**
  * A written backup and enough of a summary to tell the user what went into it.

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Requirement categories (list headers, summaries, filters) -->
+    <string name="visa_category_home">Home</string>
+    <string name="visa_category_visa_free">Visa-free</string>
+    <string name="visa_category_eta">Travel authorisation</string>
+    <string name="visa_category_visa_on_arrival">Visa on arrival</string>
+    <string name="visa_category_e_visa">e-Visa</string>
+    <string name="visa_category_visa_required">Visa required</string>
+    <string name="visa_category_check">Check requirements</string>
+    <string name="visa_category_permit_required">Permit required</string>
+    <string name="visa_category_no_admission">No entry</string>
+
+    <!-- Map bands -->
+    <string name="visa_band_visa_free">Visa-free</string>
+    <string name="visa_band_eta">e-Ticket/ETA</string>
+    <string name="visa_band_visa_on_arrival">On arrival</string>
+    <string name="visa_band_visa_required">Apply first</string>
+    <string name="visa_band_check">Check</string>
+    <string name="visa_band_closed">Closed</string>
+    <string name="visa_band_no_data">No data</string>
+
+    <!-- Confidence of curated entries -->
+    <string name="visa_confidence_high">Well established</string>
+    <string name="visa_confidence_medium">Likely right, details may vary</string>
+    <string name="visa_confidence_low">Uncertain — check before booking</string>
+
+    <plurals name="visa_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+
+    <!-- Summary line: category and day count, then optional passport attribution -->
+    <string name="visa_summary_with_days">%1$s · %2$s</string>
+    <string name="visa_summary_with_passport">%1$s (%2$s passport)</string>
+    <string name="visa_row_been">%1$s · been</string>
+    <string name="visa_row_wishlist">%1$s · on the wishlist</string>
+    <string name="visa_row_check">check</string>
+
+    <string name="visa_adjective_de">German</string>
+    <string name="visa_adjective_gb">British</string>
+
+    <string name="visa_as_of_notice">Data as of %1$s for a %2$s passport — verify with the official government source before booking</string>
+    <string name="visa_as_of_notice_two">Data as of %1$s for %2$s and %3$s passports — verify with the official government source before booking</string>
+
+    <string name="visa_official_link">Foreign Office advice</string>
+    <string name="visa_official_link_for">Foreign Office advice: %1$s</string>
+    <string name="visa_iata_link">IATA Travel Centre (search there)</string>
+
+    <!-- Passport list -->
+    <string name="visa_search_destinations">Search destinations</string>
+    <string name="visa_clear">Clear</string>
+    <string name="visa_empty_query">No destinations match “%1$s”.</string>
+    <string name="visa_empty_filter">No destinations match the “%1$s” filter.</string>
+    <string name="visa_empty_nothing">Nothing matches.</string>
+    <string name="visa_unavailable_title">No visa data</string>
+    <string name="visa_unavailable_body">The bundled visa list could not be read, so this mode has nothing to show. Your travel map is unaffected.</string>
+
+    <!-- Summary card -->
+    <string name="visa_summary_visa_free_of">"  of %1$d places visa-free"</string>
+    <string name="visa_summary_easy">%1$d reachable without an embassy appointment</string>
+    <string name="visa_legend_item">%1$s %2$d</string>
+    <string name="visa_dataset_credit">%1$s · %2$s</string>
+    <string name="visa_licence_link">Licence</string>
+    <string name="visa_source_link">Source: %1$s article</string>
+    <string name="visa_correction">%1$s says \"%2$s\" — corrected here</string>
+
+    <!-- Passport picker -->
+    <string name="picker_choose_passport">Choose a passport</string>
+    <string name="picker_search">Search</string>
+</resources>

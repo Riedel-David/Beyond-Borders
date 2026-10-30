@@ -1,8 +1,11 @@
 name: Visa data freshness
 
-# Opens an issue when the upstream visa dataset publishes a newer snapshot than the one
-# bundled in the app. It only reads the upstream README; it never scrapes passportindex.org
-# and changes nothing in the repo. Refreshing the data stays a manual step (docs/DATA.md).
+# Weekly look at the published visa dataset. An issue is opened only for a change
+# that needs a person: a passport added or removed upstream, a new index
+# schema_version, or an index that cannot be fetched or read. Wikipedia revision
+# differences are expected (the articles are edited daily, so some always differ);
+# they are only printed into the job summary. It changes nothing in the repo.
+# Refreshing the data stays a manual step (docs/DATA.md).
 on:
   schedule:
     - cron: "17 6 * * 1"
@@ -18,31 +21,69 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Compare upstream "Last updated" with rules.DATASET["as_of"]
+      - name: Compare the published dataset with the bundled one
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          curl -fsSL "https://raw.githubusercontent.com/imorte/passport-index-data/main/README.md" -o "$RUNNER_TEMP/upstream-readme.md"
-          python3 -I - "$RUNNER_TEMP/upstream-readme.md" tools/visa/rules.py > "$RUNNER_TEMP/result.txt" <<'EOF'
-          import datetime, re, sys
-          readme = open(sys.argv[1], encoding="utf-8").read()
-          m = re.search(r"Last updated:\s*\**\s*(\d{1,2} \w+ \d{4})", readme)
-          if not m:
-              sys.exit("upstream README no longer has a 'Last updated' line; the check needs updating")
-          upstream = datetime.datetime.strptime(m.group(1), "%d %B %Y").date()
-          rules = open(sys.argv[2], encoding="utf-8").read()
-          a = re.search(r'"as_of":\s*"(\d{4}-\d{2}-\d{2})"', rules)
-          if not a:
-              sys.exit("rules.py has no DATASET as_of")
-          bundled = datetime.date.fromisoformat(a.group(1))
-          print(f"{upstream.isoformat()} {bundled.isoformat()} {'newer' if upstream > bundled else 'current'}")
-          EOF
-          read -r UPSTREAM BUNDLED STATE < "$RUNNER_TEMP/result.txt"
-          echo "upstream=$UPSTREAM bundled=$BUNDLED -> $STATE"
-          if [ "$STATE" = "newer" ]; then
-            TITLE="Visa data: upstream snapshot $UPSTREAM is newer than bundled $BUNDLED"
-            # One issue per upstream date: a weekly run must not reopen what is already tracked.
-            if [ -z "$(gh issue list --state all --search "\"$TITLE\" in:title" --json number --jq '.[].number')" ]; then
-              gh issue create --title "$TITLE" --body "imorte/passport-index-data reports **Last updated: $UPSTREAM**; the app bundles $BUNDLED (\`tools/visa/rules.py\`, \`DATASET.as_of\`). Refresh steps: docs/DATA.md. Re-review the territory OVERRIDES before shipping."
+          report() {  # $1 = kind of problem (part of the title), $2 = details
+            # One open issue per kind: a second, different problem is not silenced
+            # by an open issue about the first. Same kind, same exact title.
+            TITLE="Visa data: $1"
+            echo "::warning::$1: $2"
+            echo "**Needs attention ($1):** $2" >> "$GITHUB_STEP_SUMMARY"
+            if [ -z "$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number')" ]; then
+              gh issue create --title "$TITLE" --body "$2 Refresh steps: docs/DATA.md. Re-review the territory CORRECTIONS before shipping."
             fi
+          }
+          if ! curl -fsSL --retry 3 "https://riedel-david.github.io/Visa-requirements/index.json" -o "$RUNNER_TEMP/index.json"; then
+            report "published index is unreadable" "The published index.json could not be fetched."
+            exit 0
+          fi
+          if ! python3 -I - "$RUNNER_TEMP/index.json" app/src/main/assets docs/visa-source-revisions.txt > "$RUNNER_TEMP/result.txt" 2> "$RUNNER_TEMP/error.txt" <<'EOF'
+          import glob, json, re, sys
+          index = json.load(open(sys.argv[1], encoding="utf-8"))
+          passports = index["passports"]
+          schema = str(index["schema_version"])
+          bundled = {}
+          for f in glob.glob(sys.argv[2] + "/visa*.json"):
+              d = json.load(open(f, encoding="utf-8"))
+              bundled[d["passport"]] = str(d["dataset"].get("sourceRevision"))
+          # Passports upstream has but the build deliberately does not ship (too few
+          # answers) are named in the revisions file; they are not "missing".
+          skipped, built_schema = set(), None
+          for line in open(sys.argv[3], encoding="utf-8"):
+              m = re.match(r"# not shipped .*?: (.*)", line)
+              if m:
+                  skipped = set(m.group(1).split())
+              m = re.match(r"# index.json schema_version: (\S+)", line)
+              if m:
+                  built_schema = m.group(1)
+          changed = sorted(c for c in passports if c in bundled
+                           and str(passports[c]["source_revision"]) != bundled[c])
+          added = sorted(set(passports) - set(bundled) - skipped)
+          removed = sorted(set(bundled) - set(passports))
+          schema_changed = built_schema is not None and schema.split(".")[0] != built_schema.split(".")[0]
+          print(len(changed), ",".join(added) or "-", ",".join(removed) or "-",
+                "yes" if schema_changed else "no", schema)
+          EOF
+          then
+            report "published index is unreadable" "The published index.json could not be read: $(tail -n 1 "$RUNNER_TEMP/error.txt")."
+            exit 0
+          fi
+          read -r CHANGED ADDED REMOVED SCHEMA_CHANGED SCHEMA < "$RUNNER_TEMP/result.txt"
+          {
+            echo "### Visa data freshness"
+            echo "- Passports on a newer Wikipedia revision upstream: $CHANGED (expected, no issue)"
+            echo "- Upstream but not bundled: $ADDED"
+            echo "- Bundled but gone upstream: $REMOVED"
+            echo "- Index schema_version: $SCHEMA (major changed: $SCHEMA_CHANGED)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ADDED" != "-" ]; then
+            report "passports added upstream" "Passports upstream but not bundled: $ADDED."
+          fi
+          if [ "$REMOVED" != "-" ]; then
+            report "passports removed upstream" "Bundled but gone upstream: $REMOVED."
+          fi
+          if [ "$SCHEMA_CHANGED" = "yes" ]; then
+            report "index schema changed" "Index schema_version is $SCHEMA, major version changed."
           fi

@@ -4,52 +4,40 @@ Beyond Borders itself is licensed under the GNU GPL v3 (see `LICENSE`). It bundl
 or links the following third-party material, each under its own licence. Where a
 data asset is generated, `ASSET_SOURCES.md` records how.
 
-## Passport Index Data (MIT)
+## Visa requirements (CC BY-SA 4.0)
 
-The `visa.json` and `visa_<iso2>.json` assets are derived from the "Passport Index
-Data" repository, <https://github.com/imorte/passport-index-data> (file
-`passport-index-tidy-iso2.csv`, as of 2026-02-17), which in turn says its data is
-scraped from passportindex.org. The repository's `LICENSE` is reproduced here as
-published:
+The `visa.json` and `visa_<iso2>.json` assets are an adaptation of the
+Visa-requirements dataset, <https://github.com/Riedel-David/Visa-requirements>
+(published at <https://riedel-david.github.io/Visa-requirements/>), which is itself
+derived from the English Wikipedia articles "Visa requirements for ... citizens" by
+Wikipedia contributors, <https://en.wikipedia.org/>. Each article's URL and revision
+is recorded per passport in its asset (`dataset.sourceUrl`, `dataset.sourceRevision`)
+and in `docs/visa-source-revisions.txt`; the article page histories list the
+contributors.
 
-```
-MIT License
-
-Copyright (c) 2019
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-Caveats, stated plainly. The upstream `LICENSE` names no copyright holder (the line
-reads "Copyright (c) 2019" with no name), so none is shown here. The MIT licence is
-the repository's licence; it is not a statement about the underlying facts, which the
-fork says it scraped from passportindex.org, and this project has not verified
-whether that site's terms permit redistribution. The older dataset this fork
-continues, `ilyankou/passport-index-dataset`, was published under CC BY-SA; the
-fork's MIT licence is taken at face value, not independently confirmed to supersede
-that. Visa answers are also hand-corrected and extended in `tools/visa/rules.py`.
+Licence: Creative Commons Attribution-ShareAlike 4.0 International,
+<https://creativecommons.org/licenses/by-sa/4.0/>. Changes made here: only the
+whole-country answer of each passport is kept; Wikipedia's wording is reduced to the
+app's categories and day counts; some answers are hand-corrected or added in
+`tools/visa/rules.py`; and the DE asset additionally carries links to the German
+Foreign Office's travel advice. **Share-alike:** these `visa*.json` assets (not the
+app's source code, which stays GPL-3.0) are distributed under CC BY-SA 4.0 as well, and
+anyone reusing them must keep that licence and this attribution. No endorsement by
+Wikipedia, its contributors or the dataset's author is implied.
 
 ## Natural Earth (public domain)
 
 Map geometry (`places.geojson`, `places.json`, `places_labels.geojson`) derives from
 Natural Earth, <https://www.naturalearthdata.com/>. Natural Earth is in the public
 domain; no attribution is required, and it is given here as a courtesy.
+
+## Country flags (public domain)
+
+The flag images in `assets/flags/` are rendered from the SVGs of
+hampusborgos/country-flags, <https://github.com/hampusborgos/country-flags>
+(pinned to commit `c09927e63705529bbf59ca6684cd9b23225dddad`), whose sources are
+Wikimedia Commons. The flags are in the public domain; no attribution is required,
+and it is given here as a courtesy.
 
 ## Noto Sans (SIL Open Font License 1.1)
 

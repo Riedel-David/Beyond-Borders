@@ -1,11 +1,13 @@
 package com.riedel.beyondborders.ui.passport
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import org.junit.Assert.assertEquals
@@ -23,7 +25,7 @@ class VisaSectionTest {
     @Test
     fun `an active query names itself in the visa empty state`() {
         assertEquals(
-            "No destinations match “atlantis”.",
+            UiText.Res(R.string.visa_empty_query, "atlantis"),
             visaEmptyMessage(query = "atlantis", filter = VisaFilter.All),
         )
     }
@@ -31,14 +33,14 @@ class VisaSectionTest {
     @Test
     fun `an active visa filter names itself when there is no query`() {
         assertEquals(
-            "No destinations match the “No embassy” filter.",
+            UiText.Res(R.string.visa_empty_filter, VisaFilter.Easy.text),
             visaEmptyMessage(query = "", filter = VisaFilter.Easy),
         )
     }
 
     @Test
     fun `nothing matches is the fallback with no query or filter active`() {
-        assertEquals("Nothing matches.", visaEmptyMessage(query = "", filter = VisaFilter.All))
+        assertEquals(UiText.Res(R.string.visa_empty_nothing), visaEmptyMessage(query = "", filter = VisaFilter.All))
     }
 
     @Test
@@ -90,8 +92,8 @@ class VisaSectionTest {
             row("US", "United States", VisaCategory.E_VISA),
         )
         assertEquals(
-            listOf("Visa-free", "Visa-free", "Visa-free", "e-Visa", "e-Visa"),
-            visaHeaderSlots(rows),
+            listOf(VisaCategory.VISA_FREE, VisaCategory.VISA_FREE, VisaCategory.VISA_FREE, VisaCategory.E_VISA, VisaCategory.E_VISA),
+            visaHeaderCategorySlots(rows),
         )
     }
 }

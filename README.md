@@ -5,7 +5,7 @@ without a visa. Offline, no account, no network permission.
 
 **Needs Android 11+ on an arm64 phone** (no x86 emulators). Install steps are [below](#install).
 
-[![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/download/v0.7.19/BeyondBorders-0.7.19.apk)
+[![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/download/v0.7.20/BeyondBorders-0.7.20.apk)
 
 [![CI](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml/badge.svg)](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml)
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
@@ -112,8 +112,8 @@ Visa rules change often and the visa data is bundled with each release, so it ca
 of date. Check the official sources of your destination before you travel.
 
 Boundaries come from [Natural Earth](https://www.naturalearthdata.com/) (public domain),
-visa requirements from [Passport Index Data](https://github.com/imorte/passport-index-data)
-(MIT) plus hand-curated territory answers of our own, and map labels use Noto Sans
+visa requirements from the [Visa-requirements dataset](https://github.com/Riedel-David/Visa-requirements)
+(derived from Wikipedia contributors, CC BY-SA 4.0) plus hand-curated territory answers of our own, and map labels use Noto Sans
 (SIL OFL 1.1). Map rendering is [MapLibre Native Android](https://github.com/maplibre/maplibre-native)
 (BSD-2-Clause). Travel-advice links come from the German Federal Foreign Office's open
 data, used at build time only. Provenance and checksums are in
@@ -122,4 +122,4 @@ text, are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Licence
 
-The code is licensed under the [GNU GPL v3](LICENSE). The bundled data keeps its own licences, listed above; the MIT licence text for the visa data is reproduced in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The code is licensed under the [GNU GPL v3](LICENSE). The bundled data keeps its own licences, listed above. Licence texts and upstream copyright notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

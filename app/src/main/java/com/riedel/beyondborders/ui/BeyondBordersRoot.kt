@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -25,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
@@ -36,9 +38,9 @@ import com.riedel.beyondborders.ui.settings.SettingsScreen
 import com.riedel.beyondborders.ui.welcome.WelcomeScreen
 import com.riedel.beyondborders.widget.WidgetIntent
 
-enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
-    MAP("Map", R.drawable.ic_tab_map),
-    PASSPORT("Passport", R.drawable.ic_tab_passport),
+enum class Tab(@param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
+    MAP(R.string.root_tab_map, R.drawable.ic_tab_map),
+    PASSPORT(R.string.root_tab_passport, R.drawable.ic_tab_passport),
 
     /**
      * A destination rather than the floating gear originally sketched: both
@@ -48,7 +50,7 @@ enum class Tab(val label: String, @param:DrawableRes val icon: Int) {
      * import discoverable, which for the one piece of data in this app that cannot
      * be re-downloaded is worth a tab.
      */
-    SETTINGS("Settings", R.drawable.ic_settings),
+    SETTINGS(R.string.root_tab_settings, R.drawable.ic_settings),
 }
 
 /**
@@ -66,6 +68,16 @@ fun BeyondBordersRoot(
     modifier: Modifier = Modifier,
 ) {
     val hasSeenWelcome by container.settings.hasSeenWelcome.collectAsStateWithLifecycle()
+    // Hoisted above the welcome gate so the welcome screen, the map, the passport and
+    // Settings all read the one registry copy the ViewModel holds. It starts empty and
+    // fills asynchronously, so the counts below are 0 until it has loaded and every
+    // consumer treats 0 as "not yet" rather than printing it.
+    val placesViewModel: PlacesViewModel = viewModel(
+        factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
+    )
+    val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
+    val placeCount = allPlaces.size
+    val unMemberCount = remember(allPlaces) { allPlaces.count { it.unMember } }
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
         var passportNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -77,6 +89,8 @@ fun BeyondBordersRoot(
             nationality = nationality,
             onNationalityChange = container.settings::setNationality,
             passportNames = passportNames,
+            placeCount = placeCount,
+            unMemberCount = unMemberCount,
             onGetStarted = container.settings::setHasSeenWelcome,
             modifier = modifier,
         )
@@ -99,12 +113,6 @@ fun BeyondBordersRoot(
     }
     val tab = Tab.entries[selected]
 
-    // Hoisted to the root so the map and the passport share one instance: marking
-    // a country on one is instantly visible on the other, with no syncing.
-    val placesViewModel: PlacesViewModel = viewModel(
-        factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
-    )
-
     Scaffold(
         modifier = modifier,
         bottomBar = {
@@ -114,7 +122,7 @@ fun BeyondBordersRoot(
                         selected = entry == tab,
                         onClick = { selected = entry.ordinal },
                         icon = { Icon(painterResource(entry.icon), contentDescription = null) },
-                        label = { Text(entry.label) },
+                        label = { Text(stringResource(entry.label)) },
                     )
                 }
             }
@@ -146,7 +154,7 @@ fun BeyondBordersRoot(
                         )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
-                        SettingsScreen(container)
+                        SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount)
                     }
                 }
             }

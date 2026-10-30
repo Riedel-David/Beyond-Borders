@@ -1,45 +1,73 @@
 package com.riedel.beyondborders.ui.passport
 
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.UiText
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BadgeShareTest {
 
     private fun badge(progress: Int, target: Int = 10) = Achievement(
-        "count_10", "10 places", "Be in 10 places.", progress, target, AchievementGroup.COUNTS,
+        "count_10",
+        UiText.Plural(R.plurals.badge_count_n_title, 10, 10), UiText.Plural(R.plurals.badge_count_n_desc, 10, 10),
+        progress, target, AchievementGroup.COUNTS,
     )
 
     @Test
     fun `rank line names the rank and the number of places`() {
-        assertEquals("Explorer · 20 places", badgeRankLine(20))
+        assertEquals(
+            UiText.Res(R.string.badge_rank_line, UiText.Res(R.string.rank_explorer), UiText.Plural(R.plurals.badge_places_count, 20, 20)),
+            badgeRankLine(20),
+        )
     }
 
     @Test
     fun `rank line uses the singular for one place`() {
-        assertEquals("Newcomer · 1 place", badgeRankLine(1))
+        assertEquals(
+            UiText.Res(R.string.badge_rank_line, UiText.Res(R.string.rank_newcomer), UiText.Plural(R.plurals.badge_places_count, 1, 1)),
+            badgeRankLine(1),
+        )
     }
 
     @Test
     fun `rank line copes with a large count at the top rank`() {
-        assertEquals("Legend · 252 places", badgeRankLine(252))
+        assertEquals(
+            UiText.Res(R.string.badge_rank_line, UiText.Res(R.string.rank_legend), UiText.Plural(R.plurals.badge_places_count, 252, 252)),
+            badgeRankLine(252),
+        )
     }
 
     @Test
     fun `progress text of a locked badge is x of y`() {
-        assertEquals("3 of 10", badgeProgressText(badge(3)))
+        assertEquals(UiText.Res(R.string.badge_progress_of, 3, 10), badgeProgressText(badge(3)))
     }
 
     @Test
     fun `progress text of an unlocked badge says unlocked`() {
-        assertEquals("Unlocked", badgeProgressText(badge(10)))
+        assertEquals(UiText.Res(R.string.badge_unlocked), badgeProgressText(badge(10)))
     }
 
     @Test
     fun `share caption carries the title and the description`() {
-        val caption = badgeShareCaption(badge(10))
-        assertTrue(caption.contains("10 places"))
-        assertTrue(caption.contains("Be in 10 places."))
-        assertTrue(caption.contains("Beyond Borders"))
+        val b = badge(10)
+        assertEquals(UiText.Res(R.string.badge_share_caption, b.title, b.description), badgeShareCaption(b))
+    }
+
+    @Test
+    fun `card height follows the screen aspect at the card width`() {
+        assertEquals(2400, badgeCardHeight(1080, 2400))
+        assertEquals(2160, badgeCardHeight(1440, 2880))
+    }
+
+    @Test
+    fun `card is never shorter than square`() {
+        assertEquals(1080, badgeCardHeight(1920, 1080))
+        assertEquals(1080, badgeCardHeight(0, 0))
+    }
+
+    @Test
+    fun `card is never taller than 9 by 21, whatever window it is shared from`() {
+        assertEquals(2520, badgeCardHeight(400, 2600))
+        assertEquals(2520, badgeCardHeight(1080, 2520))
     }
 }

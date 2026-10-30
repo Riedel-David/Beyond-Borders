@@ -65,6 +65,8 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
@@ -77,6 +79,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.riedel.beyondborders.R
+import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
+import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -129,10 +136,10 @@ fun PassportScreen(
     val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
-    val wishlistEasyLine by viewModel.wishlistEasyLine.collectAsStateWithLifecycle()
+    val wishlistEasyText by viewModel.wishlistEasyText.collectAsStateWithLifecycle()
     // Derived from an asset that is read once, so a flow would be a subscription to
     // something that never changes twice.
-    val filters = remember(visa) { visaFilters(visa) }
+    val filters = remember(visa, secondVisa) { visaFilters(visa, secondVisa) }
     // Persisted, and prefixed with the grouping's name, so a header collapsed by
     // continent survives closing the app but does not carry over, by coincidence
     // of the same string, into region or A-Z grouping.
@@ -196,7 +203,7 @@ fun PassportScreen(
                     add(null) // "visa-search"
                     add(null) // "visa-filters"
                     if (visaRows.isEmpty()) add(null) // "visa-empty"
-                    addAll(visaHeaderSlots(visaRows))
+                    addAll(visaHeaderCategorySlots(visaRows).map { it?.name })
                 }
             }
         } else {
@@ -253,7 +260,7 @@ fun PassportScreen(
         item("stats") {
             StatsCard(
                 stats = stats,
-                wishlistEasyLine = wishlistEasyLine,
+                wishlistEasyText = wishlistEasyText,
                 onClick = { showStatsDetail = true },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
@@ -264,7 +271,7 @@ fun PassportScreen(
                 SearchField(
                     query = query,
                     onQuery = viewModel::setQuery,
-                    label = "Search places",
+                    label = stringResource(R.string.passport_search_places),
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 // Five filters do not fit across a 360 dp phone, so this row
@@ -280,7 +287,7 @@ fun PassportScreen(
                         FilterChip(
                             selected = filter == statusFilter,
                             onClick = { viewModel.setStatusFilter(filter) },
-                            label = { Text(filter.label) },
+                            label = { Text(filter.text.asString()) },
                         )
                     }
                 }
@@ -293,17 +300,17 @@ fun PassportScreen(
                     FilterChip(
                         selected = grouping == Grouping.CONTINENT,
                         onClick = { viewModel.setGrouping(Grouping.CONTINENT) },
-                        label = { Text("By continent") },
+                        label = { Text(stringResource(R.string.passport_group_continent)) },
                     )
                     FilterChip(
                         selected = grouping == Grouping.REGION,
                         onClick = { viewModel.setGrouping(Grouping.REGION) },
-                        label = { Text("By region") },
+                        label = { Text(stringResource(R.string.passport_group_region)) },
                     )
                     FilterChip(
                         selected = grouping == Grouping.ALPHABETICAL,
                         onClick = { viewModel.setGrouping(Grouping.ALPHABETICAL) },
-                        label = { Text("A-Z") },
+                        label = { Text(stringResource(R.string.passport_group_alphabetical)) },
                     )
                 }
             }
@@ -317,7 +324,7 @@ fun PassportScreen(
                 // than the flat "nothing matches" a query or filter earns.
                 val loading = places.isEmpty()
                 EmptyPlacesState(
-                    message = passportEmptyMessage(loading, query, statusFilter),
+                    message = passportEmptyMessage(loading, query, statusFilter).asString(),
                     showClear = !loading && canClearPassportFilter(query, statusFilter),
                     onClear = {
                         viewModel.setQuery("")
@@ -346,7 +353,7 @@ fun PassportScreen(
                 // swap rather than the reorder animateItem exists to animate.
                 stickyHeader("header-$header", contentType = "header") {
                     SectionHeader(
-                        text = header,
+                        text = sectionHeaderLabel(header),
                         collapsed = collapseKey in effectiveCollapsed,
                         onClick = { viewModel.toggleHeaderCollapsed(grouping, header) },
                     )
@@ -431,7 +438,7 @@ private fun ModeToggle(
                 // fitting and eliding on a 360 dp phone, and with two segments the
                 // selected one is already obvious from its fill.
                 icon = {},
-                label = { Text(option.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label = { Text(option.text.asString(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             )
         }
     }
@@ -439,6 +446,7 @@ private fun ModeToggle(
 
 @Composable
 private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val stateText = stringResource(if (collapsed) R.string.passport_state_collapsed else R.string.passport_state_expanded)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -447,7 +455,7 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
             // 48 dp minimum touch target; the content stays centred so the label sits
             // where it did.
             .heightIn(min = 48.dp)
-            .semantics { stateDescription = if (collapsed) "Collapsed" else "Expanded" }
+            .semantics { stateDescription = stateText }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -596,7 +604,7 @@ private fun AzRail(
                     .clearAndSetSemantics {},
             ) {
                 ScrubPill(
-                    text = touchedLabel!!,
+                    text = sectionHeaderLabel(touchedLabel!!),
                     railWidthDp = RailWidthDp,
                 )
             }
@@ -656,7 +664,7 @@ private fun AzRail(
                 labels.forEach { label ->
                     val touched = label == touchedLabel
                     Text(
-                        text = label.take(1).uppercase(),
+                        text = sectionHeaderLabel(label).take(1).uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (touched) FontWeight.Bold else FontWeight.Normal,
                         color = if (touched) {
@@ -742,20 +750,20 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             BounceFilterChip(
                 selected = row.status == PlaceStatus.VISITED,
-                label = "Been",
-                semanticsLabel = "Mark ${row.place.name} as been",
+                label = stringResource(R.string.passport_chip_been),
+                semanticsLabel = stringResource(R.string.passport_mark_been, row.place.name),
                 onClick = { onToggle(PlaceStatus.VISITED) },
             )
             BounceFilterChip(
                 selected = row.status == PlaceStatus.LIVED,
-                label = "Lived",
-                semanticsLabel = "Mark ${row.place.name} as lived in",
+                label = stringResource(R.string.passport_chip_lived),
+                semanticsLabel = stringResource(R.string.passport_mark_lived, row.place.name),
                 onClick = { onToggle(PlaceStatus.LIVED) },
             )
             BounceFilterChip(
                 selected = row.status == PlaceStatus.WISHLIST,
-                label = "Want",
-                semanticsLabel = "Mark ${row.place.name} as wanted",
+                label = stringResource(R.string.passport_chip_want),
+                semanticsLabel = stringResource(R.string.passport_mark_want, row.place.name),
                 onClick = { onToggle(PlaceStatus.WISHLIST) },
             )
         }
@@ -780,7 +788,7 @@ private fun EmptyPlacesState(
         )
         if (showClear) {
             TextButton(onClick = onClear, contentPadding = PaddingValues(vertical = 4.dp)) {
-                Text("Clear")
+                Text(stringResource(R.string.passport_clear))
             }
         }
     }
@@ -789,10 +797,11 @@ private fun EmptyPlacesState(
 @Composable
 private fun StatsCard(
     stats: TravelStats,
-    wishlistEasyLine: String?,
+    wishlistEasyText: UiText?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val cardAction = stringResource(R.string.passport_card_action)
     Card(
         onClick = onClick,
         modifier = modifier
@@ -803,7 +812,7 @@ private fun StatsCard(
             // "Tap for continents..." caption.
             .semantics {
                 // action = null: the Card's own click stays the action, this only names it.
-                onClick(label = "View continents, regions and groupings", action = null)
+                onClick(label = cardAction, action = null)
             },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -821,7 +830,7 @@ private fun StatsCard(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        "  of ${stats.total} places · ${stats.percent}%",
+                        "  " + pluralStringResource(R.plurals.passport_card_total, stats.total, stats.total, stats.percent),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 6.dp),
@@ -837,36 +846,36 @@ private fun StatsCard(
             }
             Text(
                 buildString {
-                    append("${stats.continentsTouched} of ${stats.continents.size} continents")
+                    append(pluralStringResource(R.plurals.passport_card_continents, stats.continents.size, stats.continentsTouched, stats.continents.size))
                     // Each clause appears only when it has something to say, so the
                     // line stays short for someone who only ever taps "Been".
-                    if (stats.lived > 0) append(" · ${stats.lived} lived in")
-                    if (stats.wishlist > 0) append(" · ${stats.wishlist} on the wishlist")
+                    if (stats.lived > 0) append(" · ").append(stringResource(R.string.passport_card_lived, stats.lived))
+                    if (stats.wishlist > 0) append(" · ").append(stringResource(R.string.passport_card_wishlist, stats.wishlist))
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             // Two lines that only appear once they have something worth saying:
             // the nudge needs a continent partway done, the join needs a wishlist.
-            if (stats.coverage != null) {
+            if (stats.coverageText != null) {
                 Text(
-                    stats.coverage,
+                    stats.coverageText.asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (stats.nudge != null) {
+            if (stats.nudgeText != null) {
                 Text(
-                    stats.nudge,
+                    stats.nudgeText.asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (wishlistEasyLine != null) {
+            if (wishlistEasyText != null) {
                 Text(
-                    wishlistEasyLine,
+                    wishlistEasyText.asString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
@@ -886,12 +895,12 @@ private fun StatsCard(
  * cause is a typo or day-one before the asset has loaded, and only one of those
  * is worth a "Clear" button.
  */
-internal fun passportEmptyMessage(loading: Boolean, query: String, statusFilter: StatusFilter): String =
+internal fun passportEmptyMessage(loading: Boolean, query: String, statusFilter: StatusFilter): UiText =
     when {
-        loading -> "Loading your places…"
-        query.isNotBlank() -> "No places match “$query”."
-        statusFilter != StatusFilter.ALL -> "No places match the “${statusFilter.label}” filter."
-        else -> "Nothing matches."
+        loading -> UiText.Res(R.string.passport_loading)
+        query.isNotBlank() -> UiText.Res(R.string.passport_no_match_query, query)
+        statusFilter != StatusFilter.ALL -> UiText.Res(R.string.passport_no_match_filter, statusFilter.text)
+        else -> UiText.Res(R.string.passport_nothing_matches)
     }
 
 /** A "Clear" affordance only makes sense once there is something to clear. */
@@ -916,3 +925,12 @@ internal fun railLabels(headerSlots: List<String?>): List<String> =
  */
 internal fun railTargetIndex(headerSlots: List<String?>, label: String): Int? =
     headerSlots.indexOf(label).takeIf { it >= 0 }
+
+/**
+ * A header slot key shown as text. Keys are stable (the uninhabited constant, a
+ * [VisaCategory] name, or a letter); only here, at draw time, do they become wording.
+ */
+@Composable
+private fun sectionHeaderLabel(key: String): String =
+    if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited)
+    else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) } ?: key

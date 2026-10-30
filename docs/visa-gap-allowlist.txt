@@ -1,0 +1,40 @@
+# Sovereign places a shipped passport may lack a row for. Written by
+# tools/visa/build_visa.py from rules.SOVEREIGN_GAP_*; read by VisaAssetCoverageTest.
+destination AQ
+destination EH
+destination TW
+destination XK
+destination XN
+destination XS
+pair EC CU
+pair HK CN
+pair HR AT
+pair HR BE
+pair HR BG
+pair HR CH
+pair HR CY
+pair HR CZ
+pair HR DE
+pair HR DK
+pair HR EE
+pair HR ES
+pair HR FI
+pair HR FR
+pair HR GR
+pair HR HU
+pair HR IE
+pair HR IS
+pair HR IT
+pair HR LI
+pair HR LT
+pair HR LU
+pair HR LV
+pair HR MT
+pair HR NL
+pair HR NO
+pair HR PL
+pair HR PT
+pair HR RO
+pair HR SE
+pair HR SI
+pair HR SK

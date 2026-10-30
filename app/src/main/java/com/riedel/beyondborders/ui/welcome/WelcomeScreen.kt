@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +59,8 @@ fun WelcomeScreen(
     nationality: String?,
     onNationalityChange: (String) -> Unit,
     passportNames: Map<String, String>,
+    placeCount: Int,
+    unMemberCount: Int,
     onGetStarted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -96,31 +99,30 @@ fun WelcomeScreen(
                     )
                 }
                 Text(
-                    "Beyond Borders",
+                    stringResource(R.string.welcome_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    "Mark the places you've been, lived in, or want to go — on a map " +
-                        "of all 252, not just the 195 in the UN.",
+                    if (placeCount > 0 && unMemberCount > 0) {
+                        stringResource(R.string.welcome_intro, placeCount, unMemberCount)
+                    } else {
+                        stringResource(R.string.welcome_intro_bare)
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    "Nothing you mark is ever sent to us. No account, no server, " +
-                        "no network — export a backup yourself whenever you want one. " +
-                        "(Android's own device backup may still include it, if you " +
-                        "have that switched on.)",
+                    stringResource(R.string.welcome_privacy),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    "Visa requirements are for one passport at a time. Pick yours — you " +
-                        "can change it later in Settings.",
+                    stringResource(R.string.welcome_passport_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -137,7 +139,7 @@ fun WelcomeScreen(
                     enabled = nationality != null,
                     modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
                 ) {
-                    Text("Get started")
+                    Text(stringResource(R.string.welcome_get_started))
                 }
             }
         }

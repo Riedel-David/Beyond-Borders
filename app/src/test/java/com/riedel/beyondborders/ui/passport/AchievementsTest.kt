@@ -5,6 +5,7 @@ import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.PlaceRegistry
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.UiText
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -166,7 +167,7 @@ class AchievementsTest {
         assertEquals(1, a.byId("region_alpha").progress)
         assertEquals(2, a.byId("region_alpha").target)
         assertTrue(a.byId("region_beta").unlocked)
-        assertEquals("Alpha", a.byId("region_alpha").title)
+        assertEquals(UiText.Plain("Alpha"), a.byId("region_alpha").title)
     }
 
     @Test

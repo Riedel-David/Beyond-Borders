@@ -1,14 +1,17 @@
 package com.riedel.beyondborders.ui.places
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
-import com.riedel.beyondborders.ui.visa.asOfNotice
-import com.riedel.beyondborders.ui.visa.officialLinkLabel
-import com.riedel.beyondborders.ui.visa.requirementSummary
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.officialLinkText
+import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -62,9 +65,12 @@ class VisaLogicTest {
           "passport": "DE",
           "asOf": "2026-02-17",
           "dataset": {
-            "name": "Passport Index Data",
+            "name": "Visa requirements (Wikipedia contributors)",
             "url": "https://example.org/dataset",
-            "licence": "MIT"
+            "licence": "CC BY-SA 4.0",
+            "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "sourceUrl": "https://en.wikipedia.org/wiki/Visa_requirements_for_German_citizens",
+            "sourceRevision": 1234567
           },
           "iataUrl": "https://example.org/iata",
           "requirements": [
@@ -81,7 +87,9 @@ class VisaLogicTest {
             {"code": "BV", "category": "PERMIT_REQUIRED", "source": "curated",
              "confidence": "medium", "note": "Nature reserve.",
              "sourceUrl": "https://example.org/bv", "officialUrl": "https://example.org/no",
-             "officialFor": "NO"}
+             "officialFor": "NO"},
+            {"code": "KP", "category": "CHECK", "source": "dataset", "confidence": "low",
+             "note": "Travel banned by the passport's own government."}
           ]
         }
         """.trimIndent()
@@ -94,6 +102,45 @@ class VisaLogicTest {
     ) = buildVisaRows(places, visa, null, statuses, query, filter).map { it.place.code }
 
     // --- the list --------------------------------------------------------------
+
+    private fun reg(passport: String, vararg rows: Pair<String, String>) = VisaRegistry.parse(
+        """{"passport":"$passport","asOf":"2026-01-01",
+        "dataset":{"name":"n","url":"https://e.org","licence":"L"},"iataUrl":"https://e.org",
+        "requirements":[${rows.joinToString(",") { """{"code":"${it.first}","category":"${it.second}","source":"dataset"}""" }}]}"""
+    )
+
+    @Test
+    fun `headline totals and chips come from the combined passports`() {
+        val primary = reg("DE", "FR" to "VISA_FREE", "KP" to "VISA_REQUIRED", "CN" to "NO_ADMISSION")
+        val second = reg("GB", "KP" to "VISA_FREE", "IN" to "ETA", "CN" to "CHECK")
+        // KP: the second passport's visa-free wins; CN: CHECK beats the refusal; IN only on the second.
+        assertEquals(CombinedTotals(answered = 4, visaFree = 2, easy = 3), combinedTotals(primary, second))
+        assertEquals(CombinedTotals(3, 1, 1), combinedTotals(primary, null))
+        assertEquals(
+            listOf(VisaCategory.VISA_FREE, VisaCategory.ETA, VisaCategory.CHECK),
+            visaFilters(primary, second).filterIsInstance<VisaFilter.Category>().map { it.category },
+        )
+        // No chip for a category the combined list no longer contains (VISA_REQUIRED, NO_ADMISSION).
+        assertEquals(
+            setOf(VisaCategory.VISA_FREE, VisaCategory.ETA, VisaCategory.CHECK),
+            combinedCategoryCounts(primary, second).keys,
+        )
+    }
+
+    @Test
+    fun `the attribution fields and a CHECK row survive parsing`() {
+        assertEquals("CC BY-SA 4.0", visa.datasetLicence)
+        assertEquals("https://creativecommons.org/licenses/by-sa/4.0/", visa.licenceUrl)
+        assertEquals(
+            "https://en.wikipedia.org/wiki/Visa_requirements_for_German_citizens",
+            visa.sourceUrl,
+        )
+        assertEquals("1234567", visa.sourceRevision)
+        val kp = visa["KP"]!!
+        assertEquals(VisaCategory.CHECK, kp.category)
+        assertEquals(VisaConfidence.LOW, kp.confidence)
+        assertEquals("Travel banned by the passport's own government.", kp.note)
+    }
 
     /**
      * The ordering *is* the feature: "where can I go" has to be answerable by looking
@@ -186,16 +233,16 @@ class VisaLogicTest {
     fun `the wishlist join line names the easy fraction of the whole wishlist`() {
         val statuses = mapOf("GL" to PlaceStatus.WISHLIST, "RU" to PlaceStatus.WISHLIST)
         assertEquals(
-            "1 of your 2 wishlist places need no embassy",
-            computeWishlistEasyLine(places, statuses, visa),
+            UiText.Plural(R.plurals.places_wishlist_easy, 2, 1, 2),
+            computeWishlistEasyText(places, statuses, visa),
         )
     }
 
     @Test
     fun `the wishlist join line is null with no visa asset, no wishlist, or nothing easy on it`() {
-        assertEquals(null, computeWishlistEasyLine(places, mapOf("GL" to PlaceStatus.WISHLIST), null))
-        assertEquals(null, computeWishlistEasyLine(places, emptyMap(), visa))
-        assertEquals(null, computeWishlistEasyLine(places, mapOf("RU" to PlaceStatus.WISHLIST), visa))
+        assertEquals(null, computeWishlistEasyText(places, mapOf("GL" to PlaceStatus.WISHLIST), null))
+        assertEquals(null, computeWishlistEasyText(places, emptyMap(), visa))
+        assertEquals(null, computeWishlistEasyText(places, mapOf("RU" to PlaceStatus.WISHLIST), visa))
     }
 
     // --- the chips -------------------------------------------------------------
@@ -211,6 +258,7 @@ class VisaLogicTest {
                 VisaCategory.ETA,
                 VisaCategory.E_VISA,
                 VisaCategory.VISA_REQUIRED,
+                VisaCategory.CHECK,
                 VisaCategory.PERMIT_REQUIRED,
             ),
             labels.filterIsInstance<VisaFilter.Category>().map { it.category },
@@ -239,8 +287,8 @@ class VisaLogicTest {
     }
 
     /**
-     * Five bands out of eight categories, and the grouping is the map's whole claim:
-     * "roughly, where can I go" is a picture, and eight colours is a legend.
+     * Six bands out of nine categories, and the grouping is the map's whole claim:
+     * "roughly, where can I go" is a picture, and nine colours is a legend.
      */
     @Test
     fun `each band collects the categories the ramp merges`() {
@@ -285,18 +333,27 @@ class VisaLogicTest {
 
     @Test
     fun `a summary states the day count only when there is one`() {
-        assertEquals("e-Visa · 30 days", requirementSummary(visa["IN"]!!))
+        assertEquals(
+            UiText.Res(
+                R.string.visa_summary_with_days,
+                UiText.Res(R.string.visa_category_e_visa),
+                UiText.Plural(R.plurals.visa_days, 30, 30),
+            ),
+            requirementSummaryText(visa["IN"]!!),
+        )
         // EU freedom of movement has no limit, and inventing 90 days would be the
         // exact class of error this feature exists to avoid.
-        assertEquals("Visa-free", requirementSummary(visa["GL"]!!))
+        assertEquals(UiText.Res(R.string.visa_category_visa_free), requirementSummaryText(visa["GL"]!!))
     }
 
     @Test
     fun `every visa surface can say how old the data is`() {
-        val notice = asOfNotice(visa)
-        assertTrue("the date has to be in it: $notice", notice.contains("2026-02-17"))
-        assertTrue("and the warning: $notice", notice.contains("verify", ignoreCase = true))
-        assertTrue("and which passport: $notice", notice.contains("German"))
+        // The "verify with the official source" warning lives in the string itself, so
+        // the id is the claim; the date and the passport are the arguments.
+        assertEquals(
+            UiText.Res(R.string.visa_as_of_notice, "2026-02-17", UiText.Res(R.string.visa_adjective_de)),
+            asOfNoticeText(visa),
+        )
     }
 
     /**
@@ -308,11 +365,11 @@ class VisaLogicTest {
     fun `a parent's advice page is labelled with the parent's name`() {
         val nameOf = { code: String -> places.firstOrNull { it.code == code }?.name }
         assertEquals(
-            "Foreign Office advice: Denmark",
-            officialLinkLabel(visa["GL"]!!, nameOf = { "Denmark" }),
+            UiText.Res(R.string.visa_official_link_for, "Denmark"),
+            officialLinkText(visa["GL"]!!, nameOf = { "Denmark" }),
         )
-        assertEquals("Foreign Office advice", officialLinkLabel(visa["US"]!!, nameOf))
+        assertEquals(UiText.Res(R.string.visa_official_link), officialLinkText(visa["US"]!!, nameOf))
         // An unknown parent falls back to its code rather than to "null".
-        assertEquals("Foreign Office advice: NO", officialLinkLabel(visa["BV"]!!, nameOf))
+        assertEquals(UiText.Res(R.string.visa_official_link_for, "NO"), officialLinkText(visa["BV"]!!, nameOf))
     }
 }

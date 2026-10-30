@@ -13,7 +13,10 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +24,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,9 +33,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -41,6 +47,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,8 +58,10 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,11 +74,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -80,6 +94,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.BounceFilterChip
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -93,6 +108,8 @@ import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.passport.SearchField
 import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel
@@ -100,14 +117,16 @@ import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
 import com.riedel.beyondborders.ui.places.RegionStyleKey
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.nextRegionMode
+import com.riedel.beyondborders.ui.theme.BeyondBordersDark
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.MapPalette
 import com.riedel.beyondborders.ui.theme.RegionRamp
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.ui.theme.VisaRamp
-import com.riedel.beyondborders.ui.visa.asOfNotice
-import com.riedel.beyondborders.ui.visa.requirementSummary
+import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -149,6 +168,9 @@ private fun MapCamera.toCameraPosition(): CameraPosition = CameraPosition.Builde
  */
 private const val TAP_SLOP_DP = 16f
 
+// The banner's background for a place without a flag, and the selected chip's label.
+private val BANNER_FALLBACK_COLOR = Color(0xFF1B1B1F)
+
 /** Outlives the Map tab; see the share functions in [MapScreen]. */
 // lazy: Dispatchers.Main throws on the host JVM, and a top-level initialiser would
 // take every host test of this file's pure functions down with it.
@@ -189,6 +211,7 @@ fun MapScreen(
     val controller = remember { PlacesMapController() }
     val selected = selectedCode?.let(viewModel::placeOf)
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     // rememberSaveable because the root disposes this screen on a tab switch (the
     // SaveableStateProvider above it restores these on return).
@@ -242,13 +265,13 @@ fun MapScreen(
 
     fun reportShareFailure(retry: () -> Unit) {
         if (!onScreen) {
-            Toast.makeText(context.applicationContext, "Couldn't share the map", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext, resources.getString(R.string.map_share_failed), Toast.LENGTH_SHORT).show()
             return
         }
         scope.launch {
             val result = snackbarHostState.showSnackbar(
-                message = "Couldn't share the map",
-                actionLabel = "Retry",
+                message = resources.getString(R.string.map_share_failed),
+                actionLabel = resources.getString(R.string.map_share_retry),
                 duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) retry()
@@ -275,7 +298,7 @@ fun MapScreen(
         if (!started) {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = "Map isn't ready yet",
+                    message = resources.getString(R.string.map_not_ready),
                     duration = SnackbarDuration.Short,
                 )
             }
@@ -389,42 +412,46 @@ fun MapScreen(
                     // Nothing marked yet, so the counter would say "0" and teach
                     // nothing. Say what to do instead.
                     MapLegendKind.NUDGE -> Text(
-                        "Tap a place to mark it",
+                        stringResource(R.string.map_legend_nudge),
                         style = MaterialTheme.typography.labelLarge,
                     )
                     MapLegendKind.COUNTER_LABELED -> Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        CounterLegendRow(palette.visited, stats.visited, "visited")
-                        if (stats.lived > 0) CounterLegendRow(palette.lived, stats.lived, "lived")
+                        CounterLegendRow(palette.visited, stringResource(R.string.map_legend_visited, stats.visited))
+                        if (stats.lived > 0) CounterLegendRow(palette.lived, stringResource(R.string.map_legend_lived, stats.lived))
                         if (stats.wishlist > 0) {
-                            CounterLegendRow(palette.wishlist, stats.wishlist, "wanted")
+                            CounterLegendRow(palette.wishlist, stringResource(R.string.map_legend_wanted, stats.wishlist))
                         }
                     }
-                    MapLegendKind.COUNTER_DOTS -> Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        // TalkBack would otherwise read the dots and bare numbers as
-                        // separate nodes ("40 · 3 · 7") with nothing to say what each
-                        // one counts; clearAndSetSemantics replaces that with one
-                        // sentence and stops the numbers being announced twice.
-                        modifier = Modifier.clearAndSetSemantics {
-                            contentDescription = travelLegendDescription(stats)
-                        },
-                    ) {
-                        // One dot per map colour, and only for colours actually on the
-                        // map: this is a legend, so it counts each status strictly
-                        // rather than showing the combined "been" total the passport
-                        // leads with.
-                        LegendDot(palette.visited)
-                        Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
-                        if (stats.lived > 0) {
-                            LegendDot(palette.lived)
-                            Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
-                        }
-                        if (stats.wishlist > 0) {
-                            LegendDot(palette.wishlist)
-                            Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                    MapLegendKind.COUNTER_DOTS -> {
+                        // Resolved here because the semantics block below is not composable.
+                        val legendDescription = travelLegendDescription(stats).asString()
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            // TalkBack would otherwise read the dots and bare numbers as
+                            // separate nodes ("40 · 3 · 7") with nothing to say what each
+                            // one counts; clearAndSetSemantics replaces that with one
+                            // sentence and stops the numbers being announced twice.
+                            modifier = Modifier.clearAndSetSemantics {
+                                contentDescription = legendDescription
+                            },
+                        ) {
+                            // One dot per map colour, and only for colours actually on the
+                            // map: this is a legend, so it counts each status strictly
+                            // rather than showing the combined "been" total the passport
+                            // leads with.
+                            LegendDot(palette.visited)
+                            Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
+                            if (stats.lived > 0) {
+                                LegendDot(palette.lived)
+                                Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
+                            }
+                            if (stats.wishlist > 0) {
+                                LegendDot(palette.wishlist)
+                                Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                            }
                         }
                     }
                 }
@@ -459,7 +486,9 @@ fun MapScreen(
             ) {
                 Icon(
                     if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
-                    contentDescription = if (controlsExpanded) "Hide map controls" else "Show map controls",
+                    contentDescription = stringResource(
+                        if (controlsExpanded) R.string.map_controls_hide else R.string.map_controls_show,
+                    ),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -470,7 +499,7 @@ fun MapScreen(
             // rather than filter a list.
             MapPill(onClick = { viewModel.vibrate(); searchOpen = !searchOpen }) {
                 Text(
-                    if (searchOpen) "Close" else "Search",
+                    stringResource(if (searchOpen) R.string.map_search_close else R.string.map_search_open),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -490,11 +519,11 @@ fun MapScreen(
                         SearchField(
                             query = searchQuery,
                             onQuery = { searchQuery = it },
-                            label = "Find a place",
+                            label = stringResource(R.string.map_search_label),
                         )
                         if (searchQuery.isNotBlank() && searchMatches.isEmpty()) {
                             Text(
-                                "No matches",
+                                stringResource(R.string.map_search_no_matches),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
@@ -532,7 +561,7 @@ fun MapScreen(
             if (visa != null) {
                 MapPill(onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) }) {
                     Text(
-                        if (lens) "My travels" else "Visa",
+                        stringResource(if (lens) R.string.map_lens_travels else R.string.map_lens_visa),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -542,11 +571,13 @@ fun MapScreen(
             // choice — Off/Official/Informal is a single question, not three.
             MapPill(onClick = { viewModel.vibrate(); viewModel.setRegionMode(nextRegionMode(regionMode)) }) {
                 Text(
-                    when (regionMode) {
-                        RegionMode.OFF -> "Regions"
-                        RegionMode.OFFICIAL -> "Regions: UN"
-                        RegionMode.INFORMAL -> "Regions: named"
-                    },
+                    stringResource(
+                        when (regionMode) {
+                            RegionMode.OFF -> R.string.map_regions_off
+                            RegionMode.OFFICIAL -> R.string.map_regions_official
+                            RegionMode.INFORMAL -> R.string.map_regions_informal
+                        }
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -588,9 +619,7 @@ fun MapScreen(
             exit = fadeOut(tween(140)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(contentPadding)
-                // Same FAB-clearance reasoning as the region card above.
-                .padding(start = 12.dp, top = 12.dp, end = 88.dp, bottom = 12.dp),
+                .padding(contentPadding),
         ) {
             (selected ?: lastSelected)?.let { place ->
                 // Carried into the card whenever the lens is on, so a tap answers
@@ -623,20 +652,27 @@ fun MapScreen(
             }
         }
 
-        // The region/selection cards above anchor to BottomCenter and reserve an
-        // end inset (see their modifiers) so this FAB's corner stays clear of them.
-        FloatingActionButton(
-            onClick = {
-                viewModel.vibrate()
-                showShareStyleDialog = true
-            },
+        // The region card reserves an end inset for this FAB. The selection banner is
+        // full-width, so the FAB is hidden while a place is selected and only fades back
+        // in after the banner has finished fading out (delay = the banner's 140 ms exit).
+        AnimatedVisibility(
+            visible = selected == null,
+            enter = fadeIn(tween(120, delayMillis = 140)),
+            exit = fadeOut(tween(80)),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(contentPadding)
                 .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
         ) {
-            Icon(Icons.Filled.Share, contentDescription = "Share")
+            FloatingActionButton(
+                onClick = {
+                    viewModel.vibrate()
+                    showShareStyleDialog = true
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.map_share_action))
+            }
         }
 
         if (showShareStyleDialog) {
@@ -675,7 +711,7 @@ private fun ShareStyleDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Share style") },
+        title = { Text(stringResource(R.string.map_share_style_title)) },
         text = {
             Column {
                 ShareCardStyle.entries.forEach { style ->
@@ -692,12 +728,12 @@ private fun ShareStyleDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                style.label,
+                                stringResource(style.labelRes),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                style.blurb,
+                                stringResource(style.blurbRes),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -706,7 +742,7 @@ private fun ShareStyleDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.map_share_cancel)) } },
     )
 }
 
@@ -1111,10 +1147,11 @@ private fun PlacesMapView(
         }
     }
 
+    val mapDescription = stringResource(R.string.map_description)
     AndroidView(
         factory = { mapView },
         modifier = modifier.semantics {
-            contentDescription = "Map of the world. Tap a country or territory to select it."
+            contentDescription = mapDescription
         },
         update = {
             controller.applyStatuses(statuses, lens, regionActive)
@@ -1180,18 +1217,27 @@ private fun VisaLegend(
     noDataCount: Int,
     labeled: Boolean,
 ) {
+    // The combined bands, as painted: with two passports the primary's own counts
+    // would leave a drawn band without a legend entry.
+    val counts = remember(visa, secondVisa) { combinedBandCounts(visa, secondVisa) }
     Column {
         if (labeled && visa != null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 VisaBand.entries.forEach { band ->
-                    val count = visa.countByBand[band] ?: 0
-                    if (count > 0) CounterLegendRow(ramp.colorFor(band), count, band.label)
+                    val count = counts[band] ?: 0
+                    if (count > 0) {
+                        CounterLegendRow(
+                            ramp.colorFor(band),
+                            stringResource(R.string.map_legend_count_labeled, count, stringResource(band.labelRes)),
+                        )
+                    }
                 }
                 // Only shown when it paints something: DE's dataset has no gaps, so
                 // a row for a colour this passport never uses would be a riddle.
-                if (noDataCount > 0) CounterLegendRow(ramp.noData, noDataCount, "no data")
+                if (noDataCount > 0) CounterLegendRow(ramp.noData, stringResource(R.string.map_legend_no_data, noDataCount))
             }
         } else {
+            val collapsedSummary = visaLegendSummary(visa, noDataCount, secondVisa).asString()
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1200,20 +1246,24 @@ private fun VisaLegend(
                 // never say a visa lens is even showing. The expanded, tap-labelled
                 // rows already speak for themselves via CounterLegendRow's own text.
                 modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = visaLegendSummary(visa, noDataCount, secondVisa)
+                    contentDescription = collapsedSummary
                 },
             ) {
-                // Separated dots, like the travel legend: the five bands are a
+                // Separated dots, like the travel legend: the bands are a
                 // categorical set now, not an ordered scale, so nothing here should
-                // read as a sequence of adjacent steps.
+                // read as a sequence of adjacent steps. Empty bands get no dot, as in
+                // the expanded legend and visaLegendSummary: a dot matching no place
+                // (DE has no CHECK rows) would be a riddle.
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     VisaBand.entries.forEach { band ->
-                        Box(
-                            Modifier
-                                .size(10.dp)
-                                .clip(MaterialTheme.shapes.extraSmall)
-                                .background(ramp.colorFor(band))
-                        )
+                        if ((counts[band] ?: 0) > 0) {
+                            Box(
+                                Modifier
+                                    .size(10.dp)
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .background(ramp.colorFor(band))
+                            )
+                        }
                     }
                     if (noDataCount > 0) {
                         Box(
@@ -1225,14 +1275,18 @@ private fun VisaLegend(
                     }
                 }
                 Text(
-                    if (visa == null) "No visa data" else "${visa.visaFreeCount} visa-free",
+                    if (visa == null) {
+                        stringResource(R.string.map_visa_legend_none)
+                    } else {
+                        stringResource(R.string.map_visa_legend_free, counts[VisaBand.VISA_FREE] ?: 0)
+                    },
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
         if (visa != null) {
             Text(
-                if (secondVisa != null) asOfNotice(visa, secondVisa) else asOfNotice(visa),
+                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1279,27 +1333,33 @@ private fun RegionLegend(ramp: RegionRamp, land: Color, mode: RegionMode, stats:
                 }
             }
             Text(
-                if (mode == RegionMode.OFFICIAL) "Each colour is a region; stronger = more visited"
-                else "Each colour is a grouping; stronger = more visited",
+                stringResource(
+                    if (mode == RegionMode.OFFICIAL) R.string.map_region_legend_official
+                    else R.string.map_region_legend_informal
+                ),
                 style = MaterialTheme.typography.labelLarge,
             )
         }
         Text(
-            "$done of ${totals.size} " +
-                if (mode == RegionMode.OFFICIAL) "regions done" else "groupings done",
+            stringResource(
+                if (mode == RegionMode.OFFICIAL) R.string.map_region_done_official
+                else R.string.map_region_done_informal,
+                done,
+                totals.size,
+            ),
             style = MaterialTheme.typography.labelLarge,
         )
     }
 }
 
 @Composable
-private fun CounterLegendRow(color: Color, count: Int, label: String) {
+private fun CounterLegendRow(color: Color, text: String) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LegendDot(color)
-        Text("$count $label", style = MaterialTheme.typography.labelLarge)
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -1340,7 +1400,7 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "${info.been} / ${info.total} done",
+                stringResource(R.string.map_region_card_done, info.been, info.total),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 8.dp),
@@ -1350,8 +1410,11 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
 }
 
 /**
- * What a tap opens. Deliberately a card and not a modal sheet: the map stays
- * visible and interactive, so tapping a second country just swaps the card
+ * What a tap opens: a full-width banner over the bottom edge. The flag sits beside the
+ * name as a crisp thumbnail at its true aspect ratio, and the background is a diagonal
+ * gradient of the flag's own dominant colours, darkened until white text reads on it
+ * (plain dark for places without a flag). Deliberately not a modal sheet: the map stays
+ * visible and interactive, so tapping a second country just swaps the banner
  * instead of forcing a dismiss first.
  *
  * It carries no Close button either, for the same reason: a tap on open ocean
@@ -1371,46 +1434,84 @@ private fun SelectedPlaceCard(
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+    val flag = rememberPlaceFlag(place.code)
+    // The colours are always darkened for light text, so the content is themed dark
+    // (the app's own dark scheme, which the contrast maths is sized for) whatever the
+    // app theme is: chips and secondary text would otherwise be near-invisible over a
+    // flag in light mode. LocalContentColor is reset because the outer theme's dark ink
+    // would otherwise reach texts that name no colour.
+    MaterialTheme(colorScheme = BeyondBordersDark) {
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+    val colors = flag?.colors.orEmpty().map { Color(it) }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            // A plain Box, unlike the Card it replaced, does not consume touches: without
+            // this, taps on its empty areas fall through to the map beneath.
+            .pointerInput(Unit) {}
+            .then(
+                if (colors.size >= 2) Modifier.background(Brush.linearGradient(colors))
+                else Modifier.background(colors.firstOrNull() ?: BANNER_FALLBACK_COLOR)
+            )
+            .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                place.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                buildString {
-                    append(place.code)
-                    append(" · ")
-                    append(place.continent)
-                    // Shown only where it says something new: "Greenland (Denmark)"
-                    // is the point of this app, "France (France)" is noise.
-                    if (place.sovereign != place.name) {
-                        append(" · ")
-                        append(place.sovereign)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // No flag (or still decoding): no slot at all. With one, the slot is a
+                // fixed width so the text does not shift between a wide and a square flag.
+                flag?.let {
+                    val (w, h) = flagThumbSize(it.bitmap.width, it.bitmap.height, 64f, 40f)
+                    val shape = RoundedCornerShape(4.dp)
+                    Box(Modifier.width(64.dp), contentAlignment = Alignment.Center) {
+                        Image(
+                            bitmap = it.bitmap,
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .size(w.dp, h.dp)
+                                .clip(shape)
+                                .border(1.dp, Color.White.copy(alpha = 0.25f), shape),
+                        )
                     }
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                // Two lines, fixed: one line ellipsises the sovereign away, and
-                // the sovereign is the fact this app exists to surface — Sint
-                // Maarten being Dutch is the point, not decoration. minLines
-                // alongside maxLines pins the card's height at two lines
-                // regardless of which place is selected.
-                minLines = 2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+                    Spacer(Modifier.width(12.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                Text(
+                    place.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    buildString {
+                        append(place.code)
+                        append(" · ")
+                        append(place.continent)
+                        // Shown only where it says something new: "Greenland (Denmark)"
+                        // is the point of this app, "France (France)" is noise.
+                        if (place.sovereign != place.name) {
+                            append(" · ")
+                            append(place.sovereign)
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Two lines, fixed: one line ellipsises the sovereign away, and
+                    // the sovereign is the fact this app exists to surface — Sint
+                    // Maarten being Dutch is the point, not decoration. minLines
+                    // alongside maxLines pins the card's height at two lines
+                    // regardless of which place is selected.
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                }
+            }
             if (requirement != null) {
                 Text(
-                    requirementSummary(requirement, attributeTo),
+                    requirementSummaryText(requirement, attributeTo).asString(),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1427,7 +1528,7 @@ private fun SelectedPlaceCard(
                 }
                 if (requirement.confidence == VisaConfidence.LOW) {
                     Text(
-                        VisaConfidence.LOW.label,
+                        stringResource(VisaConfidence.LOW.labelRes),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -1438,11 +1539,9 @@ private fun SelectedPlaceCard(
                 // only a nudge to look it up, rather than the silent blank this
                 // used to leave on both the map and the card.
                 Text(
-                    if (hasSecondPassport) {
-                        "No data available for either passport — check official sources before travelling."
-                    } else {
-                        "No data available for this passport — check official sources before travelling."
-                    },
+                    stringResource(
+                        if (hasSecondPassport) R.string.map_no_data_either else R.string.map_no_data_this
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -1459,24 +1558,33 @@ private fun SelectedPlaceCard(
                     // once the card's padding is taken off, and a wrapped or
                     // scrolling row of three would hide one of the three answers
                     // behind a gesture.
-                    BounceFilterChip(
-                        selected = status == PlaceStatus.VISITED,
-                        label = "Been",
-                        onClick = { onToggle(PlaceStatus.VISITED) },
+                    //
+                    // Own colours rather than the theme's: the theme's grey outline
+                    // vanishes into a saturated flag red. A dark wash with a light rim
+                    // reads on any flag colour, and the selected chip inverts to white.
+                    val chipColors = FilterChipDefaults.filterChipColors(
+                        containerColor = Color.Black.copy(alpha = 0.3f),
+                        labelColor = Color.White,
+                        selectedContainerColor = Color.White,
+                        selectedLabelColor = BANNER_FALLBACK_COLOR,
                     )
-                    BounceFilterChip(
-                        selected = status == PlaceStatus.LIVED,
-                        label = "Lived",
-                        onClick = { onToggle(PlaceStatus.LIVED) },
+                    @Composable
+                    fun StatusChip(target: PlaceStatus, label: String) = BounceFilterChip(
+                        selected = status == target,
+                        label = label,
+                        onClick = { onToggle(target) },
+                        colors = chipColors,
+                        border = if (status == target) null
+                            else BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
                     )
-                    BounceFilterChip(
-                        selected = status == PlaceStatus.WISHLIST,
-                        label = "Want",
-                        onClick = { onToggle(PlaceStatus.WISHLIST) },
-                    )
+                    StatusChip(PlaceStatus.VISITED, stringResource(R.string.map_chip_been))
+                    StatusChip(PlaceStatus.LIVED, stringResource(R.string.map_chip_lived))
+                    StatusChip(PlaceStatus.WISHLIST, stringResource(R.string.map_chip_want))
                 }
             }
         }
+    }
+    }
     }
 }
 
@@ -1544,11 +1652,11 @@ internal fun mapLegendKind(
  * dot row actually draws, so the sentence never mentions a colour that is not on
  * screen.
  */
-internal fun travelLegendDescription(stats: TravelStats): String {
-    val parts = mutableListOf("${stats.visited} visited")
-    if (stats.lived > 0) parts.add("${stats.lived} lived")
-    if (stats.wishlist > 0) parts.add("${stats.wishlist} wishlisted")
-    return parts.joinToString(", ")
+internal fun travelLegendDescription(stats: TravelStats): UiText {
+    val parts = mutableListOf<UiText>(UiText.Res(R.string.map_legend_visited, stats.visited))
+    if (stats.lived > 0) parts.add(UiText.Res(R.string.map_legend_lived, stats.lived))
+    if (stats.wishlist > 0) parts.add(UiText.Res(R.string.map_legend_wishlisted, stats.wishlist))
+    return parts.reduce { joined, part -> UiText.Res(R.string.map_join_comma, joined, part) }
 }
 
 /**
@@ -1560,17 +1668,16 @@ internal fun visaLegendSummary(
     visa: VisaRegistry?,
     noDataCount: Int,
     secondVisa: VisaRegistry? = null,
-): String {
+): UiText {
     if (visa == null) {
-        return if (secondVisa != null) {
-            "Visa lens: no visa data for your passports"
-        } else {
-            "Visa lens: no visa data for this passport"
-        }
+        return UiText.Res(
+            if (secondVisa != null) R.string.map_visa_summary_none_second else R.string.map_visa_summary_none_single
+        )
     }
-    val bands = VisaBand.entries.count { (visa.countByBand[it] ?: 0) > 0 }
+    val counts = combinedBandCounts(visa, secondVisa)
+    val bands = VisaBand.entries.count { (counts[it] ?: 0) > 0 }
     val withNoData = if (noDataCount > 0) bands + 1 else bands
-    return "Visa lens: $withNoData bands shown, ${visa.visaFreeCount} visa-free"
+    return UiText.Plural(R.plurals.map_visa_summary, withNoData, withNoData, counts[VisaBand.VISA_FREE] ?: 0)
 }
 
 /**

@@ -3,7 +3,10 @@ package com.riedel.beyondborders.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -29,11 +32,16 @@ fun BounceFilterChip(
     onClick: () -> Unit,
     // For chips repeated down a list, where "Been" alone says nothing about which row.
     semanticsLabel: String? = null,
+    // For chips over a backdrop the theme doesn't know, such as the map banner's flag colours.
+    colors: SelectableChipColors? = null,
+    border: BorderStroke? = null,
 ) {
     val scale = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
     FilterChip(
         selected = selected,
+        colors = colors ?: FilterChipDefaults.filterChipColors(),
+        border = border ?: FilterChipDefaults.filterChipBorder(enabled = true, selected = selected),
         onClick = {
             onClick()
             scope.launch {

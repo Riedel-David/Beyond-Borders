@@ -68,8 +68,8 @@ internal object PlacesMapStyle {
      *
      * Added above the status fills so switching the lens on is a filter change rather
      * than a style rebuild. DE covers all 252 places; every other passport has real
-     * "honest gap" places these five bands don't cover at all — see
-     * [LAYER_VISA_NO_DATA], the sixth layer that paints those grey instead of letting
+     * "honest gap" places these six bands don't cover at all — see
+     * [LAYER_VISA_NO_DATA], the seventh layer that paints those grey instead of letting
      * [LAYER_FILL]'s unmarked land show through unexplained.
      */
     fun visaLayerId(band: VisaBand): String = "places-visa-${band.name.lowercase()}"
@@ -160,7 +160,7 @@ internal object PlacesMapStyle {
                     .withFilter(noPlaces())
             )
         }
-        // The sixth visa layer: places this passport's dataset has no answer for at
+        // The seventh visa layer: places this passport's dataset has no answer for at
         // all, painted grey instead of falling through to LAYER_FILL's unmarked land
         // — which looked identical to "not visited" and said nothing was wrong.
         builder = builder.withLayer(

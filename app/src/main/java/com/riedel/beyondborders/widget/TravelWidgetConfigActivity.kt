@@ -34,11 +34,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.lifecycleScope
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BeyondBordersApp
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.computeStats
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
@@ -165,7 +167,7 @@ private fun ConfigScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Text("What should the widget show?", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.widget_cfg_metric_title), style = MaterialTheme.typography.titleMedium)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 WidgetMetric.entries.forEachIndexed { index, option ->
                     SegmentedButton(
@@ -174,42 +176,59 @@ private fun ConfigScreen(
                         shape = SegmentedButtonDefaults.itemShape(index, WidgetMetric.entries.size),
                     ) {
                         Text(
-                            when (option) {
-                                WidgetMetric.COUNTRIES -> "Countries"
-                                WidgetMetric.PERCENT -> "Percent"
-                                WidgetMetric.CONTINENTS -> "Continents"
-                            }
+                            stringResource(
+                                when (option) {
+                                    WidgetMetric.COUNTRIES -> R.string.widget_cfg_metric_countries
+                                    WidgetMetric.PERCENT -> R.string.widget_cfg_metric_percent
+                                    WidgetMetric.CONTINENTS -> R.string.widget_cfg_metric_continents
+                                }
+                            )
                         )
                     }
                 }
             }
 
-            Text("Tapping the widget opens", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.widget_cfg_target_title), style = MaterialTheme.typography.titleMedium)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 WidgetTarget.entries.forEachIndexed { index, option ->
                     SegmentedButton(
                         selected = target == option,
                         onClick = { chosenTarget = option },
                         shape = SegmentedButtonDefaults.itemShape(index, WidgetTarget.entries.size),
-                    ) { Text(option.label) }
+                    ) {
+                        Text(
+                            stringResource(
+                                when (option) {
+                                    WidgetTarget.MAP -> R.string.widget_cfg_target_map
+                                    WidgetTarget.PASSPORT -> R.string.widget_cfg_target_passport
+                                    WidgetTarget.STATS -> R.string.widget_cfg_target_stats
+                                }
+                            )
+                        )
+                    }
                 }
             }
 
             Column {
-                Text("Card background", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.widget_cfg_background_title), style = MaterialTheme.typography.titleMedium)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (filledBackground) "Filled" else "Transparent")
+                    Text(
+                        stringResource(
+                            if (filledBackground) R.string.widget_cfg_background_filled
+                            else R.string.widget_cfg_background_transparent
+                        )
+                    )
                     Switch(checked = filledBackground, onCheckedChange = { filledBackground = it })
                 }
             }
 
             // Preview only: the launcher still picks the real tier from the placed widget's
             // size, so this shows what each grid size will look like once resized to it.
-            Text("Preview size", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.widget_cfg_preview_title), style = MaterialTheme.typography.titleMedium)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 PreviewSize.entries.forEachIndexed { index, option ->
                     SegmentedButton(
@@ -255,7 +274,7 @@ private fun ConfigScreen(
                 onClick = { onDone(metric, filledBackground, target) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Add widget")
+                Text(stringResource(R.string.widget_cfg_add))
             }
         }
     }

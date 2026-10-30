@@ -2,6 +2,7 @@ package com.riedel.beyondborders.ui.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -43,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BuildConfig
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.settings.Denominator
@@ -59,6 +62,8 @@ import com.riedel.beyondborders.settings.MapColors
 import com.riedel.beyondborders.settings.MapHue
 import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.ThemeMode
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
 
@@ -70,7 +75,12 @@ import com.riedel.beyondborders.ui.visa.PassportPickerButton
  * works.
  */
 @Composable
-fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    container: AppContainer,
+    placeCount: Int,
+    unMemberCount: Int,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val viewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.factory(
@@ -112,30 +122,32 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             .padding(horizontal = 16.dp),
     ) {
         Text(
-            "Settings",
+            stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
         )
 
-        Section("Appearance", "Dark mode follows the system unless you pick one.") {
+        Section(stringResource(R.string.settings_appearance_title), stringResource(R.string.settings_appearance_detail)) {
             ChoiceRow(
                 options = ThemeMode.entries,
                 selected = themeMode,
                 label = { mode ->
-                    when (mode) {
-                        ThemeMode.SYSTEM -> "System"
-                        ThemeMode.LIGHT -> "Light"
-                        ThemeMode.DARK -> "Dark"
-                    }
+                    stringResource(
+                        when (mode) {
+                            ThemeMode.SYSTEM -> R.string.settings_theme_system
+                            ThemeMode.LIGHT -> R.string.settings_theme_light
+                            ThemeMode.DARK -> R.string.settings_theme_dark
+                        },
+                    )
                 },
                 onSelect = viewModel::setThemeMode,
             )
         }
 
         Section(
-            "Passport",
-            "Which passport's visa answers the map and passport tab show.",
+            stringResource(R.string.settings_passport_title),
+            stringResource(R.string.settings_passport_detail),
         ) {
             PassportPickerButton(
                 selected = nationality,
@@ -148,13 +160,13 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     selected = null,
                     names = passportNames,
                     onSelect = viewModel::setSecondNationality,
-                    dialogTitle = "Second passport",
-                    placeholder = "Add second passport",
+                    dialogTitle = stringResource(R.string.settings_second_passport),
+                    placeholder = stringResource(R.string.settings_add_second_passport),
                     exclude = setOf(nationality),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    "Dual nationals see whichever of the two passports gives the easier answer",
+                    stringResource(R.string.settings_dual_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -162,7 +174,7 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             } else {
                 secondNationality?.let { secondPassport ->
                     Text(
-                        "Second passport",
+                        stringResource(R.string.settings_second_passport),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -171,58 +183,62 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                         selected = secondPassport,
                         names = passportNames,
                         onSelect = viewModel::setSecondNationality,
-                        dialogTitle = "Second passport",
+                        dialogTitle = stringResource(R.string.settings_second_passport),
                         exclude = setOf(nationality),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(4.dp))
                     TextButton(onClick = { viewModel.setSecondNationality(null) }) {
-                        Text("Remove second passport")
+                        Text(stringResource(R.string.settings_remove_second_passport))
                     }
                 }
             }
         }
 
-        Section("Haptics", "A short vibration when you mark or clear a place.") {
+        Section(stringResource(R.string.settings_haptics_title), stringResource(R.string.settings_haptics_detail)) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Vibrate on marking", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_haptics_toggle), style = MaterialTheme.typography.bodyMedium)
                 Switch(checked = hapticsEnabled, onCheckedChange = viewModel::setHapticsEnabled)
             }
         }
 
         Section(
-            "Map colours",
+            stringResource(R.string.settings_colours_title),
             // The swap is stated up front because it is the one thing about this
             // control that would otherwise look like a bug.
-            "Picking a colour another status already uses swaps the two, so no two " +
-                "statuses can end up the same.",
+            stringResource(R.string.settings_colours_detail),
         ) {
-            HueRow("Been", mapColors.visited) { viewModel.setMapHue(MapSlot.VISITED, it) }
-            HueRow("Lived", mapColors.lived) { viewModel.setMapHue(MapSlot.LIVED, it) }
-            HueRow("Want to", mapColors.wishlist) { viewModel.setMapHue(MapSlot.WISHLIST, it) }
+            HueRow(stringResource(R.string.settings_status_been), mapColors.visited) { viewModel.setMapHue(MapSlot.VISITED, it) }
+            HueRow(stringResource(R.string.settings_status_lived), mapColors.lived) { viewModel.setMapHue(MapSlot.LIVED, it) }
+            HueRow(stringResource(R.string.settings_status_want), mapColors.wishlist) { viewModel.setMapHue(MapSlot.WISHLIST, it) }
             // Hidden at the default, where it would be a button that does nothing.
             if (mapColors != MapColors.DEFAULT) {
-                TextButton(onClick = viewModel::resetMapColors) { Text("Reset to default colours") }
+                TextButton(onClick = viewModel::resetMapColors) { Text(stringResource(R.string.settings_colours_reset)) }
             }
         }
 
         Section(
-            "Counting places",
-            "\"How many countries have you been to\" has no one answer. Pick which " +
-                "one the passport tab counts against.",
+            stringResource(R.string.settings_counting_title),
+            stringResource(R.string.settings_counting_detail),
         ) {
             ChoiceRow(
                 options = Denominator.entries,
                 selected = denominator,
                 label = { d ->
                     when (d) {
-                        Denominator.ALL -> "All 252"
-                        Denominator.UN_MEMBER -> "195 UN"
-                        Denominator.INHABITED -> "Inhabited"
+                        // The counts come from the shared registry, which may not have loaded
+                        // yet: a bare label rather than "All 0".
+                        Denominator.ALL ->
+                            if (placeCount > 0) stringResource(R.string.settings_denominator_all, placeCount)
+                            else stringResource(R.string.settings_denominator_all_bare)
+                        Denominator.UN_MEMBER ->
+                            if (unMemberCount > 0) stringResource(R.string.settings_denominator_un, unMemberCount)
+                            else stringResource(R.string.settings_denominator_un_bare)
+                        Denominator.INHABITED -> stringResource(R.string.settings_denominator_inhabited)
                     }
                 },
                 onSelect = viewModel::setDenominator,
@@ -230,19 +246,18 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
         }
 
         Section(
-            "Map background",
-            "Ocean and unmarked land. A small, checked list rather than a colour " +
-                "wheel, so it stays readable against every status colour above.",
+            stringResource(R.string.settings_background_title),
+            stringResource(R.string.settings_background_detail),
         ) {
             BaseRow(mapBase, viewModel::setMapBase)
         }
 
-        Section("Your travel data", null) {
+        Section(stringResource(R.string.settings_data_title), null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(
                     onClick = { exportLauncher.launch(viewModel.suggestedFileName()) },
                     enabled = transfer !is TransferState.Busy,
-                ) { Text("Export") }
+                ) { Text(stringResource(R.string.settings_export)) }
                 OutlinedButton(
                     // Not filtered to application/json: providers hand .json files
                     // over as octet-stream often enough that a strict filter hides
@@ -250,11 +265,10 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     // a backup is rejected by TravelBackup.decode with a reason.
                     onClick = { importLauncher.launch(arrayOf("*/*")) },
                     enabled = transfer !is TransferState.Busy,
-                ) { Text("Import") }
+                ) { Text(stringResource(R.string.settings_import)) }
             }
             Text(
-                "As a JSON file you can keep anywhere. Importing merges it in: an " +
-                    "entry only wins if it is newer than what's already here.",
+                stringResource(R.string.settings_data_detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),
@@ -265,10 +279,9 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                     onClick = viewModel::previewSnapshotRestore,
                     enabled = transfer !is TransferState.Busy,
                     modifier = Modifier.padding(top = 12.dp),
-                ) { Text("Restore from Android's backup") }
+                ) { Text(stringResource(R.string.settings_restore_button)) }
                 Text(
-                    "Android's backup left a snapshot of your history on this " +
-                        "phone. Restoring merges it in, exactly like importing a file.",
+                    stringResource(R.string.settings_restore_detail),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -280,8 +293,8 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 TransferState.Busy -> LinearProgressIndicator(
                     Modifier.fillMaxWidth().padding(top = 12.dp)
                 )
-                is TransferState.Done -> TransferResult(state.message, isError = false, viewModel::dismissTransfer)
-                is TransferState.Failed -> TransferResult(state.message, isError = true, viewModel::dismissTransfer)
+                is TransferState.Done -> TransferResult(state.message.asString(), isError = false, viewModel::dismissTransfer)
+                is TransferState.Failed -> TransferResult(state.message.asString(), isError = true, viewModel::dismissTransfer)
             }
 
             // Picking a file only plans; nothing is written until this is confirmed.
@@ -290,22 +303,25 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             importPreview?.let { preview ->
                 AlertDialog(
                     onDismissRequest = viewModel::dismissImportPreview,
-                    title = { Text("Import this file?") },
+                    title = { Text(stringResource(R.string.settings_import_title)) },
                     text = { ImportPreviewSummary(preview.plan, preview.sampleNames) },
                     confirmButton = {
-                        TextButton(onClick = viewModel::confirmImportPreview) { Text("Import") }
+                        TextButton(onClick = viewModel::confirmImportPreview) {
+                            Text(stringResource(R.string.settings_import))
+                        }
                     },
                     dismissButton = {
-                        TextButton(onClick = viewModel::dismissImportPreview) { Text("Cancel") }
+                        TextButton(onClick = viewModel::dismissImportPreview) {
+                            Text(stringResource(R.string.settings_cancel))
+                        }
                     },
                 )
             }
         }
 
         Section(
-            "Danger zone",
-            "Clears every place you've marked as been, lived in or want to visit. " +
-                "Cannot be undone — export a backup first if there's any doubt.",
+            stringResource(R.string.settings_danger_title),
+            stringResource(R.string.settings_danger_detail),
             // Restrained rather than a full errorContainer fill, which would shout on
             // a screen visited for ordinary reasons too: a container tone distinct
             // from the neutral sections, plus a border/title/button that are
@@ -320,51 +336,44 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 enabled = reset !is TransferState.Busy,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) { Text("Delete everything") }
+            ) { Text(stringResource(R.string.settings_delete_everything)) }
 
             when (val state = reset) {
                 TransferState.Idle -> Unit
                 TransferState.Busy -> LinearProgressIndicator(
                     Modifier.fillMaxWidth().padding(top = 12.dp)
                 )
-                is TransferState.Done -> TransferResult(state.message, isError = false, viewModel::dismissReset)
-                is TransferState.Failed -> TransferResult(state.message, isError = true, viewModel::dismissReset)
+                is TransferState.Done -> TransferResult(state.message.asString(), isError = false, viewModel::dismissReset)
+                is TransferState.Failed -> TransferResult(state.message.asString(), isError = true, viewModel::dismissReset)
             }
 
             if (showConfirm) {
                 AlertDialog(
                     onDismissRequest = { showConfirm = false },
-                    title = { Text("Delete everything?") },
+                    title = { Text(stringResource(R.string.settings_delete_confirm_title)) },
                     text = {
-                        Text(
-                            "Every place you've marked, your passports and your display settings " +
-                                "are cleared from this phone, along with the snapshot " +
-                                "Android's backup keeps. " +
-                                "Google may still hold an earlier backup until " +
-                                "Android next runs one — Android's backup settings " +
-                                "can delete that now."
-                        )
+                        Text(stringResource(R.string.settings_delete_confirm_body))
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             showConfirm = false
                             viewModel.deleteEverything()
-                        }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                        }) { Text(stringResource(R.string.settings_delete), color = MaterialTheme.colorScheme.error) }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showConfirm = false }) { Text("Cancel") }
+                        TextButton(onClick = { showConfirm = false }) { Text(stringResource(R.string.settings_cancel)) }
                     },
                 )
             }
         }
 
-        Section("About", null) {
+        Section(stringResource(R.string.settings_about_title), null) {
             Text(
-                "BeyondBorders ${BuildConfig.VERSION_NAME}",
+                stringResource(R.string.settings_about_version, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                "Open source (GPL-3.0)",
+                stringResource(R.string.settings_about_open_source),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -372,32 +381,22 @@ fun SettingsScreen(container: AppContainer, modifier: Modifier = Modifier) {
             RepoLink()
             ReportProblemLink()
             Text(
-                "An independent app, not affiliated with or representing any government. " +
-                    "Visa data is a snapshot and can be out of date: confirm entry rules " +
-                    "with the official government source before you travel.",
+                stringResource(R.string.settings_about_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
             Text(
-                "Borders from Natural Earth (public domain), drawn with MapLibre. " +
-                    "The whole map is bundled in the app, so it works with no network " +
-                    "and no account.",
+                stringResource(R.string.settings_about_map),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
             var showLicences by remember { mutableStateOf(false) }
-            TextButton(onClick = { showLicences = true }) { Text("Open-source licences") }
+            TextButton(onClick = { showLicences = true }) { Text(stringResource(R.string.settings_licences_button)) }
             if (showLicences) LicencesDialog(onDismiss = { showLicences = false })
             Text(
-                "Android's own Auto Backup carries a snapshot of your history to " +
-                    "your Google account — the system makes that copy, the app " +
-                    "never uploads anything itself. A reinstalled or new phone " +
-                    "starts empty: nothing is put back until you tap Restore. The " +
-                    "database, your settings and a per-install id stay out of the " +
-                    "backup entirely. Switch it off in Android's backup settings " +
-                    "if you would rather it did not.",
+                stringResource(R.string.settings_about_backup),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),
@@ -451,7 +450,7 @@ private fun Section(
 private fun <T> ChoiceRow(
     options: List<T>,
     selected: T,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
 ) {
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -489,7 +488,7 @@ private fun HueRow(label: String, selected: MapHue, onSelect: (MapHue) -> Unit) 
                 Swatch(
                     color = Color(hue.argb(dark)),
                     isSelected = hue == selected,
-                    name = "$label: ${hue.displayName}",
+                    name = stringResource(R.string.settings_swatch_description, label, stringResource(hue.displayName)),
                     onClick = { onSelect(hue) },
                 )
             }
@@ -513,7 +512,7 @@ private fun BaseRow(selected: MapBase, onSelect: (MapBase) -> Unit) {
                 ocean = Color(base.oceanArgb(dark)),
                 land = Color(base.landArgb(dark)),
                 isSelected = base == selected,
-                name = base.displayName,
+                name = stringResource(base.displayName),
                 onClick = { onSelect(base) },
             )
         }
@@ -562,11 +561,11 @@ private fun BaseSwatch(ocean: Color, land: Color, isSelected: Boolean, name: Str
  * Display names, kept here with the other user-facing strings rather than on the
  * enum, for the same reason as [MapHue.displayName].
  */
-private val MapBase.displayName: String
-    get() = when (this) {
-        MapBase.DEFAULT -> "Default"
-        MapBase.SLATE -> "Slate"
-        MapBase.SAND -> "Sand"
+private val MapBase.displayName: Int
+    @StringRes get() = when (this) {
+        MapBase.DEFAULT -> R.string.settings_base_default
+        MapBase.SLATE -> R.string.settings_base_slate
+        MapBase.SAND -> R.string.settings_base_sand
     }
 
 @Composable
@@ -606,14 +605,14 @@ private fun Swatch(color: Color, isSelected: Boolean, name: String, onClick: () 
  * enum, which stays a data type the settings layer can persist without knowing
  * anything about words on a screen.
  */
-private val MapHue.displayName: String
-    get() = when (this) {
-        MapHue.AZURE -> "Azure"
-        MapHue.TEAL -> "Teal"
-        MapHue.GREEN -> "Green"
-        MapHue.ROSE -> "Rose"
-        MapHue.VIOLET -> "Violet"
-        MapHue.AMBER -> "Amber"
+private val MapHue.displayName: Int
+    @StringRes get() = when (this) {
+        MapHue.AZURE -> R.string.settings_hue_azure
+        MapHue.TEAL -> R.string.settings_hue_teal
+        MapHue.GREEN -> R.string.settings_hue_green
+        MapHue.ROSE -> R.string.settings_hue_rose
+        MapHue.VIOLET -> R.string.settings_hue_violet
+        MapHue.AMBER -> R.string.settings_hue_amber
     }
 
 /**
@@ -624,24 +623,24 @@ private val MapHue.displayName: String
 @Composable
 private fun ImportPreviewSummary(plan: BackupMerge.Plan, sampleNames: List<String>) {
     Column {
-        PreviewCountRow("Added", plan.added)
-        PreviewCountRow("Updated", plan.updated)
+        PreviewCountRow(stringResource(R.string.settings_preview_added), plan.added)
+        PreviewCountRow(stringResource(R.string.settings_preview_updated), plan.updated)
         // "Skipped" here is [plan.unchanged]: entries the file also has, but not
         // newer than what is already on this phone — the plan is built against
         // the rows as they stand right now, so this is also why a "nothing to
         // change" import can still happen.
-        PreviewCountRow("Skipped (already up to date)", plan.unchanged)
+        PreviewCountRow(stringResource(R.string.settings_preview_skipped), plan.unchanged)
         importPreviewSampleLine(plan, sampleNames)?.let { sample ->
             Text(
-                sample,
+                sample.asString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 10.dp),
             )
         }
-        importPreviewCaveat(plan)?.let { caveat ->
+        importPreviewCaveat(plan).takeIf { it.isNotEmpty() }?.let { issues ->
             Text(
-                caveat,
+                caveatSentence(issues),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 10.dp),
@@ -677,7 +676,7 @@ private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> U
                 MaterialTheme.colorScheme.onSurface
             },
         )
-        TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 4.dp)) { Text("OK") }
+        TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 4.dp)) { Text(stringResource(R.string.settings_ok)) }
     }
 }
 
@@ -687,19 +686,15 @@ private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> U
  * confirming an import. [sampleNames] is already capped and resolved to names by
  * the view model; this only decides whether there is a "and N more" tail.
  */
-internal fun importPreviewSampleLine(plan: BackupMerge.Plan, sampleNames: List<String>): String? {
+internal fun importPreviewSampleLine(plan: BackupMerge.Plan, sampleNames: List<String>): UiText? {
     val changed = plan.added + plan.updated
     if (changed == 0 || sampleNames.isEmpty()) return null
     val more = changed - sampleNames.size
-    return buildString {
-        append("e.g. ")
-        append(sampleNames.joinToString(", "))
-        if (more > 0) {
-            append(", and ")
-            append(more)
-            append(" more")
-        }
-        append(".")
+    val names = sampleNames.joinToString(", ")
+    return if (more > 0) {
+        UiText.Res(R.string.settings_preview_sample_more, names, more)
+    } else {
+        UiText.Res(R.string.settings_preview_sample, names)
     }
 }
 
@@ -708,32 +703,22 @@ internal fun importPreviewSampleLine(plan: BackupMerge.Plan, sampleNames: List<S
  * codes, statuses this build does not know, or rows that could not be read at all.
  * Rare in practice — a file from this app's own export never has any of them — but
  * dropping them silently would hide the reason a file did not import in full.
+ *
+ * Returns the individual issues, not one sentence: [caveatSentence] joins them, so
+ * the join happens where the language is known.
  */
-internal fun importPreviewCaveat(plan: BackupMerge.Plan): String? {
-    val issues = buildList {
-        if (plan.unknownCodes.isNotEmpty()) {
-            add(
-                "${plan.unknownCodes.size} place " +
-                    (if (plan.unknownCodes.size == 1) "code" else "codes") +
-                    " not recognised by this build",
-            )
-        }
-        if (plan.unknownStatuses.isNotEmpty()) {
-            add(
-                "${plan.unknownStatuses.size} " +
-                    (if (plan.unknownStatuses.size == 1) "entry" else "entries") +
-                    " with a status this build doesn't understand",
-            )
-        }
-        if (plan.unreadableRows > 0) {
-            add(
-                "${plan.unreadableRows} " +
-                    (if (plan.unreadableRows == 1) "row" else "rows") +
-                    " could not be read",
-            )
-        }
-    }
-    if (issues.isEmpty()) return null
-    return issues.joinToString(separator = "; ") { it }
-        .replaceFirstChar { it.uppercase() } + "."
+internal fun importPreviewCaveat(plan: BackupMerge.Plan): List<UiText> = buildList {
+    val codes = plan.unknownCodes.size
+    if (codes > 0) add(UiText.Plural(R.plurals.settings_caveat_codes, codes, codes))
+    val statuses = plan.unknownStatuses.size
+    if (statuses > 0) add(UiText.Plural(R.plurals.settings_caveat_statuses, statuses, statuses))
+    val rows = plan.unreadableRows
+    if (rows > 0) add(UiText.Plural(R.plurals.settings_caveat_unreadable, rows, rows))
+}
+
+@Composable
+private fun caveatSentence(issues: List<UiText>): String {
+    val joined = issues.map { it.asString() }.joinToString(separator = "; ")
+        .replaceFirstChar { it.uppercase() }
+    return stringResource(R.string.settings_preview_caveat, joined)
 }
