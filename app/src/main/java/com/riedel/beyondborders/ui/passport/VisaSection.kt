@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -236,7 +237,8 @@ private fun VisaSummaryCard(
             // CC BY-SA asks for a link to the licence and to what the data came from:
             // upstream's own page for the licence, and the Wikipedia article each
             // viewed passport's answers were read from.
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // A flow, so a link that does not fit moves down whole instead of wrapping its label.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
                 listOfNotNull(visa, secondVisa).forEach { v ->
                     v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
@@ -537,7 +539,9 @@ private fun LinkText(label: String, url: String) {
     val uriHandler = LocalUriHandler.current
     TextButton(
         onClick = { runCatching { uriHandler.openUri(url) } },
-        contentPadding = PaddingValues(vertical = 4.dp),
+        // Horizontal padding keeps a wrapped label's first glyphs out of the button's
+        // rounded corner, which clips them (the "V" of the dataset credit).
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelLarge)
     }
