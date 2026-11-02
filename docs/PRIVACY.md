@@ -8,6 +8,10 @@ and no `INTERNET` permission, so it cannot send data anywhere.
 **Data shared:** with no one. There are no third-party SDKs, advertisers or analytics providers. The only outside party involved is Google, through Android's optional Auto Backup (see below), and only if you have that switched on.
 
 What you enter (places visited, passport choice) is stored on your device only.
+Achievements are worked out from your map each time and store nothing of their own,
+apart from a list of which badges you have already seen, kept on the device. The app
+language (English or German) is a per-app locale that Android itself keeps in its own
+settings: the app stores no language setting, and choosing one involves no network.
 If Android's Auto Backup is enabled on your device, the app stages a snapshot of
 your data so Android can include it in your device backup and offer to restore it
 after a reinstall. That backup is handled by Google under Google's own terms; you
@@ -21,7 +25,7 @@ Android next runs one; you can delete that in Android's backup settings.
 Visa information is a bundled snapshot and is not legal advice; check official
 sources before travelling.
 
-Last updated: 2026-10-23, for version 0.7.17.
+Last updated: 2026-11-02, for version 0.8.0.
 
 Contact: beyondborders.app@gmail.com, or open an issue on this repository, or use the private
 [security advisory form](https://github.com/Riedel-David/Beyond-Borders/security/advisories/new)
