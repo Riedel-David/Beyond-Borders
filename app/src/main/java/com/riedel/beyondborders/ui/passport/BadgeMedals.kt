@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -83,8 +84,9 @@ internal fun MedalBadge(achievement: Achievement, onClick: () -> Unit, modifier:
     val fraction = ringFraction(achievement)
 
     val context = LocalContext.current
-    val title = remember(achievement.title, context) { achievement.title.asString(context) }
-    val description = remember(achievement.description, context) { achievement.description.asString(context) }
+    val config = LocalConfiguration.current
+    val title = remember(achievement.title, config) { achievement.title.asString(context) }
+    val description = remember(achievement.description, config) { achievement.description.asString(context) }
     val spoken = when {
         !unlocked -> stringResource(R.string.badge_spoken_locked, title, achievement.progress, achievement.target, description)
         isNew -> stringResource(R.string.badge_spoken_new, title, description)

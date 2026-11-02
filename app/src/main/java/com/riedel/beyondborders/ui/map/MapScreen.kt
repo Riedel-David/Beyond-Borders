@@ -86,6 +86,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -432,7 +433,11 @@ fun MapScreen(
                     MapLegendKind.COUNTER_LABELED, MapLegendKind.COUNTER_DOTS -> {
                         val compact = kind == MapLegendKind.COUNTER_DOTS
                         // Resolved here because the semantics block below is not composable.
-                        val legendDescription = travelLegendDescription(stats).asString()
+                        val legendContext = LocalContext.current
+                        val legendConfig = LocalConfiguration.current
+                        val legendDescription = remember(stats, legendConfig) {
+                            travelLegendDescription(stats).asString(legendContext)
+                        }
                         // Only the statuses actually on the map get an entry: this is a
                         // legend, so it counts each status strictly rather than showing
                         // the combined "been" total the passport leads with.
@@ -1274,7 +1279,10 @@ private fun VisaLegend(
             }
         } else {
             val context = LocalContext.current
-            val collapsedSummary = remember(visa, secondVisa, noDataCount, context) {
+            // MainActivity handles locale changes itself, so the context survives a
+            // language switch; the configuration is what changes.
+            val config = LocalConfiguration.current
+            val collapsedSummary = remember(visa, secondVisa, noDataCount, config) {
                 visaLegendSummary(visa, noDataCount, secondVisa).asString(context)
             }
             Row(
