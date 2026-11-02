@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +30,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -46,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -234,8 +238,12 @@ fun SettingsScreen(
         Section(stringResource(R.string.settings_language_title), stringResource(R.string.settings_language_detail)) {
             // Read at composition: setApplicationLocales recreates the activity, which
             // recomposes this with the new value.
+            // MainActivity handles the locale change itself (no recreate, so no black
+            // frame), which means nothing else would recompose this: depend on the
+            // configuration so the shown choice follows it.
+            LocalConfiguration.current
             val language = AppLanguage.fromTags(AppCompatDelegate.getApplicationLocales().toLanguageTags())
-            ChoiceRow(
+            DropdownRow(
                 options = AppLanguage.entries,
                 selected = language,
                 // Endonyms: each language names itself, so a wrong choice is still readable.
@@ -473,6 +481,42 @@ private fun Section(
                 Spacer(Modifier.height(10.dp))
             }
             content()
+        }
+    }
+}
+
+/**
+ * A one-line picker: the current choice with a caret, the rest in a menu. For options
+ * whose labels can run long (German at a large font scale) where a segmented row
+ * would wrap onto two lines.
+ */
+@Composable
+private fun <T> DropdownRow(
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(
+            onClick = { open = true },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+        ) {
+            Text(label(selected), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Text("\u25BE")
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(label(option)) },
+                    onClick = {
+                        open = false
+                        if (option != selected) onSelect(option)
+                    },
+                )
+            }
         }
     }
 }
