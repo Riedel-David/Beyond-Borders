@@ -85,6 +85,18 @@ settings, and removes the staged snapshot so there is nothing for a restore to o
 Google may still hold an earlier backup until Android next runs one, so a reinstall
 before that can bring the places back; Android's backup settings can delete that copy.
 
+## Language
+
+Settings → **Language** switches the app between English and German, or follows the
+phone. The choice is Android's per-app locale, so it also appears under the system's
+App languages and the app keeps no setting of its own. Every string has a German
+translation, a test fails if a key or a placeholder exists in only one language, and
+place, continent, region and grouping names come from the platform's own country names
+(English where it has none, such as for several territories). Search and the sorted
+lists use the localised names, so "Deutschland" finds Germany and sorts under D. The
+widget follows the language too. The change applies at once,
+without restarting the app.
+
 ## The stats screen, share cards and widget
 
 The passport card's headline number opens a stats screen: a bar per continent, the
@@ -106,6 +118,36 @@ it, and the tiles in a row beneath at 4×3. A box wide enough for tiles but too 
 the progress bar (a 3×2 on HyperOS, for one) gets a strip instead: the number with three
 one-line tiles beside it. Tapping a countries widget opens the map; percent and
 continents widgets open the stats screen.
+
+## The passport list
+
+Each row shows the place's flag as a thumbnail and one status chip: the current status
+(Been, Lived or Want to), or a muted "+" when there is none. Tapping it opens a menu
+with the three statuses; tapping the one already selected clears it. TalkBack reads a
+row as one item and offers the same choices as actions. The search field is a rounded
+filled bar with a clear button, and the visa summary keeps its links in one wrapping
+row.
+
+## The map controls
+
+The Search, Visa and Regions buttons sit together in one group, with a passport icon on
+the Visa button. The travel legend is labelled (Been, Lived, Want to) and a tap
+collapses it to coloured dots and bare counts. The visa lens uses its own
+palette, chosen to read on both the light and the dark base map rather than following
+the theme.
+
+## The home-screen widget settings
+
+The widget's configuration screen previews the widget at the size it will actually have
+on your home screen, and offers size chips (scrollable, so none is cut off) including a
+3×2 preset for HyperOS, whose launcher gives that size less height than other launchers.
+
+## Theme and type
+
+Surfaces in the light and dark themes use the app's own tint instead of the Material
+default lavender, including cards in Settings and the passport and visa summaries. Text
+uses a re-weighted type scale, and numbers in stats, counts and the legend use tabular
+figures so they do not jitter as they change.
 
 ## The selected place
 
