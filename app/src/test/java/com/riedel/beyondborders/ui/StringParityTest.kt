@@ -55,7 +55,7 @@ class StringParityTest {
         "widget_cfg_background_transparent", // same word in German
         "settings_ok", // "OK"
         "stats_hero_percent", "badge_rank_line", "share_stamp", // pure format strings
-        "visa_legend_item", "visa_dataset_credit", "visa_summary_with_days", "map_legend_count_labeled",
+        "visa_legend_item", "visa_dataset_credit", "visa_summary_with_days", "map_legend_count_labeled", "map_legend_chip",
         "map_join_comma", "backup_sentence_join", "settings_swatch_description", "settings_preview_caveat",
         "settings_about_version", // product name + version
         "geo_group_benelux", "geo_group_maghreb", "geo_group_indochina", // loanwords, same in German

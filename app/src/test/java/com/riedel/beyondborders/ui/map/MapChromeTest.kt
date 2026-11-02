@@ -9,20 +9,25 @@ class MapChromeTest {
 
     @Test
     fun `no mode control is selected when nothing is on`() {
-        assertEquals(emptySet<MapControl>(), selectedMapControls(false, false, RegionMode.OFF))
+        assertEquals(emptySet<MapControl>(), selectedMapControls(false, false, true, RegionMode.OFF))
     }
 
     @Test
     fun `each mode control is selected by its own state`() {
-        assertEquals(setOf(MapControl.SEARCH), selectedMapControls(true, false, RegionMode.OFF))
-        assertEquals(setOf(MapControl.VISA), selectedMapControls(false, true, RegionMode.OFF))
-        assertEquals(setOf(MapControl.REGIONS), selectedMapControls(false, false, RegionMode.OFFICIAL))
-        assertEquals(setOf(MapControl.REGIONS), selectedMapControls(false, false, RegionMode.INFORMAL))
+        assertEquals(setOf(MapControl.SEARCH), selectedMapControls(true, false, true, RegionMode.OFF))
+        assertEquals(setOf(MapControl.VISA), selectedMapControls(false, true, true, RegionMode.OFF))
+        assertEquals(setOf(MapControl.REGIONS), selectedMapControls(false, false, true, RegionMode.OFFICIAL))
+        assertEquals(setOf(MapControl.REGIONS), selectedMapControls(false, false, true, RegionMode.INFORMAL))
+    }
+
+    @Test
+    fun `the visa lens is not highlighted when the visa item is not offered`() {
+        assertEquals(emptySet<MapControl>(), selectedMapControls(false, true, false, RegionMode.OFF))
     }
 
     @Test
     fun `controls can be selected together`() {
-        assertEquals(MapControl.entries.toSet(), selectedMapControls(true, true, RegionMode.INFORMAL))
+        assertEquals(MapControl.entries.toSet(), selectedMapControls(true, true, true, RegionMode.INFORMAL))
     }
 
     private fun stats(visited: Int, lived: Int = 0, wishlist: Int = 0) = TravelStats(

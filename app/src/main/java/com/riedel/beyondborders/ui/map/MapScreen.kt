@@ -18,7 +18,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
@@ -226,7 +228,8 @@ fun MapScreen(
     val scope = rememberCoroutineScope()
     // rememberSaveable because the root disposes this screen on a tab switch (the
     // SaveableStateProvider above it restores these on return).
-    var counterLabeled by rememberSaveable { mutableStateOf(false) }
+    // Chips with names are the default; a tap collapses them to dots and bare counts.
+    var counterCompact by rememberSaveable { mutableStateOf(false) }
     var visaLegendLabeled by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -367,7 +370,7 @@ fun MapScreen(
                 !regionActive && (stats.been > 0 || stats.wishlist > 0) -> {
                     {
                         viewModel.vibrate()
-                        counterLabeled = !counterLabeled
+                        counterCompact = !counterCompact
                     }
                 }
                 else -> null
@@ -395,7 +398,7 @@ fun MapScreen(
                     lens = lens,
                     visaLabeled = visaLegendLabeled,
                     regionMode = regionMode,
-                    counterLabeled = counterLabeled,
+                    counterLabeled = !counterCompact,
                     been = stats.been,
                     wishlist = stats.wishlist,
                 ),
@@ -426,25 +429,18 @@ fun MapScreen(
                         stringResource(R.string.map_legend_nudge),
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    MapLegendKind.COUNTER_LABELED -> Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        CounterLegendRow(palette.visited, stringResource(R.string.map_legend_visited, stats.visited))
-                        if (stats.lived > 0) CounterLegendRow(palette.lived, stringResource(R.string.map_legend_lived, stats.lived))
-                        if (stats.wishlist > 0) {
-                            CounterLegendRow(palette.wishlist, stringResource(R.string.map_legend_wanted, stats.wishlist))
-                        }
-                    }
-                    MapLegendKind.COUNTER_DOTS -> {
+                    MapLegendKind.COUNTER_LABELED, MapLegendKind.COUNTER_DOTS -> {
+                        val compact = kind == MapLegendKind.COUNTER_DOTS
                         // Resolved here because the semantics block below is not composable.
                         val legendDescription = travelLegendDescription(stats).asString()
-                        // Only the statuses actually on the map get a chip: this is a
+                        // Only the statuses actually on the map get an entry: this is a
                         // legend, so it counts each status strictly rather than showing
                         // the combined "been" total the passport leads with.
                         FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 6.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
-                            // TalkBack would otherwise read the chips as separate
+                            itemVerticalAlignment = Alignment.CenterVertically,
+                            // TalkBack would otherwise read the entries as separate
                             // fragments; one sentence replaces them.
                             modifier = Modifier.clearAndSetSemantics {
                                 contentDescription = legendDescription
@@ -457,8 +453,12 @@ fun MapScreen(
                                         LegendStatus.LIVED -> palette.lived
                                         LegendStatus.WANTED -> palette.wishlist
                                     },
-                                    // Name and number only, so there is no sentence to translate.
-                                    text = "${stringResource(entry.status.labelRes)} ${entry.count}",
+                                    text = if (compact) {
+                                        "${entry.count}"
+                                    } else {
+                                        stringResource(R.string.map_legend_chip, stringResource(entry.status.labelRes), entry.count)
+                                    },
+                                    compact = compact,
                                 )
                             }
                         }
@@ -507,11 +507,11 @@ fun MapScreen(
             // passport's own search, on the map: it is not routed through the
             // [PlacesViewModel] query because the map flies the camera on a pick
             // rather than filtering a list.
-            val selectedControls = selectedMapControls(searchOpen, lens, regionMode)
+            val selectedControls = selectedMapControls(searchOpen, lens, visa != null, regionMode)
             MapControlGroup {
                 MapControlItem(
                     icon = Icons.Filled.Search,
-                    label = stringResource(if (searchOpen) R.string.map_search_close else R.string.map_search_open),
+                    label = stringResource(R.string.map_search_open),
                     selected = MapControl.SEARCH in selectedControls,
                     onClick = { viewModel.vibrate(); searchOpen = !searchOpen },
                 )
@@ -520,7 +520,7 @@ fun MapScreen(
                 if (visa != null) {
                     MapControlItem(
                         icon = Icons.Filled.Check,
-                        label = stringResource(if (lens) R.string.map_lens_travels else R.string.map_lens_visa),
+                        label = stringResource(R.string.map_lens_visa),
                         selected = MapControl.VISA in selectedControls,
                         onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
                     )
@@ -1237,9 +1237,9 @@ private fun MapPill(
  * is a snapshot, so every visa surface is required to say how old it is and to
  * point at an official source — the map's share of that is this line.
  *
- * A tap expands the dot row into one labelled row per band, same trick as the travel
- * legend's own [counterLabeled] toggle — a compact glance is the default, and the
- * words are one tap away rather than always taking the space.
+ * A tap expands the dot row into one labelled chip per band. The travel legend toggles
+ * the other way round (named chips by default, a tap collapses them to dots and bare
+ * counts); here the compact glance is the default and the words are one tap away.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -1280,7 +1280,7 @@ private fun VisaLegend(
                 // The band dots carry no number here, only colour, so without this
                 // TalkBack would skip straight past them to the aggregate count and
                 // never say a visa lens is even showing. The expanded, tap-labelled
-                // rows already speak for themselves via CounterLegendRow's own text.
+                // rows already speak for themselves via the chips' own text.
                 modifier = Modifier.clearAndSetSemantics {
                     contentDescription = collapsedSummary
                 },
@@ -1396,12 +1396,16 @@ private fun MapControlGroup(content: @Composable () -> Unit) {
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
         shadowElevation = 2.dp,
     ) {
-        Column(Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) { content() }
+        // IntrinsicSize.Max + fillMaxWidth items: every plate as wide as the widest label.
+        Column(
+            Modifier.padding(4.dp).width(IntrinsicSize.Max),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) { content() }
     }
 }
 
 /**
- * One control: icon plus label, 48 dp tall, with the active one on a
+ * One control: icon plus label (the control's name, never the action), 48 dp tall, with the active one on a
  * secondaryContainer plate. The label is the accessible name, so the icon is
  * decorative; [selected] is exposed to TalkBack as well as drawn.
  */
@@ -1416,9 +1420,7 @@ private fun MapControlItem(icon: ImageVector, label: String, selected: Boolean, 
         } else {
             MaterialTheme.colorScheme.onSurface
         },
-        modifier = Modifier
-            .heightIn(min = 48.dp)
-            .semantics { this.selected = selected; role = Role.Button },
+        modifier = Modifier.fillMaxWidth().semantics { this.selected = selected },
     ) {
         Row(
             Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 4.dp),
@@ -1431,32 +1433,24 @@ private fun MapControlItem(icon: ImageVector, label: String, selected: Boolean, 
     }
 }
 
-/** A legend entry as a small chip: colour swatch plus text. */
+/**
+ * A legend entry: colour swatch plus text. [compact] drops the chip plate so a bare
+ * count sits next to its dot.
+ */
 @Composable
-private fun LegendChip(color: Color, text: String) {
+private fun LegendChip(color: Color, text: String, compact: Boolean = false) {
     Surface(
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = if (compact) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Row(
-            Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            if (compact) Modifier else Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LegendDot(color)
             Text(text, style = MaterialTheme.typography.labelLarge)
         }
-    }
-}
-
-@Composable
-private fun CounterLegendRow(color: Color, text: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LegendDot(color)
-        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -1792,14 +1786,20 @@ internal fun changedRegionKeys(
 internal enum class MapControl { SEARCH, VISA, REGIONS }
 
 /** Which controls are currently "on": the search field open, the visa lens, a region heatmap. */
-internal fun selectedMapControls(searchOpen: Boolean, lens: Boolean, regionMode: RegionMode): Set<MapControl> =
+internal fun selectedMapControls(
+    searchOpen: Boolean,
+    lens: Boolean,
+    visaOffered: Boolean,
+    regionMode: RegionMode,
+): Set<MapControl> =
     buildSet {
         if (searchOpen) add(MapControl.SEARCH)
-        if (lens) add(MapControl.VISA)
+        // The Visa item exists only when the asset loaded; never highlight one that is not there.
+        if (lens && visaOffered) add(MapControl.VISA)
         if (regionMode != RegionMode.OFF) add(MapControl.REGIONS)
     }
 
-internal enum class LegendStatus(@androidx.annotation.StringRes val labelRes: Int) {
+internal enum class LegendStatus(@StringRes val labelRes: Int) {
     VISITED(R.string.map_legend_short_visited),
     LIVED(R.string.map_legend_short_lived),
     WANTED(R.string.map_legend_short_wanted),

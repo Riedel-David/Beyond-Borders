@@ -14,10 +14,10 @@
     <string name="map_legend_short_visited">Besucht</string>
     <string name="map_legend_short_lived">Gelebt</string>
     <string name="map_legend_short_wanted">Wunschliste</string>
+    <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Ort antippen zum Markieren</string>
     <string name="map_legend_visited">%1$d besucht</string>
     <string name="map_legend_lived">%1$d gelebt</string>
-    <string name="map_legend_wanted">%1$d gewünscht</string>
     <string name="map_legend_wishlisted">%1$d auf Wunschliste</string>
     <string name="map_legend_no_data">%1$d ohne Daten</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visumfrei". -->
@@ -45,11 +45,9 @@
     <!-- Map: controls -->
     <string name="map_controls_hide">Kartensteuerung ausblenden</string>
     <string name="map_controls_show">Kartensteuerung einblenden</string>
-    <string name="map_search_close">Schließen</string>
     <string name="map_search_open">Suche</string>
     <string name="map_search_label">Ort finden</string>
     <string name="map_search_no_matches">Keine Treffer</string>
-    <string name="map_lens_travels">Meine Reisen</string>
     <string name="map_lens_visa">Visum</string>
     <string name="map_regions_off">Regionen</string>
     <string name="map_regions_official">Regionen: UN</string>
