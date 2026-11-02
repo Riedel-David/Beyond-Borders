@@ -438,18 +438,14 @@ fun MapScreen(
                         // Only the statuses actually on the map get an entry: this is a
                         // legend, so it counts each status strictly rather than showing
                         // the combined "been" total the passport leads with.
-                        // A Column, not a FlowRow: the chips stack one under another,
-                        // left aligned, so the legend grows downward in its own
-                        // corner instead of sideways towards the controls.
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            horizontalAlignment = Alignment.Start,
-                            // TalkBack would otherwise read the entries as separate
-                            // fragments; one sentence replaces them.
-                            modifier = Modifier.clearAndSetSemantics {
-                                contentDescription = legendDescription
-                            },
-                        ) {
+                        // Labelled chips stack one under another (they are wide); the
+                        // collapsed dot+count form sits in one row (it is narrow).
+                        // TalkBack would otherwise read the entries as separate
+                        // fragments; one sentence replaces them.
+                        val legendSemantics = Modifier.clearAndSetSemantics {
+                            contentDescription = legendDescription
+                        }
+                        val legendChips: @Composable () -> Unit = {
                             legendEntries(stats).forEach { entry ->
                                 LegendChip(
                                     color = when (entry.status) {
@@ -465,6 +461,19 @@ fun MapScreen(
                                     compact = compact,
                                 )
                             }
+                        }
+                        if (compact) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = legendSemantics,
+                            ) { legendChips() }
+                        } else {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalAlignment = Alignment.Start,
+                                modifier = legendSemantics,
+                            ) { legendChips() }
                         }
                     }
                 }
