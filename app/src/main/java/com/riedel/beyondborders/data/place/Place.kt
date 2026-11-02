@@ -102,6 +102,7 @@ internal fun localizePlaces(
     for (p in places) {
         if (p.code in ISO_COUNTRIES) {
             displayCountry(p.code, locale)
+                ?.replace('\u2019', '\'')
                 ?.takeIf { it.isNotBlank() && !it.equals(p.code, ignoreCase = true) }
                 ?.let { byEnglish[p.englishName] = it; byCode[p.code] = it }
         }

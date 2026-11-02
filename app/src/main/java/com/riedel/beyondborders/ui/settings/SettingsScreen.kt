@@ -335,7 +335,7 @@ fun SettingsScreen(
                 AlertDialog(
                     onDismissRequest = viewModel::dismissImportPreview,
                     title = { Text(stringResource(R.string.settings_import_title)) },
-                    text = { ImportPreviewSummary(preview.plan, preview.sampleNames) },
+                    text = { ImportPreviewSummary(preview.plan, preview.sampleCodes.map { placeNames[it] ?: it }) },
                     confirmButton = {
                         TextButton(onClick = viewModel::confirmImportPreview) {
                             Text(stringResource(R.string.settings_import))

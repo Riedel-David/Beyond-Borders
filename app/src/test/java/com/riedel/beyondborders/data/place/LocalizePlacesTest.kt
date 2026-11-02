@@ -139,4 +139,15 @@ class LocalizePlacesTest {
         assertEquals(emptyList<String>(), missing)
         assertTrue(SOVEREIGN_CODES.values.all { it in codes })
     }
+
+    @Test
+    fun `every german name in the bundled data stays inside the map glyph range`() {
+        val arr = org.json.JSONArray(java.io.File("src/main/assets/places.json").readText())
+        val real = localizePlaces(
+            (0 until arr.length()).map { arr.getJSONObject(it) }.map { place(it.getString("code"), it.getString("name"), it.getString("sovereign")) },
+            german,
+        )
+        val bad = real.filter { p -> (p.name + p.sovereign).any { it.code > 0x1FF } }.map { "${it.code}:${it.name}" }
+        assertEquals(emptyList<String>(), bad)
+    }
 }
