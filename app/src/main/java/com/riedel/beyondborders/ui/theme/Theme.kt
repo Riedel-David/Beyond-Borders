@@ -59,6 +59,7 @@ fun BeyondBordersTheme(
     ) {
         MaterialTheme(
             colorScheme = if (dark) BeyondBordersDark else BeyondBordersLight,
+            typography = AppTypography,
             content = content,
         )
     }

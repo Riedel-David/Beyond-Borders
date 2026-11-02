@@ -31,6 +31,21 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +54,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -304,27 +318,33 @@ fun PassportScreen(
                         )
                     }
                 }
-                Row(
-                    Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(top = 4.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = grouping == Grouping.CONTINENT,
-                        onClick = { viewModel.setGrouping(Grouping.CONTINENT) },
-                        label = { Text(stringResource(R.string.passport_group_continent)) },
-                    )
-                    FilterChip(
-                        selected = grouping == Grouping.REGION,
-                        onClick = { viewModel.setGrouping(Grouping.REGION) },
-                        label = { Text(stringResource(R.string.passport_group_region)) },
-                    )
-                    FilterChip(
-                        selected = grouping == Grouping.ALPHABETICAL,
-                        onClick = { viewModel.setGrouping(Grouping.ALPHABETICAL) },
-                        label = { Text(stringResource(R.string.passport_group_alphabetical)) },
-                    )
+                // Grouping is a different kind of control from the filters above (it
+                // reorders the list, it does not narrow it), so it is a segmented
+                // button rather than a second row of chips that looks identical.
+                val groupings = listOf(
+                    Grouping.CONTINENT to R.string.passport_group_continent,
+                    Grouping.REGION to R.string.passport_group_region,
+                    Grouping.ALPHABETICAL to R.string.passport_group_alphabetical,
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)) {
+                    groupings.forEachIndexed { index, (option, label) ->
+                        SegmentedButton(
+                            selected = option == grouping,
+                            onClick = { viewModel.setGrouping(option) },
+                            shape = SegmentedButtonDefaults.itemShape(index, groupings.size),
+                            // No check mark: it would cost the width German labels need at large font scales.
+                            icon = {},
+                            label = {
+                                Text(
+                                    stringResource(label),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    // Up to two lines: a German label at 1.3x wraps rather than eliding.
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -417,13 +437,65 @@ internal fun SearchField(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQuery,
-        label = { Text(label) },
-        singleLine = true,
-        modifier = modifier.fillMaxWidth(),
-    )
+    // A filled pill rather than an outlined field: it reads as "search" at a glance and
+    // sits quietly above the list. Built from BasicTextField so the 48 dp height is real
+    // (TextField carries a 56 dp minimum), with the label as placeholder and a11y label.
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clip(CircleShape)
+            // Highest, not High: the map's search Card is surfaceContainerHigh, and a
+            // pill in the same colour would be invisible there.
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            // Tap anywhere on the pill, not just on the text, focuses the field.
+            .clickable(interactionSource = null, indication = null) { focusRequester.requestFocus() }
+            .padding(start = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box(Modifier.weight(1f).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) {
+                // Cleared semantics: the placeholder is only a visual hint; the field's
+                // own label (below) is what TalkBack reads, so it is not announced twice.
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQuery,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    focusManager.clearFocus()
+                    keyboard?.hide()
+                }),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+            )
+        }
+        if (query.isNotEmpty()) {
+            IconButton(onClick = { onQuery("") }) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear))
+            }
+        } else {
+            Spacer(Modifier.width(16.dp))
+        }
+    }
 }
 
 /**

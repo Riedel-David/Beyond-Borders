@@ -204,25 +204,34 @@ private fun VisaSummaryCard(
         ),
     ) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.Bottom) {
+            // Both headline figures in one wrapping row, so the card is one line shorter
+            // and a long German "easy" clause drops below the number at large font scales.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.Bottom,
+                itemVerticalAlignment = Alignment.Bottom,
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        "${totals.visaFree}",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        stringResource(R.string.visa_summary_visa_free_of, totals.answered),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+                    )
+                }
                 Text(
-                    "${totals.visaFree}",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    stringResource(R.string.visa_summary_visa_free_of, totals.answered),
-                    style = MaterialTheme.typography.bodyMedium,
+                    stringResource(R.string.visa_summary_easy, totals.easy),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp),
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
-            Text(
-                stringResource(R.string.visa_summary_easy, totals.easy),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             BandBar(visa, secondVisa, placesTotal, ramp, Modifier.padding(top = 12.dp))
             Text(
                 (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
@@ -230,15 +239,16 @@ private fun VisaSummaryCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 10.dp),
             )
-            // Attribution as a link rather than a line of small print: the licence
-            // asks for the credit, and someone checking an answer deserves to be able
-            // to reach the thing the answer came from.
-            LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
-            // CC BY-SA asks for a link to the licence and to what the data came from:
-            // upstream's own page for the licence, and the Wikipedia article each
-            // viewed passport's answers were read from.
-            // A flow, so a link that does not fit moves down whole instead of wrapping its label.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Attribution, licence and per-passport sources in one wrapping row of
+            // small text buttons rather than three lines: the licence asks for the
+            // credit and a link to the licence and to what each passport's answers were
+            // read from. A flow, so a link that does not fit moves down whole instead
+            // of wrapping its label.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
                 visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
                 listOfNotNull(visa, secondVisa).forEach { v ->
                     v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
@@ -543,7 +553,7 @@ private fun LinkText(label: String, url: String) {
         // rounded corner, which clips them (the "V" of the dataset credit).
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text(label, style = MaterialTheme.typography.labelMedium)
     }
 }
 
