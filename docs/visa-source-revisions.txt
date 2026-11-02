@@ -1,6 +1,6 @@
 # Which publication of the Visa-requirements dataset the committed visa
 # assets were built from. Written by tools/visa/build_visa.py on a full build.
-# index.json generated_at: 2026-10-30T15:07:24.943693+00:00
+# index.json generated_at: 2026-11-02T12:32:41.005665+00:00
 # index.json schema_version: 1.0.0
 # not shipped (fewer than 150 answers): XN
 # passport  source_revision (Wikipedia revision of its article)
@@ -8,7 +8,7 @@ AD 1345953817
 AE 1382211590
 AF 1376547486
 AG 1369134863
-AL 1382793891
+AL 1382895999
 AM 1380688618
 AO 1356522921
 AR 1375994875
@@ -83,7 +83,7 @@ HU 1379323426
 ID 1378378474
 IE 1379558037
 IL 1372634197
-IN 1381845023
+IN 1382948393
 IQ 1375302779
 IR 1381707571
 IS 1374272543
@@ -154,9 +154,9 @@ PY 1373040231
 QA 1365727565
 RO 1378880453
 RS 1379578462
-RU 1380020542
+RU 1383094589
 RW 1345822502
-SA 1374621826
+SA 1383137925
 SB 1348380394
 SC 1363220239
 SD 1379878292
