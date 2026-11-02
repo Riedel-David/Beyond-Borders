@@ -84,11 +84,16 @@ fun BeyondBordersRoot(
     val unMemberCount = remember(allPlaces) { allPlaces.count { it.unMember } }
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
-        var passportCodes by remember { mutableStateOf<List<String>>(emptyList()) }
-        LaunchedEffect(Unit) { passportCodes = container.visa.availablePassports().toList() }
-        val passportNames = remember(passportCodes, allPlaces) {
+        // English names straight from the repository, so the first frame never shows
+        // raw codes while the ViewModel's localized list is still loading.
+        var englishNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+        LaunchedEffect(Unit) {
+            englishNames = container.visa.availablePassports()
+                .associateWith { code -> container.places.place(code)?.name ?: code }
+        }
+        val passportNames = remember(englishNames, allPlaces) {
             val byCode = allPlaces.associate { it.code to it.name }
-            passportCodes.associateWith { code -> byCode[code] ?: code }
+            englishNames.mapValues { (code, english) -> byCode[code] ?: english }
         }
         WelcomeScreen(
             nationality = nationality,

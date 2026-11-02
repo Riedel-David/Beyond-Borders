@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.visa
 
+import com.riedel.beyondborders.data.place.foldForSearch
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -74,7 +75,7 @@ private fun PassportPickerDialog(
 ) {
     var query by remember { mutableStateOf("") }
     val options = remember(names, exclude) {
-        names.keys.filterNot { it in exclude }.sortedBy { names[it] ?: it }
+        sortedPassportCodes(names, exclude)
     }
     val filtered = remember(query, options, names) {
         if (query.isBlank()) {
@@ -127,3 +128,7 @@ private fun PassportPickerDialog(
         }
     }
 }
+
+/** Passport codes ordered by displayed name, accents folded so Ägypten files under A. */
+internal fun sortedPassportCodes(names: Map<String, String>, exclude: Set<String> = emptySet()): List<String> =
+    names.keys.filterNot { it in exclude }.sortedBy { (names[it] ?: it).foldForSearch() }

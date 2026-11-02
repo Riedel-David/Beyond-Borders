@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.settings
 
+import com.riedel.beyondborders.data.place.localizePlaces
 import android.content.ContentResolver
 import android.net.Uri
 import androidx.annotation.StringRes
@@ -302,7 +303,11 @@ class SettingsViewModel(
         // Codes, not names, are what the plan carries — resolved here because
         // "DE" means nothing to a user looking at a confirmation dialog.
         val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
-            .map { entry -> places.place(entry.code)?.name ?: entry.code }
+            .map { entry ->
+                places.place(entry.code)
+                    ?.let { localizePlaces(listOf(it), java.util.Locale.getDefault()).single().name }
+                    ?: entry.code
+            }
         pendingImportText = text
         pendingIsSnapshot = isSnapshot
         _importPreview.value = ImportPreview(plan, sampleNames)

@@ -795,6 +795,7 @@ private class PlacesMapController {
     private var appliedRegionActive = false
     private var appliedRegionOutline: Set<String> = emptySet()
     private var appliedLabelNames: Map<String, String> = emptyMap()
+    private var appliedPlaces: List<Place>? = null
 
     /**
      * Labels come from the bundled English GeoJSON; a different language is a
@@ -802,6 +803,8 @@ private class PlacesMapController {
      */
     fun applyLabels(places: List<Place>) {
         val style = style ?: return
+        if (places === appliedPlaces) return
+        appliedPlaces = places
         val names = places.filter { it.name != it.englishName }.associate { it.code to it.name }
         if (names == appliedLabelNames) return
         appliedLabelNames = names
@@ -830,6 +833,7 @@ private class PlacesMapController {
         appliedRegionOutline = emptySet()
         appliedRegionActive = false
         appliedLabelNames = emptyMap()
+        appliedPlaces = null
     }
 
     fun detach() {

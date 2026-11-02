@@ -96,24 +96,50 @@ internal fun localizePlaces(
     locale: Locale,
     displayCountry: (String, Locale) -> String? = ::platformCountryName,
 ): List<Place> {
-    if (locale.language == "en" || locale.language.isEmpty()) return places
-    val names = HashMap<String, String>()
+    if (locale.language !in LOCALIZED_LANGUAGES) return places
+    val byEnglish = HashMap<String, String>()
+    val byCode = HashMap<String, String>()
     for (p in places) {
         if (p.code in ISO_COUNTRIES) {
             displayCountry(p.code, locale)
                 ?.takeIf { it.isNotBlank() && !it.equals(p.code, ignoreCase = true) }
-                ?.let { names[p.englishName] = it }
+                ?.let { byEnglish[p.englishName] = it; byCode[p.code] = it }
         }
     }
     return places.map { p ->
-        val name = if (p.code in ISO_COUNTRIES) names[p.englishName] else null
-        p.copy(
-            name = name ?: p.englishName,
-            // A sovereign with no place of that exact English name stays English.
-            sovereign = names[p.englishSovereign] ?: p.englishSovereign,
-        )
+        // A sovereign with no matching place stays English.
+        val sovereign = byEnglish[p.englishSovereign]
+            ?: SOVEREIGN_CODES[p.englishSovereign]?.let(byCode::get)
+            ?: p.englishSovereign
+        p.copy(name = byCode[p.code] ?: p.englishName, sovereign = sovereign)
     }
 }
+
+/**
+ * Languages the app localizes place names for. Not every platform language: the
+ * bundled map glyphs cover Latin only (code points 0-511), so Japanese, Russian or
+ * Arabic names would render as blanks. Grows together with the glyph set.
+ */
+internal val LOCALIZED_LANGUAGES = setOf("de")
+
+/**
+ * Sovereign strings in the bundled data that are not any place's English name
+ * (Natural Earth's long forms), mapped to the place that is meant. A test checks
+ * the asset, so new data cannot leave one out silently.
+ */
+internal val SOVEREIGN_CODES: Map<String, String> = mapOf(
+    "United States of America" to "US",
+    "Ivory Coast" to "CI",
+    "Democratic Republic of the Congo" to "CD",
+    "eSwatini" to "SZ",
+    "Federated States of Micronesia" to "FM",
+    "Republic of Serbia" to "RS",
+    "São Tomé and Principe" to "ST",
+    "United Republic of Tanzania" to "TZ",
+    "East Timor" to "TL",
+    "Turkey" to "TR",
+    "Vatican" to "VA",
+)
 
 internal fun platformCountryName(code: String, locale: Locale): String? =
     Locale.Builder().setRegion(code).build().getDisplayCountry(locale)

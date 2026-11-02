@@ -110,4 +110,33 @@ class LocalizePlacesTest {
         assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTags("fr"))
         assertEquals("de", AppLanguage.GERMAN.tag)
     }
+
+    @Test
+    fun `languages the map glyphs cannot draw keep the english names`() {
+        for (tag in listOf("ja", "ru", "ar", "fr")) {
+            assertEquals(places, localizePlaces(places, Locale.forLanguageTag(tag), lookup))
+        }
+    }
+
+    @Test
+    fun `a territory whose sovereign has a long form still gets a localized sovereign`() {
+        val ps = listOf(
+            place("US", "United States"),
+            place("PR", "Puerto Rico", sovereign = "United States of America"),
+        )
+        val out = localizePlaces(ps, german) { code, _ -> mapOf("US" to "Vereinigte Staaten", "PR" to "Puerto Rico")[code] }
+        assertEquals("Vereinigte Staaten", out.first { it.code == "PR" }.sovereign)
+    }
+
+    @Test
+    fun `every sovereign in the bundled data matches a place name or is in the explicit map`() {
+        val arr = org.json.JSONArray(java.io.File("src/main/assets/places.json").readText())
+        val rows = (0 until arr.length()).map { arr.getJSONObject(it) }
+        val names = rows.map { it.getString("name") }.toSet()
+        val codes = rows.map { it.getString("code") }.toSet()
+        val missing = rows.map { it.getString("sovereign") }.toSet()
+            .filter { it !in names && it !in SOVEREIGN_CODES }
+        assertEquals(emptyList<String>(), missing)
+        assertTrue(SOVEREIGN_CODES.values.all { it in codes })
+    }
 }
