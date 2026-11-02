@@ -14,6 +14,10 @@
     <string name="passport_mark_lived">Mark %1$s as lived in</string>
     <string name="passport_mark_want">Mark %1$s as wanted</string>
     <string name="passport_clear">Clear</string>
+    <string name="passport_clear_status">Clear status of %1$s</string>
+    <string name="passport_status_chip_desc">%1$s, status: %2$s</string>
+    <string name="passport_status_unset">not set</string>
+    <string name="passport_change_status">Change status</string>
     <string name="passport_loading">Loading your places…</string>
     <string name="passport_no_match_query">No places match “%1$s”.</string>
     <string name="passport_no_match_filter">No places match the “%1$s” filter.</string>

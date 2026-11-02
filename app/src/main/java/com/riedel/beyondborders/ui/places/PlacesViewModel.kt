@@ -478,6 +478,11 @@ class PlacesViewModel(
         viewModelScope.launch { repo.toggleStatus(code, target) }
     }
 
+    /** Absolute counterpart of [toggle] for menus: NONE clears. */
+    fun setStatus(code: String, status: PlaceStatus) {
+        viewModelScope.launch { repo.setStatus(code, status) }
+    }
+
     companion object {
         private const val TAG = "PlacesViewModel"
 
