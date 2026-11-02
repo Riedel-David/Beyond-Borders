@@ -306,13 +306,13 @@ class PlacesLogicTest {
             ContinentStat("Antarctica", been = 0, total = 5),
         )
         // Europe is 4 away, Africa is 53 away, Antarctica is untouched and skipped.
-        assertEquals(UiText.Plural(R.plurals.places_nudge, 4, 4, "Europe"), almostFinishedNudgeText(continents))
+        assertEquals(UiText.Plural(R.plurals.places_nudge, 4, 4, geoNameText("Europe")), almostFinishedNudgeText(continents))
     }
 
     @Test
     fun `the nudge says place, singular, with one to go`() {
         val continents = listOf(ContinentStat("Oceania", been = 13, total = 14))
-        assertEquals(UiText.Plural(R.plurals.places_nudge, 1, 1, "Oceania"), almostFinishedNudgeText(continents))
+        assertEquals(UiText.Plural(R.plurals.places_nudge, 1, 1, geoNameText("Oceania")), almostFinishedNudgeText(continents))
     }
 
     @Test
@@ -331,7 +331,7 @@ class PlacesLogicTest {
             ContinentStat("Africa", been = 1, total = 54),
         )
         // Africa is 1/54, a far worse ratio than Europe's 40/44.
-        assertEquals(UiText.Res(R.string.places_least_covered, "Africa", 1, 54), leastCoveredContinentText(continents))
+        assertEquals(UiText.Res(R.string.places_least_covered, geoNameText("Africa"), 1, 54), leastCoveredContinentText(continents))
     }
 
     @Test
@@ -342,7 +342,7 @@ class PlacesLogicTest {
             ContinentStat("Antarctica", been = 1, total = 2),
         )
         // All three are 50% - Antarctica wins on the smaller been count.
-        assertEquals(UiText.Res(R.string.places_least_covered, "Antarctica", 1, 2), leastCoveredContinentText(continents))
+        assertEquals(UiText.Res(R.string.places_least_covered, geoNameText("Antarctica"), 1, 2), leastCoveredContinentText(continents))
     }
 
     @Test
@@ -351,7 +351,7 @@ class PlacesLogicTest {
             ContinentStat("Europe", been = 1, total = 44),
             ContinentStat("Antarctica", been = 0, total = 0),
         )
-        assertEquals(UiText.Res(R.string.places_least_covered, "Europe", 1, 44), leastCoveredContinentText(continents))
+        assertEquals(UiText.Res(R.string.places_least_covered, geoNameText("Europe"), 1, 44), leastCoveredContinentText(continents))
     }
 
     @Test

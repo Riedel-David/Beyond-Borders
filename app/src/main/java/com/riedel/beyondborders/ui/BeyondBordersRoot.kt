@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,30 +76,27 @@ fun BeyondBordersRoot(
     val placesViewModel: PlacesViewModel = viewModel(
         factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
     )
-    val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
     // Every change of the configuration's first locale, including one made from the
     // system's per-app-language screen, re-derives the place names.
-    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
-    LaunchedEffect(locale) { placesViewModel.setLocale(locale) }
+    val locale = LocalConfiguration.current.locales[0]
+    // Not a LaunchedEffect: that runs after the first composition, so the retained
+    // ViewModel (still on the old locale) drew one frame in the old language. This is an
+    // idempotent StateFlow write, kept in `remember` so it happens once per locale and,
+    // placed directly after the ViewModel is obtained, before any of its state is
+    // collected below. Not a SideEffect, which would run only after those reads.
+    remember(locale) { placesViewModel.setLocale(locale) }
+    val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
+    val passportNames by placesViewModel.passportNames.collectAsStateWithLifecycle()
+    val englishNames by placesViewModel.englishPassportNames.collectAsStateWithLifecycle()
     val placeCount = allPlaces.size
     val unMemberCount = remember(allPlaces) { allPlaces.count { it.unMember } }
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
-        // English names straight from the repository, so the first frame never shows
-        // raw codes while the ViewModel's localized list is still loading.
-        var englishNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-        LaunchedEffect(Unit) {
-            englishNames = container.visa.availablePassports()
-                .associateWith { code -> container.places.place(code)?.name ?: code }
-        }
-        val passportNames = remember(englishNames, allPlaces) {
-            val byCode = allPlaces.associate { it.code to it.name }
-            englishNames.mapValues { (code, english) -> byCode[code] ?: english }
-        }
         WelcomeScreen(
             nationality = nationality,
             onNationalityChange = container.settings::setNationality,
             passportNames = passportNames,
+            englishNames = englishNames,
             placeCount = placeCount,
             unMemberCount = unMemberCount,
             onGetStarted = container.settings::setHasSeenWelcome,
@@ -165,7 +163,7 @@ fun BeyondBordersRoot(
                         )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
-                        SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount, placeNames = placeNames)
+                        SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount, placeNames = placeNames, passportNames = passportNames, englishNames = englishNames)
                     }
                 }
             }

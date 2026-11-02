@@ -59,6 +59,7 @@ fun WelcomeScreen(
     nationality: String?,
     onNationalityChange: (String) -> Unit,
     passportNames: Map<String, String>,
+    englishNames: Map<String, String>,
     placeCount: Int,
     unMemberCount: Int,
     onGetStarted: () -> Unit,
@@ -131,6 +132,7 @@ fun WelcomeScreen(
                 PassportPickerButton(
                     selected = nationality,
                     names = passportNames,
+                    englishNames = englishNames,
                     onSelect = onNationalityChange,
                     modifier = Modifier.padding(top = 12.dp),
                 )
