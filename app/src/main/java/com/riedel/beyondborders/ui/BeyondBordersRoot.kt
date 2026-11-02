@@ -76,14 +76,24 @@ fun BeyondBordersRoot(
         factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
     )
     val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
+    // Every change of the configuration's first locale, including one made from the
+    // system's per-app-language screen, re-derives the place names.
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    LaunchedEffect(locale) { placesViewModel.setLocale(locale) }
     val placeCount = allPlaces.size
     val unMemberCount = remember(allPlaces) { allPlaces.count { it.unMember } }
     if (!hasSeenWelcome) {
         val nationality by container.settings.nationality.collectAsStateWithLifecycle()
-        var passportNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+        // English names straight from the repository, so the first frame never shows
+        // raw codes while the ViewModel's localized list is still loading.
+        var englishNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
         LaunchedEffect(Unit) {
-            val codes = container.visa.availablePassports()
-            passportNames = codes.associateWith { code -> container.places.place(code)?.name ?: code }
+            englishNames = container.visa.availablePassports()
+                .associateWith { code -> container.places.place(code)?.name ?: code }
+        }
+        val passportNames = remember(englishNames, allPlaces) {
+            val byCode = allPlaces.associate { it.code to it.name }
+            englishNames.mapValues { (code, english) -> byCode[code] ?: english }
         }
         WelcomeScreen(
             nationality = nationality,
@@ -97,6 +107,7 @@ fun BeyondBordersRoot(
         return
     }
 
+    val placeNames = remember(allPlaces) { allPlaces.associate { it.code to it.name } }
     var selected by rememberSaveable { mutableIntStateOf(Tab.MAP.ordinal) }
     var openStats by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
@@ -154,7 +165,7 @@ fun BeyondBordersRoot(
                         )
                     }
                     Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
-                        SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount)
+                        SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount, placeNames = placeNames)
                     }
                 }
             }

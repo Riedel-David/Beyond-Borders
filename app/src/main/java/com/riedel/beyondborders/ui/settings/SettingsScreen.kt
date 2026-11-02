@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.ui.settings
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -79,6 +81,7 @@ fun SettingsScreen(
     container: AppContainer,
     placeCount: Int,
     unMemberCount: Int,
+    placeNames: Map<String, String>,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -101,7 +104,11 @@ fun SettingsScreen(
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
-    val passportNames by viewModel.passportNames.collectAsStateWithLifecycle()
+    val englishPassportNames by viewModel.passportNames.collectAsStateWithLifecycle()
+    // Localized names win; the ViewModel's English ones cover the moment before the registry loads.
+    val passportNames = remember(englishPassportNames, placeNames) {
+        englishPassportNames.mapValues { (code, english) -> placeNames[code] ?: english }
+    }
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
@@ -221,6 +228,30 @@ fun SettingsScreen(
             }
         }
 
+        Section(stringResource(R.string.settings_language_title), stringResource(R.string.settings_language_detail)) {
+            // Read at composition: setApplicationLocales recreates the activity, which
+            // recomposes this with the new value.
+            val language = AppLanguage.fromTags(AppCompatDelegate.getApplicationLocales().toLanguageTags())
+            ChoiceRow(
+                options = AppLanguage.entries,
+                selected = language,
+                // Endonyms: each language names itself, so a wrong choice is still readable.
+                label = { option ->
+                    when (option) {
+                        AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
+                        AppLanguage.ENGLISH -> "English"
+                        AppLanguage.GERMAN -> "Deutsch"
+                    }
+                },
+                onSelect = { option ->
+                    AppCompatDelegate.setApplicationLocales(
+                        if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
+                        else LocaleListCompat.forLanguageTags(option.tag),
+                    )
+                },
+            )
+        }
+
         Section(
             stringResource(R.string.settings_counting_title),
             stringResource(R.string.settings_counting_detail),
@@ -304,7 +335,7 @@ fun SettingsScreen(
                 AlertDialog(
                     onDismissRequest = viewModel::dismissImportPreview,
                     title = { Text(stringResource(R.string.settings_import_title)) },
-                    text = { ImportPreviewSummary(preview.plan, preview.sampleNames) },
+                    text = { ImportPreviewSummary(preview.plan, preview.sampleCodes.map { placeNames[it] ?: it }) },
                     confirmButton = {
                         TextButton(onClick = viewModel::confirmImportPreview) {
                             Text(stringResource(R.string.settings_import))

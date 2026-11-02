@@ -49,10 +49,11 @@ sealed interface TransferState {
 /**
  * The confirmation dialog between picking a file and actually importing it.
  *
- * [sampleNames] are resolved here, not in the screen, because [plan] only carries
- * place codes and "DE" means nothing to a user deciding whether to trust a file.
+ * [sampleCodes] are capped here but resolved to names in the screen, from the same
+ * localized places as the rest of the UI: [plan] only carries codes, and "DE" means
+ * nothing to a user deciding whether to trust a file.
  */
-data class ImportPreview(val plan: BackupMerge.Plan, val sampleNames: List<String>)
+data class ImportPreview(val plan: BackupMerge.Plan, val sampleCodes: List<String>)
 
 /**
  * Preferences, plus getting the travel history in and out of the app.
@@ -299,13 +300,10 @@ class SettingsViewModel(
      */
     private suspend fun previewText(text: String, isSnapshot: Boolean) {
         val plan = places.previewBackup(text)
-        // Codes, not names, are what the plan carries — resolved here because
-        // "DE" means nothing to a user looking at a confirmation dialog.
-        val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
-            .map { entry -> places.place(entry.code)?.name ?: entry.code }
+        val sampleCodes = plan.apply.take(PREVIEW_SAMPLE_SIZE).map { it.code }
         pendingImportText = text
         pendingIsSnapshot = isSnapshot
-        _importPreview.value = ImportPreview(plan, sampleNames)
+        _importPreview.value = ImportPreview(plan, sampleCodes)
         _transfer.value = TransferState.Idle
     }
 
@@ -496,4 +494,26 @@ internal fun failureText(t: Throwable, @StringRes fallback: Int): UiText = when 
     t is BackupFormatException -> t.userText
     t.message != null -> UiText.Plain(t.message!!)
     else -> UiText.Res(fallback)
+}
+
+/**
+ * The language picker's three choices. Not stored in SettingsStore: Android keeps the
+ * per-app locale itself, and the picker reads it back from AppCompat.
+ */
+internal enum class AppLanguage(val tag: String) {
+    SYSTEM(""),
+    ENGLISH("en"),
+    GERMAN("de");
+
+    companion object {
+        /**
+         * Maps the language tags of the current application locales ("" when unset,
+         * possibly "de-DE") onto an option. A language the picker does not offer, such
+         * as one chosen in the system's own screen, reads as [SYSTEM].
+         */
+        fun fromTags(tags: String): AppLanguage {
+            val language = tags.substringBefore(',').substringBefore('-').lowercase()
+            return entries.firstOrNull { it != SYSTEM && it.tag == language } ?: SYSTEM
+        }
+    }
 }
