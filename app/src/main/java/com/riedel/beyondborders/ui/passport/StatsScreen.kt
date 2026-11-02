@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.map.flagAssetPath
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.asString
@@ -101,6 +102,7 @@ fun StatsScreen(
     val upNext = remember(achievements) { nextUp(achievements) }
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val flagFiles = remember { runCatching { context.assets.list("flags")?.toSet() }.getOrNull().orEmpty() }
     var celebrated by rememberSaveable { mutableStateOf(false) }
     // Keyed on the badges themselves, not just non-emptiness: statuses start as an
     // empty map, so the first pass can see every badge locked and persist an empty set.
@@ -149,6 +151,9 @@ fun StatsScreen(
                 placesVisited = placesVisited,
                 badgesUnlocked = badgesUnlocked,
                 badgesTotal = achievements.size,
+                flagCodes = remember(places, statuses, flagFiles) {
+                    heroFlagCodes(places, statuses, hasFlag = { code -> flagAssetPath(code)?.substringAfter('/')?.let { it in flagFiles } == true })
+                },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             )
 

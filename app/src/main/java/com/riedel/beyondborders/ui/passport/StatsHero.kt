@@ -1,6 +1,15 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import com.riedel.beyondborders.data.place.Place
+import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.map.rememberPlaceFlag
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +28,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -51,6 +61,7 @@ internal fun StatsHero(
     badgesUnlocked: Int,
     badgesTotal: Int,
     modifier: Modifier = Modifier,
+    flagCodes: List<String> = emptyList(),
 ) {
     val rank = rankFor(placesVisited)
     val rankTitle = rank.title.asString()
@@ -60,9 +71,11 @@ internal fun StatsHero(
         R.string.stats_hero_description,
         stats.percent, stats.been, stats.total, rankTitle, rankProgress, badgesLine,
     )
-    val container = MaterialTheme.colorScheme.surfaceVariant
+    val container = MaterialTheme.colorScheme.surfaceContainerHigh
     val onContainer = MaterialTheme.colorScheme.onSurfaceVariant
-    val track = MaterialTheme.colorScheme.surface
+    // The old track was the page colour, which read as white on the card. A tint of the
+    // card's own text colour is visible on any palette, dynamic colour included.
+    val track = lerp(container, onContainer, 0.22f)
     val progress = MaterialTheme.colorScheme.primary
 
     Column(
@@ -77,6 +90,7 @@ internal fun StatsHero(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        if (flagCodes.isNotEmpty()) FlagStrip(flagCodes, Modifier.padding(bottom = 12.dp))
         Box(Modifier.size(RingDiameter), contentAlignment = Alignment.Center) {
             Ring(RingDiameter, RingStrokeWidth, stats.percent / 100f, track, progress)
             // Sized from dp, not sp: the ring interior is fixed, so the number inside it
@@ -136,5 +150,49 @@ private fun Ring(diameter: Dp, strokeWidth: Dp, fraction: Float, track: Color, p
         val stroke = Stroke(width = strokePx, cap = StrokeCap.Round)
         drawArc(track, -90f, 360f, false, topLeft, arcSize, style = stroke)
         if (fraction > 0f) drawArc(progress, -90f, 360f * fraction.coerceAtMost(1f), false, topLeft, arcSize, style = stroke)
+    }
+}
+
+private const val HeroFlagCount = 6
+
+/**
+ * Which flags dress the hero: lived places first, then visited ones, each group by code
+ * so the strip does not reshuffle between visits. [hasFlag] says whether a bundled flag
+ * file exists for a code (Northern Cyprus has a code but no flag); a place without one
+ * would leave a permanent hole.
+ */
+internal fun heroFlagCodes(
+    places: List<Place>,
+    statuses: Map<String, PlaceStatus>,
+    max: Int = HeroFlagCount,
+    hasFlag: (String) -> Boolean = { true },
+): List<String> =
+    places.filter { statuses[it.code]?.isBeen == true && hasFlag(it.code) }
+        .sortedWith(compareBy<Place> { statuses[it.code] != PlaceStatus.LIVED }.thenBy { it.code })
+        .take(max)
+        .map { it.code }
+
+/** A row of small flags above the ring. Fixed-size frames, so a flag that is still decoding leaves no jump. */
+@Composable
+private fun FlagStrip(codes: List<String>, modifier: Modifier = Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        codes.forEach { FlagChip(it) }
+    }
+}
+
+@Composable
+private fun FlagChip(code: String) {
+    val flag = rememberPlaceFlag(code)
+    val shape = RoundedCornerShape(4.dp)
+    val frame = Modifier.width(40.dp).height(28.dp).clip(shape)
+    if (flag == null) {
+        Box(frame.background(MaterialTheme.colorScheme.surfaceContainerHighest))
+    } else {
+        Image(
+            bitmap = flag.bitmap,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = frame.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+        )
     }
 }
