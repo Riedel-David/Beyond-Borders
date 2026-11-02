@@ -74,8 +74,6 @@ internal fun iconFor(group: AchievementGroup): Int = when (group) {
     AchievementGroup.WISHLIST -> R.drawable.ic_badge_heart
 }
 
-private val CircleSize = 40.dp
-private val LockSize = 16.dp
 private val Collapsible = setOf(AchievementGroup.REGIONS, AchievementGroup.GROUPS)
 
 /**
@@ -190,122 +188,13 @@ private fun CollapsibleHeader(text: String, expanded: Boolean, onToggle: () -> U
 
 @Composable
 private fun BadgeRows(badges: List<Achievement>, onOpen: (Achievement) -> Unit, newIds: Set<String> = emptySet()) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        badges.chunked(2).forEach { pair ->
-            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                pair.forEach { AchievementBadge(it, { onOpen(it) }, Modifier.weight(1f).fillMaxHeight(), isNew = it.id in newIds) }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-/**
- * Unlocked: the group's tint with its icon in a filled circle. Locked: the neutral
- * container with the same icon muted, a lock mark and a progress bar. Text keeps full
- * strength either way: dimming it is what made the locked cards unreadable before.
- */
-@Composable
-private fun AchievementBadge(achievement: Achievement, onClick: () -> Unit, modifier: Modifier = Modifier, isNew: Boolean = false) {
-    val unlocked = achievement.unlocked
-    val scheme = MaterialTheme.colorScheme
-    val dark = scheme.surface.luminance() < 0.5f
-    val tone = badgeTone(achievement.group)
-    val accent = Color(if (dark) tone.accentDark else tone.accentLight)
-    val container = if (unlocked) Color(if (dark) tone.containerDark else tone.containerLight) else scheme.surfaceVariant
-    val content = if (unlocked) Color(if (dark) InkDark else InkLight) else scheme.onSurfaceVariant
-    val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
-    // One spoken line per badge: the visual state (colour, "x / y", progress bar) is
-    // otherwise read as loose fragments, and the bar says nothing at all.
-    val title = achievement.title.asString()
-    val description = achievement.description.asString()
-    val spoken = when {
-        !unlocked -> stringResource(R.string.badge_spoken_locked, title, achievement.progress, achievement.target, description)
-        isNew -> stringResource(R.string.badge_spoken_new, title, description)
-        else -> stringResource(R.string.badge_spoken_unlocked, title, description)
-    }
-    Column(
-        modifier
-            .semantics(mergeDescendants = true) { contentDescription = spoken }
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(role = Role.Button, onClickLabel = stringResource(R.string.badge_show_details), onClick = onClick)
-            .background(container, RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(CircleSize + LockSize / 4)) {
-                Box(
-                    Modifier
-                        .size(CircleSize)
-                        .background(if (unlocked) accent else scheme.surface, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painterResource(iconFor(achievement.group)),
-                        contentDescription = null,
-                        tint = if (unlocked) glyph else content,
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-                if (!unlocked) {
-                    Icon(
-                        painterResource(R.drawable.ic_badge_lock),
-                        contentDescription = null,
-                        tint = content,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(LockSize)
-                            .background(container, CircleShape)
-                            .padding(1.dp),
-                    )
-                }
-            }
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = content,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Text(description, style = MaterialTheme.typography.bodySmall, color = content)
-        if (unlocked) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.badge_unlocked), style = MaterialTheme.typography.labelMedium, color = content)
-                if (isNew) {
-                    Text(
-                        stringResource(R.string.badge_new),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = glyph,
-                        modifier = Modifier
-                            .background(accent, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
-            }
-        } else {
-            Text(
-                stringResource(R.string.badge_progress_slash, achievement.progress, achievement.target),
-                style = MaterialTheme.typography.labelMedium,
-                color = content,
-            )
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(5.dp)
-                    .background(scheme.surface, RoundedCornerShape(3.dp))
-            ) {
-                val fraction = (achievement.progress.toFloat() / achievement.target.coerceAtLeast(1)).coerceIn(0f, 1f)
-                if (fraction > 0f) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth(fraction)
-                            .height(5.dp)
-                            .background(accent, RoundedCornerShape(3.dp))
-                    )
-                }
+    // Plain rows rather than a lazy grid: the Stats screen already scrolls vertically,
+    // and a lazy grid inside it would need a bounded height.
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        medalRows(badges).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { MedalBadge(it, { onOpen(it) }, Modifier.weight(1f), isNew = it.id in newIds) }
+                repeat(BadgeColumns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
