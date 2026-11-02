@@ -2,4 +2,5 @@
     <string name="app_name">Beyond Borders</string>
     <string name="widget_label">Travel count</string>
     <string name="widget_wordmark">BEYOND BORDERS</string>
+    <string name="search_clear">Clear search</string>
 </resources>

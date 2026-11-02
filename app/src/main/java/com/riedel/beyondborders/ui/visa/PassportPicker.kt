@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.data.place.foldForSearch
 import com.riedel.beyondborders.ui.asString
 
 /**
@@ -40,6 +41,7 @@ fun PassportPickerButton(
     names: Map<String, String>,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    englishNames: Map<String, String> = emptyMap(),
     dialogTitle: String = stringResource(R.string.picker_choose_passport),
     placeholder: String = stringResource(R.string.picker_choose_passport),
     exclude: Set<String> = emptySet(),
@@ -51,6 +53,7 @@ fun PassportPickerButton(
     if (open) {
         PassportPickerDialog(
             names = names,
+            englishNames = englishNames,
             selected = selected,
             onSelect = {
                 onSelect(it)
@@ -66,6 +69,7 @@ fun PassportPickerButton(
 @Composable
 private fun PassportPickerDialog(
     names: Map<String, String>,
+    englishNames: Map<String, String>,
     selected: String?,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -74,17 +78,10 @@ private fun PassportPickerDialog(
 ) {
     var query by remember { mutableStateOf("") }
     val options = remember(names, exclude) {
-        names.keys.filterNot { it in exclude }.sortedBy { names[it] ?: it }
+        sortedPassportCodes(names, exclude)
     }
-    val filtered = remember(query, options, names) {
-        if (query.isBlank()) {
-            options
-        } else {
-            options.filter { code ->
-                (names[code] ?: code).contains(query, ignoreCase = true) ||
-                    code.contains(query, ignoreCase = true)
-            }
-        }
+    val filtered = remember(query, options, names, englishNames) {
+        filterPassportCodes(options, query, names, englishNames)
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -125,5 +122,31 @@ private fun PassportPickerDialog(
                 }
             }
         }
+    }
+}
+
+/** Passport codes ordered by displayed name, accents folded so Ägypten files under A. */
+internal fun sortedPassportCodes(names: Map<String, String>, exclude: Set<String> = emptySet()): List<String> =
+    names.keys.filterNot { it in exclude }
+        .map { code -> (names[code] ?: code).foldForSearch() to code }
+        .sortedWith(compareBy({ it.first }, { it.second }))
+        .map { it.second }
+
+/**
+ * The codes matching [query] on the shown name, the English name (so "Germany" finds
+ * Deutschland) or the code, all accent- and case-folded ("agypten" finds Ägypten).
+ */
+internal fun filterPassportCodes(
+    options: List<String>,
+    query: String,
+    names: Map<String, String>,
+    englishNames: Map<String, String> = emptyMap(),
+): List<String> {
+    if (query.isBlank()) return options
+    val needle = query.trim().foldForSearch()
+    return options.filter { code ->
+        (names[code] ?: code).foldForSearch().contains(needle) ||
+            (englishNames[code]?.foldForSearch()?.contains(needle) == true) ||
+            code.foldForSearch().contains(needle)
     }
 }

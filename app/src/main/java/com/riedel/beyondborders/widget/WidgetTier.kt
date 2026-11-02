@@ -1,5 +1,8 @@
 package com.riedel.beyondborders.widget
 
+import android.appwidget.AppWidgetManager
+import android.os.Bundle
+
 /** How much the widget shows, picked from its size in dp. */
 enum class WidgetTier {
     /** Hero number and label on the brand background, with a small logo in the corner. */
@@ -60,3 +63,22 @@ internal fun widgetTier(minWidthDp: Int, minHeightDp: Int): WidgetTier = when {
     minWidthDp >= NAMED_MIN_WIDTH_DP && minHeightDp >= NAMED_MIN_HEIGHT_DP -> WidgetTier.NAMED
     else -> WidgetTier.COMPACT
 }
+
+/** What a widget with no reported size is treated as; the provider and the preview share it. */
+private const val DEFAULT_WIDTH_DP = 180
+private const val DEFAULT_HEIGHT_DP = 110
+
+/**
+ * The (width, height) in dp a placed widget is laid out for. A missing or zero MIN_WIDTH or
+ * MIN_HEIGHT falls back to 180x110 (COMPACT). The provider and the config screen's preview
+ * both call this, so the tier the preview starts on is the one the launcher gets.
+ */
+internal fun widgetSizeDp(minWidthDp: Int, minHeightDp: Int): Pair<Int, Int> =
+    (if (minWidthDp > 0) minWidthDp else DEFAULT_WIDTH_DP) to
+        (if (minHeightDp > 0) minHeightDp else DEFAULT_HEIGHT_DP)
+
+/** [widgetSizeDp] read from an AppWidget options bundle. */
+internal fun widgetSizeDp(options: Bundle?): Pair<Int, Int> = widgetSizeDp(
+    options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0) ?: 0,
+    options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0) ?: 0,
+)

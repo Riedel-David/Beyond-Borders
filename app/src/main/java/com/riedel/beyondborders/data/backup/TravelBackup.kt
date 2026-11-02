@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.data.backup
 
+import androidx.annotation.StringRes
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.UiText
@@ -133,29 +134,20 @@ object TravelBackup {
         val root = try {
             JSONObject(text)
         } catch (e: JSONException) {
-            throw BackupFormatException("This file is not JSON.", UiText.Res(R.string.backup_not_json), e)
+            throw BackupFormatException(BackupFormatReason.NOT_JSON, cause = e)
         }
 
         val format = root.optString("format")
         if (format != FORMAT) {
-            throw BackupFormatException(
-                "This is not a BeyondBorders backup file.",
-                UiText.Res(R.string.backup_wrong_format),
-            )
+            throw BackupFormatException(BackupFormatReason.WRONG_FORMAT)
         }
         val version = root.optInt("version", 0)
         if (version > VERSION) {
-            throw BackupFormatException(
-                "This backup was written by a newer version of BeyondBorders (format $version).",
-                UiText.Res(R.string.backup_newer_version, version),
-            )
+            throw BackupFormatException(BackupFormatReason.NEWER_VERSION, version)
         }
 
         val array = root.optJSONArray("places")
-            ?: throw BackupFormatException(
-                "The backup has no places in it.",
-                UiText.Res(R.string.backup_no_places),
-            )
+            ?: throw BackupFormatException(BackupFormatReason.NO_PLACES)
 
         val entries = ArrayList<Entry>(array.length())
         val unknownStatuses = ArrayList<String>()
@@ -222,12 +214,26 @@ object TravelBackup {
         if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 }
 
+/** Why a file is not importable; the wording lives in resources so it follows the app's language. */
+enum class BackupFormatReason(@StringRes val res: Int) {
+    NOT_JSON(R.string.backup_not_json),
+    WRONG_FORMAT(R.string.backup_wrong_format),
+    NEWER_VERSION(R.string.backup_newer_version),
+    NO_PLACES(R.string.backup_no_places),
+}
+
 /**
- * The file is not something this app can import, with a reason fit to show a user:
- * [message] is for logs and tests; [userText] is what the settings screen shows.
+ * The file is not something this app can import. [reason] (and [version] for a newer
+ * file) is all it carries; [userText] maps it to the text the settings screen shows.
  */
-class BackupFormatException(message: String, val userText: UiText, cause: Throwable? = null) :
-    Exception(message, cause)
+class BackupFormatException(
+    val reason: BackupFormatReason,
+    val version: Int = 0,
+    cause: Throwable? = null,
+) : Exception("${reason.name} (format $version)", cause) {
+    val userText: UiText
+        get() = if (reason == BackupFormatReason.NEWER_VERSION) UiText.Res(reason.res, version) else UiText.Res(reason.res)
+}
 
 /**
  * A written backup and enough of a summary to tell the user what went into it.

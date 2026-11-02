@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made German draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Map: share feedback -->
+    <string name="map_share_failed">Karte konnte nicht geteilt werden</string>
+    <string name="map_share_retry">Nochmal</string>
+    <string name="map_not_ready">Karte noch nicht bereit</string>
+    <string name="map_share_action">Teilen</string>
+    <string name="map_share_style_title">Darstellung</string>
+    <string name="map_share_cancel">Abbrechen</string>
+    <string name="map_description">Weltkarte. Land oder Gebiet antippen, um es auszuwählen.</string>
+
+    <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Besucht</string>
+    <string name="map_legend_short_lived">Gelebt</string>
+    <string name="map_legend_short_wanted">Wunschliste</string>
+    <string name="map_legend_chip">%1$s %2$d</string>
+    <string name="map_legend_nudge">Ort antippen zum Markieren</string>
+    <string name="map_legend_visited">%1$d besucht</string>
+    <string name="map_legend_lived">%1$d gelebt</string>
+    <string name="map_legend_wishlisted">%1$d auf Wunschliste</string>
+    <string name="map_legend_no_data">%1$d ohne Daten</string>
+    <!-- A band label supplied by the visa data, with its count: "12 Visumfrei". -->
+    <string name="map_legend_count_labeled">%1$d %2$s</string>
+    <!-- Joins two spoken legend phrases. -->
+    <string name="map_join_comma">%1$s, %2$s</string>
+
+    <!-- Map: visa legend -->
+    <string name="map_visa_legend_none">Keine Visumdaten</string>
+    <string name="map_visa_legend_free">%1$d visumfrei</string>
+    <string name="map_visa_summary_none_second">Visum-Ansicht: keine Visumdaten für die Reisepässe</string>
+    <string name="map_visa_summary_none_single">Visum-Ansicht: keine Visumdaten für diesen Reisepass</string>
+    <plurals name="map_visa_summary">
+        <item quantity="one">Visum-Ansicht: %1$d Kategorie angezeigt, %2$d visumfrei</item>
+        <item quantity="other">Visum-Ansicht: %1$d Kategorien angezeigt, %2$d visumfrei</item>
+    </plurals>
+
+    <!-- Map: region legend and card -->
+    <string name="map_region_legend_official">Jede Farbe ist eine Region; kräftiger = mehr besucht</string>
+    <string name="map_region_legend_informal">Jede Farbe ist eine Gruppe; kräftiger = mehr besucht</string>
+    <string name="map_region_done_official">%1$d von %2$d Regionen abgeschlossen</string>
+    <string name="map_region_done_informal">%1$d von %2$d Gruppen abgeschlossen</string>
+    <string name="map_region_card_done">%1$d / %2$d fertig</string>
+
+    <!-- Map: controls -->
+    <string name="map_controls_hide">Kartensteuerung ausblenden</string>
+    <string name="map_controls_show">Kartensteuerung einblenden</string>
+    <string name="map_search_open">Suche</string>
+    <string name="map_search_label">Ort finden</string>
+    <string name="map_search_no_matches">Keine Treffer</string>
+    <string name="map_lens_visa">Visum</string>
+    <string name="map_regions_off">Regionen</string>
+    <string name="map_regions_official">Regionen: UN</string>
+    <string name="map_regions_informal">Regionen: benannt</string>
+
+    <!-- Map: selected place card -->
+    <string name="map_no_data_either">Keine Daten für beide Reisepässe – vor der Reise bei offiziellen Quellen prüfen.</string>
+    <string name="map_no_data_this">Keine Daten für diesen Reisepass – vor der Reise bei offiziellen Quellen prüfen.</string>
+    <string name="map_chip_been">Besucht</string>
+    <string name="map_chip_lived">Gelebt</string>
+    <string name="map_chip_want">Wunsch</string>
+
+    <!-- Share cards (drawn onto a canvas) -->
+    <string name="share_style_bar_label">Beschriftungsleiste</string>
+    <string name="share_style_bar_blurb">Logo und Zahlen am unteren Rand</string>
+    <string name="share_style_stamp_label">Eckabzeichen</string>
+    <string name="share_style_stamp_blurb">Kompaktes Abzeichen oben links</string>
+    <string name="share_style_stats_label">Statistikkarte</string>
+    <string name="share_style_stats_blurb">Nur die Zahlen, ohne Karte</string>
+    <string name="share_of_the_world_caps">DER WELT</string>
+    <string name="share_of_the_world">der Welt</string>
+    <string name="share_stamp">%1$d%% · %2$d/%3$d</string>
+    <plurals name="share_detail">
+        <item quantity="one">%1$d von %2$d · %3$d Kontinent</item>
+        <item quantity="other">%1$d von %2$d · %3$d Kontinente</item>
+    </plurals>
+    <string name="share_tile_places_been">BESUCHT</string>
+    <string name="share_tile_continents">KONTINENTE</string>
+    <string name="share_tile_lived">GELEBT</string>
+    <string name="share_tile_wishlist">WUNSCHLISTE</string>
+
+    <!-- Passport filters and stats lines built in PlacesViewModel -->
+    <string name="places_filter_all">Alle</string>
+    <string name="places_filter_been">Besucht</string>
+    <string name="places_filter_lived">Gelebt</string>
+    <string name="places_filter_want">Wunsch</string>
+    <string name="places_filter_none">Noch nicht</string>
+    <string name="places_mode_travel">Wo ich war</string>
+    <string name="places_mode_visa">Wohin ich kann</string>
+    <string name="places_visa_filter_all">Alle</string>
+    <string name="places_visa_filter_easy">Ohne Botschaft</string>
+    <string name="places_visa_filter_wishlist_easy">Wunschliste, leicht</string>
+    <string name="places_visa_filter_long_stay">90+ Tage</string>
+    <string name="places_section_uninhabited">Unbewohnt</string>
+    <plurals name="places_nudge">
+        <item quantity="one">%1$d Ort bis %2$s komplett</item>
+        <item quantity="other">%1$d Orte bis %2$s komplett</item>
+    </plurals>
+    <string name="places_least_covered">%1$s – %2$d von %3$d</string>
+    <plurals name="places_wishlist_easy">
+        <item quantity="one">%1$d von %2$d Orten auf der Wunschliste ohne Botschaftstermin</item>
+        <item quantity="other">%1$d von %2$d Orten auf der Wunschliste ohne Botschaftstermin</item>
+    </plurals>
+    <string name="places_coverage">%1$d%% der Landfläche, %2$d%% der Bevölkerung der Welt</string>
+
+    <!-- Widget configuration screen -->
+    <string name="widget_label_places_been">BESUCHT</string>
+    <string name="widget_label_of_the_world">DER WELT</string>
+    <string name="widget_label_continents">KONTINENTE</string>
+    <string name="widget_cfg_metric_title">Was soll das Widget zeigen?</string>
+    <string name="widget_cfg_metric_countries">Länder</string>
+    <string name="widget_cfg_metric_percent">Prozent</string>
+    <string name="widget_cfg_metric_continents">Kontinente</string>
+    <string name="widget_cfg_target_title">Tippen auf das Widget öffnet</string>
+    <string name="widget_cfg_target_map">Karte</string>
+    <string name="widget_cfg_target_passport">Reisepass</string>
+    <string name="widget_cfg_target_stats">Statistik</string>
+    <string name="widget_cfg_background_title">Widget-Hintergrund</string>
+    <string name="widget_cfg_background_filled">Gefüllt</string>
+    <string name="widget_cfg_background_transparent">Transparent</string>
+    <string name="widget_cfg_preview_title">Vorschaugröße</string>
+    <string name="widget_cfg_add">Widget hinzufügen</string>
+</resources>

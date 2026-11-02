@@ -45,6 +45,17 @@ class PlaceRepositoryToggleTest {
     }
 
     @Test
+    fun `setStatus is absolute and NONE clears even when the stored status differs`() = runBlocking {
+        repo.toggleStatus("DE", PlaceStatus.VISITED)
+        repo.setStatus("DE", PlaceStatus.WISHLIST)
+        assertEquals(mapOf("DE" to PlaceStatus.WISHLIST), repo.statuses.first())
+        repo.setStatus("DE", PlaceStatus.WISHLIST)
+        assertEquals(mapOf("DE" to PlaceStatus.WISHLIST), repo.statuses.first())
+        repo.setStatus("DE", PlaceStatus.NONE)
+        assertEquals(emptyMap<String, PlaceStatus>(), repo.statuses.first())
+    }
+
+    @Test
     fun `asking for a different status replaces it rather than clearing it`() = runBlocking {
         repo.toggleStatus("DE", PlaceStatus.VISITED)
         assertEquals(PlaceStatus.WISHLIST, repo.toggleStatus("DE", PlaceStatus.WISHLIST))

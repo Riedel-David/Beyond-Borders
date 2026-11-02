@@ -1,5 +1,7 @@
 package com.riedel.beyondborders.data.place
 
+import java.util.Locale
+
 /**
  * A place is the unit of "I have been there" — one polygon on the map, one row in
  * the passport list, one tap to toggle.
@@ -37,9 +39,20 @@ data class Place(
     val areaKm2: Long = 0,
     /** Natural Earth's own population estimate, ~2019. */
     val popEst: Long = 0,
+    /**
+     * The bundled English wording, kept when [name] has been localized so search can
+     * still match it ("Germany" finds Deutschland). Equal to [name] until
+     * [localizePlaces] swaps the display name.
+     */
+    val englishName: String = name,
+    /** Same idea for [sovereign]. */
+    val englishSovereign: String = sovereign,
 ) {
     /** Case- and diacritic-insensitive haystack for the passport search field. */
-    val searchKey: String = "${name.foldForSearch()} ${code.lowercase()} ${sovereign.foldForSearch()}"
+    val searchKey: String = listOf(name, englishName, code, sovereign, englishSovereign)
+        .map { it.foldForSearch() }
+        .distinct()
+        .joinToString(" ")
 
     /**
      * How the passport list orders and files this place.
@@ -68,3 +81,68 @@ fun String.foldForSearch(): String =
         .replace(DIACRITICS, "")
 
 private val DIACRITICS = "\\p{Mn}+".toRegex()
+
+/**
+ * Swaps [Place.name] and [Place.sovereign] for the platform's wording in [locale].
+ *
+ * English keeps the bundled Natural Earth names: those are the app's chosen wording
+ * and the platform's would differ ("Czechia", "Türkiye" and so on). Only real ISO
+ * 3166-1 alpha-2 codes are looked up; the private XA-XZ codes, and any answer that is
+ * blank or just the code echoed back, keep the English name. [displayCountry] is a
+ * parameter so host tests do not depend on the JVM's CLDR data.
+ */
+internal fun localizePlaces(
+    places: List<Place>,
+    locale: Locale,
+    displayCountry: (String, Locale) -> String? = ::platformCountryName,
+): List<Place> {
+    if (locale.language !in LOCALIZED_LANGUAGES) return places
+    val byEnglish = HashMap<String, String>()
+    val byCode = HashMap<String, String>()
+    for (p in places) {
+        if (p.code in ISO_COUNTRIES) {
+            displayCountry(p.code, locale)
+                ?.replace('\u2019', '\'')
+                ?.takeIf { it.isNotBlank() && !it.equals(p.code, ignoreCase = true) }
+                ?.let { byEnglish[p.englishName] = it; byCode[p.code] = it }
+        }
+    }
+    return places.map { p ->
+        // A sovereign with no matching place stays English.
+        val sovereign = byEnglish[p.englishSovereign]
+            ?: SOVEREIGN_CODES[p.englishSovereign]?.let(byCode::get)
+            ?: p.englishSovereign
+        p.copy(name = byCode[p.code] ?: p.englishName, sovereign = sovereign)
+    }
+}
+
+/**
+ * Languages the app localizes place names for. Not every platform language: the
+ * bundled map glyphs cover Latin only (code points 0-511), so Japanese, Russian or
+ * Arabic names would render as blanks. Grows together with the glyph set.
+ */
+internal val LOCALIZED_LANGUAGES = setOf("de")
+
+/**
+ * Sovereign strings in the bundled data that are not any place's English name
+ * (Natural Earth's long forms), mapped to the place that is meant. A test checks
+ * the asset, so new data cannot leave one out silently.
+ */
+internal val SOVEREIGN_CODES: Map<String, String> = mapOf(
+    "United States of America" to "US",
+    "Ivory Coast" to "CI",
+    "Democratic Republic of the Congo" to "CD",
+    "eSwatini" to "SZ",
+    "Federated States of Micronesia" to "FM",
+    "Republic of Serbia" to "RS",
+    "São Tomé and Principe" to "ST",
+    "United Republic of Tanzania" to "TZ",
+    "East Timor" to "TL",
+    "Turkey" to "TR",
+    "Vatican" to "VA",
+)
+
+internal fun platformCountryName(code: String, locale: Locale): String? =
+    Locale.Builder().setRegion(code).build().getDisplayCountry(locale)
+
+private val ISO_COUNTRIES: Set<String> = Locale.getISOCountries().toSet()
