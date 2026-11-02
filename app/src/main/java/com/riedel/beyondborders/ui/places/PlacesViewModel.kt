@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.places
 
+import java.util.Locale
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -9,6 +10,7 @@ import com.riedel.beyondborders.R
 import com.riedel.beyondborders.core.Haptics
 import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.Place
+import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
@@ -207,7 +209,19 @@ class PlacesViewModel(
      */
     var mapCamera: MapCamera? = null
 
-    private val allPlaces = MutableStateFlow<List<Place>>(emptyList())
+    private val rawPlaces = MutableStateFlow<List<Place>>(emptyList())
+
+    /**
+     * The language place names are shown in. This ViewModel outlives the activity
+     * recreation a language change causes, so the names are derived from the raw
+     * registry and this locale rather than localized once at load.
+     */
+    private val _locale = MutableStateFlow(Locale.getDefault())
+    fun setLocale(locale: Locale) { _locale.value = locale }
+
+    private val allPlaces: StateFlow<List<Place>> =
+        combine(rawPlaces, _locale) { places, locale -> localizePlaces(places, locale) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** The full registry, for surfaces that draw every place rather than a filtered list — the map's labels. */
     val places: StateFlow<List<Place>> = allPlaces
@@ -349,7 +363,7 @@ class PlacesViewModel(
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
-        viewModelScope.launch { allPlaces.value = repo.places() }
+        viewModelScope.launch { rawPlaces.value = repo.places() }
         viewModelScope.launch {
             // A StateFlow re-emits its current value to a new collector, so this
             // both loads the initial registry and reloads it on every nationality

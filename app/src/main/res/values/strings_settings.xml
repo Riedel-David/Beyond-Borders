@@ -37,6 +37,11 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
+    <!-- Language -->
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_detail">Also changes how country names are written. Other languages can be set in Android\'s own app language settings.</string>
+    <string name="settings_language_system">System default</string>
+
     <string name="settings_passport_title">Passport</string>
     <string name="settings_passport_detail">Which passport\'s visa answers the map and passport tab show.</string>
     <string name="settings_second_passport">Second passport</string>

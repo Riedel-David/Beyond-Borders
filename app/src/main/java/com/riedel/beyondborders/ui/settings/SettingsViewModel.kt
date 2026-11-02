@@ -497,3 +497,25 @@ internal fun failureText(t: Throwable, @StringRes fallback: Int): UiText = when 
     t.message != null -> UiText.Plain(t.message!!)
     else -> UiText.Res(fallback)
 }
+
+/**
+ * The language picker's three choices. Not stored in SettingsStore: Android keeps the
+ * per-app locale itself, and the picker reads it back from AppCompat.
+ */
+internal enum class AppLanguage(val tag: String) {
+    SYSTEM(""),
+    ENGLISH("en"),
+    GERMAN("de");
+
+    companion object {
+        /**
+         * Maps the language tags of the current application locales ("" when unset,
+         * possibly "de-DE") onto an option. A language the picker does not offer, such
+         * as one chosen in the system's own screen, reads as [SYSTEM].
+         */
+        fun fromTags(tags: String): AppLanguage {
+            val language = tags.substringBefore(',').substringBefore('-').lowercase()
+            return entries.firstOrNull { it != SYSTEM && it.tag == language } ?: SYSTEM
+        }
+    }
+}

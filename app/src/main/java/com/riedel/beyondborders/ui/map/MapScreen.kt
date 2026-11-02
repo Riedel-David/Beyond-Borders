@@ -142,6 +142,8 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.SymbolLayer
 
 /**
  * Where the camera sits on a cold start.
@@ -792,6 +794,20 @@ private class PlacesMapController {
     private var appliedLens = false
     private var appliedRegionActive = false
     private var appliedRegionOutline: Set<String> = emptySet()
+    private var appliedLabelNames: Map<String, String> = emptyMap()
+
+    /**
+     * Labels come from the bundled English GeoJSON; a different language is a
+     * layout-property swap on the one label layer, not a style rebuild.
+     */
+    fun applyLabels(places: List<Place>) {
+        val style = style ?: return
+        val names = places.filter { it.name != it.englishName }.associate { it.code to it.name }
+        if (names == appliedLabelNames) return
+        appliedLabelNames = names
+        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)
+            ?.setProperties(PropertyFactory.textField(PlacesMapStyle.labelText(names)))
+    }
 
     fun attach(map: MapLibreMap) {
         this.map = map
@@ -813,6 +829,7 @@ private class PlacesMapController {
         appliedLens = false
         appliedRegionOutline = emptySet()
         appliedRegionActive = false
+        appliedLabelNames = emptyMap()
     }
 
     fun detach() {
@@ -997,6 +1014,7 @@ private fun PlacesMapView(
     val currentRegionActive by rememberUpdatedState(regionActive)
     val currentSelectedCode by rememberUpdatedState(selectedCode)
     val currentRegionOutline by rememberUpdatedState(regionOutline)
+    val currentPlaces by rememberUpdatedState(places)
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
 
@@ -1096,6 +1114,7 @@ private fun PlacesMapView(
                 controller.applyStatuses(currentStatuses, currentLens, currentRegionActive)
                 controller.applyVisa(currentVisaBands, currentVisaNoData)
                 controller.applyRegion(currentRegionBands)
+                controller.applyLabels(currentPlaces)
                 controller.applySelection(currentSelectedCode, currentLens, currentRegionActive, currentRegionOutline)
             }
         }
@@ -1157,6 +1176,7 @@ private fun PlacesMapView(
             controller.applyStatuses(statuses, lens, regionActive)
             controller.applyVisa(visaBands, visaNoData)
             controller.applyRegion(regionBands)
+            controller.applyLabels(places)
             controller.applySelection(selectedCode, lens, regionActive, regionOutline)
         },
     )

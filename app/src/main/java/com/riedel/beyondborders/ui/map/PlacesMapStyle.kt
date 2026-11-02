@@ -319,6 +319,18 @@ internal object PlacesMapStyle {
     )
 
     /** A filter that matches nothing — the starting state of every overlay. */
+    /**
+     * The label text: the bundled GeoJSON name, except for the codes in [names]
+     * (localized places whose name differs from the English one in the asset).
+     */
+    fun labelText(names: Map<String, String>): Expression =
+        if (names.isEmpty()) Expression.get("name")
+        else Expression.match(
+            Expression.get("code"),
+            Expression.get("name"),
+            *names.map { (code, name) -> Expression.stop(code, name) }.toTypedArray(),
+        )
+
     fun noPlaces(): Expression = Expression.literal(false)
 
     /** A filter matching exactly the given place codes. */
