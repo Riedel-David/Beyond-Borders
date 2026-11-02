@@ -15,6 +15,10 @@
     <string name="passport_mark_lived">%1$s als gelebt markieren</string>
     <string name="passport_mark_want">%1$s als Wunsch markieren</string>
     <string name="passport_clear">Löschen</string>
+    <string name="passport_clear_status">Status von %1$s löschen</string>
+    <string name="passport_status_chip_desc">%1$s, Status: %2$s</string>
+    <string name="passport_status_unset">nicht gesetzt</string>
+    <string name="passport_change_status">Status ändern</string>
     <string name="passport_loading">Orte werden geladen…</string>
     <string name="passport_no_match_query">Keine Orte zu „%1$s“.</string>
     <string name="passport_no_match_filter">Keine Orte im Filter „%1$s“.</string>

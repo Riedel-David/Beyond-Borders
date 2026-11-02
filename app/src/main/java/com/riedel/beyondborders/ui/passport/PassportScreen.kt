@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,7 +70,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -92,7 +96,6 @@ import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
-import com.riedel.beyondborders.ui.BounceFilterChip
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
@@ -374,9 +377,9 @@ fun PassportScreen(
                 Column(Modifier.animateItem()) {
                     PlaceListRow(
                         row = row,
-                        onToggle = { target ->
+                        onSet = { target ->
                             viewModel.vibrate()
-                            viewModel.toggle(row.place.code, target)
+                            viewModel.setStatus(row.place.code, target)
                         },
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -724,59 +727,81 @@ internal fun travelHeaderSlots(
 }
 
 @Composable
-private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
+private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
+    val name = row.place.name
+    val status = row.status
+    var open by remember { mutableStateOf(false) }
+    var menuStatus by remember { mutableStateOf(status) }
+    val currentOnSet by rememberUpdatedState(onSet)
+    val apply: (StatusAction) -> Unit = { action ->
+        statusTargetFor(action, status)?.let(currentOnSet)
+    }
+    val statusText = statusLabelRes(status)?.let { stringResource(it) }
+        ?: stringResource(R.string.passport_status_unset)
+    val description = stringResource(R.string.passport_status_chip_desc, name, statusText)
+    val changeStatus = stringResource(R.string.passport_change_status)
+    val markBeen = stringResource(R.string.passport_mark_been, name)
+    val markLived = stringResource(R.string.passport_mark_lived, name)
+    val markWant = stringResource(R.string.passport_mark_want, name)
+    val clear = stringResource(R.string.passport_clear_status, name)
+    val actions = remember(status, markBeen, markLived, markWant, clear) {
+        statusMenuEntries(status).map { action ->
+            val label = when (action) {
+                StatusAction.BEEN -> markBeen
+                StatusAction.LIVED -> markLived
+                StatusAction.WANT -> markWant
+                StatusAction.CLEAR -> clear
+            }
+            CustomAccessibilityAction(label) { apply(action); true }
+        }
+    }
+    fun openMenu() {
+        menuStatus = status
+        open = true
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // One focus stop per row: name + status, the mark/clear actions, and a click
+            // that opens the same menu the chip does.
+            .clearAndSetSemantics {
+                contentDescription = description
+                customActions = actions
+                onClick(label = changeStatus) { openMenu(); true }
+            }
             .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            // One line, always: the code/sovereign subtitle underneath already
-            // carries full identification, so a long name loses only its tail here
-            // rather than pushing every row in a uniform list to two different heights.
+        FlagThumb(row.place.code)
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            // Up to two lines: the chip is one compact control now, so a long name has
+            // room to wrap instead of losing its tail at 1.3x font scale.
             Text(
-                row.place.name,
+                name,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                // Sovereign is shown only where it adds information: "Greenland
-                // (Denmark)" is useful, "France (France)" is noise.
-                if (row.place.sovereign != row.place.name) {
-                    "${row.place.code} · ${row.place.sovereign}"
-                } else {
-                    row.place.code
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Sovereign is shown only where it adds information: "Greenland
+            // (Denmark)" is useful, "France (France)" is noise.
+            if (row.place.sovereign != name) {
+                Text(
+                    row.place.sovereign,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        // Three chips take enough width that a long name now wraps to a second line.
-        // Accepted deliberately: bulk entry happens here, so every status has to be
-        // one tap away on this screen, and a hidden third option would push the
-        // rarest answer onto the map only.
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.VISITED,
-                label = stringResource(R.string.passport_chip_been),
-                semanticsLabel = stringResource(R.string.passport_mark_been, row.place.name),
-                onClick = { onToggle(PlaceStatus.VISITED) },
-            )
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.LIVED,
-                label = stringResource(R.string.passport_chip_lived),
-                semanticsLabel = stringResource(R.string.passport_mark_lived, row.place.name),
-                onClick = { onToggle(PlaceStatus.LIVED) },
-            )
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.WISHLIST,
-                label = stringResource(R.string.passport_chip_want),
-                semanticsLabel = stringResource(R.string.passport_mark_want, row.place.name),
-                onClick = { onToggle(PlaceStatus.WISHLIST) },
-            )
-        }
+        StatusChip(
+            status = status,
+            open = open,
+            menuStatus = menuStatus,
+            onOpen = ::openMenu,
+            onDismiss = { open = false },
+            onAction = { open = false; apply(it) },
+        )
     }
 }
 
