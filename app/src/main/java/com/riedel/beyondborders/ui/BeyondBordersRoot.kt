@@ -76,16 +76,16 @@ fun BeyondBordersRoot(
     val placesViewModel: PlacesViewModel = viewModel(
         factory = PlacesViewModel.factory(container.places, container.visa, container.settings, container.haptics),
     )
-    val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
     // Every change of the configuration's first locale, including one made from the
     // system's per-app-language screen, re-derives the place names.
     val locale = LocalConfiguration.current.locales[0]
     // Not a LaunchedEffect: that runs after the first composition, so the retained
     // ViewModel (still on the old locale) drew one frame in the old language. This is an
-    // idempotent StateFlow write, kept in `remember` so it happens once per locale and
-    // before the first read of the locale-derived state below. Not a SideEffect, which
-    // would run only after this composition has already read that state.
+    // idempotent StateFlow write, kept in `remember` so it happens once per locale and,
+    // placed directly after the ViewModel is obtained, before any of its state is
+    // collected below. Not a SideEffect, which would run only after those reads.
     remember(locale) { placesViewModel.setLocale(locale) }
+    val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
     val passportNames by placesViewModel.passportNames.collectAsStateWithLifecycle()
     val englishNames by placesViewModel.englishPassportNames.collectAsStateWithLifecycle()
     val placeCount = allPlaces.size
