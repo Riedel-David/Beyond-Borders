@@ -510,14 +510,13 @@ class PlacesViewModel(
  * nothing left to nudge towards.
  */
 internal fun almostFinishedNudgeText(continents: List<ContinentStat>): UiText? {
-    val candidate = nudgeCandidate(continents) ?: return null
+    val candidate = continents
+        .filter { it.been > 0 && it.been < it.total }
+        .minWithOrNull(compareBy({ it.total - it.been }, { it.continent }))
+        ?: return null
     val remaining = candidate.total - candidate.been
     return UiText.Plural(R.plurals.places_nudge, remaining, remaining, geoNameText(candidate.continent))
 }
-
-private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = continents
-    .filter { it.been > 0 && it.been < it.total }
-    .minWithOrNull(compareBy({ it.total - it.been }, { it.continent }))
 
 /**
  * "Oceania — 2 of 25" — the continent furthest from done, for the stats screen's
@@ -527,19 +526,16 @@ private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = co
  * line) and null once every continent is finished (nothing left to point at).
  */
 internal fun leastCoveredContinentText(continents: List<ContinentStat>): UiText? {
-    val worst = leastCoveredCandidate(continents) ?: return null
-    return UiText.Res(R.string.places_least_covered, geoNameText(worst.continent), worst.been, worst.total)
-}
-
-private fun leastCoveredCandidate(continents: List<ContinentStat>): ContinentStat? {
     if (continents.all { it.been == 0 }) return null
-    return continents
+    val worst = continents
         .filter { it.total > 0 && it.been < it.total }
         .minWithOrNull(compareBy(
             { it.been.toDouble() / it.total },
             { it.been },
             { it.continent },
         ))
+        ?: return null
+    return UiText.Res(R.string.places_least_covered, geoNameText(worst.continent), worst.been, worst.total)
 }
 
 /**
@@ -556,23 +552,14 @@ internal fun computeWishlistEasyText(
     visa: VisaRegistry?,
     denominator: Denominator = Denominator.ALL,
 ): UiText? {
-    val (easy, wishlist) = wishlistEasyCounts(places, statuses, visa, denominator) ?: return null
-    return UiText.Plural(R.plurals.places_wishlist_easy, wishlist, easy, wishlist)
-}
-
-private fun wishlistEasyCounts(
-    places: List<Place>,
-    statuses: Map<String, PlaceStatus>,
-    visa: VisaRegistry?,
-    denominator: Denominator,
-): Pair<Int, Int>? {
     if (visa == null) return null
     val countedCodes = places.filter(denominator::includes).map { it.code }.toSet()
     val wishlistCodes = statuses.filter { it.value == PlaceStatus.WISHLIST && it.key in countedCodes }.keys
     if (wishlistCodes.isEmpty()) return null
     val easy = wishlistCodes.count { code -> visa[code]?.isEasy == true }
     if (easy == 0) return null
-    return easy to wishlistCodes.size
+    val wishlist = wishlistCodes.size
+    return UiText.Plural(R.plurals.places_wishlist_easy, wishlist, easy, wishlist)
 }
 
 /** Whether [place] counts towards the chosen [Denominator]. */
@@ -665,11 +652,6 @@ internal fun computeInformalRegionStats(
  * of the chosen set: with UN members only, Greenland's area is in neither side.
  */
 internal fun worldCoverageText(places: List<Place>, statuses: Map<String, PlaceStatus>): UiText? {
-    val (areaPercent, popPercent) = coveragePercents(places, statuses) ?: return null
-    return UiText.Res(R.string.places_coverage, areaPercent, popPercent)
-}
-
-private fun coveragePercents(places: List<Place>, statuses: Map<String, PlaceStatus>): Pair<Int, Int>? {
     val totalArea = places.sumOf { it.areaKm2 }
     val totalPop = places.sumOf { it.popEst }
     if (totalArea == 0L || totalPop == 0L) return null
@@ -677,7 +659,7 @@ private fun coveragePercents(places: List<Place>, statuses: Map<String, PlaceSta
     val beenArea = been.sumOf { it.areaKm2 }
     val beenPop = been.sumOf { it.popEst }
     if (beenArea == 0L && beenPop == 0L) return null
-    return (beenArea * 100 / totalArea).toInt() to (beenPop * 100 / totalPop).toInt()
+    return UiText.Res(R.string.places_coverage, (beenArea * 100 / totalArea).toInt(), (beenPop * 100 / totalPop).toInt())
 }
 
 /**
