@@ -12,11 +12,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -24,10 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -36,35 +35,27 @@ import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 
-/** What a Passport row's status menu (and the row's TalkBack actions) offer. */
-internal enum class StatusAction { BEEN, LIVED, WANT, CLEAR }
+/** What a Passport row's status menu (and the row's TalkBack actions) offer: the three statuses. */
+internal enum class StatusAction { BEEN, LIVED, WANT }
 
-/** Menu entries for a row in state [current]: the three statuses, plus Clear only when one is set. */
-internal fun statusMenuEntries(current: PlaceStatus): List<StatusAction> =
-    if (current == PlaceStatus.NONE) listOf(StatusAction.BEEN, StatusAction.LIVED, StatusAction.WANT)
-    else StatusAction.entries
-
-/** The status an entry sets; null for Clear. */
-internal fun StatusAction.status(): PlaceStatus? = when (this) {
+/** The status an entry sets. */
+internal fun StatusAction.status(): PlaceStatus = when (this) {
     StatusAction.BEEN -> PlaceStatus.VISITED
     StatusAction.LIVED -> PlaceStatus.LIVED
     StatusAction.WANT -> PlaceStatus.WISHLIST
-    StatusAction.CLEAR -> null
 }
 
 /**
- * The status to write for [action] on a row currently showing [current], or null when
- * it would change nothing. Absolute, never relative to what is stored: Clear is NONE.
- * Re-picking the marked entry is a no-op by design. Only the row's own status changes.
+ * The status to write for [action] on a row currently showing [current]. Absolute, never
+ * relative to what is stored: picking the marked entry again writes NONE (that is the only
+ * way to clear), anything else writes exactly that entry's status. Only the row's own
+ * status changes.
  */
-internal fun statusTargetFor(action: StatusAction, current: PlaceStatus): PlaceStatus? {
-    val target = action.status() ?: PlaceStatus.NONE
-    return target.takeIf { it != current }
-}
+internal fun statusTargetFor(action: StatusAction, current: PlaceStatus): PlaceStatus =
+    if (action.status() == current) PlaceStatus.NONE else action.status()
 
-/** Whether [action]'s entry is the row's current status (gets the check mark). */
-internal fun isCurrent(action: StatusAction, current: PlaceStatus): Boolean =
-    action.status() != null && action.status() == current
+/** Whether [action]'s entry is the row's current status (highlighted). */
+internal fun isCurrent(action: StatusAction, current: PlaceStatus): Boolean = action.status() == current
 
 /** Chip text for a status; null for NONE, which shows a "+" instead. */
 @StringRes
@@ -88,7 +79,6 @@ private fun actionLabelRes(action: StatusAction): Int = when (action) {
     StatusAction.BEEN -> R.string.passport_chip_been
     StatusAction.LIVED -> R.string.passport_chip_lived
     StatusAction.WANT -> R.string.passport_chip_want
-    StatusAction.CLEAR -> R.string.passport_clear
 }
 
 /** Fixed-size flag tile; a neutral tile when the code has no flag file or it is still decoding. */
@@ -116,7 +106,7 @@ internal fun FlagThumb(code: String, modifier: Modifier = Modifier) {
  * One status chip per row. Touch only: the row's own merged node carries the TalkBack
  * description, actions and "change status" click, so the chip adds no focus stop. The
  * menu is hosted here but its open state and the [menuStatus] it shows are the row's:
- * the entries are frozen at open time so Clear and the check mark do not pop in or out
+ * the highlight is frozen at open time so it does not jump
  * while the dropdown is animating away after a pick.
  */
 @Composable
@@ -167,15 +157,29 @@ internal fun StatusChip(
             }
         }
         DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            for (action in statusMenuEntries(menuStatus)) {
+            // Three entries, no icon slot: the selected one is tinted and bold, and tapping
+            // it again clears the status, so there is no separate Clear entry.
+            for (action in StatusAction.entries) {
                 val current = isCurrent(action, menuStatus)
+                val hue = when (statusSlot(action.status())) {
+                    MapSlot.VISITED -> palette.visited
+                    MapSlot.LIVED -> palette.lived
+                    MapSlot.WISHLIST -> palette.wishlist
+                    null -> Color.Transparent
+                }
                 DropdownMenuItem(
-                    text = { Text(stringResource(actionLabelRes(action))) },
-                    leadingIcon = {
-                        if (current) Icon(Icons.Filled.Check, contentDescription = null)
-                        else Box(Modifier.size(24.dp))
+                    text = {
+                        Text(
+                            stringResource(actionLabelRes(action)),
+                            fontWeight = if (current) FontWeight.Bold else null,
+                        )
                     },
-                    modifier = Modifier.semantics { selected = current },
+                    modifier = Modifier
+                        .background(if (current) hue.copy(alpha = 0.22f) else Color.Transparent)
+                        .semantics {
+                            selected = current
+                            role = Role.RadioButton
+                        },
                     onClick = { onAction(action) },
                 )
             }
