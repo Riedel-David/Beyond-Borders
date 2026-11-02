@@ -2,6 +2,7 @@
 """Build BeyondBorders's bundled visa assets from the Visa-requirements dataset.
 
     python3 tools/visa/build_visa.py [--passport DE|GB] [--source DIR] [--advice FILE]
+                                  [--expect-sha256 HEX]
 
 Without --source the latest published data is downloaded from
 https://riedel-david.github.io/Visa-requirements/ into tools/visa/cache/ first.
@@ -10,7 +11,8 @@ index's `generated_at` and each passport's `source_revision` go into the assets
 (`asOf`, `dataset.sourceRevision`) and, on a full build, into
 docs/visa-source-revisions.txt. --source DIR (a directory holding index.json and
 passports/, e.g. `<checkout>/data` or a previous download in the cache) builds
-offline from exactly that.
+offline from exactly that. --expect-sha256 pins the build to a Visa dataset
+already reviewed (it needs --source; the --advice feed is not covered).
 
 Output (committed, so the app builds without network access):
     app/src/main/assets/visa.json        --passport DE (the shipped default)
@@ -27,6 +29,7 @@ quietly missing is worse than a build that fails.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import http.client
 import json
 import re
@@ -37,6 +40,7 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from functools import cached_property
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -156,6 +160,24 @@ class Dataset:
             )
         check_index_files(index)
         return cls(root, index)
+
+    @cached_property
+    def sha256(self) -> str:
+        """One digest over everything the build reads: index.json, then each
+        passport file the index names, in code order, each preceded by its path so
+        moving bytes between files changes the digest. Visa dataset only, not the
+        --advice feed. Computed once per Dataset."""
+        h = hashlib.sha256()
+        files = ["index.json"] + [self.index["passports"][c]["file"] for c in self.passports()]
+        for name in files:
+            h.update(name.encode() + b"\0")
+            path = self.root / name
+            if not path.is_file():
+                raise SystemExit(f"{name} is named by index.json but missing under "
+                                 f"{self.root}; download again")
+            h.update(path.read_bytes())
+            h.update(b"\0")
+        return h.hexdigest()
 
     @property
     def generated_at(self) -> str:
@@ -766,14 +788,25 @@ def write_revisions(ds: Dataset, built: list[str], thin: list[str]) -> None:
         "# assets were built from. Written by tools/visa/build_visa.py on a full build.",
         f"# index.json generated_at: {ds.generated_at}",
         f"# index.json schema_version: {ds.index.get('schema_version')}",
+        f"# dataset sha256 (index.json + passport files, see Dataset.sha256): {ds.sha256}",
         "# passport  source_revision (Wikipedia revision of its article)",
     ]
     if thin:
-        lines.insert(4, f"# not shipped (fewer than {rules.MIN_DATASET_ROWS} answers): "
-                        + " ".join(thin))
+        at = lines.index("# passport  source_revision (Wikipedia revision of its article)")
+        lines.insert(at, f"# not shipped (fewer than {rules.MIN_DATASET_ROWS} answers): "
+                         + " ".join(thin))
     for code in built:
         lines.append(f"{code} {ds.index['passports'][code]['source_revision']}")
     REVISIONS_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def normalise_sha256(value: str) -> str:
+    v = value.strip().lower()
+    v = v.removeprefix("sha256:").strip()
+    if not re.fullmatch(r"[0-9a-f]{64}", v):
+        raise SystemExit(f"--expect-sha256 must be 64 hex characters (optionally "
+                         f"prefixed 'sha256:'), got {value!r}")
+    return v
 
 
 def main() -> int:
@@ -786,9 +819,22 @@ def main() -> int:
                          "(a checkout's data/ or a previous download in "
                          "tools/visa/cache/visa-requirements); default: download "
                          "the latest publication")
+    ap.add_argument("--expect-sha256", default=None, metavar="HEX",
+                    help="refuse to build unless the Visa dataset's digest matches (64 hex "
+                         "chars, optional 'sha256:' prefix; not the --advice feed). "
+                         "The digest is printed on every run and recorded in "
+                         "docs/visa-source-revisions.txt after the next full build. "
+                         "Needs --source")
     ap.add_argument("--advice", type=Path, default=DEFAULT_ADVICE,
                     help="the Auswärtiges Amt travelwarning JSON (DE only)")
     a = ap.parse_args()
+    if a.expect_sha256 is not None:
+        a.expect_sha256 = normalise_sha256(a.expect_sha256)
+        if a.source is None:
+            # The download replaces tools/visa/cache before the digest could be
+            # checked, so pinning only makes sense against a dataset already on disk.
+            raise SystemExit("--expect-sha256 needs --source: the default download "
+                             "replaces tools/visa/cache before it can be verified")
     # The Foreign Office feed is only needed to build DE; a build that never
     # touches DE should not fail over a file it never reads.
     needs_advice = a.passport is None or a.passport == "DE"
@@ -812,7 +858,11 @@ def main() -> int:
         fetch(DEFAULT_SOURCE)
         a.source = DEFAULT_SOURCE
     ds = Dataset.open(a.source)
-    print(f"dataset generated_at {ds.generated_at}, {len(ds.passports())} passports")
+    print(f"dataset generated_at {ds.generated_at}, {len(ds.passports())} passports, "
+          f"sha256 {ds.sha256}")
+    if a.expect_sha256 is not None and a.expect_sha256 != ds.sha256:
+        raise SystemExit(f"dataset sha256 mismatch: expected {a.expect_sha256}, "
+                         f"got {ds.sha256}; nothing written")
     usage = Usage()
 
     if a.passport is not None:
