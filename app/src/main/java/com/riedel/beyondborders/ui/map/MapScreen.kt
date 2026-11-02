@@ -18,7 +18,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -40,6 +44,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
@@ -90,6 +97,9 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -218,7 +228,8 @@ fun MapScreen(
     val scope = rememberCoroutineScope()
     // rememberSaveable because the root disposes this screen on a tab switch (the
     // SaveableStateProvider above it restores these on return).
-    var counterLabeled by rememberSaveable { mutableStateOf(false) }
+    // Chips with names are the default; a tap collapses them to dots and bare counts.
+    var counterCompact by rememberSaveable { mutableStateOf(false) }
     var visaLegendLabeled by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -359,7 +370,7 @@ fun MapScreen(
                 !regionActive && (stats.been > 0 || stats.wishlist > 0) -> {
                     {
                         viewModel.vibrate()
-                        counterLabeled = !counterLabeled
+                        counterCompact = !counterCompact
                     }
                 }
                 else -> null
@@ -387,7 +398,7 @@ fun MapScreen(
                     lens = lens,
                     visaLabeled = visaLegendLabeled,
                     regionMode = regionMode,
-                    counterLabeled = counterLabeled,
+                    counterLabeled = !counterCompact,
                     been = stats.been,
                     wishlist = stats.wishlist,
                 ),
@@ -418,42 +429,37 @@ fun MapScreen(
                         stringResource(R.string.map_legend_nudge),
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    MapLegendKind.COUNTER_LABELED -> Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        CounterLegendRow(palette.visited, stringResource(R.string.map_legend_visited, stats.visited))
-                        if (stats.lived > 0) CounterLegendRow(palette.lived, stringResource(R.string.map_legend_lived, stats.lived))
-                        if (stats.wishlist > 0) {
-                            CounterLegendRow(palette.wishlist, stringResource(R.string.map_legend_wanted, stats.wishlist))
-                        }
-                    }
-                    MapLegendKind.COUNTER_DOTS -> {
+                    MapLegendKind.COUNTER_LABELED, MapLegendKind.COUNTER_DOTS -> {
+                        val compact = kind == MapLegendKind.COUNTER_DOTS
                         // Resolved here because the semantics block below is not composable.
                         val legendDescription = travelLegendDescription(stats).asString()
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            // TalkBack would otherwise read the dots and bare numbers as
-                            // separate nodes ("40 · 3 · 7") with nothing to say what each
-                            // one counts; clearAndSetSemantics replaces that with one
-                            // sentence and stops the numbers being announced twice.
+                        // Only the statuses actually on the map get an entry: this is a
+                        // legend, so it counts each status strictly rather than showing
+                        // the combined "been" total the passport leads with.
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            itemVerticalAlignment = Alignment.CenterVertically,
+                            // TalkBack would otherwise read the entries as separate
+                            // fragments; one sentence replaces them.
                             modifier = Modifier.clearAndSetSemantics {
                                 contentDescription = legendDescription
                             },
                         ) {
-                            // One dot per map colour, and only for colours actually on the
-                            // map: this is a legend, so it counts each status strictly
-                            // rather than showing the combined "been" total the passport
-                            // leads with.
-                            LegendDot(palette.visited)
-                            Text("${stats.visited}", style = MaterialTheme.typography.labelLarge)
-                            if (stats.lived > 0) {
-                                LegendDot(palette.lived)
-                                Text("${stats.lived}", style = MaterialTheme.typography.labelLarge)
-                            }
-                            if (stats.wishlist > 0) {
-                                LegendDot(palette.wishlist)
-                                Text("${stats.wishlist}", style = MaterialTheme.typography.labelLarge)
+                            legendEntries(stats).forEach { entry ->
+                                LegendChip(
+                                    color = when (entry.status) {
+                                        LegendStatus.VISITED -> palette.visited
+                                        LegendStatus.LIVED -> palette.lived
+                                        LegendStatus.WANTED -> palette.wishlist
+                                    },
+                                    text = if (compact) {
+                                        "${entry.count}"
+                                    } else {
+                                        stringResource(R.string.map_legend_chip, stringResource(entry.status.labelRes), entry.count)
+                                    },
+                                    compact = compact,
+                                )
                             }
                         }
                     }
@@ -496,15 +502,42 @@ fun MapScreen(
                 )
             }
             if (!controlsExpanded) return@Column
-            // Search is the passport's own search, on the map — the same reason
-            // both screens share the [PlacesViewModel] query, this just is not
-            // routed through it, since the map wants to fly the camera on a pick
-            // rather than filter a list.
-            MapPill(onClick = { viewModel.vibrate(); searchOpen = !searchOpen }) {
-                Text(
-                    stringResource(if (searchOpen) R.string.map_search_close else R.string.map_search_open),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+            // One grouped container for the three map modes, each an icon plus an
+            // always-visible label, with the active one highlighted. Search is the
+            // passport's own search, on the map: it is not routed through the
+            // [PlacesViewModel] query because the map flies the camera on a pick
+            // rather than filtering a list.
+            val selectedControls = selectedMapControls(searchOpen, lens, visa != null, regionMode)
+            MapControlGroup {
+                MapControlItem(
+                    icon = Icons.Filled.Search,
+                    label = stringResource(R.string.map_search_open),
+                    selected = MapControl.SEARCH in selectedControls,
+                    onClick = { viewModel.vibrate(); searchOpen = !searchOpen },
+                )
+                // Offered only once the asset is known to have loaded: a toggle that
+                // silently paints nothing would be worse than no toggle.
+                if (visa != null) {
+                    MapControlItem(
+                        icon = Icons.Filled.Check,
+                        label = stringResource(R.string.map_lens_visa),
+                        selected = MapControl.VISA in selectedControls,
+                        onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
+                    )
+                }
+                // One item cycles all three states rather than three for one
+                // choice: Off/Official/Informal is a single question, not three.
+                MapControlItem(
+                    icon = Icons.Filled.Place,
+                    label = stringResource(
+                        when (regionMode) {
+                            RegionMode.OFF -> R.string.map_regions_off
+                            RegionMode.OFFICIAL -> R.string.map_regions_official
+                            RegionMode.INFORMAL -> R.string.map_regions_informal
+                        }
+                    ),
+                    selected = MapControl.REGIONS in selectedControls,
+                    onClick = { viewModel.vibrate(); viewModel.setRegionMode(nextRegionMode(regionMode)) },
                 )
             }
             if (searchOpen) {
@@ -558,32 +591,6 @@ fun MapScreen(
                         }
                     }
                 }
-            }
-            // Offered only once the asset is known to have loaded: a toggle that
-            // silently paints nothing would be worse than no toggle.
-            if (visa != null) {
-                MapPill(onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) }) {
-                    Text(
-                        stringResource(if (lens) R.string.map_lens_travels else R.string.map_lens_visa),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-            // One pill cycles all three states rather than three pills for one
-            // choice — Off/Official/Informal is a single question, not three.
-            MapPill(onClick = { viewModel.vibrate(); viewModel.setRegionMode(nextRegionMode(regionMode)) }) {
-                Text(
-                    stringResource(
-                        when (regionMode) {
-                            RegionMode.OFF -> R.string.map_regions_off
-                            RegionMode.OFFICIAL -> R.string.map_regions_official
-                            RegionMode.INFORMAL -> R.string.map_regions_informal
-                        }
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
             }
         }
 
@@ -1230,10 +1237,11 @@ private fun MapPill(
  * is a snapshot, so every visa surface is required to say how old it is and to
  * point at an official source — the map's share of that is this line.
  *
- * A tap expands the dot row into one labelled row per band, same trick as the travel
- * legend's own [counterLabeled] toggle — a compact glance is the default, and the
- * words are one tap away rather than always taking the space.
+ * A tap expands the dot row into one labelled chip per band. The travel legend toggles
+ * the other way round (named chips by default, a tap collapses them to dots and bare
+ * counts); here the compact glance is the default and the words are one tap away.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun VisaLegend(
     ramp: VisaRamp,
@@ -1247,11 +1255,14 @@ private fun VisaLegend(
     val counts = remember(visa, secondVisa) { combinedBandCounts(visa, secondVisa) }
     Column {
         if (labeled && visa != null) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 VisaBand.entries.forEach { band ->
                     val count = counts[band] ?: 0
                     if (count > 0) {
-                        CounterLegendRow(
+                        LegendChip(
                             ramp.colorFor(band),
                             stringResource(R.string.map_legend_count_labeled, count, stringResource(band.labelRes)),
                         )
@@ -1259,7 +1270,7 @@ private fun VisaLegend(
                 }
                 // Only shown when it paints something: DE's dataset has no gaps, so
                 // a row for a colour this passport never uses would be a riddle.
-                if (noDataCount > 0) CounterLegendRow(ramp.noData, stringResource(R.string.map_legend_no_data, noDataCount))
+                if (noDataCount > 0) LegendChip(ramp.noData, stringResource(R.string.map_legend_no_data, noDataCount))
             }
         } else {
             val collapsedSummary = visaLegendSummary(visa, noDataCount, secondVisa).asString()
@@ -1269,7 +1280,7 @@ private fun VisaLegend(
                 // The band dots carry no number here, only colour, so without this
                 // TalkBack would skip straight past them to the aggregate count and
                 // never say a visa lens is even showing. The expanded, tap-labelled
-                // rows already speak for themselves via CounterLegendRow's own text.
+                // rows already speak for themselves via the chips' own text.
                 modifier = Modifier.clearAndSetSemantics {
                     contentDescription = collapsedSummary
                 },
@@ -1377,14 +1388,69 @@ private fun RegionLegend(ramp: RegionRamp, land: Color, mode: RegionMode, stats:
     }
 }
 
+/** The grouped container for the map's mode controls (search, visa lens, regions). */
 @Composable
-private fun CounterLegendRow(color: Color, text: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun MapControlGroup(content: @Composable () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+        shadowElevation = 2.dp,
     ) {
-        LegendDot(color)
-        Text(text, style = MaterialTheme.typography.labelLarge)
+        // IntrinsicSize.Max + fillMaxWidth items: every plate as wide as the widest label.
+        Column(
+            Modifier.padding(4.dp).width(IntrinsicSize.Max),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) { content() }
+    }
+}
+
+/**
+ * One control: icon plus label (the control's name, never the action), 48 dp tall, with the active one on a
+ * secondaryContainer plate. The label is the accessible name, so the icon is
+ * decorative; [selected] is exposed to TalkBack as well as drawn.
+ */
+@Composable
+private fun MapControlItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        modifier = Modifier.fillMaxWidth().semantics { this.selected = selected },
+    ) {
+        Row(
+            Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+/**
+ * A legend entry: colour swatch plus text. [compact] drops the chip plate so a bare
+ * count sits next to its dot.
+ */
+@Composable
+private fun LegendChip(color: Color, text: String, compact: Boolean = false) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = if (compact) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Row(
+            if (compact) Modifier else Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LegendDot(color)
+            Text(text, style = MaterialTheme.typography.labelLarge)
+        }
     }
 }
 
@@ -1715,3 +1781,35 @@ internal fun changedRegionKeys(
     new: Map<RegionStyleKey, Set<String>>,
 ): Set<RegionStyleKey> =
     (old.keys + new.keys).filterTo(mutableSetOf()) { old[it].orEmpty() != new[it].orEmpty() }
+
+/** The map's mode controls, in the order they are stacked. */
+internal enum class MapControl { SEARCH, VISA, REGIONS }
+
+/** Which controls are currently "on": the search field open, the visa lens, a region heatmap. */
+internal fun selectedMapControls(
+    searchOpen: Boolean,
+    lens: Boolean,
+    visaOffered: Boolean,
+    regionMode: RegionMode,
+): Set<MapControl> =
+    buildSet {
+        if (searchOpen) add(MapControl.SEARCH)
+        // The Visa item exists only when the asset loaded; never highlight one that is not there.
+        if (lens && visaOffered) add(MapControl.VISA)
+        if (regionMode != RegionMode.OFF) add(MapControl.REGIONS)
+    }
+
+internal enum class LegendStatus(@StringRes val labelRes: Int) {
+    VISITED(R.string.map_legend_short_visited),
+    LIVED(R.string.map_legend_short_lived),
+    WANTED(R.string.map_legend_short_wanted),
+}
+
+internal data class LegendEntry(val status: LegendStatus, val count: Int)
+
+/** Visited is always listed (even at 0, as before); lived and wanted only once they paint something. */
+internal fun legendEntries(stats: TravelStats): List<LegendEntry> = buildList {
+    add(LegendEntry(LegendStatus.VISITED, stats.visited))
+    if (stats.lived > 0) add(LegendEntry(LegendStatus.LIVED, stats.lived))
+    if (stats.wishlist > 0) add(LegendEntry(LegendStatus.WANTED, stats.wishlist))
+}

@@ -10,10 +10,13 @@
     <string name="map_description">Map of the world. Tap a country or territory to select it.</string>
 
     <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Been</string>
+    <string name="map_legend_short_lived">Lived</string>
+    <string name="map_legend_short_wanted">Want</string>
+    <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Tap a place to mark it</string>
     <string name="map_legend_visited">%1$d visited</string>
     <string name="map_legend_lived">%1$d lived</string>
-    <string name="map_legend_wanted">%1$d wanted</string>
     <string name="map_legend_wishlisted">%1$d wishlisted</string>
     <string name="map_legend_no_data">%1$d no data</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
@@ -41,11 +44,9 @@
     <!-- Map: controls -->
     <string name="map_controls_hide">Hide map controls</string>
     <string name="map_controls_show">Show map controls</string>
-    <string name="map_search_close">Close</string>
     <string name="map_search_open">Search</string>
     <string name="map_search_label">Find a place</string>
     <string name="map_search_no_matches">No matches</string>
-    <string name="map_lens_travels">My travels</string>
     <string name="map_lens_visa">Visa</string>
     <string name="map_regions_off">Regions</string>
     <string name="map_regions_official">Regions: UN</string>
