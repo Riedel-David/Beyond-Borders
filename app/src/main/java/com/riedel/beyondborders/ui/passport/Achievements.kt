@@ -6,6 +6,7 @@ import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.places.geoNameText
 
 enum class AchievementGroup(@StringRes val label: Int) {
     COUNTS(R.string.badge_group_counts),
@@ -87,14 +88,14 @@ internal fun computeAchievements(
     for ((continent, members) in places.groupBy { it.continent }.toSortedMap()) {
         named(
             "continent_complete_" + slug(continent),
-            UiText.Res(R.string.badge_continent_complete_title, continent),
-            UiText.Res(R.string.badge_continent_complete_desc, continent), members, AchievementGroup.CONTINENTS,
+            UiText.Res(R.string.badge_continent_complete_title, geoNameText(continent)),
+            UiText.Res(R.string.badge_continent_complete_desc, geoNameText(continent)), members, AchievementGroup.CONTINENTS,
         )
     }
     for ((region, members) in places.groupBy { it.region }.toSortedMap()) {
         named(
-            "region_" + slug(region), UiText.Plain(region),
-            UiText.Res(R.string.badge_region_desc, region, members.count { !it.uninhabited }),
+            "region_" + slug(region), geoNameText(region),
+            UiText.Res(R.string.badge_region_desc, geoNameText(region), members.count { !it.uninhabited }),
             members, AchievementGroup.REGIONS,
         )
     }
@@ -102,8 +103,8 @@ internal fun computeAchievements(
     for (g in INFORMAL_REGIONS) {
         val members = g.codes.mapNotNull { byCode[it] }
         named(
-            "group_" + slug(g.name), UiText.Plain(g.name),
-            UiText.Res(R.string.badge_group_desc, g.name, members.joinToString(", ") { it.name }),
+            "group_" + slug(g.name), geoNameText(g.name),
+            UiText.Res(R.string.badge_group_desc, geoNameText(g.name), members.joinToString(", ") { it.name }),
             members, AchievementGroup.GROUPS,
         )
     }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made German draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="app_name">Beyond Borders</string>
+    <string name="widget_label">Reisezähler</string>
+    <string name="widget_wordmark">BEYOND BORDERS</string>
+    <string name="search_clear">Suche leeren</string>
+</resources>

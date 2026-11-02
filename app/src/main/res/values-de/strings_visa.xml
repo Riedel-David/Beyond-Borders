@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made German draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Requirement categories (list headers, summaries, filters) -->
+    <string name="visa_category_home">Heimat</string>
+    <string name="visa_category_visa_free">Visumfrei</string>
+    <string name="visa_category_eta">Reisegenehmigung</string>
+    <string name="visa_category_visa_on_arrival">Visum bei Ankunft</string>
+    <string name="visa_category_e_visa">eVisum</string>
+    <string name="visa_category_visa_required">Visum erforderlich</string>
+    <string name="visa_category_check">Bestimmungen prüfen</string>
+    <string name="visa_category_permit_required">Genehmigung erforderlich</string>
+    <string name="visa_category_no_admission">Keine Einreise</string>
+
+    <!-- Map bands -->
+    <string name="visa_band_visa_free">Visumfrei</string>
+    <string name="visa_band_eta">eTicket/ETA</string>
+    <string name="visa_band_visa_on_arrival">Bei Ankunft</string>
+    <string name="visa_band_visa_required">Vorab beantragen</string>
+    <string name="visa_band_check">Prüfen</string>
+    <string name="visa_band_closed">Geschlossen</string>
+    <string name="visa_band_no_data">Keine Daten</string>
+
+    <!-- Confidence of curated entries -->
+    <string name="visa_confidence_high">Gesichert</string>
+    <string name="visa_confidence_medium">Wahrscheinlich korrekt, Details können abweichen</string>
+    <string name="visa_confidence_low">Unsicher – vor Buchung prüfen</string>
+
+    <plurals name="visa_days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+
+    <!-- Summary line: category and day count, then optional passport attribution -->
+    <string name="visa_summary_with_days">%1$s · %2$s</string>
+    <string name="visa_summary_with_passport">%1$s (%2$s Reisepass)</string>
+    <string name="visa_row_been">%1$s · besucht</string>
+    <string name="visa_row_wishlist">%1$s · auf der Wunschliste</string>
+    <string name="visa_row_check">prüfen</string>
+
+    <!-- Nominative, used before "Reisepass" -->
+    <string name="visa_adjective_de">deutscher</string>
+    <string name="visa_adjective_gb">britischer</string>
+
+    <string name="visa_as_of_notice">Stand %1$s (%2$s Reisepass) – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
+    <string name="visa_as_of_notice_two">Stand %1$s (%2$s und %3$s Reisepass) – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
+
+    <string name="visa_official_link">Hinweise des Auswärtigen Amts</string>
+    <string name="visa_official_link_for">Hinweise des Auswärtigen Amts: %1$s</string>
+    <string name="visa_iata_link">IATA Travel Centre (dort suchen)</string>
+
+    <!-- Passport list -->
+    <string name="visa_search_destinations">Reiseziele suchen</string>
+    <string name="visa_clear">Löschen</string>
+    <string name="visa_empty_query">Keine Reiseziele zu „%1$s“.</string>
+    <string name="visa_empty_filter">Keine Reiseziele im Filter „%1$s“.</string>
+    <string name="visa_empty_nothing">Nichts gefunden.</string>
+    <string name="visa_unavailable_title">Keine Visumdaten</string>
+    <string name="visa_unavailable_body">Die mitgelieferte Visumliste konnte nicht gelesen werden, daher gibt es in diesem Modus nichts anzuzeigen. Die Reisekarte ist nicht betroffen.</string>
+
+    <!-- Summary card -->
+    <string name="visa_summary_visa_free_of">"  von %1$d Orten visumfrei"</string>
+    <string name="visa_summary_easy">%1$d ohne Botschaftstermin erreichbar</string>
+    <string name="visa_legend_item">%1$s %2$d</string>
+    <string name="visa_dataset_credit">%1$s · %2$s</string>
+    <string name="visa_licence_link">Lizenz</string>
+    <string name="visa_source_link">Quelle: %1$s-Artikel</string>
+    <string name="visa_correction">%1$s sagt „%2$s“ – hier korrigiert</string>
+
+    <!-- Passport picker -->
+    <string name="picker_choose_passport">Reisepass wählen</string>
+    <string name="picker_search">Suche</string>
+</resources>

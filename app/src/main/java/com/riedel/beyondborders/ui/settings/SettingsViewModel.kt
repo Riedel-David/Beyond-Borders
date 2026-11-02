@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.settings
 
+import android.util.Log
 import android.content.ContentResolver
 import android.net.Uri
 import androidx.annotation.StringRes
@@ -14,7 +15,6 @@ import com.riedel.beyondborders.data.backup.CloudSnapshot
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.visa.VisaRegistry
-import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.MapBase
 import com.riedel.beyondborders.settings.MapColors
@@ -49,10 +49,11 @@ sealed interface TransferState {
 /**
  * The confirmation dialog between picking a file and actually importing it.
  *
- * [sampleNames] are resolved here, not in the screen, because [plan] only carries
- * place codes and "DE" means nothing to a user deciding whether to trust a file.
+ * [sampleCodes] are capped here but resolved to names in the screen, from the same
+ * localized places as the rest of the UI: [plan] only carries codes, and "DE" means
+ * nothing to a user deciding whether to trust a file.
  */
-data class ImportPreview(val plan: BackupMerge.Plan, val sampleNames: List<String>)
+data class ImportPreview(val plan: BackupMerge.Plan, val sampleCodes: List<String>)
 
 /**
  * Preferences, plus getting the travel history in and out of the app.
@@ -68,7 +69,6 @@ data class ImportPreview(val plan: BackupMerge.Plan, val sampleNames: List<Strin
 class SettingsViewModel(
     private val settings: SettingsStore,
     private val places: PlaceRepository,
-    private val visa: VisaRepository,
     private val resolver: ContentResolver,
     private val snapshot: CloudSnapshot,
     private val today: () -> LocalDate = LocalDate::now,
@@ -87,16 +87,10 @@ class SettingsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), VisaRegistry.DEFAULT_PASSPORT)
     val secondNationality: StateFlow<String?> = settings.secondNationality
 
-    /** Every passport the picker can offer, with a real country name where one is
-     * known. Loaded once: the set of built passports never changes at runtime. */
-    private val _passportNames = MutableStateFlow<Map<String, String>>(emptyMap())
-    val passportNames: StateFlow<Map<String, String>> = _passportNames.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            val codes = visa.availablePassports()
-            _passportNames.value = codes.associateWith { code -> places.place(code)?.name ?: code }
-        }
+    // The detail of an unexpected failure goes to the log; the user sees the generic text.
+    private fun loggedFailure(t: Throwable, @StringRes fallback: Int): UiText {
+        if (t !is TransferException && t !is BackupFormatException) Log.w("Transfer", "backup operation failed", t)
+        return failureText(t, fallback)
     }
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
@@ -209,7 +203,7 @@ class SettingsViewModel(
                 _snapshotOwned.value = false
                 TransferState.Idle
             } catch (e: Exception) {
-                TransferState.Failed(failureText(e, R.string.backup_delete_failed))
+                TransferState.Failed(loggedFailure(e, R.string.backup_delete_failed))
             }
         }
     }
@@ -235,7 +229,7 @@ class SettingsViewModel(
                 // know nothing about, and every plausible failure — permission
                 // revoked, SD card pulled, provider crash — should be a sentence on
                 // screen rather than a crash on a screen full of settings.
-                TransferState.Failed(failureText(e, R.string.backup_export_failed))
+                TransferState.Failed(loggedFailure(e, R.string.backup_export_failed))
             }
         }
     }
@@ -259,7 +253,7 @@ class SettingsViewModel(
                 // more so: this is where a picked file is first read and parsed, so an
                 // OutOfMemoryError or a StackOverflowError from nested JSON surfaces
                 // here first and should be a sentence on screen, not a crash.
-                _transfer.value = TransferState.Failed(failureText(t, R.string.backup_import_failed))
+                _transfer.value = TransferState.Failed(loggedFailure(t, R.string.backup_import_failed))
             }
         }
     }
@@ -287,7 +281,7 @@ class SettingsViewModel(
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
-                _transfer.value = TransferState.Failed(failureText(t, R.string.backup_import_failed))
+                _transfer.value = TransferState.Failed(loggedFailure(t, R.string.backup_import_failed))
             }
         }
     }
@@ -299,13 +293,10 @@ class SettingsViewModel(
      */
     private suspend fun previewText(text: String, isSnapshot: Boolean) {
         val plan = places.previewBackup(text)
-        // Codes, not names, are what the plan carries — resolved here because
-        // "DE" means nothing to a user looking at a confirmation dialog.
-        val sampleNames = plan.apply.take(PREVIEW_SAMPLE_SIZE)
-            .map { entry -> places.place(entry.code)?.name ?: entry.code }
+        val sampleCodes = plan.apply.take(PREVIEW_SAMPLE_SIZE).map { it.code }
         pendingImportText = text
         pendingIsSnapshot = isSnapshot
-        _importPreview.value = ImportPreview(plan, sampleNames)
+        _importPreview.value = ImportPreview(plan, sampleCodes)
         _transfer.value = TransferState.Idle
     }
 
@@ -347,7 +338,7 @@ class SettingsViewModel(
                 // being a crash instead of a sentence on screen. importBackup decodes
                 // the text again rather than trusting the preview's plan, so this
                 // arm is reachable here and not only in [previewImport].
-                TransferState.Failed(failureText(t, R.string.backup_import_failed))
+                TransferState.Failed(loggedFailure(t, R.string.backup_import_failed))
             }
         }
     }
@@ -397,13 +388,12 @@ class SettingsViewModel(
         fun factory(
             settings: SettingsStore,
             places: PlaceRepository,
-            visa: VisaRepository,
             resolver: ContentResolver,
             snapshot: CloudSnapshot,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(settings, places, visa, resolver, snapshot) as T
+                return SettingsViewModel(settings, places, resolver, snapshot) as T
             }
         }
     }
@@ -494,6 +484,28 @@ internal class TransferException(val text: UiText) : IOException()
 internal fun failureText(t: Throwable, @StringRes fallback: Int): UiText = when {
     t is TransferException -> t.text
     t is BackupFormatException -> t.userText
-    t.message != null -> UiText.Plain(t.message!!)
+    // The platform's message is English and written for developers, so it is not shown.
     else -> UiText.Res(fallback)
+}
+
+/**
+ * The language picker's three choices. Not stored in SettingsStore: Android keeps the
+ * per-app locale itself, and the picker reads it back from AppCompat.
+ */
+internal enum class AppLanguage(val tag: String) {
+    SYSTEM(""),
+    ENGLISH("en"),
+    GERMAN("de");
+
+    companion object {
+        /**
+         * Maps the language tags of the current application locales ("" when unset,
+         * possibly "de-DE") onto an option. A language the picker does not offer, such
+         * as one chosen in the system's own screen, reads as [SYSTEM].
+         */
+        fun fromTags(tags: String): AppLanguage {
+            val language = tags.substringBefore(',').substringBefore('-').lowercase()
+            return entries.firstOrNull { it != SYSTEM && it.tag == language } ?: SYSTEM
+        }
+    }
 }

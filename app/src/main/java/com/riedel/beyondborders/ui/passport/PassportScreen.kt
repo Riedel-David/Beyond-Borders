@@ -31,6 +31,21 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +54,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -57,6 +71,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,10 +79,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -84,10 +104,12 @@ import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
+import com.riedel.beyondborders.ui.places.geoNameRes
+import com.riedel.beyondborders.ui.places.geoNameText
+import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
-import com.riedel.beyondborders.ui.BounceFilterChip
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
@@ -119,7 +141,7 @@ fun PassportScreen(
     onStatsConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val rows by viewModel.rows.collectAsStateWithLifecycle()
+    val rowsByKey by viewModel.rows.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     // The stats detail popup needs a name and a status per code in a bucket, and
     // neither lives on [ContinentStat]/[RegionStat]/[NamedGroupStat] — just the
@@ -129,6 +151,11 @@ fun PassportScreen(
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val grouping by viewModel.grouping.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    val rows = remember(rowsByKey, grouping, locale) {
+        sortSectionsByLabel(rowsByKey, grouping) { geoNameText(it).asString(context) }
+    }
     val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
     val mode by viewModel.mode.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
@@ -291,27 +318,33 @@ fun PassportScreen(
                         )
                     }
                 }
-                Row(
-                    Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(top = 4.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = grouping == Grouping.CONTINENT,
-                        onClick = { viewModel.setGrouping(Grouping.CONTINENT) },
-                        label = { Text(stringResource(R.string.passport_group_continent)) },
-                    )
-                    FilterChip(
-                        selected = grouping == Grouping.REGION,
-                        onClick = { viewModel.setGrouping(Grouping.REGION) },
-                        label = { Text(stringResource(R.string.passport_group_region)) },
-                    )
-                    FilterChip(
-                        selected = grouping == Grouping.ALPHABETICAL,
-                        onClick = { viewModel.setGrouping(Grouping.ALPHABETICAL) },
-                        label = { Text(stringResource(R.string.passport_group_alphabetical)) },
-                    )
+                // Grouping is a different kind of control from the filters above (it
+                // reorders the list, it does not narrow it), so it is a segmented
+                // button rather than a second row of chips that looks identical.
+                val groupings = listOf(
+                    Grouping.CONTINENT to R.string.passport_group_continent,
+                    Grouping.REGION to R.string.passport_group_region,
+                    Grouping.ALPHABETICAL to R.string.passport_group_alphabetical,
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)) {
+                    groupings.forEachIndexed { index, (option, label) ->
+                        SegmentedButton(
+                            selected = option == grouping,
+                            onClick = { viewModel.setGrouping(option) },
+                            shape = SegmentedButtonDefaults.itemShape(index, groupings.size),
+                            // No check mark: it would cost the width German labels need at large font scales.
+                            icon = {},
+                            label = {
+                                Text(
+                                    stringResource(label),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    // Up to two lines: a German label at 1.3x wraps rather than eliding.
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -364,9 +397,9 @@ fun PassportScreen(
                 Column(Modifier.animateItem()) {
                     PlaceListRow(
                         row = row,
-                        onToggle = { target ->
+                        onSet = { target ->
                             viewModel.vibrate()
-                            viewModel.toggle(row.place.code, target)
+                            viewModel.setStatus(row.place.code, target)
                         },
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -404,13 +437,65 @@ internal fun SearchField(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQuery,
-        label = { Text(label) },
-        singleLine = true,
-        modifier = modifier.fillMaxWidth(),
-    )
+    // A filled pill rather than an outlined field: it reads as "search" at a glance and
+    // sits quietly above the list. Built from BasicTextField so the 48 dp height is real
+    // (TextField carries a 56 dp minimum), with the label as placeholder and a11y label.
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clip(CircleShape)
+            // Highest, not High: the map's search Card is surfaceContainerHigh, and a
+            // pill in the same colour would be invisible there.
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            // Tap anywhere on the pill, not just on the text, focuses the field.
+            .clickable(interactionSource = null, indication = null) { focusRequester.requestFocus() }
+            .padding(start = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box(Modifier.weight(1f).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) {
+                // Cleared semantics: the placeholder is only a visual hint; the field's
+                // own label (below) is what TalkBack reads, so it is not announced twice.
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQuery,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    focusManager.clearFocus()
+                    keyboard?.hide()
+                }),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+            )
+        }
+        if (query.isNotEmpty()) {
+            IconButton(onClick = { onQuery("") }) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear))
+            }
+        } else {
+            Spacer(Modifier.width(16.dp))
+        }
+    }
 }
 
 /**
@@ -714,59 +799,81 @@ internal fun travelHeaderSlots(
 }
 
 @Composable
-private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
+private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
+    val name = row.place.name
+    val status = row.status
+    var open by remember { mutableStateOf(false) }
+    var menuStatus by remember { mutableStateOf(status) }
+    val currentOnSet by rememberUpdatedState(onSet)
+    val apply: (StatusAction) -> Unit = { action ->
+        statusTargetFor(action, status)?.let(currentOnSet)
+    }
+    val statusText = statusLabelRes(status)?.let { stringResource(it) }
+        ?: stringResource(R.string.passport_status_unset)
+    val description = stringResource(R.string.passport_status_chip_desc, name, statusText)
+    val changeStatus = stringResource(R.string.passport_change_status)
+    val markBeen = stringResource(R.string.passport_mark_been, name)
+    val markLived = stringResource(R.string.passport_mark_lived, name)
+    val markWant = stringResource(R.string.passport_mark_want, name)
+    val clear = stringResource(R.string.passport_clear_status, name)
+    val actions = remember(status, markBeen, markLived, markWant, clear) {
+        statusMenuEntries(status).map { action ->
+            val label = when (action) {
+                StatusAction.BEEN -> markBeen
+                StatusAction.LIVED -> markLived
+                StatusAction.WANT -> markWant
+                StatusAction.CLEAR -> clear
+            }
+            CustomAccessibilityAction(label) { apply(action); true }
+        }
+    }
+    fun openMenu() {
+        menuStatus = status
+        open = true
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // One focus stop per row: name + status, the mark/clear actions, and a click
+            // that opens the same menu the chip does.
+            .clearAndSetSemantics {
+                contentDescription = description
+                customActions = actions
+                onClick(label = changeStatus) { openMenu(); true }
+            }
             .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            // One line, always: the code/sovereign subtitle underneath already
-            // carries full identification, so a long name loses only its tail here
-            // rather than pushing every row in a uniform list to two different heights.
+        FlagThumb(row.place.code)
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            // Up to two lines: the chip is one compact control now, so a long name has
+            // room to wrap instead of losing its tail at 1.3x font scale.
             Text(
-                row.place.name,
+                name,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                // Sovereign is shown only where it adds information: "Greenland
-                // (Denmark)" is useful, "France (France)" is noise.
-                if (row.place.sovereign != row.place.name) {
-                    "${row.place.code} · ${row.place.sovereign}"
-                } else {
-                    row.place.code
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Sovereign is shown only where it adds information: "Greenland
+            // (Denmark)" is useful, "France (France)" is noise.
+            if (row.place.sovereign != name) {
+                Text(
+                    row.place.sovereign,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        // Three chips take enough width that a long name now wraps to a second line.
-        // Accepted deliberately: bulk entry happens here, so every status has to be
-        // one tap away on this screen, and a hidden third option would push the
-        // rarest answer onto the map only.
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.VISITED,
-                label = stringResource(R.string.passport_chip_been),
-                semanticsLabel = stringResource(R.string.passport_mark_been, row.place.name),
-                onClick = { onToggle(PlaceStatus.VISITED) },
-            )
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.LIVED,
-                label = stringResource(R.string.passport_chip_lived),
-                semanticsLabel = stringResource(R.string.passport_mark_lived, row.place.name),
-                onClick = { onToggle(PlaceStatus.LIVED) },
-            )
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.WISHLIST,
-                label = stringResource(R.string.passport_chip_want),
-                semanticsLabel = stringResource(R.string.passport_mark_want, row.place.name),
-                onClick = { onToggle(PlaceStatus.WISHLIST) },
-            )
-        }
+        StatusChip(
+            status = status,
+            open = open,
+            menuStatus = menuStatus,
+            onOpen = ::openMenu,
+            onDismiss = { open = false },
+            onAction = { open = false; apply(it) },
+        )
     }
 }
 
@@ -933,4 +1040,5 @@ internal fun railTargetIndex(headerSlots: List<String?>, label: String): Int? =
 @Composable
 private fun sectionHeaderLabel(key: String): String =
     if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited)
-    else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) } ?: key
+    else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) }
+        ?: geoNameRes(key)?.let { stringResource(it) } ?: key

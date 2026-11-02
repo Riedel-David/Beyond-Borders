@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -78,11 +80,15 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
         }
 
         val container = (application as BeyondBordersApp).container
+        // Read once: a binder call must not re-run on every recomposition.
+        val (ownWidth, ownHeight) = widgetSizeDp(AppWidgetManager.getInstance(this).getAppWidgetOptions(widgetId))
+        val previewSizes = previewSizesFor(ownWidth, ownHeight)
 
         setContent {
             BeyondBordersTheme {
                 ConfigScreen(
                     container = container,
+                    previewSizes = previewSizes,
                     onDone = { metric, filledBackground, target -> save(metric, filledBackground, target) },
                 )
             }
@@ -133,14 +139,16 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
 @Composable
 private fun ConfigScreen(
     container: AppContainer,
+    previewSizes: PreviewSizes,
     onDone: (WidgetMetric, Boolean, WidgetTarget) -> Unit,
 ) {
+    val sizes = previewSizes.options
     var metric by remember { mutableStateOf(WidgetMetric.DEFAULT) }
     var filledBackground by remember { mutableStateOf(true) }
     // Null until touched, so the default keeps following the metric.
     var chosenTarget by remember { mutableStateOf<WidgetTarget?>(null) }
     val target = chosenTarget ?: WidgetTarget.defaultFor(metric)
-    var size by remember { mutableStateOf(PreviewSize.DEFAULT) }
+    var size by remember { mutableStateOf(previewSizes.initial) }
 
     // Fetch the real stats for the preview
     var stats by remember { mutableStateOf(TravelStats.EMPTY) }
@@ -227,15 +235,19 @@ private fun ConfigScreen(
             }
 
             // Preview only: the launcher still picks the real tier from the placed widget's
-            // size, so this shows what each grid size will look like once resized to it.
-            Text(stringResource(R.string.widget_cfg_preview_title), style = MaterialTheme.typography.titleMedium)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                PreviewSize.entries.forEachIndexed { index, option ->
-                    SegmentedButton(
+            // size. It starts on that reported size (or the matching grid preset); the presets
+            // show what each grid size will look like once resized to it, including HyperOS's
+            // 3×2, which lands on a different tier than One UI's.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            ) {
+                sizes.forEach { option ->
+                    FilterChip(
                         selected = size == option,
                         onClick = { size = option },
-                        shape = SegmentedButtonDefaults.itemShape(index, PreviewSize.entries.size),
-                    ) { Text(option.label) }
+                        label = { Text(option.label) },
+                    )
                 }
             }
 
@@ -280,15 +292,33 @@ private fun ConfigScreen(
     }
 }
 
-/** Grid sizes with the dp a One UI home screen reports for them (3×2 is 220×202). */
-private enum class PreviewSize(val label: String, val widthDp: Int, val heightDp: Int) {
-    S2X1("2×1", 146, 101),
-    S2X2("2×2", 146, 202),
-    S3X2("3×2", 220, 202),
-    S4X2("4×2", 293, 202),
-    S4X3("4×3", 293, 303);
-
+/** A preview box in dp. */
+internal data class PreviewSize(val label: String, val widthDp: Int, val heightDp: Int) {
     companion object {
-        val DEFAULT = S3X2
+        /** Grid sizes with the dp a One UI home screen reports (3×2 is 220×202), plus HyperOS's 3×2, which is STRIP. */
+        private val THREE_BY_TWO = PreviewSize("3×2", 220, 202)
+        val PRESETS = listOf(
+            PreviewSize("2×1", 146, 101),
+            PreviewSize("2×2", 146, 202),
+            THREE_BY_TWO,
+            PreviewSize("3×2 HyperOS", 193, 132),
+            PreviewSize("4×2", 293, 202),
+            PreviewSize("4×3", 293, 303),
+        )
+        val DEFAULT = THREE_BY_TWO
     }
+}
+
+/** The chips to offer and the one selected first. */
+internal data class PreviewSizes(val options: List<PreviewSize>, val initial: PreviewSize)
+
+/**
+ * The placed widget's own size leads the list as the initial choice, unless it equals a
+ * preset's dimensions, in which case that preset is selected instead of a duplicate chip.
+ */
+internal fun previewSizesFor(ownWidthDp: Int, ownHeightDp: Int): PreviewSizes {
+    val match = PreviewSize.PRESETS.firstOrNull { it.widthDp == ownWidthDp && it.heightDp == ownHeightDp }
+    if (match != null) return PreviewSizes(PreviewSize.PRESETS, match)
+    val own = PreviewSize("${ownWidthDp}×${ownHeightDp}", ownWidthDp, ownHeightDp)
+    return PreviewSizes(listOf(own) + PreviewSize.PRESETS, own)
 }

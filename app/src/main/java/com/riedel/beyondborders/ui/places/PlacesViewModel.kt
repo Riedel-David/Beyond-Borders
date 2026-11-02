@@ -12,16 +12,18 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
-import com.riedel.beyondborders.ui.UiText
-import com.riedel.beyondborders.ui.theme.RegionSlots
+import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaRegistry
-import com.riedel.beyondborders.data.visa.band
 import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.data.visa.band
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.SettingsStore
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.theme.RegionSlots
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -207,7 +209,34 @@ class PlacesViewModel(
      */
     var mapCamera: MapCamera? = null
 
-    private val allPlaces = MutableStateFlow<List<Place>>(emptyList())
+    private val rawPlaces = MutableStateFlow<List<Place>>(emptyList())
+
+    /**
+     * The language place names are shown in. This ViewModel outlives the activity
+     * recreation a language change causes, so the names are derived from the raw
+     * registry and this locale rather than localized once at load.
+     */
+    private val _locale = MutableStateFlow(Locale.getDefault())
+    fun setLocale(locale: Locale) { _locale.value = locale }
+
+    private val allPlaces: StateFlow<List<Place>> =
+        combine(rawPlaces, _locale) { places, locale -> localizePlaces(places, locale) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _englishPassportNames = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** The English names, for the picker's search: a German user may still type "Germany". */
+    val englishPassportNames: StateFlow<Map<String, String>> = _englishPassportNames
+
+    /**
+     * Every passport the pickers can offer, by display name: the localized place name when
+     * known, the English one before the localized list has loaded. The one source for the
+     * welcome screen, Settings and the import preview.
+     */
+    val passportNames: StateFlow<Map<String, String>> =
+        combine(allPlaces, _englishPassportNames) { places, english ->
+            mergeNames(english.keys, places.associate { it.code to it.name }, english)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** The full registry, for surfaces that draw every place rather than a filtered list — the map's labels. */
     val places: StateFlow<List<Place>> = allPlaces
@@ -349,7 +378,11 @@ class PlacesViewModel(
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
-        viewModelScope.launch { allPlaces.value = repo.places() }
+        viewModelScope.launch { rawPlaces.value = repo.places() }
+        viewModelScope.launch {
+            _englishPassportNames.value = visaRepo.availablePassports()
+                .associateWith { code -> repo.place(code)?.name ?: code }
+        }
         viewModelScope.launch {
             // A StateFlow re-emits its current value to a new collector, so this
             // both loads the initial registry and reloads it on every nationality
@@ -445,6 +478,11 @@ class PlacesViewModel(
         viewModelScope.launch { repo.toggleStatus(code, target) }
     }
 
+    /** Absolute counterpart of [toggle] for menus: NONE clears. */
+    fun setStatus(code: String, status: PlaceStatus) {
+        viewModelScope.launch { repo.setStatus(code, status) }
+    }
+
     companion object {
         private const val TAG = "PlacesViewModel"
 
@@ -474,7 +512,7 @@ class PlacesViewModel(
 internal fun almostFinishedNudgeText(continents: List<ContinentStat>): UiText? {
     val candidate = nudgeCandidate(continents) ?: return null
     val remaining = candidate.total - candidate.been
-    return UiText.Plural(R.plurals.places_nudge, remaining, remaining, candidate.continent)
+    return UiText.Plural(R.plurals.places_nudge, remaining, remaining, geoNameText(candidate.continent))
 }
 
 private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = continents
@@ -490,7 +528,7 @@ private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = co
  */
 internal fun leastCoveredContinentText(continents: List<ContinentStat>): UiText? {
     val worst = leastCoveredCandidate(continents) ?: return null
-    return UiText.Res(R.string.places_least_covered, worst.continent, worst.been, worst.total)
+    return UiText.Res(R.string.places_least_covered, geoNameText(worst.continent), worst.been, worst.total)
 }
 
 private fun leastCoveredCandidate(continents: List<ContinentStat>): ContinentStat? {
@@ -956,4 +994,30 @@ internal fun combineRequirements(
         else -> primary
     }
     return CombinedRequirement(winner, fromPrimary = winner === primary)
+}
+
+/** A code's display name: the localized one wins, the English one covers the moment before
+ * the localized list loads, the code itself is the last resort. */
+internal fun localizedName(code: String, localized: Map<String, String>, english: Map<String, String>): String =
+    localized[code] ?: english[code] ?: code
+
+internal fun mergeNames(
+    codes: Iterable<String>,
+    localized: Map<String, String>,
+    english: Map<String, String>,
+): Map<String, String> = codes.associateWith { localizedName(it, localized, english) }
+
+/**
+ * Continent and region sections are keyed and sorted by their English name, which is the
+ * wrong order once the headers read in another language (Ostafrika after Melanesien). This
+ * re-orders whole sections by the folded display label; [rows] keep their order inside a
+ * section (the sort is stable) and A-Z grouping, whose headers are letters, is untouched.
+ */
+internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label: (String) -> String): List<PlaceRow> {
+    if (grouping == Grouping.ALPHABETICAL) return rows
+    val folded = HashMap<String, String>()
+    return rows.sortedBy { row ->
+        val key = sectionHeader(row.place, grouping)
+        folded.getOrPut(key) { label(key).foldForSearch() }
+    }
 }

@@ -35,6 +35,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.produceState
+import android.util.Log
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,10 +55,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.map.flagAssetPath
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.geoNameText
 import com.riedel.beyondborders.ui.places.leastCoveredContinentText
 
 /** One bar's worth of a completion grid, [codes] carried along so a long press
@@ -100,6 +107,17 @@ fun StatsScreen(
     val upNext = remember(achievements) { nextUp(achievements) }
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
+    // Read off the main thread; null until loaded, so the hero shows no strip meanwhile.
+    val flagFiles by produceState<Set<String>?>(null) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                context.assets.list("flags")?.toSet().orEmpty()
+            } catch (e: IOException) {
+                Log.w("StatsScreen", "Could not list bundled flags", e)
+                emptySet()
+            }
+        }
+    }
     var celebrated by rememberSaveable { mutableStateOf(false) }
     // Keyed on the badges themselves, not just non-emptiness: statuses start as an
     // empty map, so the first pass can see every badge locked and persist an empty set.
@@ -148,6 +166,10 @@ fun StatsScreen(
                 placesVisited = placesVisited,
                 badgesUnlocked = badgesUnlocked,
                 badgesTotal = achievements.size,
+                flagCodes = remember(places, statuses, flagFiles) {
+                    val files = flagFiles ?: return@remember emptyList()
+                    heroFlagCodes(places, statuses, hasFlag = { code -> flagAssetPath(code)?.substringAfter('/')?.let { it in files } == true })
+                },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             )
 
@@ -301,13 +323,13 @@ private fun CompletionBar(bucket: Bucket, onHold: (Bucket) -> Unit, modifier: Mo
             onLongClick = { onHold(bucket) },
             // Surfaces the long-press in TalkBack's actions menu; sighted behaviour
             // is unchanged.
-            onLongClickLabel = stringResource(R.string.stats_bar_details, bucket.label),
+            onLongClickLabel = stringResource(R.string.stats_bar_details, geoNameText(bucket.label).asString()),
         ),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Row {
             Text(
-                bucket.label,
+                geoNameText(bucket.label).asString(),
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -357,7 +379,7 @@ private fun BucketDetailDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(bucket.label) },
+        title = { Text(geoNameText(bucket.label).asString()) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (been.isNotEmpty()) {

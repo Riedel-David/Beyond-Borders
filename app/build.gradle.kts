@@ -11,6 +11,12 @@ android {
         version = release(37)
     }
 
+    // Only the languages the app ships: keeps appcompat/Material/MapLibre's other
+    // translations out of the APK, and matches res/xml/locales_config.xml.
+    androidResources {
+        localeFilters += listOf("en", "de")
+    }
+
     defaultConfig {
         applicationId = "com.riedel.beyondborders"
         // 30 (Android 11, 2020): only the author and a friend run this app, both

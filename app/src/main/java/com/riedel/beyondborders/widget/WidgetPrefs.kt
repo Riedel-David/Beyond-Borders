@@ -9,6 +9,19 @@ import android.content.Context
  */
 object WidgetPrefs {
     private const val PREFS_NAME = "widget_prefs"
+    private const val LANGUAGE_KEY = "app_language_tags"
+
+    /**
+     * The app's language as a BCP-47 list ("" = follow the system). The widget is drawn from a
+     * broadcast receiver where, below API 33, `AppCompatDelegate.getApplicationLocales()` is empty
+     * (nothing has restored the per-app choice in a process with no activity), so the in-app
+     * value is copied here whenever the app is in the foreground and read back by the receiver.
+     */
+    fun languageTags(context: Context): String = prefs(context).getString(LANGUAGE_KEY, "") ?: ""
+
+    fun setLanguageTags(context: Context, tags: String) {
+        prefs(context).edit().putString(LANGUAGE_KEY, tags).apply()
+    }
 
     fun metric(context: Context, widgetId: Int): WidgetMetric =
         WidgetMetric.fromStorage(prefs(context).getString(metricKey(widgetId), null))

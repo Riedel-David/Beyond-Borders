@@ -37,6 +37,11 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
+    <!-- Language -->
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_detail">Sets the app language and how country names are written.</string>
+    <string name="settings_language_system">System default</string>
+
     <string name="settings_passport_title">Passport</string>
     <string name="settings_passport_detail">Which passport\'s visa answers the map and passport tab show.</string>
     <string name="settings_second_passport">Second passport</string>
@@ -92,7 +97,7 @@
     <string name="settings_preview_skipped">Skipped (already up to date)</string>
     <string name="settings_preview_sample">e.g. %1$s.</string>
     <string name="settings_preview_sample_more">e.g. %1$s, and %2$d more.</string>
-    <!-- The caveat issues are joined with "; " and end with this -->
+    <!-- The caveat issues are joined with the locale's list wording (ListFormatter) and end with this -->
     <string name="settings_preview_caveat">%1$s.</string>
     <plurals name="settings_caveat_codes">
         <item quantity="one">%d place code not recognised by this build</item>
