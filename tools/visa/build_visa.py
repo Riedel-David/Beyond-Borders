@@ -27,6 +27,7 @@ quietly missing is worse than a build that fails.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import http.client
 import json
 import re
@@ -156,6 +157,18 @@ class Dataset:
             )
         check_index_files(index)
         return cls(root, index)
+
+    def sha256(self) -> str:
+        """One digest over everything the build reads: index.json, then each
+        passport file the index names, in code order, each preceded by its path so
+        moving bytes between files changes the digest."""
+        h = hashlib.sha256()
+        files = ["index.json"] + [self.index["passports"][c]["file"] for c in self.passports()]
+        for name in files:
+            h.update(name.encode() + b"\0")
+            h.update((self.root / name).read_bytes())
+            h.update(b"\0")
+        return h.hexdigest()
 
     @property
     def generated_at(self) -> str:
@@ -766,10 +779,11 @@ def write_revisions(ds: Dataset, built: list[str], thin: list[str]) -> None:
         "# assets were built from. Written by tools/visa/build_visa.py on a full build.",
         f"# index.json generated_at: {ds.generated_at}",
         f"# index.json schema_version: {ds.index.get('schema_version')}",
+        f"# dataset sha256 (index.json + passport files, see Dataset.sha256): {ds.sha256()}",
         "# passport  source_revision (Wikipedia revision of its article)",
     ]
     if thin:
-        lines.insert(4, f"# not shipped (fewer than {rules.MIN_DATASET_ROWS} answers): "
+        lines.insert(5, f"# not shipped (fewer than {rules.MIN_DATASET_ROWS} answers): "
                         + " ".join(thin))
     for code in built:
         lines.append(f"{code} {ds.index['passports'][code]['source_revision']}")
@@ -786,6 +800,10 @@ def main() -> int:
                          "(a checkout's data/ or a previous download in "
                          "tools/visa/cache/visa-requirements); default: download "
                          "the latest publication")
+    ap.add_argument("--expect-sha256", default=None, metavar="HEX",
+                    help="refuse to build unless the dataset's digest (printed on "
+                         "every run, recorded in docs/visa-source-revisions.txt) "
+                         "matches; pins a rebuild to a publication already reviewed")
     ap.add_argument("--advice", type=Path, default=DEFAULT_ADVICE,
                     help="the Auswärtiges Amt travelwarning JSON (DE only)")
     a = ap.parse_args()
@@ -812,7 +830,11 @@ def main() -> int:
         fetch(DEFAULT_SOURCE)
         a.source = DEFAULT_SOURCE
     ds = Dataset.open(a.source)
-    print(f"dataset generated_at {ds.generated_at}, {len(ds.passports())} passports")
+    print(f"dataset generated_at {ds.generated_at}, {len(ds.passports())} passports, "
+          f"sha256 {ds.sha256()}")
+    if a.expect_sha256 is not None and a.expect_sha256.lower() != ds.sha256():
+        raise SystemExit(f"dataset sha256 mismatch: expected {a.expect_sha256.lower()}, "
+                         f"got {ds.sha256()}; nothing written")
     usage = Usage()
 
     if a.passport is not None:

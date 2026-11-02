@@ -7,6 +7,7 @@ a build); the tests that need it are skipped without it.
 import contextlib
 import hashlib
 import io
+import json
 import shutil
 import sys
 import tempfile
@@ -91,6 +92,61 @@ class SinglePassport(unittest.TestCase):
                 build_visa.main()
         self.assertIn("--source", str(cm.exception))
         self.assertEqual([], fetched)
+
+
+def tiny_dataset(root: Path, generated_at: str = "2026-10-30T15:07:24+00:00"):
+    (root / "passports").mkdir(parents=True)
+    index = {"generated_at": generated_at, "schema_version": "1.0.0",
+             "passports": {"AA": {"file": "passports/AA.json", "source_revision": 1}}}
+    (root / "index.json").write_text(json.dumps(index))
+    (root / "passports" / "AA.json").write_text('{"passport": "AA"}')
+    return build_visa.Dataset(root, index)
+
+
+class Provenance(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def test_digest_changes_when_a_passport_file_changes(self):
+        ds = tiny_dataset(self.tmp / "d")
+        before = ds.sha256()
+        self.assertEqual(64, len(before))
+        (self.tmp / "d" / "passports" / "AA.json").write_text('{"passport": "AB"}')
+        self.assertNotEqual(before, ds.sha256())
+
+    def test_as_of_is_the_dates_part_of_the_index_generated_at(self):
+        ds = tiny_dataset(self.tmp / "d", "2026-01-02T23:59:59+00:00")
+        self.assertEqual("2026-01-02", ds.generated_at[:10])
+
+    def test_revisions_file_records_the_digest_and_the_generated_at(self):
+        ds = tiny_dataset(self.tmp / "d")
+        out = self.tmp / "rev.txt"
+        with mock.patch.object(build_visa, "REVISIONS_FILE", out):
+            build_visa.write_revisions(ds, ["AA"], ["XN"])
+        text = out.read_text()
+        self.assertIn(f"{ds.sha256()}\n", text)
+        self.assertIn("# index.json generated_at: 2026-10-30T15:07:24+00:00", text)
+        self.assertLess(text.index("# not shipped"), text.index("# passport  source_revision"))
+
+    @unittest.skipUnless(HAVE_CACHE, "no cached dataset; run a full build once")
+    def test_a_wrong_expected_digest_refuses_before_writing_anything(self):
+        assets, docs = self.tmp / "assets", self.tmp / "docs"
+        assets.mkdir()
+        docs.mkdir()
+        argv = ["build_visa.py", "--source", str(build_visa.DEFAULT_SOURCE),
+                "--expect-sha256", "0" * 64,
+                "--advice", str(self.tmp / "advice.json")]
+        (self.tmp / "advice.json").write_text("{}")
+        with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(build_visa, "ASSETS", assets), \
+                mock.patch.object(build_visa, "REVISIONS_FILE", docs / "rev.txt"), \
+                mock.patch.object(build_visa, "GAP_FILE", docs / "gap.txt"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(SystemExit) as cm:
+                build_visa.main()
+        self.assertIn("sha256 mismatch", str(cm.exception))
+        self.assertEqual([], list(assets.iterdir()) + list(docs.iterdir()))
 
 
 class IndexShape(unittest.TestCase):
