@@ -1,6 +1,5 @@
 package com.riedel.beyondborders.data.place
 
-import com.riedel.beyondborders.ui.settings.AppLanguage
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -99,16 +98,6 @@ class LocalizePlacesTest {
         val real = localizePlaces(places, german)
         assertEquals("Deutschland", real.first { it.code == "DE" }.name)
         assertEquals("Frankreich", real.first { it.code == "FR" }.name)
-    }
-
-    @Test
-    fun `the language picker maps application locale tags to options and back`() {
-        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTags(""))
-        assertEquals(AppLanguage.ENGLISH, AppLanguage.fromTags("en"))
-        assertEquals(AppLanguage.GERMAN, AppLanguage.fromTags("de-DE"))
-        assertEquals(AppLanguage.GERMAN, AppLanguage.fromTags("de,en"))
-        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTags("fr"))
-        assertEquals("de", AppLanguage.GERMAN.tag)
     }
 
     @Test

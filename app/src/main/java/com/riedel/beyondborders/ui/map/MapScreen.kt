@@ -118,6 +118,7 @@ import com.riedel.beyondborders.ui.places.RegionMode
 import com.riedel.beyondborders.ui.places.RegionStyleKey
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.combinedBandCounts
+import com.riedel.beyondborders.ui.places.geoNameText
 import com.riedel.beyondborders.ui.places.nextRegionMode
 import com.riedel.beyondborders.ui.theme.BeyondBordersDark
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
@@ -1419,7 +1420,7 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                info.name,
+                geoNameText(info.name).asString(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1512,7 +1513,7 @@ private fun SelectedPlaceCard(
                     buildString {
                         append(place.code)
                         append(" · ")
-                        append(place.continent)
+                        append(geoNameText(place.continent).asString())
                         // Shown only where it says something new: "Greenland (Denmark)"
                         // is the point of this app, "France (France)" is noise.
                         if (place.sovereign != place.name) {

@@ -84,6 +84,7 @@ import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
+import com.riedel.beyondborders.ui.places.geoNameRes
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -933,4 +934,5 @@ internal fun railTargetIndex(headerSlots: List<String?>, label: String): Int? =
 @Composable
 private fun sectionHeaderLabel(key: String): String =
     if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited)
-    else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) } ?: key
+    else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) }
+        ?: geoNameRes(key)?.let { stringResource(it) } ?: key

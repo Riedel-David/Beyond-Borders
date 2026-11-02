@@ -209,7 +209,7 @@ class TravelBackupTest {
     fun `a foreign json file is refused with a reason`() {
         val error = runCatching { TravelBackup.decode("""{"places":[]}""") }.exceptionOrNull()
         assertTrue(error is BackupFormatException)
-        assertTrue(error!!.message!!.contains("BeyondBorders"))
+        assertEquals(BackupFormatReason.WRONG_FORMAT, (error as BackupFormatException).reason)
     }
 
     @Test
@@ -228,7 +228,8 @@ class TravelBackupTest {
         val json = """{"format":"beyondborders.travel","version":99,"places":[]}"""
         val error = runCatching { TravelBackup.decode(json) }.exceptionOrNull()
         assertTrue(error is BackupFormatException)
-        assertTrue(error!!.message!!.contains("newer version"))
+        assertEquals(BackupFormatReason.NEWER_VERSION, (error as BackupFormatException).reason)
+        assertEquals(99, error.version)
     }
 
     @Test

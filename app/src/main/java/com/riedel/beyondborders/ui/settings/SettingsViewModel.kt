@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.settings
 
+import android.util.Log
 import android.content.ContentResolver
 import android.net.Uri
 import androidx.annotation.StringRes
@@ -87,18 +88,6 @@ class SettingsViewModel(
         .map { it ?: VisaRegistry.DEFAULT_PASSPORT }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), VisaRegistry.DEFAULT_PASSPORT)
     val secondNationality: StateFlow<String?> = settings.secondNationality
-
-    /** Every passport the picker can offer, with a real country name where one is
-     * known. Loaded once: the set of built passports never changes at runtime. */
-    private val _passportNames = MutableStateFlow<Map<String, String>>(emptyMap())
-    val passportNames: StateFlow<Map<String, String>> = _passportNames.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            val codes = visa.availablePassports()
-            _passportNames.value = codes.associateWith { code -> places.place(code)?.name ?: code }
-        }
-    }
 
     private val _transfer = MutableStateFlow<TransferState>(TransferState.Idle)
     val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
@@ -492,8 +481,11 @@ internal class TransferException(val text: UiText) : IOException()
 internal fun failureText(t: Throwable, @StringRes fallback: Int): UiText = when {
     t is TransferException -> t.text
     t is BackupFormatException -> t.userText
-    t.message != null -> UiText.Plain(t.message!!)
-    else -> UiText.Res(fallback)
+    // The platform's message is English and written for developers; the detail goes to the log.
+    else -> {
+        Log.w("Transfer", "backup operation failed", t)
+        UiText.Res(fallback)
+    }
 }
 
 /**

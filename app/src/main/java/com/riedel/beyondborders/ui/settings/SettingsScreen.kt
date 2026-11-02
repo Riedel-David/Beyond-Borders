@@ -1,10 +1,10 @@
 package com.riedel.beyondborders.ui.settings
 
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
+import android.icu.text.ListFormatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,12 +45,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
@@ -66,8 +68,10 @@ import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.ThemeMode
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
+import com.riedel.beyondborders.ui.places.localizedName
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
+import com.riedel.beyondborders.widget.TravelWidgetProvider
 
 /**
  * Settings: how the app looks, and how to get the data out.
@@ -82,6 +86,8 @@ fun SettingsScreen(
     placeCount: Int,
     unMemberCount: Int,
     placeNames: Map<String, String>,
+    passportNames: Map<String, String>,
+    englishNames: Map<String, String>,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -104,11 +110,6 @@ fun SettingsScreen(
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
-    val englishPassportNames by viewModel.passportNames.collectAsStateWithLifecycle()
-    // Localized names win; the ViewModel's English ones cover the moment before the registry loads.
-    val passportNames = remember(englishPassportNames, placeNames) {
-        englishPassportNames.mapValues { (code, english) -> placeNames[code] ?: english }
-    }
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
@@ -159,6 +160,7 @@ fun SettingsScreen(
             PassportPickerButton(
                 selected = nationality,
                 names = passportNames,
+                englishNames = englishNames,
                 onSelect = viewModel::setNationality,
             )
             Spacer(Modifier.height(8.dp))
@@ -166,6 +168,7 @@ fun SettingsScreen(
                 PassportPickerButton(
                     selected = null,
                     names = passportNames,
+                    englishNames = englishNames,
                     onSelect = viewModel::setSecondNationality,
                     dialogTitle = stringResource(R.string.settings_second_passport),
                     placeholder = stringResource(R.string.settings_add_second_passport),
@@ -189,6 +192,7 @@ fun SettingsScreen(
                     PassportPickerButton(
                         selected = secondPassport,
                         names = passportNames,
+                        englishNames = englishNames,
                         onSelect = viewModel::setSecondNationality,
                         dialogTitle = stringResource(R.string.settings_second_passport),
                         exclude = setOf(nationality),
@@ -248,6 +252,8 @@ fun SettingsScreen(
                         if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
                         else LocaleListCompat.forLanguageTags(option.tag),
                     )
+                    // Re-draws the home-screen widget in the new language.
+                    TravelWidgetProvider.requestUpdate(context.applicationContext)
                 },
             )
         }
@@ -335,7 +341,7 @@ fun SettingsScreen(
                 AlertDialog(
                     onDismissRequest = viewModel::dismissImportPreview,
                     title = { Text(stringResource(R.string.settings_import_title)) },
-                    text = { ImportPreviewSummary(preview.plan, preview.sampleCodes.map { placeNames[it] ?: it }) },
+                    text = { ImportPreviewSummary(preview.plan, preview.sampleCodes.map { localizedName(it, placeNames, passportNames) }) },
                     confirmButton = {
                         TextButton(onClick = viewModel::confirmImportPreview) {
                             Text(stringResource(R.string.settings_import))
@@ -749,7 +755,9 @@ internal fun importPreviewCaveat(plan: BackupMerge.Plan): List<UiText> = buildLi
 
 @Composable
 private fun caveatSentence(issues: List<UiText>): String {
-    val joined = issues.map { it.asString() }.joinToString(separator = "; ")
-        .replaceFirstChar { it.uppercase() }
+    // The locale's own list wording ("A, B and C" / "A, B und C"); every issue starts with a
+    // count, so there is no first letter to capitalise.
+    val locale = LocalConfiguration.current.locales[0]
+    val joined = ListFormatter.getInstance(locale).format(issues.map { it.asString() })
     return stringResource(R.string.settings_preview_caveat, joined)
 }

@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import androidx.appcompat.app.AppCompatDelegate
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.MainActivity
 import com.riedel.beyondborders.R
@@ -108,7 +109,7 @@ class TravelWidgetProvider : AppWidgetProvider() {
             val minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110)
             val tier = widgetTier(minWidthDp, minHeightDp)
 
-            val views = travelWidgetViews(context, tier, metric, filledBackground, stats)
+            val views = travelWidgetViews(localizedContext(context), tier, metric, filledBackground, stats)
 
             // The tap goes where the config screen said, with the tab always spelled out:
             // an intent with no extras resumes whatever the app last showed. The widget id
@@ -133,10 +134,26 @@ class TravelWidgetProvider : AppWidgetProvider() {
             manager.updateAppWidget(widgetId, views)
         }
 
+        /** [context] with the app's chosen language applied. The application context follows
+         * the system locale below API 33, so the widget text was in the wrong language. */
+        private fun localizedContext(context: Context): Context {
+            val tags = WidgetPrefs.languageTags(context)
+            if (tags.isEmpty()) return context
+            val config = android.content.res.Configuration(context.resources.configuration)
+            config.setLocales(android.os.LocaleList.forLanguageTags(tags))
+            return context.createConfigurationContext(config)
+        }
+
         /** Called after any change that could move the count, so the widget never
          * waits out the full [android.appwidget.AppWidgetProviderInfo.updatePeriodMillis]
          * to reflect it. */
         fun requestUpdate(context: Context) {
+            // Main thread, so the in-app language is accurate here; the receiver cannot
+            // read it itself below API 33 (see WidgetPrefs.languageTags).
+            WidgetPrefs.setLanguageTags(
+                context,
+                AppCompatDelegate.getApplicationLocales().toLanguageTags(),
+            )
             // getAppWidgetIds is a synchronous binder call and this is invoked from
             // Activity.onPause, on the main thread, whether or not a widget is even
             // installed — so the whole thing goes to an IO thread. Nothing waits on it.

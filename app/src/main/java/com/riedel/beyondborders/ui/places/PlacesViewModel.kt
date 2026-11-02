@@ -1,6 +1,5 @@
 package com.riedel.beyondborders.ui.places
 
-import java.util.Locale
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -10,24 +9,27 @@ import com.riedel.beyondborders.R
 import com.riedel.beyondborders.core.Haptics
 import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.Place
-import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
-import com.riedel.beyondborders.ui.UiText
-import com.riedel.beyondborders.ui.theme.RegionSlots
+import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.data.visa.VisaRegistry
-import com.riedel.beyondborders.data.visa.band
 import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.data.visa.band
 import com.riedel.beyondborders.settings.Denominator
 import com.riedel.beyondborders.settings.SettingsStore
+import com.riedel.beyondborders.ui.UiText
+import com.riedel.beyondborders.ui.theme.RegionSlots
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -221,7 +223,24 @@ class PlacesViewModel(
 
     private val allPlaces: StateFlow<List<Place>> =
         combine(rawPlaces, _locale) { places, locale -> localizePlaces(places, locale) }
+            // 250-odd collator-free lookups, but still not for the main thread.
+            .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _englishPassportNames = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** The English names, for the picker's search: a German user may still type "Germany". */
+    val englishPassportNames: StateFlow<Map<String, String>> = _englishPassportNames
+
+    /**
+     * Every passport the pickers can offer, by display name: the localized place name when
+     * known, the English one before the localized list has loaded. The one source for the
+     * welcome screen, Settings and the import preview.
+     */
+    val passportNames: StateFlow<Map<String, String>> =
+        combine(allPlaces, _englishPassportNames) { places, english ->
+            mergeNames(english.keys, places.associate { it.code to it.name }, english)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** The full registry, for surfaces that draw every place rather than a filtered list — the map's labels. */
     val places: StateFlow<List<Place>> = allPlaces
@@ -365,6 +384,10 @@ class PlacesViewModel(
     init {
         viewModelScope.launch { rawPlaces.value = repo.places() }
         viewModelScope.launch {
+            _englishPassportNames.value = visaRepo.availablePassports()
+                .associateWith { code -> repo.place(code)?.name ?: code }
+        }
+        viewModelScope.launch {
             // A StateFlow re-emits its current value to a new collector, so this
             // both loads the initial registry and reloads it on every nationality
             // switch from Settings — one path, not an init load plus a separate
@@ -488,7 +511,7 @@ class PlacesViewModel(
 internal fun almostFinishedNudgeText(continents: List<ContinentStat>): UiText? {
     val candidate = nudgeCandidate(continents) ?: return null
     val remaining = candidate.total - candidate.been
-    return UiText.Plural(R.plurals.places_nudge, remaining, remaining, candidate.continent)
+    return UiText.Plural(R.plurals.places_nudge, remaining, remaining, geoNameText(candidate.continent))
 }
 
 private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = continents
@@ -504,7 +527,7 @@ private fun nudgeCandidate(continents: List<ContinentStat>): ContinentStat? = co
  */
 internal fun leastCoveredContinentText(continents: List<ContinentStat>): UiText? {
     val worst = leastCoveredCandidate(continents) ?: return null
-    return UiText.Res(R.string.places_least_covered, worst.continent, worst.been, worst.total)
+    return UiText.Res(R.string.places_least_covered, geoNameText(worst.continent), worst.been, worst.total)
 }
 
 private fun leastCoveredCandidate(continents: List<ContinentStat>): ContinentStat? {
@@ -971,3 +994,14 @@ internal fun combineRequirements(
     }
     return CombinedRequirement(winner, fromPrimary = winner === primary)
 }
+
+/** A code's display name: the localized one wins, the English one covers the moment before
+ * the localized list loads, the code itself is the last resort. */
+internal fun localizedName(code: String, localized: Map<String, String>, english: Map<String, String>): String =
+    localized[code] ?: english[code] ?: code
+
+internal fun mergeNames(
+    codes: Iterable<String>,
+    localized: Map<String, String>,
+    english: Map<String, String>,
+): Map<String, String> = codes.associateWith { localizedName(it, localized, english) }

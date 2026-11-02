@@ -54,6 +54,7 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.geoNameText
 import com.riedel.beyondborders.ui.places.leastCoveredContinentText
 
 /** One bar's worth of a completion grid, [codes] carried along so a long press
@@ -301,13 +302,13 @@ private fun CompletionBar(bucket: Bucket, onHold: (Bucket) -> Unit, modifier: Mo
             onLongClick = { onHold(bucket) },
             // Surfaces the long-press in TalkBack's actions menu; sighted behaviour
             // is unchanged.
-            onLongClickLabel = stringResource(R.string.stats_bar_details, bucket.label),
+            onLongClickLabel = stringResource(R.string.stats_bar_details, geoNameText(bucket.label).asString()),
         ),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Row {
             Text(
-                bucket.label,
+                geoNameText(bucket.label).asString(),
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -357,7 +358,7 @@ private fun BucketDetailDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(bucket.label) },
+        title = { Text(geoNameText(bucket.label).asString()) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (been.isNotEmpty()) {
