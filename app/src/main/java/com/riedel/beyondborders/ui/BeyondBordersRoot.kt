@@ -81,8 +81,10 @@ fun BeyondBordersRoot(
     // system's per-app-language screen, re-derives the place names.
     val locale = LocalConfiguration.current.locales[0]
     // Not a LaunchedEffect: that runs after the first composition, so the retained
-    // ViewModel (still on the old locale) drew one frame in the old language. setLocale is
-    // an idempotent StateFlow write that nothing in this composition reads.
+    // ViewModel (still on the old locale) drew one frame in the old language. This is an
+    // idempotent StateFlow write, kept in `remember` so it happens once per locale and
+    // before the first read of the locale-derived state below. Not a SideEffect, which
+    // would run only after this composition has already read that state.
     remember(locale) { placesViewModel.setLocale(locale) }
     val passportNames by placesViewModel.passportNames.collectAsStateWithLifecycle()
     val englishNames by placesViewModel.englishPassportNames.collectAsStateWithLifecycle()

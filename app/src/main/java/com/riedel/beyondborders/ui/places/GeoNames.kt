@@ -8,7 +8,7 @@ import com.riedel.beyondborders.ui.UiText
 // InformalRegions.kt) that double as keys: collapse keys, sorting and filters all use the
 // English string. Only the display goes through here, so a language change never moves a
 // section or orphans a collapsed header.
-private val CONTINENTS: Map<String, Int> = mapOf(
+internal val CONTINENTS: Map<String, Int> = mapOf(
     "Africa" to R.string.geo_continent_africa,
     "Antarctica" to R.string.geo_continent_antarctica,
     "Asia" to R.string.geo_continent_asia,
@@ -18,7 +18,7 @@ private val CONTINENTS: Map<String, Int> = mapOf(
     "South America" to R.string.geo_continent_south_america,
 )
 
-private val REGIONS: Map<String, Int> = mapOf(
+internal val REGIONS: Map<String, Int> = mapOf(
     "Antarctica" to R.string.geo_region_antarctica,
     "Australia and New Zealand" to R.string.geo_region_australia_and_new_zealand,
     "Caribbean" to R.string.geo_region_caribbean,
@@ -45,7 +45,7 @@ private val REGIONS: Map<String, Int> = mapOf(
     "Western Europe" to R.string.geo_region_western_europe,
 )
 
-private val GROUPS: Map<String, Int> = mapOf(
+internal val GROUPS: Map<String, Int> = mapOf(
     "Benelux" to R.string.geo_group_benelux,
     "Scandinavia" to R.string.geo_group_scandinavia,
     "Nordics" to R.string.geo_group_nordics,
@@ -70,5 +70,3 @@ internal fun geoNameRes(key: String): Int? = CONTINENTS[key] ?: REGIONS[key] ?: 
 
 /** [key] as display text; an unknown value falls back to itself rather than to nothing. */
 internal fun geoNameText(key: String): UiText = geoNameRes(key)?.let { UiText.Res(it) } ?: UiText.Plain(key)
-
-internal fun allGeoNameKeys(): Set<String> = CONTINENTS.keys + REGIONS.keys + GROUPS.keys

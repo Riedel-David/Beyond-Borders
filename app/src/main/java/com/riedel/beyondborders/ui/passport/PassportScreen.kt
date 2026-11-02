@@ -64,6 +64,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -85,6 +87,8 @@ import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
 import com.riedel.beyondborders.ui.places.geoNameRes
+import com.riedel.beyondborders.ui.places.geoNameText
+import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -120,7 +124,7 @@ fun PassportScreen(
     onStatsConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val rows by viewModel.rows.collectAsStateWithLifecycle()
+    val rowsByKey by viewModel.rows.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     // The stats detail popup needs a name and a status per code in a bucket, and
     // neither lives on [ContinentStat]/[RegionStat]/[NamedGroupStat] — just the
@@ -130,6 +134,11 @@ fun PassportScreen(
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val grouping by viewModel.grouping.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    val rows = remember(rowsByKey, grouping, locale) {
+        sortSectionsByLabel(rowsByKey, grouping) { geoNameText(it).asString(context) }
+    }
     val statusFilter by viewModel.statusFilter.collectAsStateWithLifecycle()
     val mode by viewModel.mode.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()

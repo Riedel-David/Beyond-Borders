@@ -24,12 +24,10 @@ import com.riedel.beyondborders.settings.SettingsStore
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -223,8 +221,6 @@ class PlacesViewModel(
 
     private val allPlaces: StateFlow<List<Place>> =
         combine(rawPlaces, _locale) { places, locale -> localizePlaces(places, locale) }
-            // 250-odd collator-free lookups, but still not for the main thread.
-            .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _englishPassportNames = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -1005,3 +1001,18 @@ internal fun mergeNames(
     localized: Map<String, String>,
     english: Map<String, String>,
 ): Map<String, String> = codes.associateWith { localizedName(it, localized, english) }
+
+/**
+ * Continent and region sections are keyed and sorted by their English name, which is the
+ * wrong order once the headers read in another language (Ostafrika after Melanesien). This
+ * re-orders whole sections by the folded display label; [rows] keep their order inside a
+ * section (the sort is stable) and A-Z grouping, whose headers are letters, is untouched.
+ */
+internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label: (String) -> String): List<PlaceRow> {
+    if (grouping == Grouping.ALPHABETICAL) return rows
+    val folded = HashMap<String, String>()
+    return rows.sortedBy { row ->
+        val key = sectionHeader(row.place, grouping)
+        folded.getOrPut(key) { label(key).foldForSearch() }
+    }
+}

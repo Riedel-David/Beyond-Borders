@@ -95,7 +95,6 @@ fun SettingsScreen(
         factory = SettingsViewModel.factory(
             settings = container.settings,
             places = container.places,
-            visa = container.visa,
             // The application context's resolver: the ViewModel outlives the
             // activity across a rotation, and holding the activity's would leak it.
             resolver = context.applicationContext.contentResolver,

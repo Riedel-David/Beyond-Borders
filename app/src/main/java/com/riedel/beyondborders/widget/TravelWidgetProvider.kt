@@ -150,10 +150,8 @@ class TravelWidgetProvider : AppWidgetProvider() {
         fun requestUpdate(context: Context) {
             // Main thread, so the in-app language is accurate here; the receiver cannot
             // read it itself below API 33 (see WidgetPrefs.languageTags).
-            WidgetPrefs.setLanguageTags(
-                context,
-                AppCompatDelegate.getApplicationLocales().toLanguageTags(),
-            )
+            val tags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            if (tags != WidgetPrefs.languageTags(context)) WidgetPrefs.setLanguageTags(context, tags)
             // getAppWidgetIds is a synchronous binder call and this is invoked from
             // Activity.onPause, on the main thread, whether or not a widget is even
             // installed — so the whole thing goes to an IO thread. Nothing waits on it.

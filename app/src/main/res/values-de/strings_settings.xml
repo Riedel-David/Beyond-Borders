@@ -99,7 +99,7 @@
     <string name="settings_preview_skipped">Übersprungen (bereits aktuell)</string>
     <string name="settings_preview_sample">z. B. %1$s.</string>
     <string name="settings_preview_sample_more">z. B. %1$s und %2$d weitere.</string>
-    <!-- The caveat issues are joined with "; " and end with this -->
+    <!-- The caveat issues are joined with the locale's list wording (ListFormatter) and end with this -->
     <string name="settings_preview_caveat">%1$s.</string>
     <plurals name="settings_caveat_codes">
         <item quantity="one">%d Ortscode von dieser Version nicht erkannt</item>
