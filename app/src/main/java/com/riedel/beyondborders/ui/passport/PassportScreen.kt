@@ -314,27 +314,32 @@ fun PassportScreen(
                         )
                     }
                 }
-                Row(
-                    Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(top = 4.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = grouping == Grouping.CONTINENT,
-                        onClick = { viewModel.setGrouping(Grouping.CONTINENT) },
-                        label = { Text(stringResource(R.string.passport_group_continent)) },
-                    )
-                    FilterChip(
-                        selected = grouping == Grouping.REGION,
-                        onClick = { viewModel.setGrouping(Grouping.REGION) },
-                        label = { Text(stringResource(R.string.passport_group_region)) },
-                    )
-                    FilterChip(
-                        selected = grouping == Grouping.ALPHABETICAL,
-                        onClick = { viewModel.setGrouping(Grouping.ALPHABETICAL) },
-                        label = { Text(stringResource(R.string.passport_group_alphabetical)) },
-                    )
+                // Grouping is a different kind of control from the filters above (it
+                // reorders the list, it does not narrow it), so it is a segmented
+                // button rather than a second row of chips that looks identical.
+                val groupings = listOf(
+                    Grouping.CONTINENT to R.string.passport_group_continent,
+                    Grouping.REGION to R.string.passport_group_region,
+                    Grouping.ALPHABETICAL to R.string.passport_group_alphabetical,
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)) {
+                    groupings.forEachIndexed { index, (option, label) ->
+                        SegmentedButton(
+                            selected = option == grouping,
+                            onClick = { viewModel.setGrouping(option) },
+                            shape = SegmentedButtonDefaults.itemShape(index, groupings.size),
+                            // No check mark: it would cost the width German labels need at large font scales.
+                            icon = {},
+                            label = {
+                                Text(
+                                    stringResource(label),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }
