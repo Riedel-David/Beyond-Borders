@@ -806,7 +806,7 @@ private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
     var menuStatus by remember { mutableStateOf(status) }
     val currentOnSet by rememberUpdatedState(onSet)
     val apply: (StatusAction) -> Unit = { action ->
-        statusTargetFor(action, status)?.let(currentOnSet)
+        currentOnSet(statusTargetFor(action, status))
     }
     val statusText = statusLabelRes(status)?.let { stringResource(it) }
         ?: stringResource(R.string.passport_status_unset)
@@ -817,12 +817,13 @@ private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
     val markWant = stringResource(R.string.passport_mark_want, name)
     val clear = stringResource(R.string.passport_clear_status, name)
     val actions = remember(status, markBeen, markLived, markWant, clear) {
-        statusMenuEntries(status).map { action ->
-            val label = when (action) {
-                StatusAction.BEEN -> markBeen
-                StatusAction.LIVED -> markLived
-                StatusAction.WANT -> markWant
-                StatusAction.CLEAR -> clear
+        StatusAction.entries.map { action ->
+            // The marked entry's action is the clear: tapping it again writes NONE.
+            val label = when {
+                isCurrent(action, status) -> clear
+                action == StatusAction.BEEN -> markBeen
+                action == StatusAction.LIVED -> markLived
+                else -> markWant
             }
             CustomAccessibilityAction(label) { apply(action); true }
         }

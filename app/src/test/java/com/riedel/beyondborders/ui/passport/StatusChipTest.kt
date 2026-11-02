@@ -12,18 +12,11 @@ import org.junit.Test
 class StatusChipTest {
 
     @Test
-    fun `an unset row offers the three statuses and no Clear`() {
+    fun `the menu offers exactly the three statuses`() {
         assertEquals(
             listOf(StatusAction.BEEN, StatusAction.LIVED, StatusAction.WANT),
-            statusMenuEntries(PlaceStatus.NONE),
+            StatusAction.entries.toList(),
         )
-    }
-
-    @Test
-    fun `a row with any status also offers Clear`() {
-        for (s in listOf(PlaceStatus.VISITED, PlaceStatus.LIVED, PlaceStatus.WISHLIST)) {
-            assertTrue(StatusAction.CLEAR in statusMenuEntries(s))
-        }
     }
 
     @Test
@@ -33,14 +26,10 @@ class StatusChipTest {
     }
 
     @Test
-    fun `picking the marked status does nothing instead of clearing it`() {
-        assertNull(statusTargetFor(StatusAction.WANT, PlaceStatus.WISHLIST))
-    }
-
-    @Test
-    fun `Clear writes NONE absolutely and is a no-op on an unset row`() {
-        assertEquals(PlaceStatus.NONE, statusTargetFor(StatusAction.CLEAR, PlaceStatus.LIVED))
-        assertNull(statusTargetFor(StatusAction.CLEAR, PlaceStatus.NONE))
+    fun `picking the marked status again clears it to NONE`() {
+        assertEquals(PlaceStatus.NONE, statusTargetFor(StatusAction.WANT, PlaceStatus.WISHLIST))
+        assertEquals(PlaceStatus.NONE, statusTargetFor(StatusAction.BEEN, PlaceStatus.VISITED))
+        assertEquals(PlaceStatus.NONE, statusTargetFor(StatusAction.LIVED, PlaceStatus.LIVED))
     }
 
     @Test
@@ -52,11 +41,10 @@ class StatusChipTest {
     }
 
     @Test
-    fun `only the current status entry is marked and Clear never is`() {
+    fun `only the current status entry is marked and an unset row marks none`() {
         assertTrue(isCurrent(StatusAction.BEEN, PlaceStatus.VISITED))
         assertFalse(isCurrent(StatusAction.LIVED, PlaceStatus.VISITED))
-        assertFalse(isCurrent(StatusAction.CLEAR, PlaceStatus.VISITED))
-        assertFalse(isCurrent(StatusAction.CLEAR, PlaceStatus.NONE))
+        assertTrue(StatusAction.entries.none { isCurrent(it, PlaceStatus.NONE) })
     }
 
     @Test
