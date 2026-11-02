@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,6 +72,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
@@ -375,9 +377,9 @@ fun PassportScreen(
                 Column(Modifier.animateItem()) {
                     PlaceListRow(
                         row = row,
-                        onToggle = { target ->
+                        onSet = { target ->
                             viewModel.vibrate()
-                            viewModel.toggle(row.place.code, target)
+                            viewModel.setStatus(row.place.code, target)
                         },
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -725,24 +727,48 @@ internal fun travelHeaderSlots(
 }
 
 @Composable
-private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
+private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
     val name = row.place.name
+    val status = row.status
+    var open by remember { mutableStateOf(false) }
+    var menuStatus by remember { mutableStateOf(status) }
+    val currentOnSet by rememberUpdatedState(onSet)
     val apply: (StatusAction) -> Unit = { action ->
-        toggleTargetFor(action, row.status)?.let(onToggle)
+        statusTargetFor(action, status)?.let(currentOnSet)
     }
-    val actions = statusMenuEntries(row.status).map { action ->
-        val label = when (action) {
-            StatusAction.BEEN -> stringResource(R.string.passport_mark_been, name)
-            StatusAction.LIVED -> stringResource(R.string.passport_mark_lived, name)
-            StatusAction.WANT -> stringResource(R.string.passport_mark_want, name)
-            StatusAction.CLEAR -> stringResource(R.string.passport_clear_status, name)
+    val statusText = statusLabelRes(status)?.let { stringResource(it) }
+        ?: stringResource(R.string.passport_status_unset)
+    val description = stringResource(R.string.passport_status_chip_desc, name, statusText)
+    val changeStatus = stringResource(R.string.passport_change_status)
+    val markBeen = stringResource(R.string.passport_mark_been, name)
+    val markLived = stringResource(R.string.passport_mark_lived, name)
+    val markWant = stringResource(R.string.passport_mark_want, name)
+    val clear = stringResource(R.string.passport_clear_status, name)
+    val actions = remember(status, markBeen, markLived, markWant, clear) {
+        statusMenuEntries(status).map { action ->
+            val label = when (action) {
+                StatusAction.BEEN -> markBeen
+                StatusAction.LIVED -> markLived
+                StatusAction.WANT -> markWant
+                StatusAction.CLEAR -> clear
+            }
+            CustomAccessibilityAction(label) { apply(action); true }
         }
-        CustomAccessibilityAction(label) { apply(action); true }
+    }
+    fun openMenu() {
+        menuStatus = status
+        open = true
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .semantics { customActions = actions }
+            // One focus stop per row: name + status, the mark/clear actions, and a click
+            // that opens the same menu the chip does.
+            .clearAndSetSemantics {
+                contentDescription = description
+                customActions = actions
+                onClick(label = changeStatus) { openMenu(); true }
+            }
             .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -768,7 +794,14 @@ private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
                 )
             }
         }
-        StatusChip(name = name, status = row.status, onAction = apply)
+        StatusChip(
+            status = status,
+            open = open,
+            menuStatus = menuStatus,
+            onOpen = ::openMenu,
+            onDismiss = { open = false },
+            onAction = { open = false; apply(it) },
+        )
     }
 }
 

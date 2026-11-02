@@ -21,10 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,16 +28,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.settings.MapSlot
-import com.riedel.beyondborders.ui.map.rememberPlaceFlag
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 
 /** What a Passport row's status menu (and the row's TalkBack actions) offer. */
@@ -61,16 +53,13 @@ internal fun StatusAction.status(): PlaceStatus? = when (this) {
 }
 
 /**
- * The argument for `PlacesViewModel.toggle` that carries out [action] on a row in state
- * [current], or null when it is a no-op. The repository's toggle clears when given the
- * current status, so Clear passes the current status and re-picking the marked entry
- * does nothing (it must not clear: the menu marks it, it does not offer it as a switch).
- * Only ever the row's own status changes; nothing cascades.
+ * The status to write for [action] on a row currently showing [current], or null when
+ * it would change nothing. Absolute, never relative to what is stored: Clear is NONE.
+ * Re-picking the marked entry is a no-op by design. Only the row's own status changes.
  */
-internal fun toggleTargetFor(action: StatusAction, current: PlaceStatus): PlaceStatus? = when {
-    action == StatusAction.CLEAR -> current.takeIf { it != PlaceStatus.NONE }
-    action.status() == current -> null
-    else -> action.status()
+internal fun statusTargetFor(action: StatusAction, current: PlaceStatus): PlaceStatus? {
+    val target = action.status() ?: PlaceStatus.NONE
+    return target.takeIf { it != current }
 }
 
 /** Whether [action]'s entry is the row's current status (gets the check mark). */
@@ -105,17 +94,16 @@ private fun actionLabelRes(action: StatusAction): Int = when (action) {
 /** Fixed-size flag tile; a neutral tile when the code has no flag file or it is still decoding. */
 @Composable
 internal fun FlagThumb(code: String, modifier: Modifier = Modifier) {
-    val flag = rememberPlaceFlag(code)
-    val shape = RoundedCornerShape(4.dp)
+    val thumb = rememberFlagThumb(code, 40, 28)
     Box(
         modifier
             .size(width = 40.dp, height = 28.dp)
-            .clip(shape)
+            .clip(RoundedCornerShape(4.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        if (flag != null) {
+        if (thumb != null) {
             Image(
-                bitmap = flag.bitmap,
+                bitmap = thumb,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.size(width = 40.dp, height = 28.dp),
@@ -125,17 +113,22 @@ internal fun FlagThumb(code: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * One status chip per row. Tapping it, empty or not, opens the menu; [onAction] is only
- * called for entries that change something.
+ * One status chip per row. Touch only: the row's own merged node carries the TalkBack
+ * description, actions and "change status" click, so the chip adds no focus stop. The
+ * menu is hosted here but its open state and the [menuStatus] it shows are the row's:
+ * the entries are frozen at open time so Clear and the check mark do not pop in or out
+ * while the dropdown is animating away after a pick.
  */
 @Composable
 internal fun StatusChip(
-    name: String,
     status: PlaceStatus,
+    open: Boolean,
+    menuStatus: PlaceStatus,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
     onAction: (StatusAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var open by remember { mutableStateOf(false) }
     val palette = LocalMapPalette.current
     val accent: Color? = when (statusSlot(status)) {
         MapSlot.VISITED -> palette.visited
@@ -143,22 +136,16 @@ internal fun StatusChip(
         MapSlot.WISHLIST -> palette.wishlist
         null -> null
     }
-    val labelRes = statusLabelRes(status)
-    val label = labelRes?.let { stringResource(it) }
-    val description = stringResource(
-        R.string.passport_status_chip_desc, name, label ?: stringResource(R.string.passport_status_unset),
-    )
+    val label = statusLabelRes(status)?.let { stringResource(it) }
     Box(modifier) {
         // The 48dp target is the outer box; the visible pill inside is smaller.
         Box(
             Modifier
                 .minimumInteractiveComponentSize()
-                .semantics { contentDescription = description }
-                .clickable(role = Role.Button) { open = true },
+                .clickable(role = Role.Button, onClick = onOpen),
             contentAlignment = Alignment.Center,
         ) {
             val shape = RoundedCornerShape(16.dp)
-            val muted = MaterialTheme.colorScheme.onSurfaceVariant
             Box(
                 Modifier
                     .defaultMinSize(minWidth = 44.dp, minHeight = 32.dp)
@@ -168,19 +155,20 @@ internal fun StatusChip(
                     .padding(PaddingValues(horizontal = 12.dp, vertical = 4.dp)),
                 contentAlignment = Alignment.Center,
             ) {
+                // Never ellipsized: the pill grows with the label and the name beside it yields.
                 Text(
                     text = label ?: "+",
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (accent != null) MaterialTheme.colorScheme.onSurface else muted,
+                    color = if (accent != null) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clearAndSetSemantics { },
+                    softWrap = false,
                 )
             }
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            for (action in statusMenuEntries(status)) {
-                val current = isCurrent(action, status)
+        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+            for (action in statusMenuEntries(menuStatus)) {
+                val current = isCurrent(action, menuStatus)
                 DropdownMenuItem(
                     text = { Text(stringResource(actionLabelRes(action))) },
                     leadingIcon = {
@@ -188,10 +176,7 @@ internal fun StatusChip(
                         else Box(Modifier.size(24.dp))
                     },
                     modifier = Modifier.semantics { selected = current },
-                    onClick = {
-                        open = false
-                        onAction(action)
-                    },
+                    onClick = { onAction(action) },
                 )
             }
         }

@@ -27,20 +27,28 @@ class StatusChipTest {
     }
 
     @Test
-    fun `picking a different status toggles exactly that status`() {
-        assertEquals(PlaceStatus.LIVED, toggleTargetFor(StatusAction.LIVED, PlaceStatus.VISITED))
-        assertEquals(PlaceStatus.VISITED, toggleTargetFor(StatusAction.BEEN, PlaceStatus.NONE))
+    fun `picking a different status writes exactly that status`() {
+        assertEquals(PlaceStatus.LIVED, statusTargetFor(StatusAction.LIVED, PlaceStatus.VISITED))
+        assertEquals(PlaceStatus.VISITED, statusTargetFor(StatusAction.BEEN, PlaceStatus.NONE))
     }
 
     @Test
     fun `picking the marked status does nothing instead of clearing it`() {
-        assertNull(toggleTargetFor(StatusAction.WANT, PlaceStatus.WISHLIST))
+        assertNull(statusTargetFor(StatusAction.WANT, PlaceStatus.WISHLIST))
     }
 
     @Test
-    fun `Clear toggles the current status off and is a no-op on an unset row`() {
-        assertEquals(PlaceStatus.LIVED, toggleTargetFor(StatusAction.CLEAR, PlaceStatus.LIVED))
-        assertNull(toggleTargetFor(StatusAction.CLEAR, PlaceStatus.NONE))
+    fun `Clear writes NONE absolutely and is a no-op on an unset row`() {
+        assertEquals(PlaceStatus.NONE, statusTargetFor(StatusAction.CLEAR, PlaceStatus.LIVED))
+        assertNull(statusTargetFor(StatusAction.CLEAR, PlaceStatus.NONE))
+    }
+
+    @Test
+    fun `thumbnail sample size halves while the result stays at least the target`() {
+        assertEquals(2, thumbSampleSize(300, 200, 120, 84))
+        assertEquals(2, thumbSampleSize(300, 200, 100, 70))
+        assertEquals(8, thumbSampleSize(1200, 800, 120, 84))
+        assertEquals(1, thumbSampleSize(0, 0, 120, 84))
     }
 
     @Test
