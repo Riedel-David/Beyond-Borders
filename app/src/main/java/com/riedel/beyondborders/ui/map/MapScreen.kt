@@ -44,7 +44,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
@@ -99,9 +98,12 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.riedel.beyondborders.R
@@ -436,10 +438,12 @@ fun MapScreen(
                         // Only the statuses actually on the map get an entry: this is a
                         // legend, so it counts each status strictly rather than showing
                         // the combined "been" total the passport leads with.
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 6.dp),
+                        // A Column, not a FlowRow: the chips stack one under another,
+                        // left aligned, so the legend grows downward in its own
+                        // corner instead of sideways towards the controls.
+                        Column(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
-                            itemVerticalAlignment = Alignment.CenterVertically,
+                            horizontalAlignment = Alignment.Start,
                             // TalkBack would otherwise read the entries as separate
                             // fragments; one sentence replaces them.
                             modifier = Modifier.clearAndSetSemantics {
@@ -510,7 +514,7 @@ fun MapScreen(
             val selectedControls = selectedMapControls(searchOpen, lens, visa != null, regionMode)
             MapControlGroup {
                 MapControlItem(
-                    icon = Icons.Filled.Search,
+                    icon = rememberVectorPainter(Icons.Filled.Search),
                     label = stringResource(R.string.map_search_open),
                     selected = MapControl.SEARCH in selectedControls,
                     onClick = { viewModel.vibrate(); searchOpen = !searchOpen },
@@ -519,7 +523,7 @@ fun MapScreen(
                 // silently paints nothing would be worse than no toggle.
                 if (visa != null) {
                     MapControlItem(
-                        icon = Icons.Filled.Check,
+                        icon = painterResource(R.drawable.ic_tab_passport),
                         label = stringResource(R.string.map_lens_visa),
                         selected = MapControl.VISA in selectedControls,
                         onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
@@ -528,7 +532,7 @@ fun MapScreen(
                 // One item cycles all three states rather than three for one
                 // choice: Off/Official/Informal is a single question, not three.
                 MapControlItem(
-                    icon = Icons.Filled.Place,
+                    icon = rememberVectorPainter(Icons.Filled.Place),
                     label = stringResource(
                         when (regionMode) {
                             RegionMode.OFF -> R.string.map_regions_off
@@ -1298,6 +1302,7 @@ private fun VisaLegend(
                                     .size(10.dp)
                                     .clip(MaterialTheme.shapes.extraSmall)
                                     .background(ramp.colorFor(band))
+                                    .border(Dp.Hairline, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), MaterialTheme.shapes.extraSmall)
                             )
                         }
                     }
@@ -1410,7 +1415,7 @@ private fun MapControlGroup(content: @Composable () -> Unit) {
  * decorative; [selected] is exposed to TalkBack as well as drawn.
  */
 @Composable
-private fun MapControlItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+private fun MapControlItem(icon: Painter, label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.medium,
@@ -1461,6 +1466,9 @@ private fun LegendDot(color: Color) {
             .size(10.dp)
             .clip(CircleShape)
             .background(color)
+            // Hairline so the pale visa bands (lavender, light grey) still show on
+            // the light plate; the same ring is drawn on the visa legend squares.
+            .border(Dp.Hairline, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape)
     )
 }
 
