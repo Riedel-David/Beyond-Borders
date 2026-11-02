@@ -10,6 +10,9 @@
     <string name="map_description">Map of the world. Tap a country or territory to select it.</string>
 
     <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Been</string>
+    <string name="map_legend_short_lived">Lived</string>
+    <string name="map_legend_short_wanted">Want</string>
     <string name="map_legend_nudge">Tap a place to mark it</string>
     <string name="map_legend_visited">%1$d visited</string>
     <string name="map_legend_lived">%1$d lived</string>

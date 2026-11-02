@@ -11,6 +11,9 @@
     <string name="map_description">Weltkarte. Land oder Gebiet antippen, um es auszuwählen.</string>
 
     <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Besucht</string>
+    <string name="map_legend_short_lived">Gelebt</string>
+    <string name="map_legend_short_wanted">Wunschliste</string>
     <string name="map_legend_nudge">Ort antippen zum Markieren</string>
     <string name="map_legend_visited">%1$d besucht</string>
     <string name="map_legend_lived">%1$d gelebt</string>
