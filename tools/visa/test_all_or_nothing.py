@@ -94,12 +94,16 @@ class SinglePassport(unittest.TestCase):
         self.assertEqual([], fetched)
 
 
-def tiny_dataset(root: Path, generated_at: str = "2026-10-30T15:07:24+00:00"):
+def tiny_dataset(root: Path, generated_at: str = "2026-10-30T15:07:24+00:00", n: int = 1):
+    """n passports AA, AB, ...; Dataset.open wants 150, a bare Dataset does not."""
     (root / "passports").mkdir(parents=True)
+    codes = [chr(65 + i // 26) + chr(65 + i % 26) for i in range(n)]
     index = {"generated_at": generated_at, "schema_version": "1.0.0",
-             "passports": {"AA": {"file": "passports/AA.json", "source_revision": 1}}}
+             "passports": {c: {"file": f"passports/{c}.json", "source_revision": 1}
+                           for c in codes}}
     (root / "index.json").write_text(json.dumps(index))
-    (root / "passports" / "AA.json").write_text('{"passport": "AA"}')
+    for c in codes:
+        (root / "passports" / f"{c}.json").write_text(json.dumps({"passport": c}))
     return build_visa.Dataset(root, index)
 
 
@@ -110,14 +114,18 @@ class Provenance(unittest.TestCase):
 
     def test_digest_changes_when_a_passport_file_changes(self):
         ds = tiny_dataset(self.tmp / "d")
-        before = ds.sha256()
+        before = ds.sha256
         self.assertEqual(64, len(before))
         (self.tmp / "d" / "passports" / "AA.json").write_text('{"passport": "AB"}')
-        self.assertNotEqual(before, ds.sha256())
+        self.assertEqual(before, ds.sha256, "computed once per Dataset")
+        self.assertNotEqual(before, build_visa.Dataset(ds.root, ds.index).sha256)
 
-    def test_as_of_is_the_dates_part_of_the_index_generated_at(self):
-        ds = tiny_dataset(self.tmp / "d", "2026-01-02T23:59:59+00:00")
-        self.assertEqual("2026-01-02", ds.generated_at[:10])
+    def test_a_missing_indexed_passport_file_is_a_clear_error(self):
+        ds = tiny_dataset(self.tmp / "d")
+        (self.tmp / "d" / "passports" / "AA.json").unlink()
+        with self.assertRaises(SystemExit) as cm:
+            ds.sha256
+        self.assertIn("passports/AA.json", str(cm.exception))
 
     def test_revisions_file_records_the_digest_and_the_generated_at(self):
         ds = tiny_dataset(self.tmp / "d")
@@ -125,28 +133,52 @@ class Provenance(unittest.TestCase):
         with mock.patch.object(build_visa, "REVISIONS_FILE", out):
             build_visa.write_revisions(ds, ["AA"], ["XN"])
         text = out.read_text()
-        self.assertIn(f"{ds.sha256()}\n", text)
+        self.assertIn(f"{ds.sha256}\n", text)
         self.assertIn("# index.json generated_at: 2026-10-30T15:07:24+00:00", text)
         self.assertLess(text.index("# not shipped"), text.index("# passport  source_revision"))
 
-    @unittest.skipUnless(HAVE_CACHE, "no cached dataset; run a full build once")
-    def test_a_wrong_expected_digest_refuses_before_writing_anything(self):
-        assets, docs = self.tmp / "assets", self.tmp / "docs"
-        assets.mkdir()
-        docs.mkdir()
-        argv = ["build_visa.py", "--source", str(build_visa.DEFAULT_SOURCE),
-                "--expect-sha256", "0" * 64,
-                "--advice", str(self.tmp / "advice.json")]
-        (self.tmp / "advice.json").write_text("{}")
-        with mock.patch.object(sys, "argv", argv), \
-                mock.patch.object(build_visa, "ASSETS", assets), \
-                mock.patch.object(build_visa, "REVISIONS_FILE", docs / "rev.txt"), \
-                mock.patch.object(build_visa, "GAP_FILE", docs / "gap.txt"), \
+    def test_expected_digest_is_normalised(self):
+        h = "ab" * 32
+        for given in (h, h.upper(), f"  sha256:{h.upper()}\n", f"SHA256:{h}"):
+            self.assertEqual(h, build_visa.normalise_sha256(given), given)
+        for bad in ("", "abc", "g" * 64, h + "0", "sha256:"):
+            with self.assertRaises(SystemExit, msg=bad) as cm:
+                build_visa.normalise_sha256(bad)
+            self.assertIn("64 hex", str(cm.exception))
+
+    def run_main(self, *argv):
+        fetched = []
+        with mock.patch.object(sys, "argv", ["build_visa.py", *argv]), \
+                mock.patch.object(build_visa, "fetch", lambda d: fetched.append(d)), \
                 contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaises(SystemExit) as cm:
                 build_visa.main()
-        self.assertIn("sha256 mismatch", str(cm.exception))
+        self.assertEqual([], fetched)
+        return str(cm.exception)
+
+    def test_expect_sha256_without_source_is_refused_before_any_download(self):
+        (self.tmp / "advice.json").write_text("{}")
+        msg = self.run_main("--expect-sha256", "0" * 64,
+                            "--advice", str(self.tmp / "advice.json"))
+        self.assertIn("--source", msg)
+
+    def test_a_wrong_expected_digest_refuses_before_writing_anything(self):
+        assets, docs, advice = self.tmp / "assets", self.tmp / "docs", self.tmp / "advice.json"
+        assets.mkdir()
+        docs.mkdir()
+        advice.write_text("{}")
+        tiny_dataset(self.tmp / "src", n=150)
+        cache = build_visa.CACHE
+        cache_before = sorted(str(p) for p in cache.rglob("*")) if cache.exists() else None
+        with mock.patch.object(build_visa, "ASSETS", assets), \
+                mock.patch.object(build_visa, "REVISIONS_FILE", docs / "rev.txt"), \
+                mock.patch.object(build_visa, "GAP_FILE", docs / "gap.txt"):
+            msg = self.run_main("--source", str(self.tmp / "src"),
+                                "--expect-sha256", "0" * 64, "--advice", str(advice))
+        self.assertIn("sha256 mismatch", msg)
         self.assertEqual([], list(assets.iterdir()) + list(docs.iterdir()))
+        cache_after = sorted(str(p) for p in cache.rglob("*")) if cache.exists() else None
+        self.assertEqual(cache_before, cache_after)
 
 
 class IndexShape(unittest.TestCase):
