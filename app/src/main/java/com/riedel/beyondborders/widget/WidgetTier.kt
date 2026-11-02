@@ -60,3 +60,12 @@ internal fun widgetTier(minWidthDp: Int, minHeightDp: Int): WidgetTier = when {
     minWidthDp >= NAMED_MIN_WIDTH_DP && minHeightDp >= NAMED_MIN_HEIGHT_DP -> WidgetTier.NAMED
     else -> WidgetTier.COMPACT
 }
+
+/**
+ * The (width, height) in dp to preview for a placed widget, from the options bundle's
+ * MIN_WIDTH and MIN_HEIGHT — the same pair [TravelWidgetProvider] feeds [widgetTier], so the
+ * preview's tier is the one the launcher gets. Null when either is missing or zero, and the
+ * caller falls back to its default.
+ */
+internal fun widgetOptionsSize(minWidthDp: Int, minHeightDp: Int): Pair<Int, Int>? =
+    if (minWidthDp > 0 && minHeightDp > 0) minWidthDp to minHeightDp else null

@@ -83,6 +83,7 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
             BeyondBordersTheme {
                 ConfigScreen(
                     container = container,
+                    ownSize = ownPreviewSize(AppWidgetManager.getInstance(this), widgetId),
                     onDone = { metric, filledBackground, target -> save(metric, filledBackground, target) },
                 )
             }
@@ -133,14 +134,16 @@ class TravelWidgetConfigActivity : AppCompatActivity() {
 @Composable
 private fun ConfigScreen(
     container: AppContainer,
+    ownSize: PreviewSize?,
     onDone: (WidgetMetric, Boolean, WidgetTarget) -> Unit,
 ) {
+    val sizes = listOfNotNull(ownSize) + PreviewSize.PRESETS
     var metric by remember { mutableStateOf(WidgetMetric.DEFAULT) }
     var filledBackground by remember { mutableStateOf(true) }
     // Null until touched, so the default keeps following the metric.
     var chosenTarget by remember { mutableStateOf<WidgetTarget?>(null) }
     val target = chosenTarget ?: WidgetTarget.defaultFor(metric)
-    var size by remember { mutableStateOf(PreviewSize.DEFAULT) }
+    var size by remember { mutableStateOf(ownSize ?: PreviewSize.DEFAULT) }
 
     // Fetch the real stats for the preview
     var stats by remember { mutableStateOf(TravelStats.EMPTY) }
@@ -230,11 +233,11 @@ private fun ConfigScreen(
             // size, so this shows what each grid size will look like once resized to it.
             Text(stringResource(R.string.widget_cfg_preview_title), style = MaterialTheme.typography.titleMedium)
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                PreviewSize.entries.forEachIndexed { index, option ->
+                sizes.forEachIndexed { index, option ->
                     SegmentedButton(
                         selected = size == option,
                         onClick = { size = option },
-                        shape = SegmentedButtonDefaults.itemShape(index, PreviewSize.entries.size),
+                        shape = SegmentedButtonDefaults.itemShape(index, sizes.size),
                     ) { Text(option.label) }
                 }
             }
@@ -280,15 +283,31 @@ private fun ConfigScreen(
     }
 }
 
-/** Grid sizes with the dp a One UI home screen reports for them (3×2 is 220×202). */
-private enum class PreviewSize(val label: String, val widthDp: Int, val heightDp: Int) {
-    S2X1("2×1", 146, 101),
-    S2X2("2×2", 146, 202),
-    S3X2("3×2", 220, 202),
-    S4X2("4×2", 293, 202),
-    S4X3("4×3", 293, 303);
-
+/**
+ * A preview box in dp. [own] is the placed widget's reported size, the initial choice, so
+ * the preview shows the tier the launcher will actually pick for this widget.
+ */
+private data class PreviewSize(val label: String, val widthDp: Int, val heightDp: Int) {
     companion object {
-        val DEFAULT = S3X2
+        /** Grid sizes with the dp a One UI home screen reports (3×2 is 220×202), plus HyperOS's 3×2, which is STRIP. */
+        val PRESETS = listOf(
+            PreviewSize("2×1", 146, 101),
+            PreviewSize("2×2", 146, 202),
+            PreviewSize("3×2", 220, 202),
+            PreviewSize("3×2 HyperOS", 193, 132),
+            PreviewSize("4×2", 293, 202),
+            PreviewSize("4×3", 293, 303),
+        )
+        val DEFAULT = PRESETS[2]
     }
+}
+
+/** The placed widget's own size, read the way [TravelWidgetProvider] reads it; null if unknown. */
+private fun ownPreviewSize(manager: AppWidgetManager, widgetId: Int): PreviewSize? {
+    val options = manager.getAppWidgetOptions(widgetId) ?: return null
+    val size = widgetOptionsSize(
+        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0),
+        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0),
+    ) ?: return null
+    return PreviewSize("${size.first}×${size.second}", size.first, size.second)
 }

@@ -125,4 +125,25 @@ class WidgetTierTest {
         assertEquals(17, widgetProgressValue(17))
         assertEquals(100, widgetProgressValue(100))
     }
+
+    private fun tierOf(w: Int, h: Int) = widgetOptionsSize(w, h)?.let { widgetTier(it.first, it.second) }
+
+    @Test
+    fun `the preview starts at STRIP for a Xiaomi 3x2`() {
+        assertEquals(WidgetTier.STRIP, tierOf(193, 132))
+        assertEquals(WidgetTier.STRIP, tierOf(209, 148))
+    }
+
+    @Test
+    fun `the preview starts at the tier the provider picks for a Galaxy 3x2`() {
+        assertEquals(widgetTier(220, 202), tierOf(220, 202))
+        assertEquals(WidgetTier.WIDE, tierOf(220, 202))
+    }
+
+    @Test
+    fun `missing or zero options give no own size so the caller uses its default`() {
+        assertEquals(null, widgetOptionsSize(0, 0))
+        assertEquals(null, widgetOptionsSize(220, 0))
+        assertEquals(null, widgetOptionsSize(0, 202))
+    }
 }
