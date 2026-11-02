@@ -244,7 +244,10 @@ private fun VisaSummaryCard(
             // credit and a link to the licence and to what each passport's answers were
             // read from. A flow, so a link that does not fit moves down whole instead
             // of wrapping its label.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
                 visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
                 listOfNotNull(visa, secondVisa).forEach { v ->
@@ -548,7 +551,7 @@ private fun LinkText(label: String, url: String) {
         onClick = { runCatching { uriHandler.openUri(url) } },
         // Horizontal padding keeps a wrapped label's first glyphs out of the button's
         // rounded corner, which clips them (the "V" of the dataset credit).
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium)
     }

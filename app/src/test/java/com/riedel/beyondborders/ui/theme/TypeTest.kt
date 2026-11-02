@@ -27,10 +27,10 @@ class TypeTest {
     }
 
     @Test
-    fun `display headline and label styles carry tabular figures and body does not`() {
-        styles.filterKeys { it.startsWith("display") || it.startsWith("headline") || it.startsWith("label") }
+    fun `display and headline styles carry tabular figures and labels body and titles do not`() {
+        styles.filterKeys { it.startsWith("display") || it.startsWith("headline") }
             .forEach { (name, style) -> assertEquals("$name", "tnum", style.fontFeatureSettings) }
-        styles.filterKeys { it.startsWith("body") }
+        styles.filterKeys { !it.startsWith("display") && !it.startsWith("headline") }
             .forEach { (name, style) -> assertEquals("$name", null, style.fontFeatureSettings) }
     }
 }

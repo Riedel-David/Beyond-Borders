@@ -3,33 +3,48 @@ package com.riedel.beyondborders.ui.theme
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 private const val TNUM = "tnum"
+
+private val Base = Typography()
+
+private fun TextStyle.restyle(
+    weight: FontWeight,
+    tracking: TextUnit = letterSpacing,
+    tnum: Boolean = false,
+): TextStyle = copy(
+    fontWeight = weight,
+    letterSpacing = tracking,
+    fontFeatureSettings = if (tnum) TNUM else fontFeatureSettings,
+)
 
 /**
  * Roboto (the platform default) with the Material 3 sizes, re-weighted: titles
  * SemiBold/Medium with slightly tighter tracking, labels Medium, body Normal.
  *
- * Display, headline and label styles carry tabular figures because those are the ones
- * that show counts (stats hero, legend, badges): equal-width digits keep a number from
- * jittering sideways as it changes. Body and title stay proportional, where digits sit
- * inside running text and tabular spacing would look gappy.
+ * Starts from M3's own [Typography] and copies only what changes, so its
+ * lineHeightStyle and line-break defaults survive.
+ *
+ * Display and headline styles carry tabular figures because those show the big counts
+ * (stats hero, visa headline): equal-width digits keep a number from jittering as it
+ * changes. Labels (buttons, chips, nav text), body and titles stay proportional.
  */
-internal val AppTypography: Typography = Typography(
-    displayLarge = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.5).sp, fontFeatureSettings = TNUM),
-    displayMedium = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.25).sp, fontFeatureSettings = TNUM),
-    displaySmall = TextStyle(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.25).sp, fontFeatureSettings = TNUM),
-    headlineLarge = TextStyle(fontSize = 32.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.25).sp, fontFeatureSettings = TNUM),
-    headlineMedium = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.1).sp, fontFeatureSettings = TNUM),
-    headlineSmall = TextStyle(fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.1).sp, fontFeatureSettings = TNUM),
-    titleLarge = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.1).sp),
-    titleMedium = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.sp),
-    titleSmall = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp),
-    bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.5.sp),
-    bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.25.sp),
-    bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.4.sp),
-    labelLarge = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp, fontFeatureSettings = TNUM),
-    labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, fontFeatureSettings = TNUM),
-    labelSmall = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, fontFeatureSettings = TNUM),
+internal val AppTypography: Typography = Base.copy(
+    displayLarge = Base.displayLarge.restyle(FontWeight.SemiBold, (-0.5).sp, tnum = true),
+    displayMedium = Base.displayMedium.restyle(FontWeight.SemiBold, (-0.25).sp, tnum = true),
+    displaySmall = Base.displaySmall.restyle(FontWeight.SemiBold, (-0.25).sp, tnum = true),
+    headlineLarge = Base.headlineLarge.restyle(FontWeight.SemiBold, (-0.25).sp, tnum = true),
+    headlineMedium = Base.headlineMedium.restyle(FontWeight.SemiBold, (-0.1).sp, tnum = true),
+    headlineSmall = Base.headlineSmall.restyle(FontWeight.SemiBold, (-0.1).sp, tnum = true),
+    titleLarge = Base.titleLarge.restyle(FontWeight.SemiBold, (-0.1).sp),
+    titleMedium = Base.titleMedium.restyle(FontWeight.SemiBold),
+    titleSmall = Base.titleSmall.restyle(FontWeight.Medium),
+    bodyLarge = Base.bodyLarge.restyle(FontWeight.Normal),
+    bodyMedium = Base.bodyMedium.restyle(FontWeight.Normal),
+    bodySmall = Base.bodySmall.restyle(FontWeight.Normal),
+    labelLarge = Base.labelLarge.restyle(FontWeight.Medium),
+    labelMedium = Base.labelMedium.restyle(FontWeight.Medium),
+    labelSmall = Base.labelSmall.restyle(FontWeight.Medium),
 )

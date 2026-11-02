@@ -39,8 +39,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -334,8 +338,9 @@ fun PassportScreen(
                                 Text(
                                     stringResource(label),
                                     style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
+                                    // Up to two lines: a German label at 1.3x wraps rather than eliding.
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center,
                                 )
                             },
                         )
@@ -435,12 +440,19 @@ internal fun SearchField(
     // A filled pill rather than an outlined field: it reads as "search" at a glance and
     // sits quietly above the list. Built from BasicTextField so the 48 dp height is real
     // (TextField carries a 56 dp minimum), with the label as placeholder and a11y label.
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            // Highest, not High: the map's search Card is surfaceContainerHigh, and a
+            // pill in the same colour would be invisible there.
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            // Tap anywhere on the pill, not just on the text, focuses the field.
+            .clickable(interactionSource = null, indication = null) { focusRequester.requestFocus() }
             .padding(start = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -451,12 +463,15 @@ internal fun SearchField(
         )
         Box(Modifier.weight(1f).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
             if (query.isEmpty()) {
+                // Cleared semantics: the placeholder is only a visual hint; the field's
+                // own label (below) is what TalkBack reads, so it is not announced twice.
                 Text(
                     label,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clearAndSetSemantics {},
                 )
             }
             BasicTextField(
@@ -466,7 +481,11 @@ internal fun SearchField(
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
+                keyboardActions = KeyboardActions(onSearch = {
+                    focusManager.clearFocus()
+                    keyboard?.hide()
+                }),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
             )
         }
         if (query.isNotEmpty()) {
