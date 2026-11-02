@@ -69,7 +69,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -92,7 +94,6 @@ import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
-import com.riedel.beyondborders.ui.BounceFilterChip
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
@@ -725,58 +726,49 @@ internal fun travelHeaderSlots(
 
 @Composable
 private fun PlaceListRow(row: PlaceRow, onToggle: (PlaceStatus) -> Unit) {
+    val name = row.place.name
+    val apply: (StatusAction) -> Unit = { action ->
+        toggleTargetFor(action, row.status)?.let(onToggle)
+    }
+    val actions = statusMenuEntries(row.status).map { action ->
+        val label = when (action) {
+            StatusAction.BEEN -> stringResource(R.string.passport_mark_been, name)
+            StatusAction.LIVED -> stringResource(R.string.passport_mark_lived, name)
+            StatusAction.WANT -> stringResource(R.string.passport_mark_want, name)
+            StatusAction.CLEAR -> stringResource(R.string.passport_clear_status, name)
+        }
+        CustomAccessibilityAction(label) { apply(action); true }
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .semantics { customActions = actions }
             .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            // One line, always: the code/sovereign subtitle underneath already
-            // carries full identification, so a long name loses only its tail here
-            // rather than pushing every row in a uniform list to two different heights.
+        FlagThumb(row.place.code)
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            // Up to two lines: the chip is one compact control now, so a long name has
+            // room to wrap instead of losing its tail at 1.3x font scale.
             Text(
-                row.place.name,
+                name,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                // Sovereign is shown only where it adds information: "Greenland
-                // (Denmark)" is useful, "France (France)" is noise.
-                if (row.place.sovereign != row.place.name) {
-                    "${row.place.code} · ${row.place.sovereign}"
-                } else {
-                    row.place.code
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Sovereign is shown only where it adds information: "Greenland
+            // (Denmark)" is useful, "France (France)" is noise.
+            if (row.place.sovereign != name) {
+                Text(
+                    row.place.sovereign,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        // Three chips take enough width that a long name now wraps to a second line.
-        // Accepted deliberately: bulk entry happens here, so every status has to be
-        // one tap away on this screen, and a hidden third option would push the
-        // rarest answer onto the map only.
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.VISITED,
-                label = stringResource(R.string.passport_chip_been),
-                semanticsLabel = stringResource(R.string.passport_mark_been, row.place.name),
-                onClick = { onToggle(PlaceStatus.VISITED) },
-            )
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.LIVED,
-                label = stringResource(R.string.passport_chip_lived),
-                semanticsLabel = stringResource(R.string.passport_mark_lived, row.place.name),
-                onClick = { onToggle(PlaceStatus.LIVED) },
-            )
-            BounceFilterChip(
-                selected = row.status == PlaceStatus.WISHLIST,
-                label = stringResource(R.string.passport_chip_want),
-                semanticsLabel = stringResource(R.string.passport_mark_want, row.place.name),
-                onClick = { onToggle(PlaceStatus.WISHLIST) },
-            )
-        }
+        StatusChip(name = name, status = row.status, onAction = apply)
     }
 }
 
