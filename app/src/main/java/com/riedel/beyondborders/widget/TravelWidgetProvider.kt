@@ -104,9 +104,7 @@ class TravelWidgetProvider : AppWidgetProvider() {
 
             // Pick the tier from the options bundle, in both onUpdate and
             // onAppWidgetOptionsChanged — a resize must re-pick the tier.
-            val options = manager.getAppWidgetOptions(widgetId)
-            val minWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180)
-            val minHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110)
+            val (minWidthDp, minHeightDp) = widgetSizeDp(manager.getAppWidgetOptions(widgetId))
             val tier = widgetTier(minWidthDp, minHeightDp)
 
             val views = travelWidgetViews(localizedContext(context), tier, metric, filledBackground, stats)

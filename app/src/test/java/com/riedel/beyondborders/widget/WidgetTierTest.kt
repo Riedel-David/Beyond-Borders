@@ -126,7 +126,7 @@ class WidgetTierTest {
         assertEquals(100, widgetProgressValue(100))
     }
 
-    private fun tierOf(w: Int, h: Int) = widgetOptionsSize(w, h)?.let { widgetTier(it.first, it.second) }
+    private fun tierOf(w: Int, h: Int) = widgetSizeDp(w, h).let { widgetTier(it.first, it.second) }
 
     @Test
     fun `the preview starts at STRIP for a Xiaomi 3x2`() {
@@ -135,15 +135,32 @@ class WidgetTierTest {
     }
 
     @Test
-    fun `the preview starts at the tier the provider picks for a Galaxy 3x2`() {
-        assertEquals(widgetTier(220, 202), tierOf(220, 202))
+    fun `missing or zero options fall back to 180x110 which is COMPACT`() {
+        assertEquals(180 to 110, widgetSizeDp(0, 0))
+        assertEquals(220 to 110, widgetSizeDp(220, 0))
+        assertEquals(180 to 202, widgetSizeDp(0, 202))
+        assertEquals(WidgetTier.COMPACT, tierOf(0, 0))
+        assertEquals(WidgetTier.COMPACT, widgetTier(180, 110))
+    }
+
+    @Test
+    fun `reported options pass through unchanged`() {
+        assertEquals(220 to 202, widgetSizeDp(220, 202))
         assertEquals(WidgetTier.WIDE, tierOf(220, 202))
     }
 
     @Test
-    fun `missing or zero options give no own size so the caller uses its default`() {
-        assertEquals(null, widgetOptionsSize(0, 0))
-        assertEquals(null, widgetOptionsSize(220, 0))
-        assertEquals(null, widgetOptionsSize(0, 202))
+    fun `an own size equal to a preset selects it without a duplicate chip`() {
+        val sizes = previewSizesFor(220, 202)
+        assertEquals(PreviewSize.PRESETS, sizes.options)
+        assertEquals("3×2", sizes.initial.label)
+    }
+
+    @Test
+    fun `an own size matching no preset leads the list and is selected`() {
+        val sizes = previewSizesFor(250, 160)
+        assertEquals(PreviewSize.PRESETS.size + 1, sizes.options.size)
+        assertEquals(PreviewSize("250×160", 250, 160), sizes.options.first())
+        assertEquals(sizes.options.first(), sizes.initial)
     }
 }
