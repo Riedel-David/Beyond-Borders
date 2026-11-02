@@ -1273,7 +1273,10 @@ private fun VisaLegend(
                 if (noDataCount > 0) LegendChip(ramp.noData, stringResource(R.string.map_legend_no_data, noDataCount))
             }
         } else {
-            val collapsedSummary = visaLegendSummary(visa, noDataCount, secondVisa).asString()
+            val context = LocalContext.current
+            val collapsedSummary = remember(visa, secondVisa, noDataCount, context) {
+                visaLegendSummary(visa, noDataCount, secondVisa).asString(context)
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,

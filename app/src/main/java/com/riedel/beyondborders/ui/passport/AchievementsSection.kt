@@ -224,10 +224,13 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
                     modifier = Modifier.size(48.dp),
                 )
             }
-            Text(badge.title.asString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            Text(badge.description.asString(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            val title = remember(badge.title, context) { badge.title.asString(context) }
+            val description = remember(badge.description, context) { badge.description.asString(context) }
+            val progress = remember(badge, context) { badgeProgressText(badge).asString(context) }
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            Text(description, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
             Text(
-                badgeProgressText(badge).asString(),
+                progress,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
