@@ -220,31 +220,21 @@ data class VisaRamp(
  * bars, which is a property of the whole set and not of any one colour, so there is
  * nothing here a per-colour picker could safely offer.
  */
-private fun visaRamp(dark: Boolean): VisaRamp = if (dark) {
-    VisaRamp(
-        visaFree = Color(0xFF308E47),
-        eta = Color(0xFF50AADF),
-        visaOnArrival = Color(0xFFF28B3C),
-        visaRequired = Color(0xFFD35E64),
-        check = Color(0xFFE5D6F5),
-        closed = Color(0xFFCAC7CA),
-        noData = Color(0xFF9AA0A8),
-        selectedOutline = Color(0xFFF7FAFF),
-        selectedCasing = Color(0xFF05080C),
-    )
-} else {
-    VisaRamp(
-        visaFree = Color(0xFF348731),
-        eta = Color(0xFF3C6997),
-        visaOnArrival = Color(0xFF463113),
-        visaRequired = Color(0xFF310B08),
-        check = Color(0xFF5844C1),
-        closed = Color(0xFF4B4B49),
-        noData = Color(0xFF6B6D70),
-        selectedOutline = Color(0xFF05080C),
-        selectedCasing = Color(0xFFF7FAFF),
-    )
-}
+private fun visaRamp(dark: Boolean): VisaRamp = VisaRamp(
+    // The band fills are the dark-theme set in both themes: the light set was
+    // retired on the device because the dark one reads better. Only the no-data
+    // grey and the selection outline still differ, since those are chosen against
+    // the base (a pale grey vanishes on light land) rather than being a band.
+    visaFree = Color(0xFF308E47),
+    eta = Color(0xFF50AADF),
+    visaOnArrival = Color(0xFFF28B3C),
+    visaRequired = Color(0xFFD35E64),
+    check = Color(0xFFE5D6F5),
+    closed = Color(0xFFCAC7CA),
+    noData = if (dark) Color(0xFF9AA0A8) else Color(0xFF6B6D70),
+    selectedOutline = if (dark) Color(0xFFF7FAFF) else Color(0xFF05080C),
+    selectedCasing = if (dark) Color(0xFF05080C) else Color(0xFFF7FAFF),
+)
 
 /**
  * The region heatmap's colours: each region gets its own hue, and how far along

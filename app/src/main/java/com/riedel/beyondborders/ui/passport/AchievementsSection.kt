@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
@@ -224,10 +225,14 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
                     modifier = Modifier.size(48.dp),
                 )
             }
-            Text(badge.title.asString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            Text(badge.description.asString(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+            val config = LocalConfiguration.current
+            val title = remember(badge.title, config) { badge.title.asString(context) }
+            val description = remember(badge.description, config) { badge.description.asString(context) }
+            val progress = remember(badge.progress, badge.target, badge.unlocked, config) { badgeProgressText(badge).asString(context) }
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+            Text(description, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
             Text(
-                badgeProgressText(badge).asString(),
+                progress,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
