@@ -53,8 +53,11 @@ internal fun medalRows(badges: List<Achievement>): List<List<Achievement>> = bad
 internal fun ringFraction(badge: Achievement): Float =
     (badge.progress.toFloat() / badge.target.coerceAtLeast(1)).coerceIn(0f, 1f)
 
-/** The number the badge asks for ("25" for 25 places, "5" for 5 continents), shown on the emblem. */
-internal fun tierMark(badge: Achievement): String = badge.target.coerceAtLeast(0).toString()
+/**
+ * The number the badge asks for ("25" for 25 places, "5" for 5 continents), shown on the
+ * emblem. Null for a single-step badge: a "1" tells nothing there.
+ */
+internal fun tierMark(badge: Achievement): String? = badge.target.takeIf { it > 1 }?.toString()
 
 /**
  * A medal: the group's icon in a disc, a ring around it that is the progress, the
@@ -117,19 +120,35 @@ internal fun MedalBadge(achievement: Achievement, onClick: () -> Unit, modifier:
                     modifier = Modifier.size(28.dp),
                 )
             }
-            Text(
-                tierMark(achievement),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = tierInk,
-                maxLines = 1,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 4.dp, y = 2.dp)
-                    .background(tierFill, RoundedCornerShape(50))
-                    .border(1.dp, accent, RoundedCornerShape(50))
-                    .padding(horizontal = 6.dp, vertical = 1.dp),
-            )
+            tierMark(achievement)?.let { mark ->
+                Text(
+                    mark,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = tierInk,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 4.dp, y = 2.dp)
+                        .background(tierFill, RoundedCornerShape(50))
+                        .border(1.dp, accent, RoundedCornerShape(50))
+                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                )
+            }
+            if (!unlocked) {
+                // Locked is not colour-only: the grey disc also carries a lock.
+                Icon(
+                    painterResource(R.drawable.ic_badge_lock),
+                    contentDescription = null,
+                    tint = scheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .offset(x = (-2).dp, y = 2.dp)
+                        .size(18.dp)
+                        .background(scheme.surface, CircleShape)
+                        .padding(2.dp),
+                )
+            }
             if (isNew) {
                 Text(
                     stringResource(R.string.badge_new),

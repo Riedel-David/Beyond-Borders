@@ -79,7 +79,6 @@
     <string name="badge_show_details">Show details</string>
     <string name="badge_unlocked">Unlocked</string>
     <string name="badge_new">NEW</string>
-    <string name="badge_progress_slash">%1$d / %2$d</string>
     <string name="badge_progress_of">%1$d of %2$d</string>
     <string name="badge_spoken_unlocked">%1$s, unlocked. %2$s</string>
     <string name="badge_spoken_new">%1$s, newly unlocked. %2$s</string>

@@ -80,7 +80,6 @@
     <string name="badge_show_details">Details anzeigen</string>
     <string name="badge_unlocked">Freigeschaltet</string>
     <string name="badge_new">NEU</string>
-    <string name="badge_progress_slash">%1$d / %2$d</string>
     <string name="badge_progress_of">%1$d von %2$d</string>
     <string name="badge_spoken_unlocked">%1$s, freigeschaltet. %2$s</string>
     <string name="badge_spoken_new">%1$s, neu freigeschaltet. %2$s</string>

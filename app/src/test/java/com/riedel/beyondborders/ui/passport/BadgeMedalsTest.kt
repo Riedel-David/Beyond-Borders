@@ -2,6 +2,7 @@ package com.riedel.beyondborders.ui.passport
 
 import com.riedel.beyondborders.ui.UiText
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class BadgeMedalsTest {
@@ -12,6 +13,13 @@ class BadgeMedalsTest {
     fun `tier mark is the target number`() {
         assertEquals("25", tierMark(badge(3, 25)))
         assertEquals("5", tierMark(badge(5, 5)))
+    }
+
+    @Test
+    fun `tier mark is absent for a single-step badge`() {
+        assertNull(tierMark(badge(0, 1)))
+        assertNull(tierMark(badge(1, 1)))
+        assertNull(tierMark(badge(0, 0)))
     }
 
     @Test
