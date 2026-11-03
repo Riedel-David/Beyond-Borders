@@ -43,6 +43,7 @@ import androidx.lifecycle.lifecycleScope
 import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.CappedWidth
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.computeStats
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
@@ -167,6 +168,7 @@ private fun ConfigScreen(
     }
 
     Scaffold { padding ->
+      CappedWidth {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -289,6 +291,7 @@ private fun ConfigScreen(
                 Text(stringResource(R.string.widget_cfg_add))
             }
         }
+      }
     }
 }
 

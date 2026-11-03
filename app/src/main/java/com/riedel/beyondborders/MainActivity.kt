@@ -1,6 +1,8 @@
 package com.riedel.beyondborders
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.SystemClock
 import androidx.activity.compose.setContent
@@ -18,6 +20,7 @@ import com.riedel.beyondborders.data.db.DatabaseHealth
 import com.riedel.beyondborders.data.db.DatabaseRecovery
 import com.riedel.beyondborders.ui.BeyondBordersRoot
 import com.riedel.beyondborders.ui.Tab
+import com.riedel.beyondborders.ui.shouldLockPortrait
 import com.riedel.beyondborders.ui.recovery.DatabaseRecoveryScreen
 import com.riedel.beyondborders.ui.theme.BeyondBordersTheme
 import com.riedel.beyondborders.widget.TravelWidgetProvider
@@ -39,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        applyOrientationPolicy()
 
         val container = (application as BeyondBordersApp).container
 
@@ -75,6 +79,31 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
+        }
+    }
+
+    // Rotation, folding and window resizing are handled here (see configChanges in the
+    // manifest) rather than by recreating the activity, so the map keeps its camera and
+    // every tab its scroll position. The lock is re-evaluated because a foldable can
+    // change its smallest width while the activity lives.
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyOrientationPolicy()
+    }
+
+    // Not android:screenOrientation in the manifest: Android 16 ignores that on windows of
+    // 600dp and up and Play flags it. Phones are locked to portrait here as before; large
+    // screens are left unspecified.
+    private fun applyOrientationPolicy() {
+        // The display's own size, not this window's: in split-screen or a resized
+        // free-form window a tablet's window can shrink below 600dp, and judging by the
+        // window would then lock a tablet to portrait.
+        val bounds = windowManager.maximumWindowMetrics.bounds
+        val smallestDp = (minOf(bounds.width(), bounds.height()) / resources.displayMetrics.density).toInt()
+        requestedOrientation = if (shouldLockPortrait(smallestDp)) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 

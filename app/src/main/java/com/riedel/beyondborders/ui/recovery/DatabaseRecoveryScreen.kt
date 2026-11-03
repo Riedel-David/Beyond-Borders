@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.db.DatabaseRecovery
+import com.riedel.beyondborders.ui.CappedWidth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -97,6 +98,7 @@ fun DatabaseRecoveryScreen(
     val hasData = DatabaseRecovery.hasData(context)
 
     Scaffold(modifier.fillMaxSize()) { insets ->
+      CappedWidth {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -187,6 +189,7 @@ fun DatabaseRecoveryScreen(
                 Text(stringResource(R.string.recovery_delete_start_fresh))
             }
         }
+      }
     }
 
     if (confirming) {
