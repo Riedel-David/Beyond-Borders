@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
@@ -27,6 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.MAX_DIALOG_WIDTH_DP
 import com.riedel.beyondborders.data.place.foldForSearch
 import com.riedel.beyondborders.ui.asString
 
@@ -87,7 +89,7 @@ private fun PassportPickerDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(28.dp),
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f),
+            modifier = Modifier.widthIn(max = MAX_DIALOG_WIDTH_DP.dp).fillMaxWidth().fillMaxHeight(0.85f),
         ) {
             Column(Modifier.padding(16.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)

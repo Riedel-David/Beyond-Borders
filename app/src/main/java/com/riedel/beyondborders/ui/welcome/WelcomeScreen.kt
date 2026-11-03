@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.MAX_CONTENT_WIDTH_DP
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
 
 /**
@@ -76,12 +78,14 @@ fun WelcomeScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding),
+            contentAlignment = Alignment.TopCenter,
         ) {
             val viewport = maxHeight
             Column(
                 Modifier
                     .verticalScroll(rememberScrollState())
                     .heightIn(min = viewport)
+                    .widthIn(max = MAX_CONTENT_WIDTH_DP.dp)
                     .fillMaxWidth()
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center,

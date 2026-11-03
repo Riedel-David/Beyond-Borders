@@ -155,14 +155,16 @@ fun BeyondBordersRoot(
                     Tab.MAP -> Box(Modifier.fillMaxSize()) {
                         MapScreen(placesViewModel, contentPadding = padding)
                     }
-                    Tab.PASSPORT -> Box(Modifier.fillMaxSize().padding(padding)) {
+                    // Passport and Settings are lists: capped and centred on a wide window.
+                    // The bottom bar stays full width, like the map.
+                    Tab.PASSPORT -> CappedWidth(Modifier.padding(padding)) {
                         PassportScreen(
                             viewModel = placesViewModel,
                             openStats = openStats,
                             onStatsConsumed = { openStats = null },
                         )
                     }
-                    Tab.SETTINGS -> Box(Modifier.fillMaxSize().padding(padding)) {
+                    Tab.SETTINGS -> CappedWidth(Modifier.padding(padding)) {
                         SettingsScreen(container, placeCount = placeCount, unMemberCount = unMemberCount, placeNames = placeNames, passportNames = passportNames, englishNames = englishNames)
                     }
                 }
