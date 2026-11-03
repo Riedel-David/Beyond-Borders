@@ -231,8 +231,8 @@ fun MapScreen(
     val scope = rememberCoroutineScope()
     // rememberSaveable because the root disposes this screen on a tab switch (the
     // SaveableStateProvider above it restores these on return).
-    // Chips with names are the default; a tap collapses them to dots and bare counts.
-    var counterCompact by rememberSaveable { mutableStateOf(false) }
+    // Dots and bare counts are the default; a tap expands them to chips with names.
+    var counterCompact by rememberSaveable { mutableStateOf(true) }
     var visaLegendLabeled by rememberSaveable { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }

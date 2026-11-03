@@ -3,8 +3,8 @@
 <resources>
     <!-- Passport list -->
     <string name="passport_search_places">Orte suchen</string>
-    <string name="passport_group_continent">Nach Kontinent</string>
-    <string name="passport_group_region">Nach Region</string>
+    <string name="passport_group_continent">Kontinente</string>
+    <string name="passport_group_region">Regionen</string>
     <string name="passport_group_alphabetical">A-Z</string>
     <string name="passport_state_collapsed">Eingeklappt</string>
     <string name="passport_state_expanded">Ausgeklappt</string>

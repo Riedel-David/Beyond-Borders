@@ -131,8 +131,8 @@ row.
 ## The map controls
 
 The Search, Visa and Regions buttons sit together in one group, with a passport icon on
-the Visa button. The travel legend is labelled (Been, Lived, Want to) and a tap
-collapses it to coloured dots and bare counts. The visa lens uses its own
+the Visa button. The travel legend starts as coloured dots and bare counts; a
+tap expands it to labelled chips (Been, Lived, Want to). The visa lens uses its own
 palette, chosen to read on both the light and the dark base map rather than following
 the theme.
 
