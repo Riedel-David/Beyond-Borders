@@ -85,7 +85,7 @@ fun DatabaseRecoveryScreen(
                     null
                 }
             } catch (t: Throwable) {
-                t.message ?: t.javaClass.simpleName
+                t.message ?: resources.getString(R.string.recovery_open_failed)
             } finally {
                 saving = false
             }

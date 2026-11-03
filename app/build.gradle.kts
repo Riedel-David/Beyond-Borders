@@ -63,8 +63,16 @@ android {
 
     buildTypes {
         release {
+            // R8: shrinking, obfuscation and optimisation, and (in this DSL) resource
+            // shrinking with it. AGP includes proguard-android-optimize.txt by default
+            // (seen in the build's configuration.txt); that is relied on, not declared.
+            // Play flags an unobfuscated release; the mapping.txt R8 writes to
+            // app/build/outputs/mapping/release is also embedded in the AAB for Play.
             optimization {
-                enable = false
+                enable = true
+                keepRules {
+                    files.add(file("proguard-rules.pro"))
+                }
             }
             if (releaseKeystore != null) {
                 signingConfig = signingConfigs.getByName("release")

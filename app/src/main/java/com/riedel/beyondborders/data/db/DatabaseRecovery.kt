@@ -74,7 +74,7 @@ object DatabaseRecovery {
             }
         }
         val t = last!!
-        return DatabaseHealth.Unusable(t.message ?: t.javaClass.simpleName)
+        return DatabaseHealth.Unusable(t.message ?: "unknown error")
     }
 
     /**

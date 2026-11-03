@@ -109,6 +109,16 @@ jobs:
           echo "$OUT" | tail -5
           echo "$OUT" | grep -q "jar verified" || { echo "AAB signature did not verify" >&2; exit 1; }
 
+      # Uploaded before the release is published, so a failure here stops the run while nothing is public yet.
+      # Needed to read a stack trace from the shipped (R8-obfuscated) APK. The AAB
+      # carries its own copy for Play, so this covers the APK on the GitHub release.
+      - name: Keep the R8 mapping as a private artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BeyondBorders-${{ env.VERSION }}-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
