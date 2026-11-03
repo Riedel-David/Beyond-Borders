@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED: tablets and foldables rotate and resize freely. -->
-    <integer name="main_screen_orientation">-1</integer>
-</resources>
