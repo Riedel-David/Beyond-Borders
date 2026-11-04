@@ -24,8 +24,10 @@ without a visa. Offline, no account, no network permission.
 
 ## Why
 
-Every travel tracker I tried selects more than you ask for — tap Denmark and you get
-Greenland, tap France and you get French Guiana. Beyond Borders is built on a dataset
+I tried a number of travel trackers before writing this one. Many were full of ads, and
+the rest did not do what I wanted. The ones that came close all selected more than you
+ask for — tap Denmark and you get Greenland, tap France and you get French Guiana.
+Beyond Borders has no ads, no account and no network permission, and is built on a dataset
 where those are separate places and on a data model with no parent-child link at all,
 so a cascade is not a bug that was fixed, it is a thing the code cannot express.
 
