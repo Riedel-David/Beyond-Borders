@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -173,9 +174,10 @@ fun SettingsScreen(
                     Modifier
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.medium)
-                        .selectable(
-                            selected = pureBlack,
-                            onClick = { viewModel.setPureBlack(!pureBlack) }
+                        .toggleable(
+                            value = pureBlack,
+                            role = Role.Switch,
+                            onValueChange = { viewModel.setPureBlack(it) },
                         )
                         .padding(vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
