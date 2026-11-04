@@ -54,7 +54,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
@@ -100,6 +99,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -502,7 +502,11 @@ fun MapScreen(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            MapPill(
+            MapOverlayButton(
+                icon = if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
+                contentDescription = stringResource(
+                    if (controlsExpanded) R.string.map_controls_hide else R.string.map_controls_show,
+                ),
                 onClick = {
                     viewModel.vibrate()
                     controlsExpanded = !controlsExpanded
@@ -511,15 +515,7 @@ fun MapScreen(
                     // next time the stack expands.
                     if (!controlsExpanded) searchOpen = false
                 },
-            ) {
-                Icon(
-                    if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
-                    contentDescription = stringResource(
-                        if (controlsExpanded) R.string.map_controls_hide else R.string.map_controls_show,
-                    ),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+            )
             if (!controlsExpanded) return@Column
             // One grouped container for the three map modes, each an icon plus an
             // always-visible label, with the active one highlighted. Search is the
@@ -681,9 +677,10 @@ fun MapScreen(
             }
         }
 
-        // The region card reserves an end inset for this FAB. The selection banner is
-        // full-width, so the FAB is hidden while a place is selected and only fades back
-        // in after the banner has finished fading out (delay = the banner's 140 ms exit).
+        // The region card reserves an end inset for this button. The selection banner is
+        // full-width, so the share button is hidden while a place is selected and only
+        // fades back in after the banner has finished fading out (delay = the banner's
+        // 140 ms exit).
         AnimatedVisibility(
             visible = selected == null,
             enter = fadeIn(tween(120, delayMillis = 140)),
@@ -693,15 +690,14 @@ fun MapScreen(
                 .padding(contentPadding)
                 .padding(16.dp),
         ) {
-            FloatingActionButton(
+            MapOverlayButton(
+                icon = Icons.Filled.Share,
+                contentDescription = stringResource(R.string.map_share_action),
                 onClick = {
                     viewModel.vibrate()
                     showShareStyleDialog = true
                 },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.map_share_action))
-            }
+            )
         }
 
         if (showShareStyleDialog) {
@@ -1247,7 +1243,8 @@ private fun PlacesMapView(
 
 /**
  * A floating chip over the map. Semi-transparent so it reads as an overlay rather
- * than as part of the geography underneath it.
+ * than as part of the geography underneath it. Uses surfaceContainerHigh to ensure
+ * separation from the map background in all themes, including pure black.
  */
 @Composable
 private fun MapPill(
@@ -1256,7 +1253,7 @@ private fun MapPill(
     content: @Composable () -> Unit,
 ) {
     val shape = MaterialTheme.shapes.large
-    val color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+    val color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
     if (onClick == null) {
         Surface(modifier = modifier, shape = shape, color = color, shadowElevation = 2.dp) {
             Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
@@ -1277,6 +1274,38 @@ private fun MapPill(
             shadowElevation = 2.dp,
         ) {
             Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
+        }
+    }
+}
+
+/**
+ * A map overlay button: icon-only, same surface, elevation and shape as the
+ * legend and control pills. Both the ⋮ menu button and the share button use this
+ * so they stay visually consistent.
+ */
+@Composable
+private fun MapOverlayButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.minimumInteractiveComponentSize(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+        shadowElevation = 2.dp,
+    ) {
+        Box(
+            modifier = Modifier.padding(12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
