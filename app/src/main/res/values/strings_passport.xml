@@ -2,6 +2,7 @@
 <resources>
     <!-- Passport list -->
     <string name="passport_search_places">Search places</string>
+    <string name="passport_group_list">Group list</string>
     <string name="passport_group_continent">By continent</string>
     <string name="passport_group_region">By region</string>
     <string name="passport_group_alphabetical">A-Z</string>

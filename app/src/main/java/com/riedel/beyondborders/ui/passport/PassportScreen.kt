@@ -1,5 +1,10 @@
 package com.riedel.beyondborders.ui.passport
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -31,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
@@ -48,17 +54,18 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -76,6 +83,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
@@ -251,15 +259,22 @@ fun PassportScreen(
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
         item("mode") {
-            ModeToggle(
-                mode = mode,
-                // Offered only where it can be honoured: with no visa asset the
-                // second mode has nothing to say, and a toggle that lands on an
-                // apology is worse than one tab's worth of function.
-                visaAvailable = visa != null,
-                onMode = viewModel::setMode,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
-            )
+            // Only shown when the visa asset is available: with no visa asset the
+            // second mode has nothing to say, and tabs that land on an apology
+            // are worse than one tab's worth of function.
+            if (visa != null) {
+                PrimaryTabRow(
+                    selectedTabIndex = PassportMode.entries.indexOf(mode),
+                ) {
+                    PassportMode.entries.forEachIndexed { index, option ->
+                        Tab(
+                            selected = option == mode,
+                            onClick = { viewModel.setMode(option) },
+                            text = { Text(option.text.asString()) },
+                        )
+                    }
+                }
+            }
         }
 
         if (mode == PassportMode.VISA) {
@@ -299,6 +314,8 @@ fun PassportScreen(
                     query = query,
                     onQuery = viewModel::setQuery,
                     label = stringResource(R.string.passport_search_places),
+                    grouping = grouping,
+                    onGrouping = viewModel::setGrouping,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 // Five filters do not fit across a 360 dp phone, so this row
@@ -315,34 +332,6 @@ fun PassportScreen(
                             selected = filter == statusFilter,
                             onClick = { viewModel.setStatusFilter(filter) },
                             label = { Text(filter.text.asString()) },
-                        )
-                    }
-                }
-                // Grouping is a different kind of control from the filters above (it
-                // reorders the list, it does not narrow it), so it is a segmented
-                // button rather than a second row of chips that looks identical.
-                val groupings = listOf(
-                    Grouping.CONTINENT to R.string.passport_group_continent,
-                    Grouping.REGION to R.string.passport_group_region,
-                    Grouping.ALPHABETICAL to R.string.passport_group_alphabetical,
-                )
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)) {
-                    groupings.forEachIndexed { index, (option, label) ->
-                        SegmentedButton(
-                            selected = option == grouping,
-                            onClick = { viewModel.setGrouping(option) },
-                            shape = SegmentedButtonDefaults.itemShape(index, groupings.size),
-                            // No check mark: it would cost the width German labels need at large font scales.
-                            icon = {},
-                            label = {
-                                Text(
-                                    stringResource(label),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    // Up to two lines: a German label at 1.3x wraps rather than eliding.
-                                    maxLines = 2,
-                                    textAlign = TextAlign.Center,
-                                )
-                            },
                         )
                     }
                 }
@@ -427,6 +416,9 @@ fun PassportScreen(
  * Shared state, not just a shared look: typing "greenland" and then asking what it
  * wants should not mean typing it again. Only the label changes, because the two modes
  * are searching the same 252 places for different reasons.
+ *
+ * The trailing controls vary: the travel mode gets a sort button (grouping choice),
+ * the visa mode stays plain with only the clear-query X.
  */
 @Composable
 internal fun SearchField(
@@ -434,6 +426,8 @@ internal fun SearchField(
     onQuery: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    grouping: Grouping? = null,
+    onGrouping: ((Grouping) -> Unit)? = null,
 ) {
     // A filled pill rather than an outlined field: it reads as "search" at a glance and
     // sits quietly above the list. Built from BasicTextField so the 48 dp height is real
@@ -441,6 +435,7 @@ internal fun SearchField(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
+    var dropdownExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -490,42 +485,45 @@ internal fun SearchField(
             IconButton(onClick = { onQuery("") }) {
                 Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear))
             }
-        } else {
+        }
+        // The sort button: only present in travel mode, where [grouping] and [onGrouping]
+        // are both provided. Opens a dropdown menu with the three grouping options.
+        if (grouping != null && onGrouping != null) {
+            Box {
+                IconButton(onClick = { dropdownExpanded = true }) {
+                    Icon(SortIcon, contentDescription = stringResource(R.string.passport_group_list))
+                }
+                DropdownMenu(
+                    expanded = dropdownExpanded,
+                    onDismissRequest = { dropdownExpanded = false },
+                ) {
+                    val groupings = listOf(
+                        Grouping.CONTINENT to R.string.passport_group_continent,
+                        Grouping.REGION to R.string.passport_group_region,
+                        Grouping.ALPHABETICAL to R.string.passport_group_alphabetical,
+                    )
+                    groupings.forEach { (option, labelRes) ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(labelRes)) },
+                            onClick = {
+                                onGrouping(option)
+                                dropdownExpanded = false
+                            },
+                            leadingIcon = if (option == grouping) {
+                                { Icon(Icons.Filled.Check, contentDescription = null) }
+                            } else null,
+                        )
+                    }
+                }
+            }
+        } else if (query.isEmpty()) {
+            // No sort button and no clear X: pad the end to keep the field's content
+            // centred where it was.
             Spacer(Modifier.width(16.dp))
         }
     }
 }
 
-/**
- * The two questions the screen answers, as one control at the top.
- *
- * A segmented button rather than the filter chips the rest of the screen uses: the
- * chips narrow a list, this changes what the list is *about*, and using the same
- * component for both would make the more consequential control the quieter one.
- */
-@Composable
-private fun ModeToggle(
-    mode: PassportMode,
-    visaAvailable: Boolean,
-    onMode: (PassportMode) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (!visaAvailable) return
-    SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
-        PassportMode.entries.forEachIndexed { index, option ->
-            SegmentedButton(
-                selected = option == mode,
-                onClick = { onMode(option) },
-                shape = SegmentedButtonDefaults.itemShape(index, PassportMode.entries.size),
-                // No check mark. Its 26 dp is the difference between "Where I've been"
-                // fitting and eliding on a 360 dp phone, and with two segments the
-                // selected one is already obvious from its fill.
-                icon = {},
-                label = { Text(option.text.asString(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            )
-        }
-    }
-}
 
 @Composable
 private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -541,19 +539,23 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
             .semantics { stateDescription = stateText }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = text.uppercase(),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f),
         )
-        // A glyph rather than an icon: this row already carries no icon
-        // dependency, and ▸/▾ read as a disclosure triangle either way.
-        Text(
-            text = if (collapsed) "▸" else "▾",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+        // Collapsed points right, expanded down. Rotated rather than swapped so the
+        // turn can animate.
+        val rotation by animateFloatAsState(if (collapsed) -90f else 0f, label = "chevron")
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(20.dp)
+                .graphicsLayer { rotationZ = rotation },
         )
     }
 }
@@ -1041,3 +1043,19 @@ private fun sectionHeaderLabel(key: String): String =
     if (key == UNINHABITED_HEADER) stringResource(R.string.places_section_uninhabited)
     else VisaCategory.entries.firstOrNull { it.name == key }?.let { stringResource(it.labelRes) }
         ?: geoNameRes(key)?.let { stringResource(it) } ?: key
+
+
+/**
+ * Material's "sort" glyph (three bars, shortest last), drawn here because the project
+ * only depends on the core icon set, which doesn't have it. Lazy so building the vector
+ * never runs as part of this file's class initialisation.
+ */
+private val SortIcon: ImageVector by lazy {
+    ImageVector.Builder("Sort", 24.dp, 24.dp, 24f, 24f).apply {
+        path(fill = SolidColor(Color.Black)) {
+            moveTo(3f, 18f); horizontalLineToRelative(6f); verticalLineToRelative(-2f); horizontalLineTo(3f); close()
+            moveTo(3f, 6f); verticalLineToRelative(2f); horizontalLineToRelative(18f); verticalLineTo(6f); close()
+            moveTo(3f, 13f); horizontalLineToRelative(12f); verticalLineToRelative(-2f); horizontalLineTo(3f); close()
+        }
+    }.build()
+}
