@@ -140,6 +140,7 @@
     <string name="settings_licence_map">Karte</string>
     <string name="settings_licence_borders">Grenzen</string>
     <string name="settings_licence_labels">Beschriftungen</string>
+    <string name="settings_licence_font">Schriftart</string>
     <string name="settings_licence_flags">Flaggen</string>
     <string name="settings_licence_visa">Visumdaten</string>
     <string name="settings_licence_visa_body">Datensatz zu Visumbestimmungen, abgeleitet von Wikipedia-Autoren (CC BY-SA 4.0), siehe THIRD_PARTY_NOTICES.md im Repository</string>

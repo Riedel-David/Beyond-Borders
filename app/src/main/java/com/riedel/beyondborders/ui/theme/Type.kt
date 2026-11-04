@@ -2,11 +2,21 @@ package com.riedel.beyondborders.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.riedel.beyondborders.R
 
 private const val TNUM = "tnum"
+
+private val InterFontFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+)
 
 private val Base = Typography()
 
@@ -15,14 +25,15 @@ private fun TextStyle.restyle(
     tracking: TextUnit = letterSpacing,
     tnum: Boolean = false,
 ): TextStyle = copy(
+    fontFamily = InterFontFamily,
     fontWeight = weight,
     letterSpacing = tracking,
     fontFeatureSettings = if (tnum) TNUM else fontFeatureSettings,
 )
 
 /**
- * Roboto (the platform default) with the Material 3 sizes, re-weighted: titles
- * SemiBold/Medium with slightly tighter tracking, labels Medium, body Normal.
+ * Inter with the Material 3 sizes, re-weighted: titles SemiBold/Medium with slightly
+ * tighter tracking, labels Medium, body Normal.
  *
  * Starts from M3's own [Typography] and copies only what changes, so its
  * lineHeightStyle and line-break defaults survive.
