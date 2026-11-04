@@ -1,7 +1,6 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -74,6 +74,17 @@ internal fun statusSlot(status: PlaceStatus): MapSlot? = when (status) {
     PlaceStatus.NONE -> null
 }
 
+/**
+ * Label colour for a chip filled with [fillArgb]: black or white, whichever contrasts more.
+ * Pure black rather than the theme's near-black because teal at 0xFF0F8A7E only reaches
+ * 4.38:1 against near-black, under the 4.5:1 AA line.
+ */
+internal fun textColorForFill(fillArgb: Int): Int {
+    val black = 0xFF000000.toInt()
+    val white = 0xFFFFFFFF.toInt()
+    return if (contrastRatio(fillArgb, black) >= contrastRatio(fillArgb, white)) black else white
+}
+
 @StringRes
 private fun actionLabelRes(action: StatusAction): Int = when (action) {
     StatusAction.BEEN -> R.string.passport_chip_been
@@ -120,7 +131,7 @@ internal fun StatusChip(
     modifier: Modifier = Modifier,
 ) {
     val palette = LocalMapPalette.current
-    val accent: Color? = when (statusSlot(status)) {
+    val fillColor: Color? = when (statusSlot(status)) {
         MapSlot.VISITED -> palette.visited
         MapSlot.LIVED -> palette.lived
         MapSlot.WISHLIST -> palette.wishlist
@@ -140,8 +151,8 @@ internal fun StatusChip(
                 Modifier
                     .defaultMinSize(minWidth = 44.dp, minHeight = 32.dp)
                     .clip(shape)
-                    .background(accent?.copy(alpha = 0.22f) ?: Color.Transparent)
-                    .border(BorderStroke(1.dp, accent ?: MaterialTheme.colorScheme.outlineVariant), shape)
+                    .background(fillColor ?: Color.Transparent)
+                    .then(if (fillColor == null) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier)
                     .padding(PaddingValues(horizontal = 12.dp, vertical = 4.dp)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -149,7 +160,7 @@ internal fun StatusChip(
                 Text(
                     text = label ?: "+",
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (accent != null) MaterialTheme.colorScheme.onSurface
+                    color = if (fillColor != null) Color(textColorForFill(fillColor.toArgb()))
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     softWrap = false,
@@ -172,10 +183,11 @@ internal fun StatusChip(
                         Text(
                             stringResource(actionLabelRes(action)),
                             fontWeight = if (current) FontWeight.Bold else null,
+                            color = if (current) Color(textColorForFill(hue.toArgb())) else Color.Unspecified,
                         )
                     },
                     modifier = Modifier
-                        .background(if (current) hue.copy(alpha = 0.22f) else Color.Transparent)
+                        .background(if (current) hue else Color.Transparent)
                         .semantics {
                             selected = current
                             role = Role.RadioButton

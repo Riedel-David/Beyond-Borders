@@ -416,15 +416,8 @@ private fun VisaListRow(
             Modifier.padding(start = 16.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // The band as a stripe down the row: the one piece of the map's language
-            // that survives being shrunk to list size.
-            Box(
-                Modifier
-                    .width(4.dp)
-                    .height(28.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(ramp.colorFor(row.requirement.category.band))
-            )
+            // Flag thumbnail matching the Passport list: same loader, same size, same position.
+            FlagThumb(row.place.code)
             Column(
                 Modifier
                     .weight(1f)
