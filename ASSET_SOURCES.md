@@ -357,6 +357,15 @@ gives the copyright as "The Noto Project Authors"
 1.1, which permits bundling and conversion; the licence text ships with the glyphs
 and in `THIRD_PARTY_NOTICES.md`.
 
+## App font — `res/font/`
+
+`inter_regular.ttf`, `inter_medium.ttf`, `inter_semibold.ttf` and `inter_bold.ttf` are
+Inter, Version 4.001 (`git-9221beed3`) per the fonts' name tables, Copyright 2016 The
+Inter Project Authors (<https://github.com/rsms/inter>). They replace the platform
+default (Roboto) and are loaded in `ui/theme/Type.kt`. The download URL and file hashes
+were not recorded when they were added. Licence: SIL Open Font License 1.1, which
+permits bundling; the notice is in `THIRD_PARTY_NOTICES.md`.
+
 ## Icons
 
 `ic_settings` and `ic_tab_*` under `app/src/main/res/drawable/` are hand-drawn vector

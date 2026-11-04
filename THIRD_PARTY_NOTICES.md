@@ -47,6 +47,14 @@ Copyright 2022 The Noto Project Authors
 Font License, Version 1.1. The licence text ships next to the glyphs, in
 `app/src/main/assets/glyphs/Noto Sans Regular/OFL.txt`.
 
+## Inter (SIL Open Font License 1.1)
+
+The app's text is set in Inter, bundled as `app/src/main/res/font/inter_regular.ttf`,
+`inter_medium.ttf`, `inter_semibold.ttf` and `inter_bold.ttf`. Inter is
+Copyright 2016 The Inter Project Authors (<https://github.com/rsms/inter>), licensed
+under the SIL Open Font License, Version 1.1, available with a FAQ at
+<https://openfontlicense.org>. The fonts' own metadata names version 4.001.
+
 ## MapLibre Native (BSD-2-Clause)
 
 Map rendering uses MapLibre Native for Android,
