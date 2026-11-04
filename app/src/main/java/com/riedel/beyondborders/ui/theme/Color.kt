@@ -418,7 +418,9 @@ fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT
     labelText = if (dark) Color(0xFFF2F5FA) else Color(0xFF10151C),
     labelHalo = if (dark) Color(0xFF10151C) else Color(0xFFF2F5FA),
     labelTextOnMarked = if (dark) Color(0xFF101010) else Color(0xFF10151C),
-    labelHaloOnMarked = if (dark) Color(0xFFE8ECEF) else Color(0xFFF2F5FA),
+    // Translucent: the halo only has to separate dark text from the status fill, and a
+    // solid light ring read as a heavy outline around every marked label.
+    labelHaloOnMarked = if (dark) Color(0xB3E8ECEF) else Color(0xB3F2F5FA),
     visa = visaRamp(dark),
     region = regionRamp(dark),
 )

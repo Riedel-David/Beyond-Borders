@@ -832,8 +832,11 @@ private class PlacesMapController {
         val names = places.filter { it.name != it.englishName }.associate { it.code to it.name }
         if (names == appliedLabelNames) return
         appliedLabelNames = names
-        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)
-            ?.setProperties(PropertyFactory.textField(PlacesMapStyle.labelText(names)))
+        // Both layers: a marked country's label lives on the on-marked layer, which would
+        // otherwise keep the English name.
+        val textField = PropertyFactory.textField(PlacesMapStyle.labelText(names))
+        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)?.setProperties(textField)
+        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS_ON_MARKED)?.setProperties(textField)
     }
 
     fun attach(map: MapLibreMap) {

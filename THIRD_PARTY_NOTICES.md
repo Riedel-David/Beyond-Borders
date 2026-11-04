@@ -53,7 +53,8 @@ The app's text is set in Inter, bundled as `app/src/main/res/font/inter_regular.
 `inter_medium.ttf`, `inter_semibold.ttf` and `inter_bold.ttf`. Inter is
 Copyright 2016 The Inter Project Authors (<https://github.com/rsms/inter>), licensed
 under the SIL Open Font License, Version 1.1, available with a FAQ at
-<https://openfontlicense.org>. The fonts' own metadata names version 4.001.
+<https://openfontlicense.org>. The fonts' own metadata names version 4.001. The licence text ships in
+`app/src/main/assets/licenses/Inter-OFL.txt`.
 
 ## MapLibre Native (BSD-2-Clause)
 

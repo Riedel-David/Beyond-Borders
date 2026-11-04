@@ -179,6 +179,7 @@ fun PassportScreen(
     // continent survives closing the app but does not carry over, by coincidence
     // of the same string, into region or A-Z grouping.
     val collapsedHeaders by viewModel.collapsedHeaders.collectAsStateWithLifecycle()
+    val seenAchievements by viewModel.seenAchievements.collectAsStateWithLifecycle()
 
     // Transient: which continent/region a place belongs to never needs to survive
     // a process death the way a preference would, so this is rememberSaveable
@@ -212,7 +213,7 @@ fun PassportScreen(
             stats = stats,
             places = places,
             statuses = statuses,
-            seenAchievements = viewModel.seenAchievements.value,
+            seenAchievements = seenAchievements,
             onSeenAchievements = viewModel::setSeenAchievements,
             onBack = { showStatsDetail = false },
             modifier = modifier,

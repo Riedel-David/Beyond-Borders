@@ -89,6 +89,9 @@ fun BeyondBordersRoot(
     // idempotent StateFlow write, kept in `remember` so it happens once per locale and,
     // placed directly after the ViewModel is obtained, before any of its state is
     // collected below. Not a SideEffect, which would run only after those reads.
+    // Lint's RememberReturnType wants `remember` to return the value it computes; here the
+    // call is the point and its Unit result is deliberately discarded, so the rule does not apply.
+    @Suppress("RememberReturnType")
     remember(locale) { placesViewModel.setLocale(locale) }
     val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
     val passportNames by placesViewModel.passportNames.collectAsStateWithLifecycle()
@@ -135,7 +138,7 @@ fun BeyondBordersRoot(
             // padding to stay clear of the bar.
             val isMapTab = tab == Tab.MAP
             val containerColor = if (isMapTab) {
-                androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.88f)
+                androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)
             } else {
                 androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer
             }

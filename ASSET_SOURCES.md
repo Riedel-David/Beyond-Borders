@@ -364,7 +364,9 @@ Inter, Version 4.001 (`git-9221beed3`) per the fonts' name tables, Copyright 201
 Inter Project Authors (<https://github.com/rsms/inter>). They replace the platform
 default (Roboto) and are loaded in `ui/theme/Type.kt`. The download URL and file hashes
 were not recorded when they were added. Licence: SIL Open Font License 1.1, which
-permits bundling; the notice is in `THIRD_PARTY_NOTICES.md`.
+permits bundling; the notice is in `THIRD_PARTY_NOTICES.md` and the licence text ships as
+`app/src/main/assets/licenses/Inter-OFL.txt`, downloaded 2026-11-04 from
+<https://raw.githubusercontent.com/rsms/inter/master/LICENSE.txt> (sha256 `262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a`).
 
 ## Icons
 

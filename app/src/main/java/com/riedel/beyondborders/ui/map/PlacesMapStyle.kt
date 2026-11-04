@@ -316,7 +316,7 @@ internal object PlacesMapStyle {
                         ),
                         PropertyFactory.textColor(palette.labelTextOnMarked.toArgb()),
                         PropertyFactory.textHaloColor(palette.labelHaloOnMarked.toArgb()),
-                        PropertyFactory.textHaloWidth(1.0f),
+                        PropertyFactory.textHaloWidth(0.5f),
                         PropertyFactory.textAnchor(Property.TEXT_ANCHOR_CENTER),
                         PropertyFactory.textAllowOverlap(false),
                         PropertyFactory.textIgnorePlacement(false),

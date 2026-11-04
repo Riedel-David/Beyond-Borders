@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -170,8 +171,9 @@ internal fun StatusChip(
                     )
                 }
                 DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-                    // Three entries, no icon slot: the selected one is tinted and bold, and tapping
-                    // it again clears the status, so there is no separate Clear entry.
+                    // Three entries: the selected one is filled with its hue and bold, the others carry a
+                    // dot in theirs; tapping the selected one again clears the status, so there is no
+                    // separate Clear entry.
                     for (action in StatusAction.entries) {
                         val current = isCurrent(action, menuStatus)
                         val hue = when (statusSlot(action.status())) {
@@ -194,6 +196,9 @@ internal fun StatusChip(
                                     selected = current
                                     role = Role.RadioButton
                                 },
+                            leadingIcon = if (current) null else {
+                                { Box(Modifier.size(10.dp).background(hue, CircleShape)) }
+                            },
                             onClick = { onAction(action) },
                         )
                     }
