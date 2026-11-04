@@ -53,7 +53,7 @@ class StringParityTest {
         "passport_group_alphabetical", // "A-Z"
         "settings_theme_system", "settings_base_sand", "rank_globetrotter", "rank_wanderer",
         "widget_cfg_background_transparent", // same word in German
-        "settings_ok", // "OK"
+        "settings_ok", "info_button_ok", // "OK"
         "stats_hero_percent", "badge_rank_line", "share_stamp", // pure format strings
         "visa_legend_item", "visa_dataset_credit", "visa_summary_with_days", "map_legend_count_labeled", "map_legend_chip",
         "map_join_comma", "backup_sentence_join", "settings_swatch_description", "settings_preview_caveat",

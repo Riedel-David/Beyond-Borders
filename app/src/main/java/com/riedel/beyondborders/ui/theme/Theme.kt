@@ -21,6 +21,7 @@ val LocalIsDarkTheme = staticCompositionLocalOf { false }
 @Composable
 fun BeyondBordersTheme(
     mode: ThemeMode = ThemeMode.SYSTEM,
+    pureBlack: Boolean = false,
     mapColors: MapColors = MapColors.DEFAULT,
     mapBase: MapBase = MapBase.DEFAULT,
     content: @Composable () -> Unit,
@@ -54,12 +55,17 @@ fun BeyondBordersTheme(
         // Recomputed on every change to either input, which is all the live
         // recolouring needs: MapScreen keys its style rebuild on this palette, and
         // MapPalette is a data class, so a new hue reaches MapLibre by itself.
-        LocalMapPalette provides mapPalette(dark, mapColors, mapBase),
+        LocalMapPalette provides mapPalette(dark, mapColors, mapBase, pureBlack),
         LocalIsDarkTheme provides dark,
     ) {
         MaterialTheme(
-            colorScheme = if (dark) BeyondBordersDark else BeyondBordersLight,
+            colorScheme = when {
+                dark && pureBlack -> BeyondBordersBlack
+                dark -> BeyondBordersDark
+                else -> BeyondBordersLight
+            },
             typography = AppTypography,
+            shapes = AppShapes,
             content = content,
         )
     }

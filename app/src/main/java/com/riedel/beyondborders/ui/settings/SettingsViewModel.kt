@@ -79,6 +79,7 @@ class SettingsViewModel(
     val mapBase: StateFlow<MapBase> = settings.mapBase
     val denominator: StateFlow<Denominator> = settings.denominator
     val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
+    val pureBlack: StateFlow<Boolean> = settings.pureBlack
     // Settings is only reachable once welcome-gating has forced a real choice, so
     // this fallback is structurally unreachable — kept only so the type stays
     // non-null, not as a real default.
@@ -159,6 +160,8 @@ class SettingsViewModel(
     fun setDenominator(value: Denominator) = settings.setDenominator(value)
 
     fun setHapticsEnabled(enabled: Boolean) = settings.setHapticsEnabled(enabled)
+
+    fun setPureBlack(enabled: Boolean) = settings.setPureBlack(enabled)
 
     fun setNationality(value: String) = settings.setNationality(value)
 

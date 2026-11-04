@@ -46,7 +46,7 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
 - **Home-screen widget** — configurable per instance: headline metric and card background.
   It adds the logo, wordmark and stat tiles as it is resized. Tapping it opens the map, or
   the stats screen for the percent and continents widgets.
-- **Settings** — theme, map colours, JSON export / import, restoring from Android's backup
+- **Settings** — theme (including a pure black option for OLED screens), map colours, JSON export / import, restoring from Android's backup
   after a reinstall, and *Delete everything*, which clears your places, passports and
   display settings.
 

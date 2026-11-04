@@ -1,5 +1,8 @@
 package com.riedel.beyondborders.ui
 
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -9,12 +12,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,6 +89,9 @@ fun BeyondBordersRoot(
     // idempotent StateFlow write, kept in `remember` so it happens once per locale and,
     // placed directly after the ViewModel is obtained, before any of its state is
     // collected below. Not a SideEffect, which would run only after those reads.
+    // Lint's RememberReturnType wants `remember` to return the value it computes; here the
+    // call is the point and its Unit result is deliberately discarded, so the rule does not apply.
+    @Suppress("RememberReturnType")
     remember(locale) { placesViewModel.setLocale(locale) }
     val allPlaces by placesViewModel.places.collectAsStateWithLifecycle()
     val passportNames by placesViewModel.passportNames.collectAsStateWithLifecycle()
@@ -125,7 +133,24 @@ fun BeyondBordersRoot(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            NavigationBar {
+            // Shorter (64 dp) and translucent over the map, opaque on other tabs. The
+            // map draws behind it; overlays in MapScreen use the Scaffold's bottom
+            // padding to stay clear of the bar.
+            val isMapTab = tab == Tab.MAP
+            val containerColor = if (isMapTab) {
+                androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)
+            } else {
+                androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer
+            }
+            NavigationBar(
+                containerColor = containerColor,
+                // 64 dp of bar plus the gesture area: NavigationBar pads its own
+                // content by the navigation-bar inset, so a bare height(64) would
+                // leave the items about 40 dp.
+                modifier = Modifier.height(
+                    64.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+                ),
+            ) {
                 Tab.entries.forEach { entry ->
                     NavigationBarItem(
                         selected = entry == tab,

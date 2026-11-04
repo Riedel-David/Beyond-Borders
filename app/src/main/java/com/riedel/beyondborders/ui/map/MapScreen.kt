@@ -54,7 +54,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
@@ -100,6 +99,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -154,6 +154,7 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
@@ -501,7 +502,11 @@ fun MapScreen(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            MapPill(
+            MapOverlayButton(
+                icon = if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
+                contentDescription = stringResource(
+                    if (controlsExpanded) R.string.map_controls_hide else R.string.map_controls_show,
+                ),
                 onClick = {
                     viewModel.vibrate()
                     controlsExpanded = !controlsExpanded
@@ -510,15 +515,7 @@ fun MapScreen(
                     // next time the stack expands.
                     if (!controlsExpanded) searchOpen = false
                 },
-            ) {
-                Icon(
-                    if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
-                    contentDescription = stringResource(
-                        if (controlsExpanded) R.string.map_controls_hide else R.string.map_controls_show,
-                    ),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+            )
             if (!controlsExpanded) return@Column
             // One grouped container for the three map modes, each an icon plus an
             // always-visible label, with the active one highlighted. Search is the
@@ -680,9 +677,10 @@ fun MapScreen(
             }
         }
 
-        // The region card reserves an end inset for this FAB. The selection banner is
-        // full-width, so the FAB is hidden while a place is selected and only fades back
-        // in after the banner has finished fading out (delay = the banner's 140 ms exit).
+        // The region card reserves an end inset for this button. The selection banner is
+        // full-width, so the share button is hidden while a place is selected and only
+        // fades back in after the banner has finished fading out (delay = the banner's
+        // 140 ms exit).
         AnimatedVisibility(
             visible = selected == null,
             enter = fadeIn(tween(120, delayMillis = 140)),
@@ -692,15 +690,14 @@ fun MapScreen(
                 .padding(contentPadding)
                 .padding(16.dp),
         ) {
-            FloatingActionButton(
+            MapOverlayButton(
+                icon = Icons.Filled.Share,
+                contentDescription = stringResource(R.string.map_share_action),
                 onClick = {
                     viewModel.vibrate()
                     showShareStyleDialog = true
                 },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ) {
-                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.map_share_action))
-            }
+            )
         }
 
         if (showShareStyleDialog) {
@@ -813,6 +810,7 @@ private class PlacesMapController {
     private var appliedVisited: Set<String> = emptySet()
     private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
+    private var appliedMarkedForLabels: Set<String> = emptySet()
     private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
     private var appliedNoData: Set<String> = emptySet()
     private var appliedRegionBands: Map<RegionStyleKey, Set<String>> = emptyMap()
@@ -834,8 +832,11 @@ private class PlacesMapController {
         val names = places.filter { it.name != it.englishName }.associate { it.code to it.name }
         if (names == appliedLabelNames) return
         appliedLabelNames = names
-        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)
-            ?.setProperties(PropertyFactory.textField(PlacesMapStyle.labelText(names)))
+        // Both layers: a marked country's label lives on the on-marked layer, which would
+        // otherwise keep the English name.
+        val textField = PropertyFactory.textField(PlacesMapStyle.labelText(names))
+        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)?.setProperties(textField)
+        style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS_ON_MARKED)?.setProperties(textField)
     }
 
     fun attach(map: MapLibreMap) {
@@ -851,6 +852,7 @@ private class PlacesMapController {
         appliedVisited = emptySet()
         appliedLived = emptySet()
         appliedWishlist = emptySet()
+        appliedMarkedForLabels = emptySet()
         appliedBands = emptyMap()
         appliedNoData = emptySet()
         appliedRegionBands = emptyMap()
@@ -896,6 +898,36 @@ private class PlacesMapController {
             style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_WISHLIST)
                 ?.setFilter(PlacesMapStyle.onlyPlaces(wishlist))
             appliedWishlist = wishlist.toSet()
+        }
+
+        // Update label layers: in dark mode, labels on marked places use dark text.
+        // LAYER_LABELS_ON_MARKED shows only marked codes; LAYER_LABELS shows the rest.
+        val marked = visited + lived + wishlist
+        if (marked != appliedMarkedForLabels) {
+            appliedMarkedForLabels = marked.toSet()
+            // Marked labels: show only these codes, respecting zoom.
+            val markedFilter = if (marked.isEmpty()) {
+                PlacesMapStyle.noPlaces()
+            } else {
+                Expression.all(
+                    Expression.gte(Expression.zoom(), Expression.get("minLabelZoom")),
+                    PlacesMapStyle.onlyPlaces(marked)
+                )
+            }
+            style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS_ON_MARKED)
+                ?.setFilter(markedFilter)
+
+            // Unmarked labels: show everything except marked codes, respecting zoom.
+            val unmarkedFilter = if (marked.isEmpty()) {
+                Expression.gte(Expression.zoom(), Expression.get("minLabelZoom"))
+            } else {
+                Expression.all(
+                    Expression.gte(Expression.zoom(), Expression.get("minLabelZoom")),
+                    Expression.not(PlacesMapStyle.onlyPlaces(marked))
+                )
+            }
+            style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)
+                ?.setFilter(unmarkedFilter)
         }
     }
 
@@ -1214,7 +1246,8 @@ private fun PlacesMapView(
 
 /**
  * A floating chip over the map. Semi-transparent so it reads as an overlay rather
- * than as part of the geography underneath it.
+ * than as part of the geography underneath it. Uses surfaceContainerHigh to ensure
+ * separation from the map background in all themes, including pure black.
  */
 @Composable
 private fun MapPill(
@@ -1222,8 +1255,9 @@ private fun MapPill(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val shape = MaterialTheme.shapes.large
-    val color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+    // Explicit pill shape: not dependent on the theme's large shape scale.
+    val shape = RoundedCornerShape(16.dp)
+    val color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
     if (onClick == null) {
         Surface(modifier = modifier, shape = shape, color = color, shadowElevation = 2.dp) {
             Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
@@ -1244,6 +1278,38 @@ private fun MapPill(
             shadowElevation = 2.dp,
         ) {
             Box(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) { content() }
+        }
+    }
+}
+
+/**
+ * A map overlay button: icon-only, same surface and elevation as the legend pills.
+ * Both the ⋮ menu button and the share button use this. Circle shape, not tied to
+ * the theme's large shape scale.
+ */
+@Composable
+private fun MapOverlayButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.minimumInteractiveComponentSize(),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+        shadowElevation = 2.dp,
+    ) {
+        Box(
+            modifier = Modifier.padding(12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

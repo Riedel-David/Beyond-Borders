@@ -51,10 +51,11 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val themeMode by container.settings.themeMode.collectAsStateWithLifecycle()
+            val pureBlack by container.settings.pureBlack.collectAsStateWithLifecycle()
             val mapColors by container.settings.mapColors.collectAsStateWithLifecycle()
             val mapBase by container.settings.mapBase.collectAsStateWithLifecycle()
             val databaseHealth by container.databaseHealth.collectAsStateWithLifecycle()
-            BeyondBordersTheme(themeMode, mapColors, mapBase) {
+            BeyondBordersTheme(themeMode, pureBlack, mapColors, mapBase) {
                 // Nothing may query the database before the probe has cleared it, or
                 // the crash this screen exists to replace happens first. Unknown is a
                 // themed blank: the probe starts in Application.onCreate, one file

@@ -122,11 +122,13 @@ continents widgets open the stats screen.
 ## The passport list
 
 Each row shows the place's flag as a thumbnail and one status chip: the current status
-(Been, Lived or Want to), or a muted "+" when there is none. Tapping it opens a menu
+(Been, Lived or Want to) filled in that status's map colour, or a muted "+" when there
+is none. Tapping it opens a menu
 with the three statuses; tapping the one already selected clears it. TalkBack reads a
 row as one item and offers the same choices as actions. The search field is a rounded
-filled bar with a clear button, and the visa summary keeps its links in one wrapping
-row.
+filled bar with a clear button, and the visa summary shows a short disclaimer with the data date; the
+credit, licence and source links are behind its info button. When a visa passport is set, the Passport tab's modes are a tab row, and the
+grouping (continent, region, A-Z) sits behind a sort button beside the search field.
 
 ## The map controls
 
@@ -146,8 +148,10 @@ on your home screen, and offers size chips (scrollable, so none is cut off) incl
 
 Surfaces in the light and dark themes use the app's own tint instead of the Material
 default lavender, including cards in Settings and the passport and visa summaries. Text
-uses a re-weighted type scale, and numbers in stats, counts and the legend use tabular
-figures so they do not jitter as they change.
+uses the bundled Inter font on a re-weighted type scale, and numbers in stats, counts and the legend use tabular
+figures so they do not jitter as they change. Settings → **Pure black** (shown for the
+dark theme, "For OLED screens") swaps the dark surfaces, and the map's ocean when the default
+map background is chosen, for black; it is a display setting, so *Delete everything* resets it.
 
 ## The selected place
 

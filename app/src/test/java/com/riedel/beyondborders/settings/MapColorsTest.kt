@@ -146,6 +146,42 @@ class MapColorsTest {
     }
 
     /**
+     * Pure black mode uses true black water and very dark land on the default base,
+     * with a brighter border to stay visible. All status colors and the border must
+     * clear 3:1 against both backgrounds.
+     */
+    @Test
+    fun `pure black mode clears 3 to 1 against black water and dark land`() {
+        val palette = mapPalette(dark = true, colors = MapColors.DEFAULT, base = MapBase.DEFAULT, pureBlack = true)
+        val land = palette.unvisited.rgb()
+        val ocean = palette.ocean.rgb()
+        val border = palette.border.rgb()
+
+        // Check border contrast
+        assertTrue(
+            "border vs black water: ${"%.2f".format(contrast(border, ocean))}:1",
+            contrast(border, ocean) >= 3.0,
+        )
+        assertTrue(
+            "border vs dark land: ${"%.2f".format(contrast(border, land))}:1",
+            contrast(border, land) >= 3.0,
+        )
+
+        // Check all status colors against both backgrounds
+        MapHue.entries.forEach { hue ->
+            val fill = hue.argb(dark = true) and 0xFFFFFF
+            assertTrue(
+                "$hue vs pure black land: ${"%.2f".format(contrast(fill, land))}:1",
+                contrast(fill, land) >= 3.0,
+            )
+            assertTrue(
+                "$hue vs pure black ocean: ${"%.2f".format(contrast(fill, ocean))}:1",
+                contrast(fill, ocean) >= 3.0,
+            )
+        }
+    }
+
+    /**
      * A base pair is a pair for the same reason a hue is: the same hex in both
      * themes would mean one of the two was chosen for the other theme's background.
      */
@@ -195,5 +231,17 @@ class MapColorsTest {
         assertEquals(MapHue.AZURE.lightArgb.toInt(), light.visited.toArgb())
         assertEquals(MapHue.GREEN.lightArgb.toInt(), light.lived.toArgb())
         assertEquals(MapHue.AMBER.lightArgb.toInt(), light.wishlist.toArgb())
+    }
+
+    @Test
+    fun `labels on a marked country are readable on every hue in both themes`() {
+        // 4:1, not 4.5: white on TEAL and AMBER in light mode is 4.2, and the halo makes up the rest.
+        listOf(false, true).forEach { dark ->
+            val text = mapPalette(dark = dark, colors = MapColors.DEFAULT).labelTextOnMarked.toArgb().toLong() and 0xFFFFFF
+            MapHue.entries.forEach { hue ->
+                val ratio = contrast(text, hue.argb(dark) and 0xFFFFFF)
+                assertTrue("$hue in ${if (dark) "dark" else "light"}: ${"%.2f".format(ratio)}:1", ratio >= 4.0)
+            }
+        }
     }
 }

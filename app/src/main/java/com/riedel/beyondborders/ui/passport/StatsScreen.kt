@@ -58,6 +58,7 @@ import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.map.flagAssetPath
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.geoNameText
@@ -170,18 +171,17 @@ fun StatsScreen(
                     val files = flagFiles ?: return@remember emptyList()
                     heroFlagCodes(places, statuses, hasFlag = { code -> flagAssetPath(code)?.substringAfter('/')?.let { it in files } == true })
                 },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 16.dp),
             )
 
-            Text(
-                stringResource(R.string.stats_hold_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             CompletionGrid(
                 stringResource(R.string.stats_continents),
                 stats.continents.map { Bucket(it.continent, it.been, it.total, it.codes) },
                 onHold = { detail = it },
+                showInfo = true,
+                infoLabel = stringResource(R.string.stats_continents_info_label),
+                infoTitle = stringResource(R.string.stats_continents),
+                infoBody = { Text(stringResource(R.string.stats_continents_info)) },
             )
 
             val leastCovered = remember(stats.continents) { leastCoveredContinentText(stats.continents) }
@@ -294,14 +294,36 @@ private fun ShowAllGroupingsRow(
 }
 
 @Composable
-private fun CompletionGrid(title: String, bars: List<Bucket>, onHold: (Bucket) -> Unit) {
+private fun CompletionGrid(
+    title: String,
+    bars: List<Bucket>,
+    onHold: (Bucket) -> Unit,
+    showInfo: Boolean = false,
+    infoLabel: String = "",
+    infoTitle: String = "",
+    infoBody: @Composable () -> Unit = {},
+) {
     if (bars.isEmpty()) return
-    Text(
-        title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        if (showInfo) {
+            InfoButton(
+                contentDescription = infoLabel,
+                dialogTitle = infoTitle,
+                dialogBody = infoBody,
+            )
+        }
+    }
     // Two columns, same reasoning as the old continent grid: half the rows means
     // the section does not dominate the screen it now has entirely to itself.
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

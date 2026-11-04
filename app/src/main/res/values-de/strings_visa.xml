@@ -52,8 +52,8 @@
     <!-- Passport list -->
     <string name="visa_search_destinations">Reiseziele suchen</string>
     <string name="visa_clear">Löschen</string>
-    <string name="visa_empty_query">Keine Reiseziele zu „%1$s“.</string>
-    <string name="visa_empty_filter">Keine Reiseziele im Filter „%1$s“.</string>
+    <string name="visa_empty_query">Keine Reiseziele zu „%1$s".</string>
+    <string name="visa_empty_filter">Keine Reiseziele im Filter „%1$s".</string>
     <string name="visa_empty_nothing">Nichts gefunden.</string>
     <string name="visa_unavailable_title">Keine Visumdaten</string>
     <string name="visa_unavailable_body">Die mitgelieferte Visumliste konnte nicht gelesen werden, daher gibt es in diesem Modus nichts anzuzeigen. Die Reisekarte ist nicht betroffen.</string>
@@ -61,11 +61,14 @@
     <!-- Summary card -->
     <string name="visa_summary_visa_free_of">"  von %1$d Orten visumfrei"</string>
     <string name="visa_summary_easy">%1$d ohne Botschaftstermin erreichbar</string>
+    <string name="visa_summary_disclaimer_short">Stand %1$s – vor Buchung prüfen</string>
+    <string name="visa_summary_info_label">Datenquellen und Haftungsausschluss anzeigen</string>
+    <string name="visa_summary_info_title">Über Visumdaten</string>
     <string name="visa_legend_item">%1$s %2$d</string>
     <string name="visa_dataset_credit">%1$s · %2$s</string>
     <string name="visa_licence_link">Lizenz</string>
     <string name="visa_source_link">Quelle: %1$s-Artikel</string>
-    <string name="visa_correction">%1$s sagt „%2$s“ – hier korrigiert</string>
+    <string name="visa_correction">%1$s sagt „%2$s" – hier korrigiert</string>
 
     <!-- Passport picker -->
     <string name="picker_choose_passport">Reisepass wählen</string>

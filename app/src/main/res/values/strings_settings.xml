@@ -32,29 +32,29 @@
     <!-- Settings: sections -->
     <string name="settings_title">Settings</string>
     <string name="settings_appearance_title">Appearance</string>
-    <string name="settings_appearance_detail">Dark mode follows the system unless you pick one.</string>
+    <string name="settings_appearance_detail">Follows the system unless you pick one.</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
+    <string name="settings_pure_black">Pure black</string>
+    <string name="settings_pure_black_detail">For OLED screens</string>
 
     <!-- Language -->
     <string name="settings_language_title">Language</string>
-    <string name="settings_language_detail">Sets the app language and how country names are written.</string>
     <string name="settings_language_system">System default</string>
 
     <string name="settings_passport_title">Passport</string>
-    <string name="settings_passport_detail">Which passport\'s visa answers the map and passport tab show.</string>
+    <string name="settings_passport_detail">Visa answers on the map and the passport tab are for this passport.</string>
     <string name="settings_second_passport">Second passport</string>
     <string name="settings_add_second_passport">Add second passport</string>
     <string name="settings_dual_hint">Dual nationals see whichever of the two passports gives the easier answer</string>
     <string name="settings_remove_second_passport">Remove second passport</string>
 
     <string name="settings_haptics_title">Haptics</string>
-    <string name="settings_haptics_detail">A short vibration when you mark or clear a place.</string>
     <string name="settings_haptics_toggle">Vibrate on marking</string>
 
     <string name="settings_colours_title">Map colours</string>
-    <string name="settings_colours_detail">Picking a colour another status already uses swaps the two, so no two statuses can end up the same.</string>
+    <string name="settings_colours_detail">Picking a colour that is already in use swaps the two.</string>
     <string name="settings_status_been">Been</string>
     <string name="settings_status_lived">Lived</string>
     <string name="settings_status_want">Want to</string>
@@ -69,7 +69,7 @@
     <string name="settings_hue_amber">Amber</string>
 
     <string name="settings_counting_title">Counting places</string>
-    <string name="settings_counting_detail">\"How many countries have you been to\" has no one answer. Pick which one the passport tab counts against.</string>
+    <string name="settings_counting_detail">What the passport tab counts against.</string>
     <string name="settings_denominator_all">All %1$d</string>
     <string name="settings_denominator_un">%1$d UN</string>
     <string name="settings_denominator_all_bare">All</string>
@@ -77,7 +77,7 @@
     <string name="settings_denominator_inhabited">Inhabited</string>
 
     <string name="settings_background_title">Map background</string>
-    <string name="settings_background_detail">Ocean and unmarked land. A small, checked list rather than a colour wheel, so it stays readable against every status colour above.</string>
+    <string name="settings_background_detail">Ocean and unmarked land.</string>
     <string name="settings_base_default">Default</string>
     <string name="settings_base_slate">Slate</string>
     <string name="settings_base_sand">Sand</string>
@@ -85,7 +85,7 @@
     <string name="settings_data_title">Your travel data</string>
     <string name="settings_export">Export</string>
     <string name="settings_import">Import</string>
-    <string name="settings_data_detail">As a JSON file you can keep anywhere. Importing merges it in: an entry only wins if it is newer than what\'s already here.</string>
+    <string name="settings_data_detail">A JSON file you can keep anywhere. Importing keeps whichever entry is newer.</string>
     <string name="settings_restore_button">Restore from Android\'s backup</string>
     <string name="settings_restore_detail">Android\'s backup left a snapshot of your history on this phone. Restoring merges it in, exactly like importing a file.</string>
     <string name="settings_ok">OK</string>
@@ -113,7 +113,7 @@
     </plurals>
 
     <string name="settings_danger_title">Danger zone</string>
-    <string name="settings_danger_detail">Clears every place you\'ve marked as been, lived in or want to visit. Cannot be undone — export a backup first if there\'s any doubt.</string>
+    <string name="settings_danger_detail">Cannot be undone. Export a backup first.</string>
     <string name="settings_delete_everything">Delete everything</string>
     <string name="settings_delete_confirm_title">Delete everything?</string>
     <string name="settings_delete_confirm_body">Every place you\'ve marked, your passports and your display settings are cleared from this phone, along with the snapshot Android\'s backup keeps. Google may still hold an earlier backup until Android next runs one — Android\'s backup settings can delete that now.</string>
@@ -122,8 +122,11 @@
     <string name="settings_about_title">About</string>
     <string name="settings_about_version">BeyondBorders %1$s</string>
     <string name="settings_about_open_source">Open source (GPL-3.0)</string>
+    <string name="settings_about_data_title">About the data</string>
     <string name="settings_about_disclaimer">An independent app, not affiliated with or representing any government. Visa data is a snapshot and can be out of date: confirm entry rules with the official government source before you travel.</string>
+    <string name="settings_about_map_title">Map data</string>
     <string name="settings_about_map">Borders from Natural Earth (public domain), drawn with MapLibre. The whole map is bundled in the app, so it works with no network and no account.</string>
+    <string name="settings_about_backup_title">Backups</string>
     <string name="settings_about_backup">Android\'s own Auto Backup carries a snapshot of your history to your Google account — the system makes that copy, the app never uploads anything itself. A reinstalled or new phone starts empty: nothing is put back until you tap Restore. The database, your settings and a per-install id stay out of the backup entirely. Switch it off in Android\'s backup settings if you would rather it did not.</string>
     <string name="settings_licences_button">Open-source licences</string>
 
@@ -135,6 +138,7 @@
     <string name="settings_licence_map">Map</string>
     <string name="settings_licence_borders">Borders</string>
     <string name="settings_licence_labels">Labels</string>
+    <string name="settings_licence_font">Font</string>
     <string name="settings_licence_flags">Flags</string>
     <string name="settings_licence_visa">Visa data</string>
     <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>

@@ -1,7 +1,6 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -74,6 +75,17 @@ internal fun statusSlot(status: PlaceStatus): MapSlot? = when (status) {
     PlaceStatus.NONE -> null
 }
 
+/**
+ * Label colour for a chip filled with [fillArgb]: black or white, whichever contrasts more.
+ * Pure black rather than the theme's near-black because teal at 0xFF0F8A7E only reaches
+ * 4.38:1 against near-black, under the 4.5:1 AA line.
+ */
+internal fun textColorForFill(fillArgb: Int): Int {
+    val black = 0xFF000000.toInt()
+    val white = 0xFFFFFFFF.toInt()
+    return if (contrastRatio(fillArgb, black) >= contrastRatio(fillArgb, white)) black else white
+}
+
 @StringRes
 private fun actionLabelRes(action: StatusAction): Int = when (action) {
     StatusAction.BEEN -> R.string.passport_chip_been
@@ -120,7 +132,7 @@ internal fun StatusChip(
     modifier: Modifier = Modifier,
 ) {
     val palette = LocalMapPalette.current
-    val accent: Color? = when (statusSlot(status)) {
+    val fillColor: Color? = when (statusSlot(status)) {
         MapSlot.VISITED -> palette.visited
         MapSlot.LIVED -> palette.lived
         MapSlot.WISHLIST -> palette.wishlist
@@ -136,52 +148,61 @@ internal fun StatusChip(
             contentAlignment = Alignment.Center,
         ) {
             val shape = RoundedCornerShape(16.dp)
-            Box(
-                Modifier
-                    .defaultMinSize(minWidth = 44.dp, minHeight = 32.dp)
-                    .clip(shape)
-                    .background(accent?.copy(alpha = 0.22f) ?: Color.Transparent)
-                    .border(BorderStroke(1.dp, accent ?: MaterialTheme.colorScheme.outlineVariant), shape)
-                    .padding(PaddingValues(horizontal = 12.dp, vertical = 4.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Never ellipsized: the pill grows with the label and the name beside it yields.
-                Text(
-                    text = label ?: "+",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (accent != null) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
-        }
-        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            // Three entries, no icon slot: the selected one is tinted and bold, and tapping
-            // it again clears the status, so there is no separate Clear entry.
-            for (action in StatusAction.entries) {
-                val current = isCurrent(action, menuStatus)
-                val hue = when (statusSlot(action.status())) {
-                    MapSlot.VISITED -> palette.visited
-                    MapSlot.LIVED -> palette.lived
-                    MapSlot.WISHLIST -> palette.wishlist
-                    null -> Color.Transparent
+            // Pill and menu share this box so the menu anchors to the visible pill, not to
+            // the taller 48dp touch target around it.
+            Box {
+                Box(
+                    Modifier
+                        .defaultMinSize(minWidth = 44.dp, minHeight = 32.dp)
+                        .clip(shape)
+                        .background(fillColor ?: Color.Transparent)
+                        .then(if (fillColor == null) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier)
+                        .padding(PaddingValues(horizontal = 12.dp, vertical = 4.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Never ellipsized: the pill grows with the label and the name beside it yields.
+                    Text(
+                        text = label ?: "+",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (fillColor != null) Color(textColorForFill(fillColor.toArgb()))
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
                 }
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            stringResource(actionLabelRes(action)),
-                            fontWeight = if (current) FontWeight.Bold else null,
+                DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+                    // Three entries: the selected one is filled with its hue and bold, the others carry a
+                    // dot in theirs; tapping the selected one again clears the status, so there is no
+                    // separate Clear entry.
+                    for (action in StatusAction.entries) {
+                        val current = isCurrent(action, menuStatus)
+                        val hue = when (statusSlot(action.status())) {
+                            MapSlot.VISITED -> palette.visited
+                            MapSlot.LIVED -> palette.lived
+                            MapSlot.WISHLIST -> palette.wishlist
+                            null -> Color.Transparent
+                        }
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(actionLabelRes(action)),
+                                    fontWeight = if (current) FontWeight.Bold else null,
+                                    color = if (current) Color(textColorForFill(hue.toArgb())) else Color.Unspecified,
+                                )
+                            },
+                            modifier = Modifier
+                                .background(if (current) hue else Color.Transparent)
+                                .semantics {
+                                    selected = current
+                                    role = Role.RadioButton
+                                },
+                            leadingIcon = if (current) null else {
+                                { Box(Modifier.size(10.dp).background(hue, CircleShape)) }
+                            },
+                            onClick = { onAction(action) },
                         )
-                    },
-                    modifier = Modifier
-                        .background(if (current) hue.copy(alpha = 0.22f) else Color.Transparent)
-                        .semantics {
-                            selected = current
-                            role = Role.RadioButton
-                        },
-                    onClick = { onAction(action) },
-                )
+                    }
+                }
             }
         }
     }

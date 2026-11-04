@@ -58,9 +58,15 @@ internal fun ringFraction(badge: Achievement): Float =
 
 /**
  * The number the badge asks for ("25" for 25 places, "5" for 5 continents), shown on the
- * emblem. Null for a single-step badge: a "1" tells nothing there.
+ * emblem. Null for a single-step badge or where the badge's label already states the number.
  */
-internal fun tierMark(badge: Achievement): String? = badge.target.takeIf { it > 1 }?.toString()
+internal fun tierMark(badge: Achievement, title: String): String? {
+    if (badge.target <= 1) return null
+    // Read off the label rather than listed by id, so a new badge can't fall out of step.
+    // Whole-number match: "100 places" does not hide a tier of 10.
+    val mark = badge.target.toString()
+    return mark.takeUnless { Regex("""\b$mark\b""").containsMatchIn(title) }
+}
 
 /**
  * A medal: the group's icon in a disc, a ring around it that is the progress, the
@@ -80,6 +86,7 @@ internal fun MedalBadge(achievement: Achievement, onClick: () -> Unit, modifier:
     val tierFill = if (unlocked) Color(if (dark) tone.containerDark else tone.containerLight) else scheme.surfaceVariant
     val tierInk = if (unlocked) Color(if (dark) InkDark else InkLight) else scheme.onSurfaceVariant
     val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
+    val lockedColor = scheme.onSurface.copy(alpha = 0.38f)
     val track = scheme.outlineVariant
     val fraction = ringFraction(achievement)
 
@@ -115,17 +122,19 @@ internal fun MedalBadge(achievement: Achievement, onClick: () -> Unit, modifier:
             Box(
                 Modifier
                     .size(EmblemSize - (RingStroke + GapToDisc) * 2)
-                    .background(if (unlocked) accent else scheme.surfaceVariant, CircleShape),
+                    // A locked disc stays a pale surface: filled with lockedColor it would swallow
+                    // the glyph tinted the same colour.
+                    .background(if (unlocked) accent else scheme.surfaceContainerHighest, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(iconFor(achievement.group)),
                     contentDescription = null,
-                    tint = if (unlocked) glyph else scheme.onSurfaceVariant,
+                    tint = if (unlocked) glyph else lockedColor,
                     modifier = Modifier.size(28.dp),
                 )
             }
-            tierMark(achievement)?.let { mark ->
+            tierMark(achievement, title)?.let { mark ->
                 Text(
                     mark,
                     style = MaterialTheme.typography.labelSmall,
@@ -145,7 +154,7 @@ internal fun MedalBadge(achievement: Achievement, onClick: () -> Unit, modifier:
                 Icon(
                     painterResource(R.drawable.ic_badge_lock),
                     contentDescription = null,
-                    tint = scheme.onSurfaceVariant,
+                    tint = lockedColor,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .offset(x = (-2).dp, y = 2.dp)

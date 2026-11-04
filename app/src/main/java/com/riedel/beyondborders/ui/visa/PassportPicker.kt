@@ -69,7 +69,7 @@ fun PassportPickerButton(
 }
 
 @Composable
-private fun PassportPickerDialog(
+internal fun PassportPickerDialog(
     names: Map<String, String>,
     englishNames: Map<String, String>,
     selected: String?,

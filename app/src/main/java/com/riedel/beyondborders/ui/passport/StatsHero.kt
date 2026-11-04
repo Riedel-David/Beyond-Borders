@@ -51,7 +51,7 @@ import com.riedel.beyondborders.ui.places.TravelStats
 private val RingDiameter = 168.dp
 private val RingStrokeWidth = 14.dp
 private val SmallRingDiameter = 56.dp
-private val SmallRingStrokeWidth = 7.dp
+private val SmallRingStrokeWidth = 5.dp
 
 /**
  * The top of the Stats screen: the share of the world visited as a ring, the
@@ -78,9 +78,8 @@ internal fun StatsHero(
     )
     val container = MaterialTheme.colorScheme.surfaceContainerHigh
     val onContainer = MaterialTheme.colorScheme.onSurfaceVariant
-    // The old track was the page colour, which read as white on the card. A tint of the
-    // card's own text colour is visible on any palette, dynamic colour included.
-    val track = lerp(container, onContainer, 0.22f)
+    // Lighter, calmer track that separates from the card in light, dark and pure-black.
+    val track = MaterialTheme.colorScheme.surfaceContainerHighest
     val progress = MaterialTheme.colorScheme.primary
 
     Column(
@@ -105,7 +104,7 @@ internal fun StatsHero(
                 style = MaterialTheme.typography.displaySmall,
                 fontSize = with(LocalDensity.current) { 36.dp.toSp() },
                 fontWeight = FontWeight.SemiBold,
-                color = onContainer,
+                color = progress,
             )
         }
         Text(

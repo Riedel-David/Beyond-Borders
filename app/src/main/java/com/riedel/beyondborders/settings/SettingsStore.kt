@@ -68,6 +68,9 @@ class SettingsStore(context: Context) {
     private val _hapticsEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTICS, true))
     val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
 
+    private val _pureBlack = MutableStateFlow(prefs.getBoolean(KEY_PURE_BLACK, false))
+    val pureBlack: StateFlow<Boolean> = _pureBlack.asStateFlow()
+
     private val _hasSeenWelcome = MutableStateFlow(prefs.getBoolean(KEY_HAS_SEEN_WELCOME, false))
     val hasSeenWelcome: StateFlow<Boolean> = _hasSeenWelcome.asStateFlow()
 
@@ -112,6 +115,7 @@ class SettingsStore(context: Context) {
         _mapBase.value = MapBase.DEFAULT
         _denominator.value = Denominator.UN_MEMBER
         _hapticsEnabled.value = true
+        _pureBlack.value = false
         _hasSeenWelcome.value = false
         _nationality.value = null
         _secondNationality.value = null
@@ -206,6 +210,11 @@ class SettingsStore(context: Context) {
         prefs.edit { putBoolean(KEY_HAPTICS, enabled) }
     }
 
+    fun setPureBlack(enabled: Boolean) {
+        _pureBlack.value = enabled
+        prefs.edit { putBoolean(KEY_PURE_BLACK, enabled) }
+    }
+
     /**
      * Repaint one status. The other two follow, because [MapColors.with] swaps.
      *
@@ -251,6 +260,7 @@ class SettingsStore(context: Context) {
         const val KEY_MAP_BASE = "map_base"
         const val KEY_DENOMINATOR = "denominator"
         const val KEY_HAPTICS = "haptics_enabled"
+        const val KEY_PURE_BLACK = "pure_black"
         const val KEY_HAS_SEEN_WELCOME = "has_seen_welcome"
         const val KEY_NATIONALITY = "nationality"
         const val KEY_SECOND_NATIONALITY = "second_nationality"

@@ -5,4 +5,5 @@
     <string name="widget_label">Reisezähler</string>
     <string name="widget_wordmark">BEYOND BORDERS</string>
     <string name="search_clear">Suche leeren</string>
+    <string name="info_button_ok">OK</string>
 </resources>

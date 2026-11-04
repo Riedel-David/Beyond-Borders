@@ -26,6 +26,7 @@ private val LICENCE_LINES = listOf(
     UiText.Res(R.string.settings_licence_map) to UiText.Plain("MapLibre Native (BSD-2-Clause)"),
     UiText.Res(R.string.settings_licence_borders) to UiText.Plain("Natural Earth (public domain)"),
     UiText.Res(R.string.settings_licence_labels) to UiText.Plain("Noto Sans (SIL OFL 1.1)"),
+    UiText.Res(R.string.settings_licence_font) to UiText.Plain("Inter (SIL OFL 1.1)"),
     UiText.Res(R.string.settings_licence_flags) to UiText.Plain("country-flags, Wikimedia Commons (public domain)"),
     UiText.Res(R.string.settings_licence_visa) to UiText.Res(R.string.settings_licence_visa_body),
     UiText.Res(R.string.settings_licence_advice) to UiText.Res(R.string.settings_licence_advice_body),
@@ -50,12 +51,12 @@ internal fun RepoLink(modifier: Modifier = Modifier) {
 // There is no crash reporting or analytics, so the issue tracker is the only way a
 // problem reaches the developer; keep it one tap from About.
 @Composable
-internal fun ReportProblemLink(modifier: Modifier = Modifier) {
+internal fun ReportProblemLink() {
     val uriHandler = LocalUriHandler.current
-    TextButton(
+    InfoRow(
+        title = stringResource(R.string.settings_report_problem),
         onClick = { runCatching { uriHandler.openUri("$REPO_URL/issues") } },
-        modifier = modifier,
-    ) { Text(stringResource(R.string.settings_report_problem)) }
+    )
 }
 
 @Composable

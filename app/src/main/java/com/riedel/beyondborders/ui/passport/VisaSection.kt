@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,6 +49,7 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.band
+import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
@@ -162,20 +165,18 @@ internal fun LazyListScope.visaSection(
             }
         }
         item("visa-${row.place.code}", contentType = "row") {
-            Column(Modifier.animateItem()) {
-                VisaListRow(
-                    row = row,
-                    expanded = row.place.code == selectedCode,
-                    onClick = {
-                        onSelect(if (row.place.code == selectedCode) null else row.place.code)
-                    },
-                    nameOf = nameOf,
-                    visa = visa,
-                    secondVisa = secondVisa,
-                    combinedRequirementOf = combinedRequirementOf,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
+            VisaListRow(
+                row = row,
+                expanded = row.place.code == selectedCode,
+                onClick = {
+                    onSelect(if (row.place.code == selectedCode) null else row.place.code)
+                },
+                nameOf = nameOf,
+                visa = visa,
+                secondVisa = secondVisa,
+                combinedRequirementOf = combinedRequirementOf,
+                modifier = Modifier.animateItem(),
+            )
         }
     }
 }
@@ -233,26 +234,41 @@ private fun VisaSummaryCard(
                 )
             }
             BandBar(visa, secondVisa, placesTotal, ramp, Modifier.padding(top = 12.dp))
-            Text(
-                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 10.dp),
-            )
-            // Attribution, licence and per-passport sources in one wrapping row of
-            // small text buttons rather than three lines: the licence asks for the
-            // credit and a link to the licence and to what each passport's answers were
-            // read from. A flow, so a link that does not fit moves down whole instead
-            // of wrapping its label.
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            // With two passports the staler date is the honest one, as in asOfNoticeText.
+            val asOf = if (secondVisa != null) minOf(visa.asOf, secondVisa.asOf) else visa.asOf
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
             ) {
-                LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
-                visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
-                listOfNotNull(visa, secondVisa).forEach { v ->
-                    v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
-                }
+                Text(
+                    stringResource(R.string.visa_summary_disclaimer_short, asOf),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                InfoButton(
+                    contentDescription = stringResource(R.string.visa_summary_info_label),
+                    dialogTitle = stringResource(R.string.visa_summary_info_title),
+                    dialogBody = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            // Attribution links: one compact block, same left edge, uniform small gaps.
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                CompactLink(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
+                                visa.licenceUrl?.let { CompactLink(stringResource(R.string.visa_licence_link), it) }
+                                listOfNotNull(visa, secondVisa).forEach { v ->
+                                    v.sourceUrl?.let { CompactLink(stringResource(R.string.visa_source_link, v.passport), it) }
+                                }
+                            }
+                        }
+                    },
+                )
             }
         }
     }
@@ -387,6 +403,7 @@ private fun VisaListRow(
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
+    modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
     // Attribution only when a second passport is configured and it won
@@ -394,7 +411,7 @@ private fun VisaListRow(
     val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
 
     Column(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
@@ -403,15 +420,8 @@ private fun VisaListRow(
             Modifier.padding(start = 16.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // The band as a stripe down the row: the one piece of the map's language
-            // that survives being shrunk to list size.
-            Box(
-                Modifier
-                    .width(4.dp)
-                    .height(28.dp)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(ramp.colorFor(row.requirement.category.band))
-            )
+            // Flag thumbnail matching the Passport list: same loader, same size, same position.
+            FlagThumb(row.place.code)
             Column(
                 Modifier
                     .weight(1f)
@@ -440,8 +450,12 @@ private fun VisaListRow(
             if (row.requirement.confidence == VisaConfidence.LOW) {
                 Text(
                     stringResource(R.string.visa_row_check),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
         }
@@ -555,6 +569,24 @@ private fun LinkText(label: String, url: String) {
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium)
     }
+}
+
+/**
+ * A link as plain primary-coloured text, for stacks of links where [LinkText]'s button
+ * padding and 40dp minimum height would leave large gaps. Same guard around openUri.
+ */
+@Composable
+private fun CompactLink(label: String, url: String) {
+    val uriHandler = LocalUriHandler.current
+    Text(
+        label,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button) { runCatching { uriHandler.openUri(url) } }
+            .padding(vertical = 4.dp),
+    )
 }
 
 @Composable
