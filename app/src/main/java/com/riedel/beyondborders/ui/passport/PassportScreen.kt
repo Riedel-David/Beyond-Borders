@@ -394,16 +394,14 @@ fun PassportScreen(
             }
             if (collapseKey in effectiveCollapsed) return@forEach
             item(row.place.code, contentType = "row") {
-                Column(Modifier.animateItem()) {
-                    PlaceListRow(
-                        row = row,
-                        onSet = { target ->
-                            viewModel.vibrate()
-                            viewModel.setStatus(row.place.code, target)
-                        },
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
+                PlaceListRow(
+                    row = row,
+                    onSet = { target ->
+                        viewModel.vibrate()
+                        viewModel.setStatus(row.place.code, target)
+                    },
+                    modifier = Modifier.animateItem(),
+                )
             }
         }
     }
@@ -799,7 +797,7 @@ internal fun travelHeaderSlots(
 }
 
 @Composable
-private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
+private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit, modifier: Modifier = Modifier) {
     val name = row.place.name
     val status = row.status
     var open by remember { mutableStateOf(false) }
@@ -833,7 +831,7 @@ private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit) {
         open = true
     }
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             // One focus stop per row: name + status, the mark/clear actions, and a click
             // that opens the same menu the chip does.

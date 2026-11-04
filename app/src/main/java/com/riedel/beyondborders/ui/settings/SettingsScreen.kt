@@ -209,7 +209,7 @@ fun SettingsScreen(
             }
         }
 
-        Section(stringResource(R.string.settings_haptics_title), stringResource(R.string.settings_haptics_detail)) {
+        Section(stringResource(R.string.settings_haptics_title), null) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -235,7 +235,7 @@ fun SettingsScreen(
             }
         }
 
-        Section(stringResource(R.string.settings_language_title), stringResource(R.string.settings_language_detail)) {
+        Section(stringResource(R.string.settings_language_title), null) {
             // Read at composition: setApplicationLocales recreates the activity, which
             // recomposes this with the new value.
             // MainActivity handles the locale change itself (no recreate, so no black
@@ -424,27 +424,60 @@ fun SettingsScreen(
             )
             RepoLink()
             ReportProblemLink()
-            Text(
-                stringResource(R.string.settings_about_disclaimer),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            Text(
-                stringResource(R.string.settings_about_map),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            var showDataInfo by remember { mutableStateOf(false) }
+            var showMapInfo by remember { mutableStateOf(false) }
+            var showBackupInfo by remember { mutableStateOf(false) }
             var showLicences by remember { mutableStateOf(false) }
-            TextButton(onClick = { showLicences = true }) { Text(stringResource(R.string.settings_licences_button)) }
-            if (showLicences) LicencesDialog(onDismiss = { showLicences = false })
-            Text(
-                stringResource(R.string.settings_about_backup),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
+            InfoRow(
+                title = stringResource(R.string.settings_about_data_title),
+                onClick = { showDataInfo = true },
             )
+            InfoRow(
+                title = stringResource(R.string.settings_about_map_title),
+                onClick = { showMapInfo = true },
+            )
+            TextButton(onClick = { showLicences = true }) { Text(stringResource(R.string.settings_licences_button)) }
+            InfoRow(
+                title = stringResource(R.string.settings_about_backup_title),
+                onClick = { showBackupInfo = true },
+            )
+            if (showDataInfo) {
+                AlertDialog(
+                    onDismissRequest = { showDataInfo = false },
+                    title = { Text(stringResource(R.string.settings_about_data_title)) },
+                    text = { Text(stringResource(R.string.settings_about_disclaimer)) },
+                    confirmButton = {
+                        TextButton(onClick = { showDataInfo = false }) {
+                            Text(stringResource(R.string.settings_ok))
+                        }
+                    },
+                )
+            }
+            if (showMapInfo) {
+                AlertDialog(
+                    onDismissRequest = { showMapInfo = false },
+                    title = { Text(stringResource(R.string.settings_about_map_title)) },
+                    text = { Text(stringResource(R.string.settings_about_map)) },
+                    confirmButton = {
+                        TextButton(onClick = { showMapInfo = false }) {
+                            Text(stringResource(R.string.settings_ok))
+                        }
+                    },
+                )
+            }
+            if (showBackupInfo) {
+                AlertDialog(
+                    onDismissRequest = { showBackupInfo = false },
+                    title = { Text(stringResource(R.string.settings_about_backup_title)) },
+                    text = { Text(stringResource(R.string.settings_about_backup)) },
+                    confirmButton = {
+                        TextButton(onClick = { showBackupInfo = false }) {
+                            Text(stringResource(R.string.settings_ok))
+                        }
+                    },
+                )
+            }
+            if (showLicences) LicencesDialog(onDismiss = { showLicences = false })
         }
     }
 }
@@ -803,4 +836,17 @@ private fun caveatSentence(issues: List<UiText>): String {
     val locale = LocalConfiguration.current.locales[0]
     val joined = ListFormatter.getInstance(locale).format(issues.map { it.asString() })
     return stringResource(R.string.settings_preview_caveat, joined)
+}
+
+/**
+ * A clickable row that looks like a button, used in the About section to open info dialogs.
+ */
+@Composable
+private fun InfoRow(title: String, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(title)
+    }
 }

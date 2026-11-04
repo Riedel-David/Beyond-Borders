@@ -47,6 +47,7 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.band
+import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
@@ -162,20 +163,18 @@ internal fun LazyListScope.visaSection(
             }
         }
         item("visa-${row.place.code}", contentType = "row") {
-            Column(Modifier.animateItem()) {
-                VisaListRow(
-                    row = row,
-                    expanded = row.place.code == selectedCode,
-                    onClick = {
-                        onSelect(if (row.place.code == selectedCode) null else row.place.code)
-                    },
-                    nameOf = nameOf,
-                    visa = visa,
-                    secondVisa = secondVisa,
-                    combinedRequirementOf = combinedRequirementOf,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
+            VisaListRow(
+                row = row,
+                expanded = row.place.code == selectedCode,
+                onClick = {
+                    onSelect(if (row.place.code == selectedCode) null else row.place.code)
+                },
+                nameOf = nameOf,
+                visa = visa,
+                secondVisa = secondVisa,
+                combinedRequirementOf = combinedRequirementOf,
+                modifier = Modifier.animateItem(),
+            )
         }
     }
 }
@@ -233,26 +232,39 @@ private fun VisaSummaryCard(
                 )
             }
             BandBar(visa, secondVisa, placesTotal, ramp, Modifier.padding(top = 12.dp))
-            Text(
-                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 10.dp),
-            )
-            // Attribution, licence and per-passport sources in one wrapping row of
-            // small text buttons rather than three lines: the licence asks for the
-            // credit and a link to the licence and to what each passport's answers were
-            // read from. A flow, so a link that does not fit moves down whole instead
-            // of wrapping its label.
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            // With two passports the staler date is the honest one, as in asOfNoticeText.
+            val asOf = if (secondVisa != null) minOf(visa.asOf, secondVisa.asOf) else visa.asOf
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
             ) {
-                LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
-                visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
-                listOfNotNull(visa, secondVisa).forEach { v ->
-                    v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
-                }
+                Text(
+                    stringResource(R.string.visa_summary_disclaimer_short, asOf),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                InfoButton(
+                    contentDescription = stringResource(R.string.visa_summary_info_label),
+                    dialogTitle = stringResource(R.string.visa_summary_info_title),
+                    dialogBody = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            // Clickable links in the dialog for attribution
+                            LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
+                            visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
+                            listOfNotNull(visa, secondVisa).forEach { v ->
+                                v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
+                            }
+                        }
+                    },
+                )
             }
         }
     }
@@ -387,6 +399,7 @@ private fun VisaListRow(
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
+    modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
     // Attribution only when a second passport is configured and it won
@@ -394,7 +407,7 @@ private fun VisaListRow(
     val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
 
     Column(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),

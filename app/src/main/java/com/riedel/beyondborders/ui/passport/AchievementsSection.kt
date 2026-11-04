@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.asString
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -101,18 +102,24 @@ internal fun AchievementsSection(
         HighlightLabel(stringResource(R.string.badge_closest))
         BadgeRows(nextUp, onOpen)
     }
-    Text(
-        stringResource(R.string.badge_section_title),
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 24.dp),
-    )
-    Text(
-        stringResource(R.string.badge_section_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(bottom = 4.dp),
-    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.badge_section_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        InfoButton(
+            contentDescription = stringResource(R.string.badge_section_info_label),
+            dialogTitle = stringResource(R.string.badge_section_title),
+            dialogBody = { Text(stringResource(R.string.badge_section_hint)) },
+        )
+    }
 
     val byGroup = remember(achievements) { achievements.groupBy { it.group } }
     val progress = remember(achievements) { groupProgress(achievements) }
