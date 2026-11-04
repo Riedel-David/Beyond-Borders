@@ -10,16 +10,27 @@ class BadgeMedalsTest {
         Achievement(id, UiText.Plain("t"), UiText.Plain("d"), progress, target, AchievementGroup.COUNTS)
 
     @Test
-    fun `tier mark is the target number`() {
-        assertEquals("25", tierMark(badge(3, 25)))
-        assertEquals("5", tierMark(badge(5, 5)))
+    fun `tier mark is the target number when the title does not state it`() {
+        assertEquals("25", tierMark(badge(3, 25), "Asia complete"))
+        assertEquals("5", tierMark(badge(2, 5), "Caribbean"))
+    }
+
+    @Test
+    fun `tier mark is absent when the title already states the number`() {
+        assertNull(tierMark(badge(3, 25), "25 places"))
+        assertNull(tierMark(badge(2, 5), "5 continents"))
+        assertNull(tierMark(badge(2, 3), "Lived in 3"))
+    }
+
+    @Test
+    fun `a longer number in the title does not hide a shorter tier`() {
+        assertEquals("10", tierMark(badge(3, 10), "100 club"))
     }
 
     @Test
     fun `tier mark is absent for a single-step badge`() {
-        assertNull(tierMark(badge(0, 1)))
-        assertNull(tierMark(badge(1, 1)))
-        assertNull(tierMark(badge(0, 0)))
+        assertNull(tierMark(badge(0, 1), "First stamp"))
+        assertNull(tierMark(badge(0, 0), "Empty"))
     }
 
     @Test
