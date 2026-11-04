@@ -25,7 +25,7 @@ Android next runs one; you can delete that in Android's backup settings.
 Visa information is a bundled snapshot and is not legal advice; check official
 sources before travelling.
 
-Last updated: 2026-11-02, for version 0.8.0.
+Last updated: 2026-11-04, for version 0.8.1.
 
 Contact: beyondborders.app@gmail.com, or open an issue on this repository, or use the private
 [security advisory form](https://github.com/Riedel-David/Beyond-Borders/security/advisories/new)

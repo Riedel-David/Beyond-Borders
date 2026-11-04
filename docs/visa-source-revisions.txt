@@ -2,6 +2,7 @@
 # assets were built from. Written by tools/visa/build_visa.py on a full build.
 # index.json generated_at: 2026-11-02T12:32:41.005665+00:00
 # index.json schema_version: 1.0.0
+# dataset sha256 (index.json + passport files, see Dataset.sha256): 47e02c643ec737fdc80a74c05639ceccfbb967459d19a0914bff238d298c3054
 # not shipped (fewer than 150 answers): XN
 # passport  source_revision (Wikipedia revision of its article)
 AD 1345953817
