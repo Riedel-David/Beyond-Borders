@@ -123,6 +123,25 @@ val BeyondBordersDark = darkColorScheme(
 )
 
 /**
+ * Pure black variant for OLED screens.
+ *
+ * Based on [BeyondBordersDark] with neutral black backgrounds and stepped surface
+ * containers so cards still separate, while the map's ocean goes to true black for
+ * maximum OLED power savings. All accent roles stay unchanged.
+ */
+val BeyondBordersBlack = BeyondBordersDark.copy(
+    background = Color(0xFF000000),
+    surface = Color(0xFF000000),
+    surfaceDim = Color(0xFF000000),
+    surfaceContainerLowest = Color(0xFF000000),
+    surfaceContainerLow = Color(0xFF0B0B0B),
+    surfaceContainer = Color(0xFF121212),
+    surfaceContainerHigh = Color(0xFF1B1B1B),
+    surfaceContainerHighest = Color(0xFF242424),
+    surfaceBright = Color(0xFF2A2A2A),
+)
+
+/**
  * Colours the map draws with. Kept out of [androidx.compose.material3.ColorScheme]
  * because MapLibre needs them as plain ints at style-build time, not as theme
  * lookups inside a composition.
@@ -150,6 +169,13 @@ data class MapPalette(
      * since a SymbolLayer has no way to draw a rounded rect behind text. */
     val labelText: Color,
     val labelHalo: Color,
+    /**
+     * Labels drawn over status fills in dark mode use dark text with a light halo,
+     * for legibility against the bright status colors. Light mode keeps the same
+     * labels everywhere; only dark mode differentiates.
+     */
+    val labelTextOnMarked: Color,
+    val labelHaloOnMarked: Color,
     /** The colours the visa lens paints with; see [VisaRamp]. */
     val visa: VisaRamp,
     /** The colours the region heatmap paints with; see [RegionRamp]. */
@@ -354,21 +380,48 @@ private fun regionRamp(dark: Boolean): RegionRamp = if (dark) {
  * Border and selection stay fixed regardless of [base]: they were picked against
  * the default background and every [MapBase] pair sits close enough in luminance
  * that they hold up unchanged — see [MapBase].
+ *
+ * When [pureBlack] is true and [dark] is true and [base] is the default, the map
+ * uses true black water and very dark land for OLED power savings. A user-picked
+ * non-default base is left alone.
  */
-fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT): MapPalette = MapPalette(
-    ocean = Color(base.oceanArgb(dark)),
-    unvisited = Color(base.landArgb(dark)),
+fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT, pureBlack: Boolean = false): MapPalette {
+    val oceanColor: Color
+    val landColor: Color
+    if (dark && pureBlack && base == MapBase.DEFAULT) {
+        oceanColor = Color(0xFF000000)
+        landColor = Color(0xFF1A1A1A)
+    } else {
+        oceanColor = Color(base.oceanArgb(dark))
+        landColor = Color(base.landArgb(dark))
+    }
+    // For pure black mode, use a brighter border to maintain visibility against
+    // black water (0xFF000000) and very dark land (0xFF1A1A1A).
+    val borderColor = if (dark && pureBlack && base == MapBase.DEFAULT) {
+        Color(0xFF5A6A7A)
+    } else if (dark) {
+        Color(0xFF4C5663)
+    } else {
+        Color(0xFFA9B4C2)
+    }
+
+    return MapPalette(
+    ocean = oceanColor,
+    unvisited = landColor,
     visited = Color(colors.visited.argb(dark)),
     lived = Color(colors.lived.argb(dark)),
     wishlist = Color(colors.wishlist.argb(dark)),
-    border = if (dark) Color(0xFF4C5663) else Color(0xFFA9B4C2),
+    border = borderColor,
     selectedOutline = if (dark) Color(0xFFDCE7FF) else Color(0xFF0B2C63),
     selectedCasing = if (dark) Color(0xFF05080C) else Color(0xFFF7FAFF),
     labelText = if (dark) Color(0xFFF2F5FA) else Color(0xFF10151C),
     labelHalo = if (dark) Color(0xFF10151C) else Color(0xFFF2F5FA),
+    labelTextOnMarked = if (dark) Color(0xFF101010) else Color(0xFF10151C),
+    labelHaloOnMarked = if (dark) Color(0xFFE8ECEF) else Color(0xFFF2F5FA),
     visa = visaRamp(dark),
     region = regionRamp(dark),
 )
+}
 
 // Derived from MapColors.DEFAULT rather than spelled out again, so the palette the
 // app opens with and the palette "reset" returns to cannot drift apart.

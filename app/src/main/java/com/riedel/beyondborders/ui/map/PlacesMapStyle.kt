@@ -48,6 +48,7 @@ internal object PlacesMapStyle {
     const val LAYER_REGION_SELECTED = "places-region-selected"
     const val LAYER_REGION_SELECTED_CASING = "places-region-selected-casing"
     const val LAYER_LABELS = "places-labels"
+    const val LAYER_LABELS_ON_MARKED = "places-labels-on-marked"
 
     /** Latin-only SDF ranges bundled at assets/glyphs; see [GLYPHS_ASSET]. */
     private const val LABEL_FONT = "Noto Sans Regular"
@@ -254,9 +255,10 @@ internal object PlacesMapStyle {
                     )
                     .withFilter(noPlaces())
             )
-            // One layer for every place's name, not one per lens/status variant:
-            // unlike the fills above, label colour never depends on which lens is
-            // active, so there is nothing a setFilter would need to swap.
+            // Two label layers sharing every property but colour: names over a status
+            // fill need dark text in dark mode, where the fills are bright, while names
+            // on bare land stay light. Colour is fixed at style build, so MapScreen
+            // splits places between them with mutually exclusive filters.
             // minLabelZoom (baked in by tools/geo/build_geo.py from each place's
             // camera-target bbox) stands in for the old per-frame screen-space
             // footprint check - a country only gets a label once it would already
@@ -287,6 +289,8 @@ internal object PlacesMapStyle {
                         // Africa, Europe). Labels are placed in symbolSortKey order, lowest
                         // first, and minLabelZoom is smaller for bigger countries - so the
                         // large one keeps its name and the small one gets it once zoomed in.
+                        // Collision is shared across both label layers; the marked one sits
+                        // above, so it is placed first and a marked name wins a tie.
                         PropertyFactory.textAllowOverlap(false),
                         PropertyFactory.textIgnorePlacement(false),
                         PropertyFactory.textPadding(2f),
@@ -296,6 +300,32 @@ internal object PlacesMapStyle {
                     .withFilter(
                         Expression.gte(Expression.zoom(), Expression.get("minLabelZoom"))
                     )
+            )
+            .withLayer(
+                SymbolLayer(LAYER_LABELS_ON_MARKED, LABELS_SOURCE_ID)
+                    .withProperties(
+                        PropertyFactory.textField(Expression.get("name")),
+                        PropertyFactory.textFont(arrayOf(LABEL_FONT)),
+                        PropertyFactory.textSize(
+                            Expression.interpolate(
+                                Expression.linear(),
+                                Expression.zoom(),
+                                Expression.stop(2, 8f),
+                                Expression.stop(8, 15f),
+                            )
+                        ),
+                        PropertyFactory.textColor(palette.labelTextOnMarked.toArgb()),
+                        PropertyFactory.textHaloColor(palette.labelHaloOnMarked.toArgb()),
+                        PropertyFactory.textHaloWidth(1.0f),
+                        PropertyFactory.textAnchor(Property.TEXT_ANCHOR_CENTER),
+                        PropertyFactory.textAllowOverlap(false),
+                        PropertyFactory.textIgnorePlacement(false),
+                        PropertyFactory.textPadding(2f),
+                        PropertyFactory.symbolSortKey(Expression.get("minLabelZoom")),
+                        PropertyFactory.textMaxWidth(8f),
+                    )
+                    // Starts with no places; MapScreen sets the filter to marked codes.
+                    .withFilter(noPlaces())
             )
     }
 

@@ -107,6 +107,7 @@ fun SettingsScreen(
     )
 
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val pureBlack by viewModel.pureBlack.collectAsStateWithLifecycle()
     val mapColors by viewModel.mapColors.collectAsStateWithLifecycle()
     val mapBase by viewModel.mapBase.collectAsStateWithLifecycle()
     val denominator by viewModel.denominator.collectAsStateWithLifecycle()
@@ -154,6 +155,38 @@ fun SettingsScreen(
                 },
                 onSelect = viewModel::setThemeMode,
             )
+
+            if (LocalIsDarkTheme.current) {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.medium)
+                        .selectable(
+                            selected = pureBlack,
+                            onClick = { viewModel.setPureBlack(!pureBlack) }
+                        )
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.settings_pure_black),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            stringResource(R.string.settings_pure_black_detail),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = pureBlack,
+                        onCheckedChange = null,
+                    )
+                }
+            }
         }
 
         Section(

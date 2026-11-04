@@ -154,6 +154,7 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
@@ -813,6 +814,7 @@ private class PlacesMapController {
     private var appliedVisited: Set<String> = emptySet()
     private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
+    private var appliedMarkedForLabels: Set<String> = emptySet()
     private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
     private var appliedNoData: Set<String> = emptySet()
     private var appliedRegionBands: Map<RegionStyleKey, Set<String>> = emptyMap()
@@ -851,6 +853,7 @@ private class PlacesMapController {
         appliedVisited = emptySet()
         appliedLived = emptySet()
         appliedWishlist = emptySet()
+        appliedMarkedForLabels = emptySet()
         appliedBands = emptyMap()
         appliedNoData = emptySet()
         appliedRegionBands = emptyMap()
@@ -896,6 +899,36 @@ private class PlacesMapController {
             style.getLayerAs<FillLayer>(PlacesMapStyle.LAYER_WISHLIST)
                 ?.setFilter(PlacesMapStyle.onlyPlaces(wishlist))
             appliedWishlist = wishlist.toSet()
+        }
+
+        // Update label layers: in dark mode, labels on marked places use dark text.
+        // LAYER_LABELS_ON_MARKED shows only marked codes; LAYER_LABELS shows the rest.
+        val marked = visited + lived + wishlist
+        if (marked != appliedMarkedForLabels) {
+            appliedMarkedForLabels = marked.toSet()
+            // Marked labels: show only these codes, respecting zoom.
+            val markedFilter = if (marked.isEmpty()) {
+                PlacesMapStyle.noPlaces()
+            } else {
+                Expression.all(
+                    Expression.gte(Expression.zoom(), Expression.get("minLabelZoom")),
+                    PlacesMapStyle.onlyPlaces(marked)
+                )
+            }
+            style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS_ON_MARKED)
+                ?.setFilter(markedFilter)
+
+            // Unmarked labels: show everything except marked codes, respecting zoom.
+            val unmarkedFilter = if (marked.isEmpty()) {
+                Expression.gte(Expression.zoom(), Expression.get("minLabelZoom"))
+            } else {
+                Expression.all(
+                    Expression.gte(Expression.zoom(), Expression.get("minLabelZoom")),
+                    Expression.not(PlacesMapStyle.onlyPlaces(marked))
+                )
+            }
+            style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS)
+                ?.setFilter(unmarkedFilter)
         }
     }
 

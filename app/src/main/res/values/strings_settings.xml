@@ -36,6 +36,8 @@
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
+    <string name="settings_pure_black">Pure black</string>
+    <string name="settings_pure_black_detail">For OLED screens</string>
 
     <!-- Language -->
     <string name="settings_language_title">Language</string>
