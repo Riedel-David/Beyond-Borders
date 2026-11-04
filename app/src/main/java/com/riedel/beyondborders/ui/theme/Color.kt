@@ -390,15 +390,16 @@ fun mapPalette(dark: Boolean, colors: MapColors, base: MapBase = MapBase.DEFAULT
     val landColor: Color
     if (dark && pureBlack && base == MapBase.DEFAULT) {
         oceanColor = Color(0xFF000000)
-        landColor = Color(0xFF1A1A1A)
+        landColor = Color(0xFF242424)
     } else {
         oceanColor = Color(base.oceanArgb(dark))
         landColor = Color(base.landArgb(dark))
     }
     // For pure black mode, use a brighter border to maintain visibility against
-    // black water (0xFF000000) and very dark land (0xFF1A1A1A).
+    // black water (0xFF000000) and very dark land (0xFF242424, 1.35:1 against the
+    // water; the old 0xFF1A1A1A was 1.21:1).
     val borderColor = if (dark && pureBlack && base == MapBase.DEFAULT) {
-        Color(0xFF5A6A7A)
+        Color(0xFF627282)
     } else if (dark) {
         Color(0xFF4C5663)
     } else {

@@ -171,7 +171,7 @@ fun StatsScreen(
                     val files = flagFiles ?: return@remember emptyList()
                     heroFlagCodes(places, statuses, hasFlag = { code -> flagAssetPath(code)?.substringAfter('/')?.let { it in files } == true })
                 },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 16.dp),
             )
 
             CompletionGrid(

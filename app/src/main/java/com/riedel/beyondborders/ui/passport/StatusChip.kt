@@ -147,53 +147,57 @@ internal fun StatusChip(
             contentAlignment = Alignment.Center,
         ) {
             val shape = RoundedCornerShape(16.dp)
-            Box(
-                Modifier
-                    .defaultMinSize(minWidth = 44.dp, minHeight = 32.dp)
-                    .clip(shape)
-                    .background(fillColor ?: Color.Transparent)
-                    .then(if (fillColor == null) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier)
-                    .padding(PaddingValues(horizontal = 12.dp, vertical = 4.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Never ellipsized: the pill grows with the label and the name beside it yields.
-                Text(
-                    text = label ?: "+",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (fillColor != null) Color(textColorForFill(fillColor.toArgb()))
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
-        }
-        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
-            // Three entries, no icon slot: the selected one is tinted and bold, and tapping
-            // it again clears the status, so there is no separate Clear entry.
-            for (action in StatusAction.entries) {
-                val current = isCurrent(action, menuStatus)
-                val hue = when (statusSlot(action.status())) {
-                    MapSlot.VISITED -> palette.visited
-                    MapSlot.LIVED -> palette.lived
-                    MapSlot.WISHLIST -> palette.wishlist
-                    null -> Color.Transparent
+            // Pill and menu share this box so the menu anchors to the visible pill, not to
+            // the taller 48dp touch target around it.
+            Box {
+                Box(
+                    Modifier
+                        .defaultMinSize(minWidth = 44.dp, minHeight = 32.dp)
+                        .clip(shape)
+                        .background(fillColor ?: Color.Transparent)
+                        .then(if (fillColor == null) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape) else Modifier)
+                        .padding(PaddingValues(horizontal = 12.dp, vertical = 4.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Never ellipsized: the pill grows with the label and the name beside it yields.
+                    Text(
+                        text = label ?: "+",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (fillColor != null) Color(textColorForFill(fillColor.toArgb()))
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
                 }
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            stringResource(actionLabelRes(action)),
-                            fontWeight = if (current) FontWeight.Bold else null,
-                            color = if (current) Color(textColorForFill(hue.toArgb())) else Color.Unspecified,
+                DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+                    // Three entries, no icon slot: the selected one is tinted and bold, and tapping
+                    // it again clears the status, so there is no separate Clear entry.
+                    for (action in StatusAction.entries) {
+                        val current = isCurrent(action, menuStatus)
+                        val hue = when (statusSlot(action.status())) {
+                            MapSlot.VISITED -> palette.visited
+                            MapSlot.LIVED -> palette.lived
+                            MapSlot.WISHLIST -> palette.wishlist
+                            null -> Color.Transparent
+                        }
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(actionLabelRes(action)),
+                                    fontWeight = if (current) FontWeight.Bold else null,
+                                    color = if (current) Color(textColorForFill(hue.toArgb())) else Color.Unspecified,
+                                )
+                            },
+                            modifier = Modifier
+                                .background(if (current) hue else Color.Transparent)
+                                .semantics {
+                                    selected = current
+                                    role = Role.RadioButton
+                                },
+                            onClick = { onAction(action) },
                         )
-                    },
-                    modifier = Modifier
-                        .background(if (current) hue else Color.Transparent)
-                        .semantics {
-                            selected = current
-                            role = Role.RadioButton
-                        },
-                    onClick = { onAction(action) },
-                )
+                    }
+                }
             }
         }
     }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -256,11 +258,13 @@ private fun VisaSummaryCard(
                                 (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
-                            // Clickable links in the dialog for attribution
-                            LinkText(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
-                            visa.licenceUrl?.let { LinkText(stringResource(R.string.visa_licence_link), it) }
-                            listOfNotNull(visa, secondVisa).forEach { v ->
-                                v.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, v.passport), it) }
+                            // Attribution links: one compact block, same left edge, uniform small gaps.
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                CompactLink(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
+                                visa.licenceUrl?.let { CompactLink(stringResource(R.string.visa_licence_link), it) }
+                                listOfNotNull(visa, secondVisa).forEach { v ->
+                                    v.sourceUrl?.let { CompactLink(stringResource(R.string.visa_source_link, v.passport), it) }
+                                }
                             }
                         }
                     },
@@ -446,8 +450,12 @@ private fun VisaListRow(
             if (row.requirement.confidence == VisaConfidence.LOW) {
                 Text(
                     stringResource(R.string.visa_row_check),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
         }
@@ -561,6 +569,24 @@ private fun LinkText(label: String, url: String) {
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium)
     }
+}
+
+/**
+ * A link as plain primary-coloured text, for stacks of links where [LinkText]'s button
+ * padding and 40dp minimum height would leave large gaps. Same guard around openUri.
+ */
+@Composable
+private fun CompactLink(label: String, url: String) {
+    val uriHandler = LocalUriHandler.current
+    Text(
+        label,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button) { runCatching { uriHandler.openUri(url) } }
+            .padding(vertical = 4.dp),
+    )
 }
 
 @Composable

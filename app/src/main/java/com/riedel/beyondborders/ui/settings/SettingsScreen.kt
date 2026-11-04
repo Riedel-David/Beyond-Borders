@@ -14,9 +14,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -518,8 +524,8 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
-            RepoLink()
-            ReportProblemLink()
+            // Pulled left by the button's 12dp content padding so the text lines up with the rows below.
+            RepoLink(Modifier.offset(x = (-12).dp))
             var showDataInfo by remember { mutableStateOf(false) }
             var showMapInfo by remember { mutableStateOf(false) }
             var showBackupInfo by remember { mutableStateOf(false) }
@@ -528,15 +534,23 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_about_data_title),
                 onClick = { showDataInfo = true },
             )
+            HorizontalDivider()
             InfoRow(
                 title = stringResource(R.string.settings_about_map_title),
                 onClick = { showMapInfo = true },
             )
-            TextButton(onClick = { showLicences = true }) { Text(stringResource(R.string.settings_licences_button)) }
+            HorizontalDivider()
+            InfoRow(
+                title = stringResource(R.string.settings_licences_button),
+                onClick = { showLicences = true },
+            )
+            HorizontalDivider()
             InfoRow(
                 title = stringResource(R.string.settings_about_backup_title),
                 onClick = { showBackupInfo = true },
             )
+            HorizontalDivider()
+            ReportProblemLink()
             if (showDataInfo) {
                 AlertDialog(
                     onDismissRequest = { showDataInfo = false },
@@ -714,7 +728,7 @@ private fun BaseRow(selected: MapBase, onSelect: (MapBase) -> Unit) {
     val dark = LocalIsDarkTheme.current
     Row(
         Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         MapBase.entries.forEach { base ->
             BaseSwatch(
@@ -938,12 +952,22 @@ private fun caveatSentence(issues: List<UiText>): String {
  * A clickable row that looks like a button, used in the About section to open info dialogs.
  */
 @Composable
-private fun InfoRow(title: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+internal fun InfoRow(title: String, onClick: () -> Unit) {
+    // A plain list row with a chevron rather than an outlined button: five stacked
+    // buttons in About read as a wall. Dividers come from the caller.
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title)
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

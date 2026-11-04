@@ -1,10 +1,11 @@
 package com.riedel.beyondborders.ui
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,8 +36,10 @@ fun InfoButton(
         modifier = modifier,
     ) {
         Icon(
-            Icons.Filled.Info,
+            Icons.Outlined.Info,
             contentDescription = contentDescription,
+            // Muted: the default onSurface tint made this the brightest thing on screen.
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 
