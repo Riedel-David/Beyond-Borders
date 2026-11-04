@@ -1252,7 +1252,8 @@ private fun MapPill(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val shape = MaterialTheme.shapes.large
+    // Explicit pill shape: not dependent on the theme's large shape scale.
+    val shape = RoundedCornerShape(16.dp)
     val color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
     if (onClick == null) {
         Surface(modifier = modifier, shape = shape, color = color, shadowElevation = 2.dp) {
@@ -1279,9 +1280,9 @@ private fun MapPill(
 }
 
 /**
- * A map overlay button: icon-only, same surface, elevation and shape as the
- * legend and control pills. Both the ⋮ menu button and the share button use this
- * so they stay visually consistent.
+ * A map overlay button: icon-only, same surface and elevation as the legend pills.
+ * Both the ⋮ menu button and the share button use this. Circle shape, not tied to
+ * the theme's large shape scale.
  */
 @Composable
 private fun MapOverlayButton(
@@ -1293,7 +1294,7 @@ private fun MapOverlayButton(
     Surface(
         onClick = onClick,
         modifier = modifier.minimumInteractiveComponentSize(),
-        shape = MaterialTheme.shapes.large,
+        shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
         shadowElevation = 2.dp,
     ) {

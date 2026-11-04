@@ -13,15 +13,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -36,6 +39,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -75,6 +79,7 @@ import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.localizedName
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
+import com.riedel.beyondborders.ui.visa.PassportPickerDialog
 import com.riedel.beyondborders.widget.TravelWidgetProvider
 
 /**
@@ -193,24 +198,48 @@ fun SettingsScreen(
             stringResource(R.string.settings_passport_title),
             stringResource(R.string.settings_passport_detail),
         ) {
-            PassportPickerButton(
-                selected = nationality,
-                names = passportNames,
-                englishNames = englishNames,
-                onSelect = viewModel::setNationality,
+            var showNationalityPicker by remember { mutableStateOf(false) }
+            ValueRow(
+                title = stringResource(R.string.settings_passport_title),
+                currentValue = passportNames[nationality] ?: nationality,
+                onClick = { showNationalityPicker = true },
             )
-            Spacer(Modifier.height(8.dp))
-            if (secondNationality == null) {
-                PassportPickerButton(
-                    selected = null,
+            if (showNationalityPicker) {
+                PassportPickerDialog(
                     names = passportNames,
                     englishNames = englishNames,
-                    onSelect = viewModel::setSecondNationality,
-                    dialogTitle = stringResource(R.string.settings_second_passport),
-                    placeholder = stringResource(R.string.settings_add_second_passport),
-                    exclude = setOf(nationality),
-                    modifier = Modifier.fillMaxWidth(),
+                    selected = nationality,
+                    onSelect = {
+                        viewModel.setNationality(it)
+                        showNationalityPicker = false
+                    },
+                    onDismiss = { showNationalityPicker = false },
+                    title = stringResource(R.string.picker_choose_passport),
+                    exclude = emptySet(),
                 )
+            }
+            Spacer(Modifier.height(8.dp))
+            if (secondNationality == null) {
+                var showSecondPassportPicker by remember { mutableStateOf(false) }
+                ValueRow(
+                    title = stringResource(R.string.settings_second_passport),
+                    currentValue = stringResource(R.string.settings_add_second_passport),
+                    onClick = { showSecondPassportPicker = true },
+                )
+                if (showSecondPassportPicker) {
+                    PassportPickerDialog(
+                        names = passportNames,
+                        englishNames = englishNames,
+                        selected = null,
+                        onSelect = {
+                            viewModel.setSecondNationality(it)
+                            showSecondPassportPicker = false
+                        },
+                        onDismiss = { showSecondPassportPicker = false },
+                        title = stringResource(R.string.settings_second_passport),
+                        exclude = setOf(nationality),
+                    )
+                }
                 Text(
                     stringResource(R.string.settings_dual_hint),
                     style = MaterialTheme.typography.bodySmall,
@@ -219,21 +248,27 @@ fun SettingsScreen(
                 )
             } else {
                 secondNationality?.let { secondPassport ->
-                    Text(
-                        stringResource(R.string.settings_second_passport),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    var showSecondPassportPicker by remember { mutableStateOf(false) }
                     Spacer(Modifier.height(4.dp))
-                    PassportPickerButton(
-                        selected = secondPassport,
-                        names = passportNames,
-                        englishNames = englishNames,
-                        onSelect = viewModel::setSecondNationality,
-                        dialogTitle = stringResource(R.string.settings_second_passport),
-                        exclude = setOf(nationality),
-                        modifier = Modifier.fillMaxWidth(),
+                    ValueRow(
+                        title = stringResource(R.string.settings_second_passport),
+                        currentValue = passportNames[secondPassport] ?: secondPassport,
+                        onClick = { showSecondPassportPicker = true },
                     )
+                    if (showSecondPassportPicker) {
+                        PassportPickerDialog(
+                            names = passportNames,
+                            englishNames = englishNames,
+                            selected = secondPassport,
+                            onSelect = {
+                                viewModel.setSecondNationality(it)
+                                showSecondPassportPicker = false
+                            },
+                            onDismiss = { showSecondPassportPicker = false },
+                            title = stringResource(R.string.settings_second_passport),
+                            exclude = setOf(nationality),
+                        )
+                    }
                     Spacer(Modifier.height(4.dp))
                     TextButton(onClick = { viewModel.setSecondNationality(null) }) {
                         Text(stringResource(R.string.settings_remove_second_passport))
@@ -276,26 +311,54 @@ fun SettingsScreen(
             // configuration so the shown choice follows it.
             LocalConfiguration.current
             val language = AppLanguage.fromTags(AppCompatDelegate.getApplicationLocales().toLanguageTags())
-            DropdownRow(
-                options = AppLanguage.entries,
-                selected = language,
-                // Endonyms: each language names itself, so a wrong choice is still readable.
-                label = { option ->
-                    when (option) {
-                        AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
-                        AppLanguage.ENGLISH -> "English"
-                        AppLanguage.GERMAN -> "Deutsch"
-                    }
-                },
-                onSelect = { option ->
-                    AppCompatDelegate.setApplicationLocales(
-                        if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
-                        else LocaleListCompat.forLanguageTags(option.tag),
-                    )
-                    // Re-draws the home-screen widget in the new language.
-                    TravelWidgetProvider.requestUpdate(context.applicationContext)
-                },
+            val languageLabel = when (language) {
+                AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
+                AppLanguage.ENGLISH -> "English"
+                AppLanguage.GERMAN -> "Deutsch"
+            }
+            var showLanguageMenu by remember { mutableStateOf(false) }
+            ValueRow(
+                title = stringResource(R.string.settings_language_title),
+                currentValue = languageLabel,
+                onClick = { showLanguageMenu = true },
             )
+            if (showLanguageMenu) {
+                // Simple dialog with options: endonyms so each language names itself.
+                AlertDialog(
+                    onDismissRequest = { showLanguageMenu = false },
+                    title = { Text(stringResource(R.string.settings_language_title)) },
+                    text = {
+                        Column {
+                            AppLanguage.entries.forEach { option ->
+                                val optionLabel = when (option) {
+                                    AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
+                                    AppLanguage.ENGLISH -> "English"
+                                    AppLanguage.GERMAN -> "Deutsch"
+                                }
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            showLanguageMenu = false
+                                            if (option != language) {
+                                                AppCompatDelegate.setApplicationLocales(
+                                                    if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
+                                                    else LocaleListCompat.forLanguageTags(option.tag),
+                                                )
+                                                TravelWidgetProvider.requestUpdate(context.applicationContext)
+                                            }
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(optionLabel, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {},
+                )
+            }
         }
 
         Section(
@@ -881,5 +944,42 @@ private fun InfoRow(title: String, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(title)
+    }
+}
+
+/**
+ * A list-style row with title and current value as supporting text. Clickable
+ * with ≥48 dp height, opening a picker/dialog/menu. Replaces outlined buttons and
+ * exposed dropdowns for settings with many options (language, passport).
+ */
+@Composable
+private fun ValueRow(
+    title: String,
+    currentValue: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = currentValue,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

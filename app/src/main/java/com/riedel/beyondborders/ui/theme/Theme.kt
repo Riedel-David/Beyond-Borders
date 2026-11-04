@@ -65,6 +65,7 @@ fun BeyondBordersTheme(
                 else -> BeyondBordersLight
             },
             typography = AppTypography,
+            shapes = AppShapes,
             content = content,
         )
     }
