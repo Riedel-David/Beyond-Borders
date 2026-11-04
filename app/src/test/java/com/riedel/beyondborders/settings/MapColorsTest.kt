@@ -232,4 +232,16 @@ class MapColorsTest {
         assertEquals(MapHue.GREEN.lightArgb.toInt(), light.lived.toArgb())
         assertEquals(MapHue.AMBER.lightArgb.toInt(), light.wishlist.toArgb())
     }
+
+    @Test
+    fun `labels on a marked country are readable on every hue in both themes`() {
+        // 4:1, not 4.5: white on TEAL and AMBER in light mode is 4.2, and the halo makes up the rest.
+        listOf(false, true).forEach { dark ->
+            val text = mapPalette(dark = dark, colors = MapColors.DEFAULT).labelTextOnMarked.toArgb().toLong() and 0xFFFFFF
+            MapHue.entries.forEach { hue ->
+                val ratio = contrast(text, hue.argb(dark) and 0xFFFFFF)
+                assertTrue("$hue in ${if (dark) "dark" else "light"}: ${"%.2f".format(ratio)}:1", ratio >= 4.0)
+            }
+        }
+    }
 }
