@@ -119,15 +119,14 @@ jobs:
           NOTES: ${{ inputs.notes }}
           DRAFT: ${{ inputs.draft }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk "BeyondBorders-$VERSION.apk"
-          sha256sum "BeyondBorders-$VERSION.apk" > "BeyondBorders-$VERSION.apk.sha256"
-          # Unversioned copy so the README's releases/latest/download link never goes stale.
-          cp "BeyondBorders-$VERSION.apk" BeyondBorders.apk
+          # One unversioned file, so the README's releases/latest/download link never goes
+          # stale; the tag on the release says which version it is.
+          cp app/build/outputs/apk/release/app-release.apk BeyondBorders.apk
           sha256sum BeyondBorders.apk > BeyondBorders.apk.sha256
           ARGS=(--title "Beyond Borders $VERSION" --target "$GITHUB_SHA")
           if [ -n "$NOTES" ]; then ARGS+=(--notes "$NOTES"); else ARGS+=(--generate-notes); fi
           if [ "$DRAFT" = "true" ]; then ARGS+=(--draft); fi
-          gh release create "v$VERSION" "BeyondBorders-$VERSION.apk" "BeyondBorders-$VERSION.apk.sha256" BeyondBorders.apk BeyondBorders.apk.sha256 "${ARGS[@]}"
+          gh release create "v$VERSION" BeyondBorders.apk BeyondBorders.apk.sha256 "${ARGS[@]}"
 
       # Not attached to the release: Play is the only consumer, and the public page
       # should offer one installable file. Download it from this run's page.
