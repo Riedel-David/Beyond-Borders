@@ -70,8 +70,7 @@ from the last several years.
    **More details → Install anyway**; you only need to do this once. The APK is
    signed with a fixed key, so updates install over it.
 3. To check the download, compare `sha256sum BeyondBorders.apk` with the
-   contents of `BeyondBorders.apk.sha256` next to it. (Each release also carries a copy
-   named with its version.)
+   contents of `BeyondBorders.apk.sha256` next to it.
 
 The app has no network permission, so it cannot check for updates itself. Watch the
 Releases page, or point [Obtainium](https://github.com/ImranR98/Obtainium) at this
