@@ -5,7 +5,7 @@ without a visa. Offline, no account, no network permission.
 
 **Needs Android 11+ on an arm64 phone** (no x86 emulators). Install steps are [below](#install).
 
-[![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/download/v0.8.2/BeyondBorders-0.8.2.apk)
+[![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/latest/download/BeyondBorders.apk)
 
 [![CI](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml/badge.svg)](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml)
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
@@ -60,7 +60,7 @@ the [privacy policy](docs/PRIVACY.md).
 
 ## Install
 
-Download `BeyondBorders-<version>.apk` from the [Releases](../../releases) page. Requires
+Download `BeyondBorders.apk` from the [Releases](../../releases) page. Requires
 Android 11 (API 30) or newer on a 64-bit ARM (arm64) device, which is nearly every phone
 from the last several years.
 
@@ -69,8 +69,9 @@ from the last several years.
 2. Play Protect may warn that the developer is unknown. To continue, tap
    **More details → Install anyway**; you only need to do this once. The APK is
    signed with a fixed key, so updates install over it.
-3. To check the download, compare `sha256sum BeyondBorders-<version>.apk` with the
-   contents of the `.sha256` file next to it.
+3. To check the download, compare `sha256sum BeyondBorders.apk` with the
+   contents of `BeyondBorders.apk.sha256` next to it. (Each release also carries a copy
+   named with its version.)
 
 The app has no network permission, so it cannot check for updates itself. Watch the
 Releases page, or point [Obtainium](https://github.com/ImranR98/Obtainium) at this
