@@ -13,7 +13,7 @@
     <string name="passport_chip_lived">Vivido</string>
     <string name="passport_chip_want">Pendiente</string>
     <string name="passport_mark_been">Marcar %1$s como visitado</string>
-    <string name="passport_mark_lived">Marcar %1$s como vivido</string>
+    <string name="passport_mark_lived">Marcar que he vivido en %1$s</string>
     <string name="passport_mark_want">Marcar %1$s como pendiente</string>
     <string name="passport_clear">Borrar</string>
     <string name="passport_clear_status">Borrar el estado de %1$s</string>
@@ -22,7 +22,7 @@
     <string name="passport_change_status">Cambiar estado</string>
     <string name="passport_loading">Cargando lugares…</string>
     <string name="passport_no_match_query">Ningún lugar coincide con «%1$s».</string>
-    <string name="passport_no_match_filter">Ningún lugar en el filtro «%1$s».</string>
+    <string name="passport_no_match_filter">Ningún lugar coincide con el filtro «%1$s».</string>
     <string name="passport_nothing_matches">No se encontró nada.</string>
     <string name="passport_card_action">Ver continentes, regiones y grupos</string>
     <plurals name="passport_card_total">
@@ -35,8 +35,8 @@
         <item quantity="many">%1$d de %2$d continentes</item>
         <item quantity="other">%1$d de %2$d continentes</item>
     </plurals>
-    <string name="passport_card_lived">%1$d vividos</string>
-    <string name="passport_card_wishlist">%1$d en pendientes</string>
+    <string name="passport_card_lived">%1$d donde viví</string>
+    <string name="passport_card_wishlist">%1$d pendientes</string>
 
     <!-- Stats screen -->
     <string name="stats_title">Estadísticas</string>
@@ -47,13 +47,13 @@
     <string name="stats_regions">Regiones</string>
     <string name="stats_named_groupings">Grupos con nombre</string>
     <string name="stats_least_covered">Menos completados</string>
-    <string name="stats_next_up">Siguientes</string>
+    <string name="stats_next_up">Próximos objetivos</string>
     <string name="stats_show_all_groupings">Mostrar todos los grupos</string>
     <string name="stats_collapse">Contraer</string>
     <string name="stats_expand">Expandir</string>
     <string name="stats_bar_details">Mostrar detalles de %1$s</string>
     <string name="stats_dialog_been">Visitados (%1$d)</string>
-    <string name="stats_dialog_missing">Pendientes de visitar (%1$d)</string>
+    <string name="stats_dialog_missing">Por visitar (%1$d)</string>
     <string name="stats_dialog_close">Cerrar</string>
 
     <!-- Stats hero -->
@@ -64,7 +64,7 @@
         <item quantity="other">%1$d de %2$d lugares</item>
     </plurals>
     <plurals name="stats_hero_badges">
-        <item quantity="one">%1$d de %2$d insignias desbloqueadas</item>
+        <item quantity="one">%1$d de %2$d insignia desbloqueada</item>
         <item quantity="many">%1$d de %2$d insignias desbloqueadas</item>
         <item quantity="other">%1$d de %2$d insignias desbloqueadas</item>
     </plurals>
@@ -79,7 +79,7 @@
     <string name="rank_world_traveller">Viajero del mundo</string>
     <string name="rank_legend">Leyenda</string>
     <string name="rank_top_reached">Rango máximo alcanzado</string>
-    <string name="rank_progress">%1$d más para %2$s</string>
+    <string name="rank_progress">%1$d más para llegar a %2$s</string>
 
     <!-- Badge sections and cards -->
     <string name="badge_recent">Desbloqueadas recientemente</string>
@@ -129,9 +129,9 @@
         <item quantity="other">%1$d lugares</item>
     </plurals>
     <plurals name="badge_count_n_desc">
-        <item quantity="one">Has estado en %1$d lugar.</item>
-        <item quantity="many">Has estado en %1$d lugares.</item>
-        <item quantity="other">Has estado en %1$d lugares.</item>
+        <item quantity="one">Visita %1$d lugar.</item>
+        <item quantity="many">Visita %1$d lugares.</item>
+        <item quantity="other">Visita %1$d lugares.</item>
     </plurals>
     <plurals name="badge_continents_touch_title">
         <item quantity="one">%1$d continente</item>
@@ -139,23 +139,23 @@
         <item quantity="other">%1$d continentes</item>
     </plurals>
     <plurals name="badge_continents_touch_desc">
-        <item quantity="one">Has estado en %1$d continente.</item>
-        <item quantity="many">Has estado en %1$d continentes.</item>
-        <item quantity="other">Has estado en %1$d continentes.</item>
+        <item quantity="one">Visita %1$d continente.</item>
+        <item quantity="many">Visita %1$d continentes.</item>
+        <item quantity="other">Visita %1$d continentes.</item>
     </plurals>
-    <string name="badge_continent_complete_title">%1$s completo</string>
-    <string name="badge_continent_complete_desc">Has estado en todos los lugares habitados de %1$s.</string>
-    <string name="badge_region_desc">Has estado en todos los lugares habitados de %1$s (%2$d en total).</string>
-    <string name="badge_group_desc">Has estado en todos los lugares habitados de %1$s: %2$s.</string>
+    <string name="badge_continent_complete_title">Toda %1$s</string>
+    <string name="badge_continent_complete_desc">Visita todos los lugares habitados de %1$s.</string>
+    <string name="badge_region_desc">Visita todos los lugares habitados de la región %1$s (%2$d en total).</string>
+    <string name="badge_group_desc">Visita todos los lugares habitados del grupo %1$s: %2$s.</string>
     <plurals name="badge_dependencies_title">
         <item quantity="one">%1$d territorio</item>
         <item quantity="many">%1$d territorios</item>
         <item quantity="other">%1$d territorios</item>
     </plurals>
     <plurals name="badge_dependencies_desc">
-        <item quantity="one">Has estado en %1$d lugar que pertenece a otro país.</item>
-        <item quantity="many">Has estado en %1$d lugares que pertenecen a otro país.</item>
-        <item quantity="other">Has estado en %1$d lugares que pertenecen a otro país.</item>
+        <item quantity="one">Visita %1$d lugar que pertenece a otro país.</item>
+        <item quantity="many">Visita %1$d lugares que pertenecen a otro país.</item>
+        <item quantity="other">Visita %1$d lugares que pertenecen a otro país.</item>
     </plurals>
     <plurals name="badge_non_un_title">
         <item quantity="one">%1$d fuera de la ONU</item>
@@ -163,9 +163,9 @@
         <item quantity="other">%1$d fuera de la ONU</item>
     </plurals>
     <plurals name="badge_non_un_desc">
-        <item quantity="one">Has estado en %1$d lugar que no es miembro ni observador de la ONU.</item>
-        <item quantity="many">Has estado en %1$d lugares que no son miembros ni observadores de la ONU.</item>
-        <item quantity="other">Has estado en %1$d lugares que no son miembros ni observadores de la ONU.</item>
+        <item quantity="one">Visita %1$d lugar que no es miembro ni observador de la ONU.</item>
+        <item quantity="many">Visita %1$d lugares que no son miembros ni observadores de la ONU.</item>
+        <item quantity="other">Visita %1$d lugares que no son miembros ni observadores de la ONU.</item>
     </plurals>
     <plurals name="badge_tiny_title">
         <item quantity="one">%1$d lugar diminuto</item>
@@ -173,18 +173,18 @@
         <item quantity="other">%1$d lugares diminutos</item>
     </plurals>
     <plurals name="badge_tiny_desc">
-        <item quantity="one">Has estado en %1$d lugar de menos de %2$d km².</item>
-        <item quantity="many">Has estado en %1$d lugares de menos de %2$d km².</item>
-        <item quantity="other">Has estado en %1$d lugares de menos de %2$d km².</item>
+        <item quantity="one">Visita %1$d lugar de menos de %2$d km².</item>
+        <item quantity="many">Visita %1$d lugares de menos de %2$d km².</item>
+        <item quantity="other">Visita %1$d lugares de menos de %2$d km².</item>
     </plurals>
     <string name="badge_giant_1_title">Un gigante</string>
-    <string name="badge_giant_1_desc">Has estado en uno de los %1$d lugares más extensos.</string>
+    <string name="badge_giant_1_desc">Visita uno de los %1$d lugares más extensos.</string>
     <string name="badge_antarctica_title">El continente blanco</string>
     <string name="badge_antarctica_desc">Pisa la Antártida.</string>
     <string name="badge_hemispheres_title">Cuatro hemisferios</string>
-    <string name="badge_hemispheres_desc">Has estado al norte, al sur, al este y al oeste (según el punto central de cada lugar).</string>
-    <string name="badge_lived_1_title">Viviste en el extranjero</string>
-    <string name="badge_lived_3_title">Viviste en %1$d lugares</string>
+    <string name="badge_hemispheres_desc">Visita el norte, el sur, el este y el oeste (según el punto central de cada lugar).</string>
+    <string name="badge_lived_1_title">Vida en el extranjero</string>
+    <string name="badge_lived_3_title">Vida en %1$d lugares</string>
     <plurals name="badge_lived_desc">
         <item quantity="one">Marca %1$d lugar como vivido.</item>
         <item quantity="many">Marca %1$d lugares como vividos.</item>

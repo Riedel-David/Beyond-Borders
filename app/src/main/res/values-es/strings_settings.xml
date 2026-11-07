@@ -8,8 +8,8 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Marca los lugares donde has estado, has vivido o quieres ir, en un mapa con los %1$d, no solo con los %2$d países de la ONU.</string>
-    <string name="welcome_intro_bare">Marca los lugares donde has estado, has vivido o quieres ir.</string>
+    <string name="welcome_intro">Marca los lugares en los que has estado o has vivido y a los que quieres ir, en un mapa con los %1$d lugares, no solo los %2$d países de la ONU.</string>
+    <string name="welcome_intro_bare">Marca los lugares en los que has estado o has vivido y a los que quieres ir.</string>
     <string name="welcome_privacy">Nada de lo que marques se nos envía jamás. Sin cuenta, sin servidor, sin red; puedes exportar una copia de seguridad cuando quieras. (La copia de seguridad de Android puede incluir los datos igualmente si está activada.)</string>
     <string name="welcome_passport_hint">Las normas de visado dependen del pasaporte. Elige el tuyo; podrás cambiarlo después en Ajustes.</string>
     <string name="welcome_get_started">Empezar</string>
@@ -23,9 +23,9 @@
     <string name="recovery_saved">Guardado.</string>
     <string name="recovery_save_failed">Error al guardar: %1$s</string>
     <string name="recovery_open_failed">No se pudo abrir el archivo elegido.</string>
-    <string name="recovery_wipe_failed">No se pudieron borrar los datos. No se ha cambiado nada fiable; inténtalo de nuevo o borra el almacenamiento de la app en los ajustes de Android.</string>
+    <string name="recovery_wipe_failed">No se pudieron borrar los datos y no se puede garantizar su estado; inténtalo de nuevo o borra el almacenamiento de la app en los ajustes de Android.</string>
     <string name="recovery_delete_start_fresh">Borrar los datos y empezar de cero</string>
-    <string name="recovery_confirm_title">¿Borrar todas las marcas?</string>
+    <string name="recovery_confirm_title">¿Borrar todo lo que has marcado?</string>
     <string name="recovery_confirm_saved">Se guardó una copia que podrás importar más tarde. Todos los lugares marcados desaparecerán de la propia app.</string>
     <string name="recovery_confirm_unsaved">No se guardó ninguna copia. Todos los lugares marcados se perderán definitivamente, sin opción de deshacer.</string>
     <string name="recovery_delete">Borrar</string>
@@ -70,7 +70,7 @@
     <string name="settings_hue_violet">Violeta</string>
     <string name="settings_hue_amber">Ámbar</string>
 
-    <string name="settings_counting_title">Contar lugares</string>
+    <string name="settings_counting_title">Recuento de lugares</string>
     <string name="settings_counting_detail">Con qué total se compara la pestaña Pasaporte.</string>
     <string name="settings_denominator_all">Todos los %1$d</string>
     <string name="settings_denominator_un">%1$d ONU</string>
@@ -96,7 +96,7 @@
     <string name="settings_import_title">¿Importar este archivo?</string>
     <string name="settings_preview_added">Añadidos</string>
     <string name="settings_preview_updated">Actualizados</string>
-    <string name="settings_preview_skipped">Omitidos (ya actualizados)</string>
+    <string name="settings_preview_skipped">Omitidos (ya al día)</string>
     <string name="settings_preview_sample">p. ej. %1$s.</string>
     <string name="settings_preview_sample_more">p. ej. %1$s y %2$d más.</string>
     <!-- The caveat issues are joined with the locale's list wording (ListFormatter) and end with this -->
@@ -128,11 +128,11 @@
     <string name="settings_about_version">BeyondBorders %1$s</string>
     <string name="settings_about_open_source">Código abierto (GPL-3.0)</string>
     <string name="settings_about_data_title">Sobre los datos</string>
-    <string name="settings_about_disclaimer">Una app independiente, sin vínculo con ningún gobierno ni encargada por ninguno. Los datos de visado son una instantánea y pueden estar desactualizados: confirma los requisitos de entrada en la fuente oficial del gobierno antes de viajar.</string>
+    <string name="settings_about_disclaimer">Una app independiente, sin vínculo con ningún gobierno ni en representación de ninguno. Los datos de visado son una instantánea y pueden estar desactualizados: confirma los requisitos de entrada en la fuente oficial del gobierno antes de viajar.</string>
     <string name="settings_about_map_title">Datos del mapa</string>
     <string name="settings_about_map">Fronteras de Natural Earth (dominio público), dibujadas con MapLibre. Todo el mapa está dentro de la app, así que funciona sin red y sin cuenta.</string>
     <string name="settings_about_backup_title">Copias de seguridad</string>
-    <string name="settings_about_backup">La copia de seguridad automática de Android envía una instantánea de tu historial a tu cuenta de Google: la crea el sistema, la app nunca sube nada por sí misma. Un teléfono recién instalado o nuevo empieza vacío: no se restaura nada hasta que pulses «Restaurar». La base de datos, los ajustes y un identificador propio de cada instalación quedan totalmente fuera de la copia. Puedes desactivarla en los ajustes de copia de seguridad de Android.</string>
+    <string name="settings_about_backup">La copia de seguridad automática de Android envía una instantánea de tu historial a tu cuenta de Google: la crea el sistema, la app nunca sube nada por sí misma. Tras reinstalar la app o en un teléfono nuevo, la app empieza vacía: no se restaura nada hasta que pulses «Restaurar». La base de datos, los ajustes y un identificador propio de cada instalación quedan totalmente fuera de la copia. Puedes desactivarla en los ajustes de copia de seguridad de Android.</string>
     <string name="settings_licences_button">Licencias de código abierto</string>
 
     <!-- Licences dialog -->
@@ -177,8 +177,8 @@
         <item quantity="other">%d lugares actualizados importados.</item>
     </plurals>
     <!-- Both kinds at once, so there are always at least two places -->
-    <string name="backup_imported_both">%1$d lugares nuevos y %2$d actualizados importados.</string>
-    <string name="backup_already_current">%1$d ya estaban actualizados.</string>
+    <string name="backup_imported_both">Importados: nuevos, %1$d; actualizados, %2$d.</string>
+    <string name="backup_already_current">Ya al día: %1$d.</string>
     <plurals name="backup_skipped_codes">
         <item quantity="one">%1$d código desconocido omitido: %2$s.</item>
         <item quantity="many">%1$d códigos desconocidos omitidos: %2$s.</item>
@@ -204,7 +204,7 @@
     <string name="backup_sentence_join">%1$s %2$s</string>
 
     <!-- Backup failures shown in the transfer row -->
-    <string name="backup_delete_failed">Error al borrar.</string>
+    <string name="backup_delete_failed">No se pudo borrar todo.</string>
     <string name="backup_export_failed">Error al exportar.</string>
     <string name="backup_import_failed">Error al importar.</string>
     <string name="backup_snapshot_gone">Esa instantánea ya no existe.</string>

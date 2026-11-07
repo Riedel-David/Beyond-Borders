@@ -19,7 +19,7 @@
     <string name="geo_region_micronesia">Micronesia</string>
     <string name="geo_region_middle_africa">África Central</string>
     <string name="geo_region_northern_africa">África del Norte</string>
-    <string name="geo_region_northern_america">Norteamérica</string>
+    <string name="geo_region_northern_america">América septentrional</string>
     <string name="geo_region_northern_europe">Europa del Norte</string>
     <string name="geo_region_polynesia">Polinesia</string>
     <string name="geo_region_seven_seas_open_ocean">Siete Mares (océano abierto)</string>
@@ -45,6 +45,6 @@
     <string name="geo_group_maghreb">Magreb</string>
     <string name="geo_group_horn_of_africa">Cuerno de África</string>
     <string name="geo_group_indochina">Indochina</string>
-    <string name="geo_group_the_stans">Los «-stán»</string>
+    <string name="geo_group_the_stans">Países -stán</string>
     <string name="geo_group_balkans">Balcanes</string>
 </resources>

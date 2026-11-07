@@ -22,7 +22,7 @@
     <string name="visa_band_no_data">Sin datos</string>
 
     <!-- Confidence of curated entries -->
-    <string name="visa_confidence_high">Confirmado</string>
+    <string name="visa_confidence_high">Fiable</string>
     <string name="visa_confidence_medium">Probablemente correcto; los detalles pueden variar</string>
     <string name="visa_confidence_low">Incierto: verifícalo antes de reservar</string>
 
@@ -36,7 +36,7 @@
     <string name="visa_summary_with_days">%1$s · %2$s</string>
     <string name="visa_summary_with_passport">%1$s (pasaporte %2$s)</string>
     <string name="visa_row_been">%1$s · visitado</string>
-    <string name="visa_row_wishlist">%1$s · en pendientes</string>
+    <string name="visa_row_wishlist">%1$s · pendiente</string>
     <string name="visa_row_check">consultar</string>
 
     <!-- Masculine singular, used after "pasaporte" -->
@@ -54,7 +54,7 @@
     <string name="visa_search_destinations">Buscar destinos</string>
     <string name="visa_clear">Borrar</string>
     <string name="visa_empty_query">Ningún destino coincide con «%1$s».</string>
-    <string name="visa_empty_filter">Ningún destino en el filtro «%1$s».</string>
+    <string name="visa_empty_filter">Ningún destino coincide con el filtro «%1$s».</string>
     <string name="visa_empty_nothing">No se encontró nada.</string>
     <string name="visa_unavailable_title">Sin datos de visado</string>
     <string name="visa_unavailable_body">No se pudo leer la lista de visados incluida en la app, así que en este modo no hay nada que mostrar. El mapa de viajes no se ve afectado.</string>

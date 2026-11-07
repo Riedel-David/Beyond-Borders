@@ -13,12 +13,12 @@
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Visitado</string>
     <string name="map_legend_short_lived">Vivido</string>
-    <string name="map_legend_short_wanted">Pendientes</string>
+    <string name="map_legend_short_wanted">Pendiente</string>
     <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Toca un lugar para marcarlo</string>
     <string name="map_legend_visited">%1$d visitados</string>
-    <string name="map_legend_lived">%1$d vividos</string>
-    <string name="map_legend_wishlisted">%1$d en pendientes</string>
+    <string name="map_legend_lived">%1$d donde viví</string>
+    <string name="map_legend_wishlisted">%1$d pendientes</string>
     <string name="map_legend_no_data">%1$d sin datos</string>
     <!-- A band label supplied by the visa data, with its count: "12 Sin visado". -->
     <string name="map_legend_count_labeled">%1$d %2$s</string>
@@ -41,7 +41,7 @@
     <string name="map_region_legend_informal">Cada color es un grupo; más intenso = más visitado</string>
     <string name="map_region_done_official">%1$d de %2$d regiones completadas</string>
     <string name="map_region_done_informal">%1$d de %2$d grupos completados</string>
-    <string name="map_region_card_done">%1$d / %2$d completado</string>
+    <string name="map_region_card_done">%1$d / %2$d completados</string>
 
     <!-- Map: controls -->
     <string name="map_controls_hide">Ocultar controles del mapa</string>
@@ -65,7 +65,7 @@
     <string name="share_style_bar_label">Barra inferior</string>
     <string name="share_style_bar_blurb">Logotipo y cifras en el borde inferior</string>
     <string name="share_style_stamp_label">Sello de esquina</string>
-    <string name="share_style_stamp_blurb">Insignia compacta arriba a la izquierda</string>
+    <string name="share_style_stamp_blurb">Sello compacto arriba a la izquierda</string>
     <string name="share_style_stats_label">Tarjeta de estadísticas</string>
     <string name="share_style_stats_blurb">Solo las cifras, sin mapa</string>
     <string name="share_of_the_world_caps">DEL MUNDO</string>
@@ -78,7 +78,7 @@
     </plurals>
     <string name="share_tile_places_been">VISITADOS</string>
     <string name="share_tile_continents">CONTINENTES</string>
-    <string name="share_tile_lived">VIVIDOS</string>
+    <string name="share_tile_lived">VIVÍ EN</string>
     <string name="share_tile_wishlist">PENDIENTES</string>
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
@@ -90,20 +90,20 @@
     <string name="places_mode_travel">Dónde he estado</string>
     <string name="places_mode_visa">Adónde puedo ir</string>
     <string name="places_visa_filter_all">Todos</string>
-    <string name="places_visa_filter_easy">Sin embajada</string>
-    <string name="places_visa_filter_wishlist_easy">Pendientes, fáciles</string>
+    <string name="places_visa_filter_easy">Sin cita</string>
+    <string name="places_visa_filter_wishlist_easy">Pendientes fáciles</string>
     <string name="places_visa_filter_long_stay">90+ días</string>
     <string name="places_section_uninhabited">Deshabitados</string>
     <plurals name="places_nudge">
-        <item quantity="one">%1$d lugar para completar %2$s</item>
-        <item quantity="many">%1$d lugares para completar %2$s</item>
-        <item quantity="other">%1$d lugares para completar %2$s</item>
+        <item quantity="one">Te falta %1$d lugar para completar %2$s</item>
+        <item quantity="many">Te faltan %1$d lugares para completar %2$s</item>
+        <item quantity="other">Te faltan %1$d lugares para completar %2$s</item>
     </plurals>
     <string name="places_least_covered">%1$s: %2$d de %3$d</string>
     <plurals name="places_wishlist_easy">
-        <item quantity="one">%1$d de %2$d lugares pendientes sin cita en la embajada</item>
-        <item quantity="many">%1$d de %2$d lugares pendientes sin cita en la embajada</item>
-        <item quantity="other">%1$d de %2$d lugares pendientes sin cita en la embajada</item>
+        <item quantity="one">Sin cita en la embajada: %1$d de tu %2$d lugar pendiente</item>
+        <item quantity="many">Sin cita en la embajada: %1$d de tus %2$d lugares pendientes</item>
+        <item quantity="other">Sin cita en la embajada: %1$d de tus %2$d lugares pendientes</item>
     </plurals>
     <string name="places_coverage">%1$d%% de la superficie terrestre, %2$d%% de la población mundial</string>
 
