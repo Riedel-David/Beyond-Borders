@@ -323,6 +323,7 @@ fun SettingsScreen(
                 AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
                 AppLanguage.ENGLISH -> "English"
                 AppLanguage.GERMAN -> "Deutsch"
+                AppLanguage.SPANISH -> "Español"
             }
             var showLanguageMenu by remember { mutableStateOf(false) }
             ValueRow(
@@ -342,6 +343,7 @@ fun SettingsScreen(
                                     AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
                                     AppLanguage.ENGLISH -> "English"
                                     AppLanguage.GERMAN -> "Deutsch"
+                                    AppLanguage.SPANISH -> "Español"
                                 }
                                 Row(
                                     Modifier

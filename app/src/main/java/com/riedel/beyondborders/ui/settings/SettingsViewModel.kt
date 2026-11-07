@@ -492,13 +492,14 @@ internal fun failureText(t: Throwable, @StringRes fallback: Int): UiText = when 
 }
 
 /**
- * The language picker's three choices. Not stored in SettingsStore: Android keeps the
+ * The language picker's choices. Not stored in SettingsStore: Android keeps the
  * per-app locale itself, and the picker reads it back from AppCompat.
  */
 internal enum class AppLanguage(val tag: String) {
     SYSTEM(""),
     ENGLISH("en"),
-    GERMAN("de");
+    GERMAN("de"),
+    SPANISH("es");
 
     companion object {
         /**

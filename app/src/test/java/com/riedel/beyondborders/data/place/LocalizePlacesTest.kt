@@ -47,6 +47,15 @@ class LocalizePlacesTest {
     }
 
     @Test
+    fun `spanish names replace the english ones too`() {
+        val es = mapOf("DE" to "Alemania", "AT" to "Austria")
+        val byCode = localizePlaces(places, Locale("es"), { c, _ -> es[c] }).associateBy { it.code }
+        assertEquals("Alemania", byCode.getValue("DE").name)
+        assertEquals("Germany", byCode.getValue("DE").englishName)
+        assertEquals("Egypt", byCode.getValue("EG").name)
+    }
+
+    @Test
     fun `private XA to XZ codes keep the english name even if the lookup answers`() {
         assertEquals("Kosovo", localizePlaces(places, german, lookup).first { it.code == "XK" }.name)
     }

@@ -10,7 +10,7 @@ and no `INTERNET` permission, so it cannot send data anywhere.
 What you enter (places visited, passport choice) is stored on your device only.
 Achievements are worked out from your map each time and store nothing of their own,
 apart from a list of which badges you have already seen, kept on the device. The app
-language (English or German) is a per-app locale that Android itself keeps in its own
+language (English, German or Spanish) is a per-app locale that Android itself keeps in its own
 settings: the app stores no language setting, and choosing one involves no network.
 If Android's Auto Backup is enabled on your device, the app stages a snapshot of
 your data so Android can include it in your device backup and offer to restore it
