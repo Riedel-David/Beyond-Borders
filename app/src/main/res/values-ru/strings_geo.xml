@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Russian draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="geo_continent_africa">Африка</string>
+    <string name="geo_continent_antarctica">Антарктида</string>
+    <string name="geo_continent_asia">Азия</string>
+    <string name="geo_continent_europe">Европа</string>
+    <string name="geo_continent_north_america">Северная Америка</string>
+    <string name="geo_continent_oceania">Океания</string>
+    <string name="geo_continent_south_america">Южная Америка</string>
+    <string name="geo_region_antarctica">Антарктида</string>
+    <string name="geo_region_australia_and_new_zealand">Австралия и Новая Зеландия</string>
+    <string name="geo_region_caribbean">Карибский бассейн</string>
+    <string name="geo_region_central_america">Центральная Америка</string>
+    <string name="geo_region_central_asia">Центральная Азия</string>
+    <string name="geo_region_eastern_africa">Восточная Африка</string>
+    <string name="geo_region_eastern_asia">Восточная Азия</string>
+    <string name="geo_region_eastern_europe">Восточная Европа</string>
+    <string name="geo_region_melanesia">Меланезия</string>
+    <string name="geo_region_micronesia">Микронезия</string>
+    <string name="geo_region_middle_africa">Центральная Африка</string>
+    <string name="geo_region_northern_africa">Северная Африка</string>
+    <string name="geo_region_northern_america">Северная Америка</string>
+    <string name="geo_region_northern_europe">Северная Европа</string>
+    <string name="geo_region_polynesia">Полинезия</string>
+    <string name="geo_region_seven_seas_open_ocean">Семь морей (открытый океан)</string>
+    <string name="geo_region_south_america">Южная Америка</string>
+    <string name="geo_region_south_eastern_asia">Юго-Восточная Азия</string>
+    <string name="geo_region_southern_africa">Южная Африка</string>
+    <string name="geo_region_southern_asia">Южная Азия</string>
+    <string name="geo_region_southern_europe">Южная Европа</string>
+    <string name="geo_region_western_africa">Западная Африка</string>
+    <string name="geo_region_western_asia">Западная Азия</string>
+    <string name="geo_region_western_europe">Западная Европа</string>
+    <string name="geo_group_benelux">Бенилюкс</string>
+    <string name="geo_group_scandinavia">Скандинавия</string>
+    <string name="geo_group_nordics">Северные страны</string>
+    <string name="geo_group_baltics">Прибалтика</string>
+    <string name="geo_group_british_isles">Британские острова</string>
+    <string name="geo_group_iberia">Иберия</string>
+    <string name="geo_group_alpine_states">Альпийские страны</string>
+    <string name="geo_group_visegr_d_central_europe">Вишеградская группа / Центральная Европа</string>
+    <string name="geo_group_caucasus">Кавказ</string>
+    <string name="geo_group_levant">Левант</string>
+    <string name="geo_group_arabian_peninsula_gulf">Аравийский полуостров / Персидский залив</string>
+    <string name="geo_group_maghreb">Магриб</string>
+    <string name="geo_group_horn_of_africa">Африканский Рог</string>
+    <string name="geo_group_indochina">Индокитай</string>
+    <string name="geo_group_the_stans">Страны на «-стан»</string>
+    <string name="geo_group_balkans">Балканы</string>
+</resources>

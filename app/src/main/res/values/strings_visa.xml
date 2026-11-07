@@ -13,7 +13,7 @@
 
     <!-- Map bands -->
     <string name="visa_band_visa_free">Visa-free</string>
-    <string name="visa_band_eta">e-Ticket/ETA</string>
+    <string name="visa_band_eta">ETA</string>
     <string name="visa_band_visa_on_arrival">On arrival</string>
     <string name="visa_band_visa_required">Apply first</string>
     <string name="visa_band_check">Check</string>

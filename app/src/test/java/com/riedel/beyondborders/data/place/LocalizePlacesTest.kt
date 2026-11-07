@@ -47,6 +47,27 @@ class LocalizePlacesTest {
     }
 
     @Test
+    fun `spanish names replace the english ones too`() {
+        val es = mapOf("DE" to "Alemania", "AT" to "Austria")
+        val byCode = localizePlaces(places, Locale("es"), { c, _ -> es[c] }).associateBy { it.code }
+        assertEquals("Alemania", byCode.getValue("DE").name)
+        assertEquals("Germany", byCode.getValue("DE").englishName)
+        assertEquals("Egypt", byCode.getValue("EG").name)
+    }
+
+    @Test
+    fun `russian and ukrainian names replace the english ones now the glyphs cover cyrillic`() {
+        val names = mapOf("ru" to "Германия", "uk" to "Німеччина")
+        for ((tag, expected) in names) {
+            val byCode = localizePlaces(places, Locale.forLanguageTag(tag), { c, _ -> if (c == "DE") expected else null })
+                .associateBy { it.code }
+            assertEquals(expected, byCode.getValue("DE").name)
+            assertEquals("Germany", byCode.getValue("DE").englishName)
+            assertEquals("Egypt", byCode.getValue("EG").name)
+        }
+    }
+
+    @Test
     fun `private XA to XZ codes keep the english name even if the lookup answers`() {
         assertEquals("Kosovo", localizePlaces(places, german, lookup).first { it.code == "XK" }.name)
     }
@@ -102,7 +123,7 @@ class LocalizePlacesTest {
 
     @Test
     fun `languages the map glyphs cannot draw keep the english names`() {
-        for (tag in listOf("ja", "ru", "ar", "fr")) {
+        for (tag in listOf("ja", "ar", "ko", "zh")) {
             assertEquals(places, localizePlaces(places, Locale.forLanguageTag(tag), lookup))
         }
     }
@@ -138,5 +159,24 @@ class LocalizePlacesTest {
         )
         val bad = real.filter { p -> (p.name + p.sovereign).any { it.code > 0x1FF } }.map { "${it.code}:${it.name}" }
         assertEquals(emptyList<String>(), bad)
+    }
+
+    @Test
+    fun `no country name in a localized language needs a code point outside the shipped glyph files`() {
+        val ranges = java.io.File("src/main/assets/glyphs/Noto Sans Regular").listFiles().orEmpty()
+            .mapNotNull { f -> Regex("""(\d+)-(\d+)\.pbf""").matchEntire(f.name)?.destructured }
+            .map { (a, b) -> a.toInt()..b.toInt() }
+        assertTrue("no glyph files found", ranges.isNotEmpty())
+        val bad = sortedSetOf<String>()
+        for (tag in LOCALIZED_LANGUAGES) {
+            val locale = Locale.forLanguageTag(tag)
+            for (code in Locale.getISOCountries()) {
+                val name = Locale("", code).getDisplayCountry(locale)
+                name.codePoints().forEach { cp ->
+                    if (ranges.none { cp in it }) bad += "$tag:$code:U+%04X".format(cp)
+                }
+            }
+        }
+        assertEquals(emptyList<String>(), bad.toList())
     }
 }

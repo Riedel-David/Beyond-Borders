@@ -717,4 +717,45 @@ class PlacesLogicTest {
         assertEquals(UiText.Res(R.string.places_mode_visa), PassportMode.VISA.text)
         assertEquals(UiText.Res(R.string.places_visa_filter_easy), VisaFilter.Easy.text)
     }
+
+    private fun sortedNames(vararg names: String) =
+        names.map { place(it, it) }.sortedBy { it.sortKey }.map { it.name }
+
+    private fun header(name: String) = sectionHeader(place(name, name), Grouping.ALPHABETICAL)
+
+    @Test
+    fun `Ukrainian names sort by the Ukrainian alphabet so Italy comes before Jamaica`() {
+        assertEquals(
+            listOf("Індія", "Ірландія", "Ісландія", "Іспанія", "Італія", "Ямайка"),
+            sortedNames("Ямайка", "Італія", "Іспанія", "Індія", "Ісландія", "Ірландія"),
+        )
+        assertEquals(
+            listOf("Гана", "Ґамбія", "Данія", "Естонія", "Єгипет", "Жовтень", "Ізраїль", "Їм", "Йорданія", "Камбоджа"),
+            sortedNames("Камбоджа", "Йорданія", "Їм", "Ізраїль", "Жовтень", "Єгипет", "Естонія", "Данія", "Ґамбія", "Гана"),
+        )
+    }
+
+    @Test
+    fun `Ukrainian section headers keep І Ї Є and Ґ as letters of their own`() {
+        assertEquals(listOf("І", "Ї", "Є", "Ґ", "Й"), listOf("Італія", "Їм", "Єгипет", "Ґамбія", "Йорданія").map(::header))
+    }
+
+    @Test
+    fun `Russian Yemen is filed under Й after И-names and before К-names`() {
+        assertEquals("Й", header("Йемен"))
+        assertEquals(listOf("Иордания", "Йемен", "Кения"), sortedNames("Кения", "Йемен", "Иордания"))
+    }
+
+    @Test
+    fun `Russian ё sorts right after е and is filed under Е`() {
+        assertEquals(listOf("Еж", "Ёж", "Жук"), sortedNames("Жук", "Ёж", "Еж"))
+        assertEquals("Е", header("Ёж"))
+    }
+
+    @Test
+    fun `Latin diacritics still fold and Cyrillic names sort apart from Latin ones`() {
+        assertEquals(listOf("Åland", "Brazil", "Türkiye", "Zimbabwe"), sortedNames("Zimbabwe", "Türkiye", "Brazil", "Åland"))
+        assertEquals("T", header("Türkiye"))
+        assertEquals("A", header("Åland"))
+    }
 }

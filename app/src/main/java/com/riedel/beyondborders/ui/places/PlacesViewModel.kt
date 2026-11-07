@@ -12,6 +12,8 @@ import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.data.place.foldForSort
+import com.riedel.beyondborders.data.place.sortInitial
 import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
@@ -925,7 +927,7 @@ internal fun sectionHeader(place: Place, grouping: Grouping): String = when (gro
     Grouping.CONTINENT -> place.continent
     Grouping.REGION -> place.region
     Grouping.ALPHABETICAL ->
-        if (place.uninhabited) UNINHABITED_HEADER else place.sortKey.take(1).uppercase()
+        if (place.uninhabited) UNINHABITED_HEADER else sortInitial(place.sortKey)
 }
 
 /**
@@ -1000,6 +1002,6 @@ internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label
     val folded = HashMap<String, String>()
     return rows.sortedBy { row ->
         val key = sectionHeader(row.place, grouping)
-        folded.getOrPut(key) { label(key).foldForSearch() }
+        folded.getOrPut(key) { label(key).foldForSort() }
     }
 }

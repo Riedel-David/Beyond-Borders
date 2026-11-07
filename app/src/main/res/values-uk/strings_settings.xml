@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Ukrainian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Root: bottom navigation tabs -->
+    <string name="root_tab_map">Карта</string>
+    <string name="root_tab_passport">Паспорт</string>
+    <string name="root_tab_settings">Налаштування</string>
+
+    <!-- Welcome -->
+    <string name="welcome_title">Beyond Borders</string>
+    <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Тут усі місця світу (%1$d), а не лише країни ООН (%2$d).</string>
+    <string name="welcome_intro_bare">Познач, де вже вдалося побувати, де довелося жити і куди мрієш поїхати.</string>
+    <string name="welcome_privacy">Ми ніколи не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису, сервера чи мережі — резервну копію можна будь-коли експортувати самостійно. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
+    <string name="welcome_passport_hint">Візові вимоги показано для одного паспорта за раз. Обери свій — згодом його можна змінити в налаштуваннях.</string>
+    <string name="welcome_get_started">Почати</string>
+
+    <!-- Database recovery -->
+    <string name="recovery_title">Не вдається відкрити дані про твої подорожі</string>
+    <string name="recovery_explanation">Ця версія Beyond Borders не вміє читати дані, які вже є на телефоні. Зазвичай це означає, що старішу версію застосунку встановлено поверх даних новішої.</string>
+    <string name="recovery_reassurance">Нічого не видалено, і застосунок сам нічого не видалить. Повторне встановлення новішої версії має відкрити дані як зазвичай. Якщо це неможливо, спершу збережи копію даних — її можна буде прочитати пізніше, і це єдина копія на цьому телефоні.</string>
+    <string name="recovery_save_copy">Зберегти копію</string>
+    <string name="recovery_no_database">Немає файлу бази даних для копіювання.</string>
+    <string name="recovery_saved">Збережено.</string>
+    <string name="recovery_save_failed">Не вдалося зберегти: %1$s</string>
+    <string name="recovery_open_failed">Не вдалося відкрити вибраний файл.</string>
+    <string name="recovery_wipe_failed">Не вдалося видалити дані. Можливо, частину змінено, але покладатися на це не варто; спробуй ще раз або очисть сховище застосунку в налаштуваннях Android.</string>
+    <string name="recovery_delete_start_fresh">Видалити дані й почати з нуля</string>
+    <string name="recovery_confirm_title">Видалити все, що позначено?</string>
+    <string name="recovery_confirm_saved">Копію збережено, тож дані можна буде прочитати пізніше. Усі позначені місця зникнуть із самого застосунку.</string>
+    <string name="recovery_confirm_unsaved">Копію не збережено. Усі місця, які будь-коли позначалися, зникнуть безповоротно, скасувати це неможливо.</string>
+    <string name="recovery_delete">Видалити</string>
+    <string name="recovery_keep">Залишити</string>
+
+    <!-- Settings: sections -->
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_appearance_title">Вигляд</string>
+    <string name="settings_appearance_detail">Відповідає системі, якщо не вибрати іншу тему.</string>
+    <string name="settings_theme_system">Системна</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_pure_black">Повністю чорна</string>
+    <string name="settings_pure_black_detail">Для OLED-екранів</string>
+
+    <!-- Language -->
+    <string name="settings_language_title">Мова</string>
+    <string name="settings_language_system">Як у системі</string>
+
+    <string name="settings_passport_title">Паспорт</string>
+    <string name="settings_passport_detail">Візові відповіді на карті й у вкладці «Паспорт» стосуються цього паспорта.</string>
+    <string name="settings_second_passport">Другий паспорт</string>
+    <string name="settings_add_second_passport">Додати другий паспорт</string>
+    <string name="settings_dual_hint">Якщо в тебе подвійне громадянство, показується легша відповідь із двох паспортів</string>
+    <string name="settings_remove_second_passport">Прибрати другий паспорт</string>
+
+    <string name="settings_haptics_title">Вібровідгук</string>
+    <string name="settings_haptics_toggle">Вібрувати під час позначення</string>
+
+    <string name="settings_colours_title">Кольори карти</string>
+    <string name="settings_colours_detail">Якщо вибрати колір, що вже використовується, два кольори поміняються місцями.</string>
+    <string name="settings_status_been">Відвідано</string>
+    <string name="settings_status_lived">Прожито</string>
+    <string name="settings_status_want">Хочу</string>
+    <string name="settings_colours_reset">Скинути кольори до типових</string>
+    <!-- Accessibility name of a colour swatch: status, then colour -->
+    <string name="settings_swatch_description">%1$s: %2$s</string>
+    <string name="settings_hue_azure">Блакитний</string>
+    <string name="settings_hue_teal">Бірюзовий</string>
+    <string name="settings_hue_green">Зелений</string>
+    <string name="settings_hue_rose">Рожевий</string>
+    <string name="settings_hue_violet">Фіолетовий</string>
+    <string name="settings_hue_amber">Бурштиновий</string>
+
+    <string name="settings_counting_title">Підрахунок місць</string>
+    <string name="settings_counting_detail">З чим порівнює лічильник у вкладці «Паспорт».</string>
+    <string name="settings_denominator_all">Усі %1$d</string>
+    <string name="settings_denominator_un">ООН: %1$d</string>
+    <string name="settings_denominator_all_bare">Усі</string>
+    <string name="settings_denominator_un_bare">ООН</string>
+    <string name="settings_denominator_inhabited">Населені</string>
+
+    <string name="settings_background_title">Тло карти</string>
+    <string name="settings_background_detail">Океан і непозначена суша.</string>
+    <string name="settings_base_default">Типове</string>
+    <string name="settings_base_slate">Сланцеве</string>
+    <string name="settings_base_sand">Піщане</string>
+
+    <string name="settings_data_title">Дані про твої подорожі</string>
+    <string name="settings_export">Експорт</string>
+    <string name="settings_import">Імпорт</string>
+    <string name="settings_data_detail">Файл JSON, який можна зберігати де завгодно. Під час імпорту залишається новіший запис.</string>
+    <string name="settings_restore_button">Відновити з резервної копії Android</string>
+    <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення обʼєднує його з поточними даними, так само як імпорт файлу.</string>
+    <string name="settings_ok">OK</string>
+    <string name="settings_cancel">Скасувати</string>
+
+    <string name="settings_import_title">Імпортувати цей файл?</string>
+    <string name="settings_preview_added">Додано</string>
+    <string name="settings_preview_updated">Оновлено</string>
+    <string name="settings_preview_skipped">Пропущено (вже актуально)</string>
+    <string name="settings_preview_sample">напр. %1$s.</string>
+    <string name="settings_preview_sample_more">напр. %1$s і ще %2$d.</string>
+    <!-- The caveat issues are joined with the locale's list wording (ListFormatter) and end with this -->
+    <string name="settings_preview_caveat">%1$s.</string>
+    <plurals name="settings_caveat_codes">
+        <item quantity="one">%d код місця не розпізнано цією збіркою</item>
+        <item quantity="few">%d коди місць не розпізнано цією збіркою</item>
+        <item quantity="many">%d кодів місць не розпізнано цією збіркою</item>
+        <item quantity="other">%d коду місця не розпізнано цією збіркою</item>
+    </plurals>
+    <plurals name="settings_caveat_statuses">
+        <item quantity="one">%d запис зі статусом, якого ця збірка не розуміє</item>
+        <item quantity="few">%d записи зі статусом, якого ця збірка не розуміє</item>
+        <item quantity="many">%d записів зі статусом, якого ця збірка не розуміє</item>
+        <item quantity="other">%d запису зі статусом, якого ця збірка не розуміє</item>
+    </plurals>
+    <plurals name="settings_caveat_unreadable">
+        <item quantity="one">%d рядок не вдалося прочитати</item>
+        <item quantity="few">%d рядки не вдалося прочитати</item>
+        <item quantity="many">%d рядків не вдалося прочитати</item>
+        <item quantity="other">%d рядка не вдалося прочитати</item>
+    </plurals>
+
+    <string name="settings_danger_title">Небезпечна зона</string>
+    <string name="settings_danger_detail">Скасувати не можна. Спершу експортуй резервну копію.</string>
+    <string name="settings_delete_everything">Видалити все</string>
+    <string name="settings_delete_confirm_title">Видалити все?</string>
+    <string name="settings_delete_confirm_body">Усі позначені місця, твої паспорти та налаштування відображення буде стерто з цього телефона разом зі знімком, який зберігає резервне копіювання Android. Google може й надалі зберігати попередню резервну копію, доки Android не створить наступну — видалити її зараз можна в налаштуваннях резервного копіювання Android.</string>
+    <string name="settings_delete">Видалити</string>
+
+    <string name="settings_about_title">Про застосунок</string>
+    <string name="settings_about_version">BeyondBorders %1$s</string>
+    <string name="settings_about_open_source">Відкритий код (GPL-3.0)</string>
+    <string name="settings_about_data_title">Про дані</string>
+    <string name="settings_about_disclaimer">Незалежний застосунок: не повʼязаний із жодним урядом і не представляє жодного з них. Візові дані — це знімок, і вони можуть застаріти: перед поїздкою підтверди правила вʼїзду в офіційному урядовому джерелі.</string>
+    <string name="settings_about_map_title">Дані карти</string>
+    <string name="settings_about_map">Кордони з Natural Earth (суспільне надбання), відображені за допомогою MapLibre. Уся карта вбудована в застосунок, тож працює без мережі й облікового запису.</string>
+    <string name="settings_about_backup_title">Резервні копії</string>
+    <string name="settings_about_backup">Власне автоматичне резервне копіювання Android переносить знімок твоєї історії до облікового запису Google — цю копію створює система, застосунок сам нічого не вивантажує. Перевстановлений або новий телефон починає з порожнього стану: нічого не повертається, доки ти не торкнешся «Відновити». База даних, твої налаштування та ідентифікатор встановлення до резервної копії не потрапляють узагалі. Якщо не хочеш цього, вимкни копіювання в налаштуваннях резервного копіювання Android.</string>
+    <string name="settings_licences_button">Ліцензії відкритого коду</string>
+
+    <!-- Licences dialog -->
+    <string name="settings_report_problem">Повідомити про проблему</string>
+    <string name="settings_licences_title">Ліцензії відкритого коду</string>
+    <string name="settings_licences_close">Закрити</string>
+    <string name="settings_licence_app">Beyond Borders</string>
+    <string name="settings_licence_map">Карта</string>
+    <string name="settings_licence_borders">Кордони</string>
+    <string name="settings_licence_labels">Підписи</string>
+    <string name="settings_licence_font">Шрифт</string>
+    <string name="settings_licence_flags">Прапори</string>
+    <string name="settings_licence_visa">Візові дані</string>
+    <string name="settings_licence_visa_body">Набір даних про візові вимоги, створений на основі внесків авторів Вікіпедії (CC BY-SA 4.0), див. THIRD_PARTY_NOTICES.md у репозиторії</string>
+    <string name="settings_licence_advice">Посилання на офіційні рекомендації</string>
+    <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральне міністерство закордонних справ Німеччини)</string>
+    <string name="settings_licence_libraries">Бібліотеки</string>
+
+    <!-- Backup transfer results -->
+    <plurals name="backup_places">
+        <item quantity="one">%d місце</item>
+        <item quantity="few">%d місця</item>
+        <item quantity="many">%d місць</item>
+        <item quantity="other">%d місця</item>
+    </plurals>
+    <plurals name="backup_removals">
+        <item quantity="one">%d видалення</item>
+        <item quantity="few">%d видалення</item>
+        <item quantity="many">%d видалень</item>
+        <item quantity="other">%d видалення</item>
+    </plurals>
+    <string name="backup_saved">Збережено: %1$s.</string>
+    <string name="backup_saved_with_removals">Збережено: %1$s та %2$s.</string>
+
+    <string name="backup_import_nothing">Нічого змінювати — усе з цього файлу вже є тут.</string>
+    <plurals name="backup_imported_new">
+        <item quantity="one">Імпортовано %d нове місце.</item>
+        <item quantity="few">Імпортовано %d нові місця.</item>
+        <item quantity="many">Імпортовано %d нових місць.</item>
+        <item quantity="other">Імпортовано %d нового місця.</item>
+    </plurals>
+    <plurals name="backup_imported_updated">
+        <item quantity="one">Імпортовано %d оновлене місце.</item>
+        <item quantity="few">Імпортовано %d оновлені місця.</item>
+        <item quantity="many">Імпортовано %d оновлених місць.</item>
+        <item quantity="other">Імпортовано %d оновленого місця.</item>
+    </plurals>
+    <!-- Both kinds at once, so there are always at least two places -->
+    <string name="backup_imported_both">Імпортовано місць: нових — %1$d, оновлених — %2$d.</string>
+    <string name="backup_already_current">Вже актуальних: %1$d.</string>
+    <plurals name="backup_skipped_codes">
+        <item quantity="one">Пропущено %1$d невідомий код: %2$s.</item>
+        <item quantity="few">Пропущено %1$d невідомі коди: %2$s.</item>
+        <item quantity="many">Пропущено %1$d невідомих кодів: %2$s.</item>
+        <item quantity="other">Пропущено %1$d невідомого коду: %2$s.</item>
+    </plurals>
+    <!-- Counted in rows, listed as distinct words; one plural per word count -->
+    <plurals name="backup_skipped_status_one_word">
+        <item quantity="one">Пропущено %1$d запис із нерозпізнаним статусом: %2$s.</item>
+        <item quantity="few">Пропущено %1$d записи з нерозпізнаним статусом: %2$s.</item>
+        <item quantity="many">Пропущено %1$d записів із нерозпізнаним статусом: %2$s.</item>
+        <item quantity="other">Пропущено %1$d запису з нерозпізнаним статусом: %2$s.</item>
+    </plurals>
+    <plurals name="backup_skipped_status_many_words">
+        <item quantity="one">Пропущено %1$d запис із нерозпізнаними статусами: %2$s.</item>
+        <item quantity="few">Пропущено %1$d записи з нерозпізнаними статусами: %2$s.</item>
+        <item quantity="many">Пропущено %1$d записів із нерозпізнаними статусами: %2$s.</item>
+        <item quantity="other">Пропущено %1$d запису з нерозпізнаними статусами: %2$s.</item>
+    </plurals>
+    <plurals name="backup_unreadable_rows">
+        <item quantity="one">%d рядок не вдалося прочитати.</item>
+        <item quantity="few">%d рядки не вдалося прочитати.</item>
+        <item quantity="many">%d рядків не вдалося прочитати.</item>
+        <item quantity="other">%d рядка не вдалося прочитати.</item>
+    </plurals>
+    <!-- Joins two sentences of the import report -->
+    <string name="backup_sentence_join">%1$s %2$s</string>
+
+    <!-- Backup failures shown in the transfer row -->
+    <string name="backup_delete_failed">Не вдалося видалити все.</string>
+    <string name="backup_export_failed">Експорт не вдався.</string>
+    <string name="backup_import_failed">Імпорт не вдався.</string>
+    <string name="backup_snapshot_gone">Цього знімка вже немає.</string>
+    <string name="backup_write_open_failed">Не вдалося відкрити файл для запису.</string>
+    <string name="backup_read_open_failed">Не вдалося відкрити файл для читання.</string>
+    <string name="backup_too_large">Цей файл надто великий для резервної копії BeyondBorders.</string>
+    <string name="backup_not_json">Цей файл не є JSON.</string>
+    <string name="backup_wrong_format">Це не файл резервної копії BeyondBorders.</string>
+    <string name="backup_newer_version">Цю резервну копію створено новішою версією BeyondBorders (формат %1$d).</string>
+    <string name="backup_no_places">У резервній копії немає місць.</string>
+</resources>

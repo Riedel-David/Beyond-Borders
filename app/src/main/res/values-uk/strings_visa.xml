@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Ukrainian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Requirement categories (list headers, summaries, filters) -->
+    <string name="visa_category_home">Батьківщина</string>
+    <string name="visa_category_visa_free">Без візи</string>
+    <string name="visa_category_eta">Дозвіл на поїздку</string>
+    <string name="visa_category_visa_on_arrival">Віза по прибутті</string>
+    <string name="visa_category_e_visa">е-віза</string>
+    <string name="visa_category_visa_required">Потрібна віза</string>
+    <string name="visa_category_check">Перевірити вимоги</string>
+    <string name="visa_category_permit_required">Потрібен дозвіл</string>
+    <string name="visa_category_no_admission">Вʼїзд заборонено</string>
+
+    <!-- Map bands -->
+    <string name="visa_band_visa_free">Без візи</string>
+    <string name="visa_band_eta">ETA</string>
+    <string name="visa_band_visa_on_arrival">По прибутті</string>
+    <string name="visa_band_visa_required">Спершу віза</string>
+    <string name="visa_band_check">Уточнити</string>
+    <string name="visa_band_closed">Закрито</string>
+    <string name="visa_band_no_data">Немає даних</string>
+
+    <!-- Confidence of curated entries -->
+    <string name="visa_confidence_high">Надійні дані</string>
+    <string name="visa_confidence_medium">Імовірно правильно, подробиці можуть відрізнятися</string>
+    <string name="visa_confidence_low">Дані неточні — перевір перед бронюванням</string>
+
+    <plurals name="visa_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дні</item>
+        <item quantity="many">%d днів</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+
+    <!-- Summary line: category and day count, then optional passport attribution -->
+    <string name="visa_summary_with_days">%1$s · %2$s</string>
+    <string name="visa_summary_with_passport">%1$s (%2$s паспорт)</string>
+    <string name="visa_row_been">%1$s · відвідано</string>
+    <string name="visa_row_wishlist">%1$s · у списку бажань</string>
+    <string name="visa_row_check">перевір</string>
+
+    <!-- Masculine singular nominative, used after "паспорт:" -->
+    <string name="visa_adjective_de">німецький</string>
+    <string name="visa_adjective_gb">британський</string>
+
+    <string name="visa_as_of_notice">Дані станом на %1$s (%2$s паспорт) — перевір в офіційному урядовому джерелі перед бронюванням</string>
+    <string name="visa_as_of_notice_two">Дані станом на %1$s (%2$s і %3$s паспорти) — перевір в офіційному урядовому джерелі перед бронюванням</string>
+
+    <string name="visa_official_link">Рекомендації міністерства закордонних справ</string>
+    <string name="visa_official_link_for">Рекомендації міністерства закордонних справ: %1$s</string>
+    <string name="visa_iata_link">IATA Travel Centre (шукай там)</string>
+
+    <!-- Passport list -->
+    <string name="visa_search_destinations">Шукати напрямки</string>
+    <string name="visa_clear">Очистити</string>
+    <string name="visa_empty_query">Жоден напрямок не відповідає запиту «%1$s».</string>
+    <string name="visa_empty_filter">Жоден напрямок не відповідає фільтру «%1$s».</string>
+    <string name="visa_empty_nothing">Нічого не знайдено.</string>
+    <string name="visa_unavailable_title">Немає візових даних</string>
+    <string name="visa_unavailable_body">Не вдалося прочитати вбудований список віз, тому в цьому режимі немає що показати. Карта подорожей не постраждала.</string>
+
+    <!-- Summary card -->
+    <string name="visa_summary_visa_free_of">"  без візи (усього %1$d)"</string>
+    <string name="visa_summary_easy">Доступно без запису в посольство: %1$d</string>
+    <string name="visa_summary_disclaimer_short">Дані станом на %1$s: перевір перед бронюванням</string>
+    <string name="visa_summary_info_label">Показати джерела даних і застереження</string>
+    <string name="visa_summary_info_title">Про візові дані</string>
+    <string name="visa_legend_item">%1$s %2$d</string>
+    <string name="visa_dataset_credit">%1$s · %2$s</string>
+    <string name="visa_licence_link">Ліцензія</string>
+    <string name="visa_source_link">Джерело: стаття «%1$s»</string>
+    <string name="visa_correction">%1$s пише «%2$s»; тут виправлено</string>
+
+    <!-- Passport picker -->
+    <string name="picker_choose_passport">Обери паспорт</string>
+    <string name="picker_search">Пошук</string>
+</resources>

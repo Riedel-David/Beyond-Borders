@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Russian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Requirement categories (list headers, summaries, filters) -->
+    <string name="visa_category_home">Родная страна</string>
+    <string name="visa_category_visa_free">Без визы</string>
+    <string name="visa_category_eta">Эл. разрешение на въезд</string>
+    <string name="visa_category_visa_on_arrival">Виза по прибытии</string>
+    <string name="visa_category_e_visa">Электронная виза</string>
+    <string name="visa_category_visa_required">Нужна виза</string>
+    <string name="visa_category_check">Уточнить условия въезда</string>
+    <string name="visa_category_permit_required">Нужно разрешение</string>
+    <string name="visa_category_no_admission">Въезд закрыт</string>
+
+    <!-- Map bands -->
+    <string name="visa_band_visa_free">Без визы</string>
+    <string name="visa_band_eta">ETA</string>
+    <string name="visa_band_visa_on_arrival">По прибытии</string>
+    <string name="visa_band_visa_required">Виза заранее</string>
+    <string name="visa_band_check">Уточнить</string>
+    <string name="visa_band_closed">Закрыто</string>
+    <string name="visa_band_no_data">Нет данных</string>
+
+    <!-- Confidence of curated entries -->
+    <string name="visa_confidence_high">Надёжные данные</string>
+    <string name="visa_confidence_medium">Скорее всего верно, детали могут отличаться</string>
+    <string name="visa_confidence_low">Не уверены — проверь перед бронированием</string>
+
+    <plurals name="visa_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+
+    <!-- Summary line: category and day count, then optional passport attribution -->
+    <string name="visa_summary_with_days">%1$s · %2$s</string>
+    <!-- %2$s is the masculine nominative adjective, used after "паспорт" -->
+    <string name="visa_summary_with_passport">%1$s (%2$s паспорт)</string>
+    <string name="visa_row_been">%1$s · был(а)</string>
+    <string name="visa_row_wishlist">%1$s · в списке желаний</string>
+    <string name="visa_row_check">уточнить</string>
+
+    <string name="visa_adjective_de">немецкий</string>
+    <string name="visa_adjective_gb">британский</string>
+
+    <string name="visa_as_of_notice">Данные на %1$s (паспорт: %2$s) — перед бронированием сверься с официальным государственным источником</string>
+    <string name="visa_as_of_notice_two">Данные на %1$s (паспорта: %2$s и %3$s) — перед бронированием сверься с официальным государственным источником</string>
+
+    <string name="visa_official_link">Рекомендации МИД</string>
+    <string name="visa_official_link_for">Рекомендации МИД: %1$s</string>
+    <string name="visa_iata_link">IATA Travel Centre (ищи там)</string>
+
+    <!-- Passport list -->
+    <string name="visa_search_destinations">Поиск направлений</string>
+    <string name="visa_clear">Очистить</string>
+    <string name="visa_empty_query">Нет направлений по запросу «%1$s».</string>
+    <string name="visa_empty_filter">Нет направлений для фильтра «%1$s».</string>
+    <string name="visa_empty_nothing">Ничего не найдено.</string>
+    <string name="visa_unavailable_title">Нет визовых данных</string>
+    <string name="visa_unavailable_body">Встроенный список виз не удалось прочитать, поэтому в этом режиме нечего показать. На твою карту поездок это не влияет.</string>
+
+    <!-- Summary card -->
+    <string name="visa_summary_visa_free_of">"  из %1$d — без визы"</string>
+    <string name="visa_summary_easy">%1$d — без записи в посольство</string>
+    <string name="visa_summary_disclaimer_short">Данные на %1$s — проверь перед бронированием</string>
+    <string name="visa_summary_info_label">Показать источники данных и оговорку</string>
+    <string name="visa_summary_info_title">О визовых данных</string>
+    <string name="visa_legend_item">%1$s %2$d</string>
+    <string name="visa_dataset_credit">%1$s · %2$s</string>
+    <string name="visa_licence_link">Лицензия</string>
+    <string name="visa_source_link">Источник: статья %1$s</string>
+    <string name="visa_correction">%1$s указывает «%2$s» — здесь исправлено</string>
+
+    <!-- Passport picker -->
+    <string name="picker_choose_passport">Выбери паспорт</string>
+    <string name="picker_search">Поиск</string>
+</resources>

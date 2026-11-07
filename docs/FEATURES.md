@@ -87,13 +87,15 @@ before that can bring the places back; Android's backup settings can delete that
 
 ## Language
 
-Settings → **Language** switches the app between English and German, or follows the
+Settings → **Language** switches the app between English, German, Spanish, French,
+Portuguese (Brazilian wording), Ukrainian and Russian, or follows the
 phone. The choice is Android's per-app locale, so it also appears under the system's
-App languages and the app keeps no setting of its own. Every string has a German
-translation, a test fails if a key or a placeholder exists in only one language, and
+App languages and the app keeps no setting of its own. Every string has a translation in each
+of them, a test fails if a key or a placeholder exists in only one language, and
 place, continent, region and grouping names come from the platform's own country names
 (English where it has none, such as for several territories). Search and the sorted
-lists use the localised names, so "Deutschland" finds Germany and sorts under D. The
+lists use the localised names, so "Deutschland" finds Germany and sorts under D, and Ukrainian and Russian
+keep their own alphabets in the A–Z sections. The
 widget follows the language too. The change applies at once,
 without restarting the app.
 

@@ -7,7 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.w3c.dom.Element
 
-/** Parses the real resource files (module dir is the CWD), so a missed or broken German string fails here rather than at runtime. */
+/** Parses the real resource files (module dir is the CWD), so a missed or broken translation fails here rather than at runtime. */
 class StringParityTest {
 
     private class Entry(val key: String, val items: Map<String, String>, val plural: Boolean)
@@ -41,91 +41,136 @@ class StringParityTest {
     }
 
     private val en = load("values")
-    private val de = load("values-de")
+
+    /**
+     * Every values-xx directory with strings, so a new language needs a directory plus an
+     * [extraQuantities] entry (its CLDR plural forms beyond one/other) and, only if some
+     * of its strings are legitimately identical to English, a [sameInLanguage] entry.
+     */
+    private fun translationTags(): List<String> =
+        File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}")) }!!
+            .map { it.name.removePrefix("values-") }.sorted()
+
+    private val translations: Map<String, Map<String, Entry>> = translationTags().associateWith { load("values-$it") }
+
+    /** Quantities beyond one/other that a language's CLDR rules use; lint demands them only when the app needs them. */
+    private val extraQuantities = mapOf(
+        "de" to emptySet<String>(), "es" to setOf("many"), "fr" to setOf("many"), "pt" to setOf("many"),
+        "uk" to setOf("few", "many"), "ru" to setOf("few", "many"),
+    )
 
     private fun placeholders(s: String): List<String> =
         Regex("%(\\d+\\$)?[sd]").findAll(s).map { it.value }.sorted().toList()
 
-    /** Words that are legitimately the same in both languages (brand names, symbols, loanwords). */
-    private val sameInGerman = setOf(
+    /** Keys that are legitimately the same as English in every language (brand names, symbols, pure format strings). */
+    private val sameEverywhere = setOf(
         "app_name", "widget_wordmark", "welcome_title", "settings_licence_app", // brand
-        "settings_denominator_un_bare", "settings_denominator_un", // "UN" / "%1$d UN"
         "passport_group_alphabetical", // "A-Z"
-        "settings_theme_system", "settings_base_sand", "rank_globetrotter", "rank_wanderer",
-        "widget_cfg_background_transparent", // same word in German
+        "visa_band_eta", // "ETA" is the official abbreviation
         "settings_ok", "info_button_ok", // "OK"
         "stats_hero_percent", "badge_rank_line", "share_stamp", // pure format strings
         "visa_legend_item", "visa_dataset_credit", "visa_summary_with_days", "map_legend_count_labeled", "map_legend_chip",
         "map_join_comma", "backup_sentence_join", "settings_swatch_description", "settings_preview_caveat",
         "settings_about_version", // product name + version
-        "geo_group_benelux", "geo_group_maghreb", "geo_group_indochina", // loanwords, same in German
     )
 
-    @Test
-    fun `every translatable key exists in both languages`() {
-        val missingDe = en.keys - de.keys
-        val extraDe = de.keys - en.keys
-        assertTrue("missing in values-de: $missingDe", missingDe.isEmpty())
-        assertTrue("only in values-de: $extraDe", extraDe.isEmpty())
+    /** Per-language additions: loanwords and cognates that happen to match English there. */
+    private val sameInLanguage = mapOf(
+        "de" to setOf(
+            "settings_denominator_un_bare", "settings_denominator_un", // "UN" / "%1$d UN"
+            "settings_theme_system", "settings_base_sand", "rank_globetrotter", "rank_wanderer",
+            "widget_cfg_background_transparent",
+            "geo_group_benelux", "geo_group_maghreb", "geo_group_indochina",
+        ),
+        "es" to setOf(
+            "geo_group_benelux", "geo_group_indochina", // proper nouns
+            "geo_continent_asia", "geo_region_melanesia", "geo_region_micronesia", // spelled the same in Spanish
+            "visa_category_e_visa", // "eVisa" is the official label
+        ),
+        "fr" to setOf(
+            "geo_continent_europe", "geo_group_benelux", "geo_group_levant", "geo_group_maghreb", "geo_group_balkans",
+            "map_lens_visa", "share_tile_continents", "widget_label_continents", "widget_cfg_metric_continents",
+            "stats_continents", "badge_group_continents", "widget_cfg_background_transparent",
+            "settings_hue_rose", "settings_hue_violet", "visa_licence_link", // spelled the same in French
+        ),
+        "pt" to setOf(
+            "geo_continent_oceania", "geo_group_benelux", "geo_group_indochina", "passport_status_chip_desc",
+            "settings_about_backup_title", // same word in Portuguese
+        ),
+    )
+
+    private fun forEachLanguage(check: (tag: String, tr: Map<String, Entry>) -> Unit) {
+        for ((tag, tr) in translations) check(tag, tr)
     }
 
     @Test
-    fun `placeholders match per key and per plural item`() {
+    fun `every translatable key exists in every language`() = forEachLanguage { tag, tr ->
+        val missing = en.keys - tr.keys
+        val extra = tr.keys - en.keys
+        assertTrue("[$tag] missing in values-$tag: $missing", missing.isEmpty())
+        assertTrue("[$tag] only in values-$tag: $extra", extra.isEmpty())
+    }
+
+    @Test
+    fun `placeholders match per key and per plural item`() = forEachLanguage { tag, tr ->
         val bad = mutableListOf<String>()
         for ((k, e) in en) {
-            val g = de[k] ?: continue
+            val g = tr[k] ?: continue
             if (e.plural != g.plural) { bad += "$k (kind differs)"; continue }
             val enAll = e.items.values.flatMap(::placeholders).toSet()
             for ((q, text) in g.items) {
-                // German "one" is checked against English "one", "other" against "other".
+                // A translated "one" is checked against English "one", everything else against "other".
                 val src = e.items[q] ?: e.items["other"] ?: ""
                 if (placeholders(text) != placeholders(src)) bad += "$k[$q]: ${placeholders(src)} vs ${placeholders(text)}"
             }
             if (enAll.isEmpty() && g.items.values.any { placeholders(it).isNotEmpty() }) bad += k
         }
-        assertTrue("placeholder mismatch: $bad", bad.isEmpty())
+        assertTrue("[$tag] placeholder mismatch: $bad", bad.isEmpty())
     }
 
     @Test
-    fun `plurals carry the one and other quantities in both languages`() {
-        for (map in listOf(en, de)) for (e in map.values.filter { it.plural }) {
-            assertTrue("${e.key} lacks one/other", e.items.keys.containsAll(listOf("one", "other")))
+    fun `plurals carry one and other and only the extra quantities the language uses`() {
+        for (e in en.values.filter { it.plural }) {
+            assertTrue("en ${e.key} lacks one/other", e.items.keys.containsAll(listOf("one", "other")))
         }
-        for ((k, e) in de.filter { it.value.plural }) {
-            val extra = e.items.keys - setOf("one", "other")
-            assertTrue("$k has quantities German does not use: $extra", extra.isEmpty())
+        forEachLanguage { tag, tr ->
+            val allowed = setOf("one", "other") + (extraQuantities[tag] ?: error("no extraQuantities entry for $tag"))
+            for ((k, e) in tr.filter { it.value.plural }) {
+                assertEquals("[$tag] $k must carry exactly the language's plural forms", allowed, e.items.keys)
+            }
         }
     }
 
     @Test
-    fun `no german string is empty`() {
-        val empty = de.values.flatMap { e -> e.items.filter { it.value.isBlank() }.map { e.key } }
-        assertTrue("empty German strings: $empty", empty.isEmpty())
+    fun `no translated string is empty`() = forEachLanguage { tag, tr ->
+        val empty = tr.values.flatMap { e -> e.items.filter { it.value.isBlank() }.map { e.key } }
+        assertTrue("[$tag] empty strings: $empty", empty.isEmpty())
     }
 
     @Test
-    fun `no german string is identical to english outside the allow list`() {
+    fun `no translated string is identical to english outside the allow list`() = forEachLanguage { tag, tr ->
+        val allowed = sameEverywhere + (sameInLanguage[tag] ?: emptySet())
         val same = mutableListOf<String>()
-        for ((k, g) in de) {
+        for ((k, g) in tr) {
             val e = en[k] ?: continue
-            if (k in sameInGerman) continue
+            if (k in allowed) continue
             if (e.items == g.items) same += k
         }
-        assertTrue("untranslated (identical to English): $same", same.isEmpty())
+        assertTrue("[$tag] untranslated (identical to English): $same", same.isEmpty())
     }
 
     @Test
-    fun `no german string holds an unescaped apostrophe`() {
+    fun `no translated string holds an unescaped apostrophe`() = forEachLanguage { tag, _ ->
         // The DOM unescapes \', so read the raw text instead.
         val bad = mutableListOf<String>()
-        File("src/main/res/values-de").listFiles()!!.filter { it.name.startsWith("strings") }.forEach { f ->
+        File("src/main/res/values-$tag").listFiles()!!.filter { it.name.startsWith("strings") }.forEach { f ->
             f.readLines().forEachIndexed { i, line ->
                 if (line.trimStart().startsWith("<!--")) return@forEachIndexed
                 val body = line.substringAfter(">", "").substringBeforeLast("</")
                 if (Regex("(?<!\\\\)'").containsMatchIn(body)) bad += "${f.name}:${i + 1}"
             }
         }
-        assertTrue("unescaped apostrophes: $bad", bad.isEmpty())
+        assertTrue("[$tag] unescaped apostrophes: $bad", bad.isEmpty())
     }
 
     @Test

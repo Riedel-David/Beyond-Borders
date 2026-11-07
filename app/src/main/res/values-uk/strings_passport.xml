@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Ukrainian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Passport list -->
+    <string name="passport_search_places">Шукати місця</string>
+    <string name="passport_group_list">Групувати список</string>
+    <string name="passport_group_continent">За континентами</string>
+    <string name="passport_group_region">За регіонами</string>
+    <string name="passport_group_alphabetical">А–Я</string>
+    <string name="passport_state_collapsed">Згорнуто</string>
+    <string name="passport_state_expanded">Розгорнуто</string>
+    <string name="passport_chip_been">Відвідано</string>
+    <string name="passport_chip_lived">Прожито</string>
+    <string name="passport_chip_want">Хочу</string>
+    <string name="passport_mark_been">Позначити «%1$s» як відвідане</string>
+    <string name="passport_mark_lived">Позначити «%1$s» як місце проживання</string>
+    <string name="passport_mark_want">Позначити «%1$s» як бажане</string>
+    <string name="passport_clear">Скинути</string>
+    <string name="passport_clear_status">Скинути статус: %1$s</string>
+    <string name="passport_status_chip_desc">%1$s, статус: %2$s</string>
+    <string name="passport_status_unset">не задано</string>
+    <string name="passport_change_status">Змінити статус</string>
+    <string name="passport_loading">Завантажуємо твої місця…</string>
+    <string name="passport_no_match_query">Жодне місце не відповідає запиту «%1$s».</string>
+    <string name="passport_no_match_filter">Жодне місце не відповідає фільтру «%1$s».</string>
+    <string name="passport_nothing_matches">Нічого не знайдено.</string>
+    <string name="passport_card_action">Переглянути континенти, регіони й групи країн</string>
+    <plurals name="passport_card_total">
+        <item quantity="one">із %1$d місця · %2$d%%</item>
+        <item quantity="few">із %1$d місць · %2$d%%</item>
+        <item quantity="many">із %1$d місць · %2$d%%</item>
+        <item quantity="other">із %1$d місця · %2$d%%</item>
+    </plurals>
+    <plurals name="passport_card_continents">
+        <item quantity="one">%1$d із %2$d континенту</item>
+        <item quantity="few">%1$d із %2$d континентів</item>
+        <item quantity="many">%1$d із %2$d континентів</item>
+        <item quantity="other">%1$d із %2$d континенту</item>
+    </plurals>
+    <string name="passport_card_lived">Прожито: %1$d</string>
+    <string name="passport_card_wishlist">У списку бажань: %1$d</string>
+
+    <!-- Stats screen -->
+    <string name="stats_title">Статистика</string>
+    <string name="stats_back">Назад</string>
+    <string name="stats_continents">Континенти</string>
+    <string name="stats_continents_info_label">Показати довідку про смуги континентів</string>
+    <string name="stats_continents_info">Утримуй смугу, щоб побачити, яких місць ще бракує.</string>
+    <string name="stats_regions">Регіони</string>
+    <string name="stats_named_groupings">Групи країн</string>
+    <string name="stats_least_covered">Найменше охоплено</string>
+    <string name="stats_next_up">Наступні цілі</string>
+    <string name="stats_show_all_groupings">Показати всі групи країн</string>
+    <string name="stats_collapse">Згорнути</string>
+    <string name="stats_expand">Розгорнути</string>
+    <string name="stats_bar_details">Показати подробиці: %1$s</string>
+    <string name="stats_dialog_been">Відвідано (%1$d)</string>
+    <string name="stats_dialog_missing">Ще попереду (%1$d)</string>
+    <string name="stats_dialog_close">Закрити</string>
+
+    <!-- Stats hero -->
+    <string name="stats_hero_percent">%1$d%%</string>
+    <plurals name="stats_hero_places">
+        <item quantity="one">%1$d із %2$d місця</item>
+        <item quantity="few">%1$d із %2$d місць</item>
+        <item quantity="many">%1$d із %2$d місць</item>
+        <item quantity="other">%1$d із %2$d місця</item>
+    </plurals>
+    <plurals name="stats_hero_badges">
+        <item quantity="one">Розблоковано %1$d із %2$d значка</item>
+        <item quantity="few">Розблоковано %1$d із %2$d значків</item>
+        <item quantity="many">Розблоковано %1$d із %2$d значків</item>
+        <item quantity="other">Розблоковано %1$d із %2$d значка</item>
+    </plurals>
+    <string name="stats_hero_description">Відвідано %2$d із %3$d (%1$d%%). Ранг: %4$s. %5$s. %6$s.</string>
+
+    <!-- Traveller ranks -->
+    <string name="rank_newcomer">Новачок</string>
+    <string name="rank_wanderer">Подорожній</string>
+    <string name="rank_explorer">Дослідник</string>
+    <string name="rank_adventurer">Шукач пригод</string>
+    <string name="rank_globetrotter">Глобтротер</string>
+    <string name="rank_world_traveller">Мандрівник світу</string>
+    <string name="rank_legend">Легенда</string>
+    <string name="rank_top_reached">Досягнуто найвищого рангу</string>
+    <string name="rank_progress">Ще %1$d до рангу «%2$s»</string>
+
+    <!-- Badge sections and cards -->
+    <string name="badge_recent">Нещодавно розблоковано</string>
+    <string name="badge_closest">Найближчі до розблокування</string>
+    <string name="badge_section_title">Досягнення</string>
+    <string name="badge_section_info_label">Показати довідку про досягнення</string>
+    <string name="badge_section_hint">Значки відображають твою карту такою, як вона є зараз: зніми позначку з місця, і значок може зникнути.</string>
+    <string name="badge_group_header">%1$s · %2$d із %3$d</string>
+    <string name="badge_show_details">Показати подробиці</string>
+    <string name="badge_unlocked">Розблоковано</string>
+    <string name="badge_new">НОВИЙ</string>
+    <string name="badge_progress_of">%1$d із %2$d</string>
+    <string name="badge_spoken_unlocked">%1$s, розблоковано. %2$s</string>
+    <string name="badge_spoken_new">%1$s, щойно розблоковано. %2$s</string>
+    <string name="badge_spoken_locked">%1$s, заблоковано, %2$d із %3$d. %4$s</string>
+    <string name="badge_share">Поділитися</string>
+    <string name="badge_share_failed">Не вдалося поділитися значком</string>
+    <string name="badge_share_caption">Розблоковано «%1$s» у Beyond Borders: %2$s</string>
+    <string name="badge_rank_line">%1$s · %2$s</string>
+    <plurals name="badge_places_count">
+        <item quantity="one">%1$d місце</item>
+        <item quantity="few">%1$d місця</item>
+        <item quantity="many">%1$d місць</item>
+        <item quantity="other">%1$d місця</item>
+    </plurals>
+    <string name="badge_celebrate_one">Розблоковано: %1$s</string>
+    <string name="badge_celebrate_more">Розблоковано: %1$s і ще %2$d</string>
+
+    <!-- Badge groups -->
+    <string name="badge_group_counts">Місця</string>
+    <string name="badge_group_continents">Континенти</string>
+    <string name="badge_group_regions">Регіони</string>
+    <string name="badge_group_groups">Групи країн</string>
+    <string name="badge_group_dependencies">Території</string>
+    <string name="badge_group_non_un">Поза ООН</string>
+    <string name="badge_group_tiny">Крихітні місця</string>
+    <string name="badge_group_giants">Гіганти</string>
+    <string name="badge_group_special">Особливі</string>
+    <string name="badge_group_lived">Прожито</string>
+    <string name="badge_group_wishlist">Список бажань</string>
+
+    <!-- Badge titles and descriptions -->
+    <string name="badge_count_1_title">Перший штамп</string>
+    <string name="badge_count_1_desc">Познач своє перше відвідане місце.</string>
+    <plurals name="badge_count_n_title">
+        <item quantity="one">%1$d місце</item>
+        <item quantity="few">%1$d місця</item>
+        <item quantity="many">%1$d місць</item>
+        <item quantity="other">%1$d місця</item>
+    </plurals>
+    <plurals name="badge_count_n_desc">
+        <item quantity="one">Побувай у %1$d місці.</item>
+        <item quantity="few">Побувай у %1$d місцях.</item>
+        <item quantity="many">Побувай у %1$d місцях.</item>
+        <item quantity="other">Побувай у %1$d місця.</item>
+    </plurals>
+    <plurals name="badge_continents_touch_title">
+        <item quantity="one">%1$d континент</item>
+        <item quantity="few">%1$d континенти</item>
+        <item quantity="many">%1$d континентів</item>
+        <item quantity="other">%1$d континенту</item>
+    </plurals>
+    <plurals name="badge_continents_touch_desc">
+        <item quantity="one">Побувай на %1$d континенті.</item>
+        <item quantity="few">Побувай на %1$d континентах.</item>
+        <item quantity="many">Побувай на %1$d континентах.</item>
+        <item quantity="other">Побувай на %1$d континенту.</item>
+    </plurals>
+    <string name="badge_continent_complete_title">Уся %1$s</string>
+    <string name="badge_continent_complete_desc">%1$s: побувай в усіх населених місцях.</string>
+    <string name="badge_region_desc">Побувай в усіх населених місцях регіону «%1$s» (усього %2$d).</string>
+    <string name="badge_group_desc">Побувай в усіх населених місцях групи «%1$s»: %2$s.</string>
+    <plurals name="badge_dependencies_title">
+        <item quantity="one">%1$d територія</item>
+        <item quantity="few">%1$d території</item>
+        <item quantity="many">%1$d територій</item>
+        <item quantity="other">%1$d території</item>
+    </plurals>
+    <plurals name="badge_dependencies_desc">
+        <item quantity="one">Побувай у %1$d місці, що належить іншій країні.</item>
+        <item quantity="few">Побувай у %1$d місцях, що належать іншій країні.</item>
+        <item quantity="many">Побувай у %1$d місцях, що належать іншій країні.</item>
+        <item quantity="other">Побувай у %1$d місця, що належить іншій країні.</item>
+    </plurals>
+    <plurals name="badge_non_un_title">
+        <item quantity="one">%1$d поза ООН</item>
+        <item quantity="few">%1$d поза ООН</item>
+        <item quantity="many">%1$d поза ООН</item>
+        <item quantity="other">%1$d поза ООН</item>
+    </plurals>
+    <plurals name="badge_non_un_desc">
+        <item quantity="one">Побувай у %1$d місці, що не є членом чи спостерігачем ООН.</item>
+        <item quantity="few">Побувай у %1$d місцях, що не є членами чи спостерігачами ООН.</item>
+        <item quantity="many">Побувай у %1$d місцях, що не є членами чи спостерігачами ООН.</item>
+        <item quantity="other">Побувай у %1$d місця, що не є членом чи спостерігачем ООН.</item>
+    </plurals>
+    <plurals name="badge_tiny_title">
+        <item quantity="one">%1$d крихітне місце</item>
+        <item quantity="few">%1$d крихітні місця</item>
+        <item quantity="many">%1$d крихітних місць</item>
+        <item quantity="other">%1$d крихітного місця</item>
+    </plurals>
+    <plurals name="badge_tiny_desc">
+        <item quantity="one">Побувай у %1$d місці площею менш як %2$d км².</item>
+        <item quantity="few">Побувай у %1$d місцях площею менш як %2$d км².</item>
+        <item quantity="many">Побувай у %1$d місцях площею менш як %2$d км².</item>
+        <item quantity="other">Побувай у %1$d місця площею менш як %2$d км².</item>
+    </plurals>
+    <string name="badge_giant_1_title">Гігант</string>
+    <string name="badge_giant_1_desc">Побувай в одному з %1$d найбільших за площею місць.</string>
+    <string name="badge_antarctica_title">Білий континент</string>
+    <string name="badge_antarctica_desc">Ступи на землю Антарктиди.</string>
+    <string name="badge_hemispheres_title">Чотири півкулі</string>
+    <string name="badge_hemispheres_desc">Побувай на півночі, півдні, сході й заході (за центральною точкою кожного місця).</string>
+    <string name="badge_lived_1_title">Життя за кордоном</string>
+    <string name="badge_lived_3_title">Проживання в %1$d місцях</string>
+    <plurals name="badge_lived_desc">
+        <item quantity="one">Познач %1$d місце як місце проживання.</item>
+        <item quantity="few">Познач %1$d місця як місця проживання.</item>
+        <item quantity="many">Познач %1$d місць як місця проживання.</item>
+        <item quantity="other">Познач %1$d місця як місця проживання.</item>
+    </plurals>
+    <string name="badge_wishlist_10_title">Мрійник</string>
+    <string name="badge_wishlist_10_desc">Додай до списку бажань %1$d місць.</string>
+</resources>

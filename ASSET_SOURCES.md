@@ -347,11 +347,16 @@ Commons and are public domain. No licence text is bundled.
 
 ## Map label glyphs — `glyphs/Noto Sans Regular/`
 
-`0-255.pbf` and `256-511.pbf` are signed-distance-field glyph atlases (Mapbox/MapLibre
-PBF format) for Noto Sans Regular, covering code points U+0000 to U+01FF. They are
-bundled so the map's country-name `SymbolLayer` works with no glyph server. The
-source TTF and the generator tool (fontnik, font-maker or similar) are not recorded
-in the repo or its history, so the exact build is unknown; `OFL.txt` beside the files
+`0-255.pbf`, `256-511.pbf`, `512-767.pbf`, `1024-1279.pbf` and `8192-8447.pbf` are
+signed-distance-field glyph atlases (Mapbox/MapLibre PBF format) for Noto Sans Regular,
+covering code points U+0000 to U+02FF (Latin and modifier letters such as U+02BC),
+U+0400 to U+04FF (Cyrillic) and U+2000 to U+20FF (general punctuation: en and em dash,
+U+2019 apostrophe). They are bundled so the map's country-name
+`SymbolLayer` works with no glyph server. The last three were generated with
+`node-fontnik` 0.7.7 from Noto Sans v2.015; the exact commands, font URL and hashes are in
+`tools/glyphs/README.md`. The first two files predate that and their generator was never
+recorded; the same pipeline reproduces their printable glyphs closely but not byte for
+byte (see the README). `OFL.txt` beside the files
 gives the copyright as "The Noto Project Authors"
 (<https://github.com/notofonts/latin-greek-cyrillic>). Licence: SIL Open Font License
 1.1, which permits bundling and conversion; the licence text ships with the glyphs

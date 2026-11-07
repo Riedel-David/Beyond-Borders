@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Russian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Map: share feedback -->
+    <string name="map_share_failed">Не удалось поделиться картой</string>
+    <string name="map_share_retry">Повторить</string>
+    <string name="map_not_ready">Карта ещё не готова</string>
+    <string name="map_share_action">Поделиться</string>
+    <string name="map_share_style_title">Стиль публикации</string>
+    <string name="map_share_cancel">Отмена</string>
+    <string name="map_description">Карта мира. Нажми на страну или территорию, чтобы выбрать её.</string>
+
+    <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Был(а)</string>
+    <string name="map_legend_short_lived">Жил(а)</string>
+    <string name="map_legend_short_wanted">Хочу</string>
+    <string name="map_legend_chip">%1$s %2$d</string>
+    <string name="map_legend_nudge">Нажми на место, чтобы отметить его</string>
+    <string name="map_legend_visited">Был(а): %1$d</string>
+    <string name="map_legend_lived">Жил(а): %1$d</string>
+    <string name="map_legend_wishlisted">В списке желаний: %1$d</string>
+    <string name="map_legend_no_data">Нет данных: %1$d</string>
+    <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
+    <string name="map_legend_count_labeled">%1$d %2$s</string>
+    <!-- Joins two spoken legend phrases. -->
+    <string name="map_join_comma">%1$s, %2$s</string>
+
+    <!-- Map: visa legend -->
+    <string name="map_visa_legend_none">Нет визовых данных</string>
+    <string name="map_visa_legend_free">Без визы: %1$d</string>
+    <string name="map_visa_summary_none_second">Визовый слой: нет данных для твоих паспортов</string>
+    <string name="map_visa_summary_none_single">Визовый слой: нет данных для этого паспорта</string>
+    <plurals name="map_visa_summary">
+        <item quantity="one">Визовый слой: на карте %1$d категория, без визы: %2$d</item>
+        <item quantity="few">Визовый слой: на карте %1$d категории, без визы: %2$d</item>
+        <item quantity="many">Визовый слой: на карте %1$d категорий, без визы: %2$d</item>
+        <item quantity="other">Визовый слой: на карте %1$d категории, без визы: %2$d</item>
+    </plurals>
+
+    <!-- Map: region legend and card -->
+    <string name="map_region_legend_official">Каждый цвет — регион; чем насыщеннее, тем больше посещено</string>
+    <string name="map_region_legend_informal">Каждый цвет — группа; чем насыщеннее, тем больше посещено</string>
+    <string name="map_region_done_official">Регионов пройдено: %1$d из %2$d</string>
+    <string name="map_region_done_informal">Групп пройдено: %1$d из %2$d</string>
+    <string name="map_region_card_done">Пройдено: %1$d / %2$d</string>
+
+    <!-- Map: controls -->
+    <string name="map_controls_hide">Скрыть элементы управления картой</string>
+    <string name="map_controls_show">Показать элементы управления картой</string>
+    <string name="map_search_open">Поиск</string>
+    <string name="map_search_label">Найти место</string>
+    <string name="map_search_no_matches">Ничего не найдено</string>
+    <string name="map_lens_visa">Визы</string>
+    <string name="map_regions_off">Регионы</string>
+    <string name="map_regions_official">Регионы: ООН</string>
+    <string name="map_regions_informal">Регионы: группы стран</string>
+
+    <!-- Map: selected place card -->
+    <string name="map_no_data_either">Нет данных ни для одного из паспортов — перед поездкой проверь официальные источники.</string>
+    <string name="map_no_data_this">Нет данных для этого паспорта — перед поездкой проверь официальные источники.</string>
+    <string name="map_chip_been">Был(а)</string>
+    <string name="map_chip_lived">Жил(а)</string>
+    <string name="map_chip_want">Хочу</string>
+
+    <!-- Share cards (drawn onto a canvas) -->
+    <string name="share_style_bar_label">Подпись внизу</string>
+    <string name="share_style_bar_blurb">Логотип и статистика вдоль нижнего края</string>
+    <string name="share_style_stamp_label">Значок в углу</string>
+    <string name="share_style_stamp_blurb">Компактный значок вверху слева</string>
+    <string name="share_style_stats_label">Карточка статистики</string>
+    <string name="share_style_stats_blurb">Только цифры, без карты</string>
+    <string name="share_of_the_world_caps">МИРА</string>
+    <string name="share_of_the_world">мира</string>
+    <string name="share_stamp">%1$d%% · %2$d/%3$d</string>
+    <plurals name="share_detail">
+        <item quantity="one">%1$d из %2$d · %3$d континент</item>
+        <item quantity="few">%1$d из %2$d · %3$d континента</item>
+        <item quantity="many">%1$d из %2$d · %3$d континентов</item>
+        <item quantity="other">%1$d из %2$d · %3$d континента</item>
+    </plurals>
+    <string name="share_tile_places_been">ПОСЕЩЕНО</string>
+    <string name="share_tile_continents">КОНТИНЕНТЫ</string>
+    <string name="share_tile_lived">ЖИЛ(А)</string>
+    <string name="share_tile_wishlist">ЖЕЛАНИЯ</string>
+
+    <!-- Passport filters and stats lines built in PlacesViewModel -->
+    <string name="places_filter_all">Все</string>
+    <string name="places_filter_been">Был(а)</string>
+    <string name="places_filter_lived">Жил(а)</string>
+    <string name="places_filter_want">Хочу</string>
+    <string name="places_filter_none">Пока нет</string>
+    <string name="places_mode_travel">Где я был(а)</string>
+    <string name="places_mode_visa">Куда я могу поехать</string>
+    <string name="places_visa_filter_all">Все</string>
+    <string name="places_visa_filter_easy">Без посольства</string>
+    <string name="places_visa_filter_wishlist_easy">Желания: легко</string>
+    <string name="places_visa_filter_long_stay">90+ дней</string>
+    <string name="places_section_uninhabited">Необитаемые</string>
+    <plurals name="places_nudge">
+        <item quantity="one">%2$s: осталось %1$d место</item>
+        <item quantity="few">%2$s: осталось %1$d места</item>
+        <item quantity="many">%2$s: осталось %1$d мест</item>
+        <item quantity="other">%2$s: осталось %1$d места</item>
+    </plurals>
+    <string name="places_least_covered">%1$s — %2$d из %3$d</string>
+    <plurals name="places_wishlist_easy">
+        <item quantity="one">Без посольства: %1$d из %2$d места в списке желаний</item>
+        <item quantity="few">Без посольства: %1$d из %2$d мест в списке желаний</item>
+        <item quantity="many">Без посольства: %1$d из %2$d мест в списке желаний</item>
+        <item quantity="other">Без посольства: %1$d из %2$d места в списке желаний</item>
+    </plurals>
+    <string name="places_coverage">%1$d%% суши и %2$d%% населения Земли</string>
+
+    <!-- Widget configuration screen -->
+    <string name="widget_label_places_been">ПОСЕЩЕНО</string>
+    <string name="widget_label_of_the_world">МИРА</string>
+    <string name="widget_label_continents">КОНТИНЕНТЫ</string>
+    <string name="widget_cfg_metric_title">Что показывать в виджете?</string>
+    <string name="widget_cfg_metric_countries">Страны</string>
+    <string name="widget_cfg_metric_percent">Проценты</string>
+    <string name="widget_cfg_metric_continents">Континенты</string>
+    <string name="widget_cfg_target_title">По нажатию на виджет открывается</string>
+    <string name="widget_cfg_target_map">Карта</string>
+    <string name="widget_cfg_target_passport">Паспорт</string>
+    <string name="widget_cfg_target_stats">Статистика</string>
+    <string name="widget_cfg_background_title">Фон карточки</string>
+    <string name="widget_cfg_background_filled">Сплошной</string>
+    <string name="widget_cfg_background_transparent">Прозрачный</string>
+    <string name="widget_cfg_preview_title">Размер предпросмотра</string>
+    <string name="widget_cfg_add">Добавить виджет</string>
+</resources>

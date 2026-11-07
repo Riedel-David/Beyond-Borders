@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made French draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="app_name">Beyond Borders</string>
+    <string name="widget_label">Compteur de voyages</string>
+    <string name="widget_wordmark">BEYOND BORDERS</string>
+    <string name="search_clear">Effacer la recherche</string>
+    <string name="info_button_ok">OK</string>
+</resources>

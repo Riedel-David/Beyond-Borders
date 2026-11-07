@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Spanish draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Requirement categories (list headers, summaries, filters) -->
+    <string name="visa_category_home">País de origen</string>
+    <string name="visa_category_visa_free">Sin visado</string>
+    <string name="visa_category_eta">Autorización electrónica</string>
+    <string name="visa_category_visa_on_arrival">Visado a la llegada</string>
+    <string name="visa_category_e_visa">eVisa</string>
+    <string name="visa_category_visa_required">Visado obligatorio</string>
+    <string name="visa_category_check">Consultar requisitos</string>
+    <string name="visa_category_permit_required">Permiso obligatorio</string>
+    <string name="visa_category_no_admission">Entrada no permitida</string>
+
+    <!-- Map bands -->
+    <string name="visa_band_visa_free">Sin visado</string>
+    <string name="visa_band_eta">ETA</string>
+    <string name="visa_band_visa_on_arrival">A la llegada</string>
+    <string name="visa_band_visa_required">Tramitar antes</string>
+    <string name="visa_band_check">Consultar</string>
+    <string name="visa_band_closed">Cerrado</string>
+    <string name="visa_band_no_data">Sin datos</string>
+
+    <!-- Confidence of curated entries -->
+    <string name="visa_confidence_high">Fiable</string>
+    <string name="visa_confidence_medium">Probablemente correcto; los detalles pueden variar</string>
+    <string name="visa_confidence_low">Incierto: verifícalo antes de reservar</string>
+
+    <plurals name="visa_days">
+        <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+
+    <!-- Summary line: category and day count, then optional passport attribution -->
+    <string name="visa_summary_with_days">%1$s · %2$s</string>
+    <string name="visa_summary_with_passport">%1$s (pasaporte %2$s)</string>
+    <string name="visa_row_been">%1$s · visitado</string>
+    <string name="visa_row_wishlist">%1$s · pendiente</string>
+    <string name="visa_row_check">consultar</string>
+
+    <!-- Masculine singular, used after "pasaporte" -->
+    <string name="visa_adjective_de">alemán</string>
+    <string name="visa_adjective_gb">británico</string>
+
+    <string name="visa_as_of_notice">Datos a fecha de %1$s (pasaporte %2$s): verifícalos en la fuente oficial del gobierno antes de reservar</string>
+    <string name="visa_as_of_notice_two">Datos a fecha de %1$s (pasaportes %2$s y %3$s): verifícalos en la fuente oficial del gobierno antes de reservar</string>
+
+    <string name="visa_official_link">Recomendaciones del Ministerio de Exteriores</string>
+    <string name="visa_official_link_for">Recomendaciones del Ministerio de Exteriores: %1$s</string>
+    <string name="visa_iata_link">IATA Travel Centre (busca allí)</string>
+
+    <!-- Passport list -->
+    <string name="visa_search_destinations">Buscar destinos</string>
+    <string name="visa_clear">Borrar</string>
+    <string name="visa_empty_query">Ningún destino coincide con «%1$s».</string>
+    <string name="visa_empty_filter">Ningún destino coincide con el filtro «%1$s».</string>
+    <string name="visa_empty_nothing">No se encontró nada.</string>
+    <string name="visa_unavailable_title">Sin datos de visado</string>
+    <string name="visa_unavailable_body">No se pudo leer la lista de visados incluida en la app, así que en este modo no hay nada que mostrar. El mapa de viajes no se ve afectado.</string>
+
+    <!-- Summary card -->
+    <string name="visa_summary_visa_free_of">"  de %1$d lugares sin visado"</string>
+    <string name="visa_summary_easy">Accesibles sin cita en la embajada: %1$d</string>
+    <string name="visa_summary_disclaimer_short">Datos a fecha de %1$s: verifícalos antes de reservar</string>
+    <string name="visa_summary_info_label">Mostrar fuentes de datos y aviso legal</string>
+    <string name="visa_summary_info_title">Sobre los datos de visado</string>
+    <string name="visa_legend_item">%1$s %2$d</string>
+    <string name="visa_dataset_credit">%1$s · %2$s</string>
+    <string name="visa_licence_link">Licencia</string>
+    <string name="visa_source_link">Fuente: artículo de %1$s</string>
+    <string name="visa_correction">%1$s dice «%2$s»; corregido aquí</string>
+
+    <!-- Passport picker -->
+    <string name="picker_choose_passport">Elegir pasaporte</string>
+    <string name="picker_search">Buscar</string>
+</resources>

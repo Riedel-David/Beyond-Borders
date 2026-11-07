@@ -61,8 +61,11 @@ data class Place(
      * initial past Z — Åland Islands landed after Zimbabwe, Türkiye after Tuvalu, São
      * Tomé and Príncipe after Syria. Folding first fixes the order and the section
      * letter together, since both now come off the same string.
+     *
+     * Latin diacritics are folded, but Cyrillic letters keep their identity (see
+     * [foldForSort]) so Ukrainian І/Ї/Є/Ґ and Й sort and file as letters of their own.
      */
-    val sortKey: String = name.foldForSearch()
+    val sortKey: String = name.foldForSort()
 }
 
 data class Bounds(
@@ -81,6 +84,47 @@ fun String.foldForSearch(): String =
         .replace(DIACRITICS, "")
 
 private val DIACRITICS = "\\p{Mn}+".toRegex()
+
+/**
+ * The Cyrillic letters we order, in one merged Russian + Ukrainian alphabet. The two
+ * languages never disagree on relative order: the letters only one of them has (ё ъ ы э
+ * for Russian, ґ є і ї for Ukrainian) never compete for the same slot, and shared й sits
+ * after и/ї and before к in both.
+ */
+private const val CYRILLIC_ORDER = "абвгґдеёєжзиіїйклмнопрстуфхцчшщъыьэюя"
+private const val CYRILLIC_BASE = 0xE000
+
+/**
+ * Like [foldForSearch] for Latin, but each letter in [CYRILLIC_ORDER] becomes a private-use
+ * code point in alphabet order, so plain string comparison orders it correctly and
+ * [sortInitial] can recover the letter. Folding would turn Й into И and Ї into І, and
+ * code-unit order puts Є/І/Ї/Ґ after Я.
+ */
+internal fun String.foldForSort(): String {
+    val nfc = java.text.Normalizer.normalize(lowercase(), java.text.Normalizer.Form.NFC)
+    val out = StringBuilder(nfc.length)
+    val latin = StringBuilder()
+    fun flush() {
+        if (latin.isNotEmpty()) { out.append(latin.toString().foldForSearch()); latin.setLength(0) }
+    }
+    for (c in nfc) {
+        val i = CYRILLIC_ORDER.indexOf(c)
+        if (i >= 0) { flush(); out.append((CYRILLIC_BASE + i).toChar()) } else latin.append(c)
+    }
+    flush()
+    return out.toString()
+}
+
+/** The section letter for a [Place.sortKey]; ё files under Е, other Cyrillic letters keep their own. */
+internal fun sortInitial(sortKey: String): String {
+    val c = sortKey.firstOrNull() ?: return ""
+    val i = c.code - CYRILLIC_BASE
+    if (i in CYRILLIC_ORDER.indices) {
+        val letter = CYRILLIC_ORDER[i]
+        return (if (letter == '\u0451') '\u0435' else letter).toString().uppercase()
+    }
+    return sortKey.take(1).uppercase()
+}
 
 /**
  * Swaps [Place.name] and [Place.sovereign] for the platform's wording in [locale].
@@ -118,10 +162,12 @@ internal fun localizePlaces(
 
 /**
  * Languages the app localizes place names for. Not every platform language: the
- * bundled map glyphs cover Latin only (code points 0-511), so Japanese, Russian or
- * Arabic names would render as blanks. Grows together with the glyph set.
+ * bundled map glyphs (`assets/glyphs`, ranges listed in `tools/glyphs/README.md`) cover
+ * Latin, Cyrillic and general punctuation, so Japanese or Arabic names would render as
+ * blanks. Grows together with the glyph set; a test checks every name in every language
+ * listed here against the shipped ranges.
  */
-internal val LOCALIZED_LANGUAGES = setOf("de")
+internal val LOCALIZED_LANGUAGES = setOf("de", "es", "fr", "pt", "uk", "ru")
 
 /**
  * Sovereign strings in the bundled data that are not any place's English name

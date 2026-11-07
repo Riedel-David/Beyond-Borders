@@ -14,7 +14,7 @@ android {
     // Only the languages the app ships: keeps appcompat/Material/MapLibre's other
     // translations out of the APK, and matches res/xml/locales_config.xml.
     androidResources {
-        localeFilters += listOf("en", "de")
+        localeFilters += listOf("en", "de", "es", "fr", "pt", "uk", "ru")
     }
 
     defaultConfig {
