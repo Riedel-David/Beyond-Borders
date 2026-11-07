@@ -324,6 +324,10 @@ fun SettingsScreen(
                 AppLanguage.ENGLISH -> "English"
                 AppLanguage.GERMAN -> "Deutsch"
                 AppLanguage.SPANISH -> "Español"
+                AppLanguage.FRENCH -> "Français"
+                AppLanguage.PORTUGUESE -> "Português"
+                AppLanguage.UKRAINIAN -> "Українська"
+                AppLanguage.RUSSIAN -> "Русский"
             }
             var showLanguageMenu by remember { mutableStateOf(false) }
             ValueRow(
@@ -344,6 +348,10 @@ fun SettingsScreen(
                                     AppLanguage.ENGLISH -> "English"
                                     AppLanguage.GERMAN -> "Deutsch"
                                     AppLanguage.SPANISH -> "Español"
+                                    AppLanguage.FRENCH -> "Français"
+                                    AppLanguage.PORTUGUESE -> "Português"
+                                    AppLanguage.UKRAINIAN -> "Українська"
+                                    AppLanguage.RUSSIAN -> "Русский"
                                 }
                                 Row(
                                     Modifier

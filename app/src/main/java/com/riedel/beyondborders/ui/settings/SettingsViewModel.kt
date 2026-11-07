@@ -499,7 +499,11 @@ internal enum class AppLanguage(val tag: String) {
     SYSTEM(""),
     ENGLISH("en"),
     GERMAN("de"),
-    SPANISH("es");
+    SPANISH("es"),
+    FRENCH("fr"),
+    PORTUGUESE("pt"), // Brazilian wording; one values-pt for every Portuguese locale
+    UKRAINIAN("uk"),
+    RUSSIAN("ru");
 
     companion object {
         /**

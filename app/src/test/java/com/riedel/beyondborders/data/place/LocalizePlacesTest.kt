@@ -111,7 +111,7 @@ class LocalizePlacesTest {
 
     @Test
     fun `languages the map glyphs cannot draw keep the english names`() {
-        for (tag in listOf("ja", "ru", "ar", "fr")) {
+        for (tag in listOf("ja", "ar", "ko", "zh")) {
             assertEquals(places, localizePlaces(places, Locale.forLanguageTag(tag), lookup))
         }
     }

@@ -46,10 +46,18 @@ class StringParityTest {
      * Adding a language is one entry here (plus its [sameAsEnglish] set) and a values-xx
      * directory; every check below runs per tag.
      */
-    private val translations: Map<String, Map<String, Entry>> = listOf("de", "es").associateWith { load("values-$it") }
+    /** Every values-xx directory with strings, so a new language needs no edit here. */
+    private fun translationTags(): List<String> =
+        File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}")) && f.name != "values-night" }!!
+            .map { it.name.removePrefix("values-") }.sorted()
+
+    private val translations: Map<String, Map<String, Entry>> = translationTags().associateWith { load("values-$it") }
 
     /** Quantities beyond one/other that a language's CLDR rules use; lint demands them only when the app needs them. */
-    private val extraQuantities = mapOf("de" to emptySet<String>(), "es" to setOf("many"))
+    private val extraQuantities = mapOf(
+        "de" to emptySet<String>(), "es" to setOf("many"), "fr" to setOf("many"), "pt" to setOf("many"),
+        "uk" to setOf("few", "many"), "ru" to setOf("few", "many"),
+    )
 
     private fun placeholders(s: String): List<String> =
         Regex("%(\\d+\\$)?[sd]").findAll(s).map { it.value }.sorted().toList()
@@ -132,7 +140,7 @@ class StringParityTest {
 
     @Test
     fun `no translated string is identical to english outside the allow list`() = forEachLanguage { tag, tr ->
-        val allowed = sameEverywhere + (sameInLanguage[tag] ?: error("no sameInLanguage entry for $tag"))
+        val allowed = sameEverywhere + (sameInLanguage[tag] ?: emptySet())
         val same = mutableListOf<String>()
         for ((k, g) in tr) {
             val e = en[k] ?: continue

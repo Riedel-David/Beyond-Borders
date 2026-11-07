@@ -122,7 +122,7 @@ internal fun localizePlaces(
  * incl. ä ö ü ß á é í ó ú ñ, all sit inside it), so Japanese, Russian or
  * Arabic names would render as blanks. Grows together with the glyph set.
  */
-internal val LOCALIZED_LANGUAGES = setOf("de", "es")
+internal val LOCALIZED_LANGUAGES = setOf("de", "es", "fr", "pt")
 
 /**
  * Sovereign strings in the bundled data that are not any place's English name
