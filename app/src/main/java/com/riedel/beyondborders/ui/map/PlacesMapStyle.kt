@@ -50,7 +50,7 @@ internal object PlacesMapStyle {
     const val LAYER_LABELS = "places-labels"
     const val LAYER_LABELS_ON_MARKED = "places-labels-on-marked"
 
-    /** Latin-only SDF ranges bundled at assets/glyphs; see [GLYPHS_ASSET]. */
+    /** Latin and Cyrillic SDF ranges (U+0000-U+04FF) bundled at assets/glyphs; see [GLYPHS_ASSET]. */
     private const val LABEL_FONT = "Noto Sans Regular"
 
     /**
