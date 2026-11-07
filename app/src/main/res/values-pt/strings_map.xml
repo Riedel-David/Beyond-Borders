@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Brazilian Portuguese draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Map: share feedback -->
+    <string name="map_share_failed">Não foi possível compartilhar o mapa</string>
+    <string name="map_share_retry">Tentar de novo</string>
+    <string name="map_not_ready">O mapa ainda não está pronto</string>
+    <string name="map_share_action">Compartilhar</string>
+    <string name="map_share_style_title">Estilo</string>
+    <string name="map_share_cancel">Cancelar</string>
+    <string name="map_description">Mapa-múndi. Toque em um país ou território para selecioná-lo.</string>
+
+    <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Visitei</string>
+    <string name="map_legend_short_lived">Morei</string>
+    <string name="map_legend_short_wanted">Quero</string>
+    <string name="map_legend_chip">%1$s %2$d</string>
+    <string name="map_legend_nudge">Toque em um lugar para marcá-lo</string>
+    <string name="map_legend_visited">%1$d visitados</string>
+    <string name="map_legend_lived">%1$d onde morou</string>
+    <string name="map_legend_wishlisted">%1$d na lista de desejos</string>
+    <string name="map_legend_no_data">%1$d sem dados</string>
+    <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
+    <string name="map_legend_count_labeled">%1$d %2$s</string>
+    <!-- Joins two spoken legend phrases. -->
+    <string name="map_join_comma">%1$s, %2$s</string>
+
+    <!-- Map: visa legend -->
+    <string name="map_visa_legend_none">Sem dados de visto</string>
+    <string name="map_visa_legend_free">%1$d sem visto</string>
+    <string name="map_visa_summary_none_second">Lente de vistos: sem dados de visto para seus passaportes</string>
+    <string name="map_visa_summary_none_single">Lente de vistos: sem dados de visto para este passaporte</string>
+    <plurals name="map_visa_summary">
+        <item quantity="one">Lente de vistos: %1$d categoria exibida, %2$d sem visto</item>
+        <item quantity="many">Lente de vistos: %1$d categorias exibidas, %2$d sem visto</item>
+        <item quantity="other">Lente de vistos: %1$d categorias exibidas, %2$d sem visto</item>
+    </plurals>
+
+    <!-- Map: region legend and card -->
+    <string name="map_region_legend_official">Cada cor é uma região; mais intensa = mais visitada</string>
+    <string name="map_region_legend_informal">Cada cor é um grupo; mais intensa = mais visitado</string>
+    <string name="map_region_done_official">%1$d de %2$d regiões concluídas</string>
+    <string name="map_region_done_informal">%1$d de %2$d grupos concluídos</string>
+    <string name="map_region_card_done">%1$d / %2$d concluídos</string>
+
+    <!-- Map: controls -->
+    <string name="map_controls_hide">Ocultar controles do mapa</string>
+    <string name="map_controls_show">Mostrar controles do mapa</string>
+    <string name="map_search_open">Buscar</string>
+    <string name="map_search_label">Encontrar um lugar</string>
+    <string name="map_search_no_matches">Nenhum resultado</string>
+    <string name="map_lens_visa">Visto</string>
+    <string name="map_regions_off">Regiões</string>
+    <string name="map_regions_official">Regiões: ONU</string>
+    <string name="map_regions_informal">Regiões: nomeadas</string>
+
+    <!-- Map: selected place card -->
+    <string name="map_no_data_either">Não há dados para nenhum dos passaportes — consulte as fontes oficiais antes de viajar.</string>
+    <string name="map_no_data_this">Não há dados para este passaporte — consulte as fontes oficiais antes de viajar.</string>
+    <string name="map_chip_been">Visitei</string>
+    <string name="map_chip_lived">Morei</string>
+    <string name="map_chip_want">Quero ir</string>
+
+    <!-- Share cards (drawn onto a canvas) -->
+    <string name="share_style_bar_label">Barra de legenda</string>
+    <string name="share_style_bar_blurb">Logo e números na parte de baixo</string>
+    <string name="share_style_stamp_label">Selo no canto</string>
+    <string name="share_style_stamp_blurb">Selo compacto no canto superior esquerdo</string>
+    <string name="share_style_stats_label">Cartão de números</string>
+    <string name="share_style_stats_blurb">Só os números, sem mapa</string>
+    <string name="share_of_the_world_caps">DO MUNDO</string>
+    <string name="share_of_the_world">do mundo</string>
+    <string name="share_stamp">%1$d%% · %2$d/%3$d</string>
+    <plurals name="share_detail">
+        <item quantity="one">%1$d de %2$d · %3$d continente</item>
+        <item quantity="many">%1$d de %2$d · %3$d continentes</item>
+        <item quantity="other">%1$d de %2$d · %3$d continentes</item>
+    </plurals>
+    <string name="share_tile_places_been">VISITADOS</string>
+    <string name="share_tile_continents">CONTINENTES</string>
+    <string name="share_tile_lived">VIVIDOS</string>
+    <string name="share_tile_wishlist">DESEJADOS</string>
+
+    <!-- Passport filters and stats lines built in PlacesViewModel -->
+    <string name="places_filter_all">Todos</string>
+    <string name="places_filter_been">Visitei</string>
+    <string name="places_filter_lived">Morei</string>
+    <string name="places_filter_want">Quero ir</string>
+    <string name="places_filter_none">Ainda não</string>
+    <string name="places_mode_travel">Onde já estive</string>
+    <string name="places_mode_visa">Aonde posso ir</string>
+    <string name="places_visa_filter_all">Todos</string>
+    <string name="places_visa_filter_easy">Sem embaixada</string>
+    <string name="places_visa_filter_wishlist_easy">Desejados, fáceis</string>
+    <string name="places_visa_filter_long_stay">90+ dias</string>
+    <string name="places_section_uninhabited">Desabitados</string>
+    <plurals name="places_nudge">
+        <item quantity="one">%1$d lugar para concluir %2$s</item>
+        <item quantity="many">%1$d lugares para concluir %2$s</item>
+        <item quantity="other">%1$d lugares para concluir %2$s</item>
+    </plurals>
+    <string name="places_least_covered">%1$s: %2$d de %3$d</string>
+    <plurals name="places_wishlist_easy">
+        <item quantity="one">%1$d de %2$d lugares desejados dispensa embaixada</item>
+        <item quantity="many">%1$d de %2$d lugares desejados dispensa embaixada</item>
+        <item quantity="other">%1$d de %2$d lugares desejados dispensam embaixada</item>
+    </plurals>
+    <string name="places_coverage">%1$d%% da área terrestre do mundo, %2$d%% da população</string>
+
+    <!-- Widget configuration screen -->
+    <string name="widget_label_places_been">VISITADOS</string>
+    <string name="widget_label_of_the_world">DO MUNDO</string>
+    <string name="widget_label_continents">CONTINENTES</string>
+    <string name="widget_cfg_metric_title">O que o widget deve mostrar?</string>
+    <string name="widget_cfg_metric_countries">Países</string>
+    <string name="widget_cfg_metric_percent">Porcentagem</string>
+    <string name="widget_cfg_metric_continents">Continentes</string>
+    <string name="widget_cfg_target_title">Ao tocar no widget, abre</string>
+    <string name="widget_cfg_target_map">Mapa</string>
+    <string name="widget_cfg_target_passport">Passaporte</string>
+    <string name="widget_cfg_target_stats">Estatísticas</string>
+    <string name="widget_cfg_background_title">Fundo do cartão</string>
+    <string name="widget_cfg_background_filled">Preenchido</string>
+    <string name="widget_cfg_background_transparent">Transparente</string>
+    <string name="widget_cfg_preview_title">Tamanho da prévia</string>
+    <string name="widget_cfg_add">Adicionar widget</string>
+</resources>
