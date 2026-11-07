@@ -43,10 +43,10 @@ class StringParityTest {
     private val en = load("values")
 
     /**
-     * Adding a language is one entry here (plus its [sameAsEnglish] set) and a values-xx
-     * directory; every check below runs per tag.
+     * Every values-xx directory with strings, so a new language needs a directory plus an
+     * [extraQuantities] entry (its CLDR plural forms beyond one/other) and, only if some
+     * of its strings are legitimately identical to English, a [sameInLanguage] entry.
      */
-    /** Every values-xx directory with strings, so a new language needs no edit here. */
     private fun translationTags(): List<String> =
         File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}")) && f.name != "values-night" }!!
             .map { it.name.removePrefix("values-") }.sorted()
