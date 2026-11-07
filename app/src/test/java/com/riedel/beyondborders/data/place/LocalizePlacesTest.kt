@@ -56,6 +56,18 @@ class LocalizePlacesTest {
     }
 
     @Test
+    fun `russian and ukrainian names replace the english ones now the glyphs cover cyrillic`() {
+        val names = mapOf("ru" to "Германия", "uk" to "Німеччина")
+        for ((tag, expected) in names) {
+            val byCode = localizePlaces(places, Locale.forLanguageTag(tag), { c, _ -> if (c == "DE") expected else null })
+                .associateBy { it.code }
+            assertEquals(expected, byCode.getValue("DE").name)
+            assertEquals("Germany", byCode.getValue("DE").englishName)
+            assertEquals("Egypt", byCode.getValue("EG").name)
+        }
+    }
+
+    @Test
     fun `private XA to XZ codes keep the english name even if the lookup answers`() {
         assertEquals("Kosovo", localizePlaces(places, german, lookup).first { it.code == "XK" }.name)
     }
