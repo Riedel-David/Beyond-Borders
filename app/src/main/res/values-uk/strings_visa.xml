@@ -4,7 +4,7 @@
     <!-- Requirement categories (list headers, summaries, filters) -->
     <string name="visa_category_home">Батьківщина</string>
     <string name="visa_category_visa_free">Без візи</string>
-    <string name="visa_category_eta">Електронний дозвіл на поїздку</string>
+    <string name="visa_category_eta">Дозвіл на поїздку</string>
     <string name="visa_category_visa_on_arrival">Віза по прибутті</string>
     <string name="visa_category_e_visa">е-віза</string>
     <string name="visa_category_visa_required">Потрібна віза</string>
@@ -17,14 +17,14 @@
     <string name="visa_band_eta">е-квиток/ETA</string>
     <string name="visa_band_visa_on_arrival">По прибутті</string>
     <string name="visa_band_visa_required">Спершу віза</string>
-    <string name="visa_band_check">Перевір</string>
+    <string name="visa_band_check">Уточнити</string>
     <string name="visa_band_closed">Закрито</string>
     <string name="visa_band_no_data">Немає даних</string>
 
     <!-- Confidence of curated entries -->
-    <string name="visa_confidence_high">Підтверджено</string>
+    <string name="visa_confidence_high">Надійні дані</string>
     <string name="visa_confidence_medium">Імовірно правильно, подробиці можуть відрізнятися</string>
-    <string name="visa_confidence_low">Не певно: перевір перед бронюванням</string>
+    <string name="visa_confidence_low">Дані неточні — перевір перед бронюванням</string>
 
     <plurals name="visa_days">
         <item quantity="one">%d день</item>
@@ -35,7 +35,7 @@
 
     <!-- Summary line: category and day count, then optional passport attribution -->
     <string name="visa_summary_with_days">%1$s · %2$s</string>
-    <string name="visa_summary_with_passport">%1$s (паспорт: %2$s)</string>
+    <string name="visa_summary_with_passport">%1$s (%2$s паспорт)</string>
     <string name="visa_row_been">%1$s · відвідано</string>
     <string name="visa_row_wishlist">%1$s · у списку бажань</string>
     <string name="visa_row_check">перевір</string>
@@ -44,8 +44,8 @@
     <string name="visa_adjective_de">німецький</string>
     <string name="visa_adjective_gb">британський</string>
 
-    <string name="visa_as_of_notice">Дані станом на %1$s (паспорт: %2$s): перевір в офіційному урядовому джерелі перед бронюванням</string>
-    <string name="visa_as_of_notice_two">Дані станом на %1$s (паспорти: %2$s та %3$s): перевір в офіційному урядовому джерелі перед бронюванням</string>
+    <string name="visa_as_of_notice">Дані станом на %1$s (%2$s паспорт) — перевір в офіційному урядовому джерелі перед бронюванням</string>
+    <string name="visa_as_of_notice_two">Дані станом на %1$s (%2$s і %3$s паспорти) — перевір в офіційному урядовому джерелі перед бронюванням</string>
 
     <string name="visa_official_link">Рекомендації міністерства закордонних справ</string>
     <string name="visa_official_link_for">Рекомендації міністерства закордонних справ: %1$s</string>
@@ -58,10 +58,10 @@
     <string name="visa_empty_filter">Жоден напрямок не відповідає фільтру «%1$s».</string>
     <string name="visa_empty_nothing">Нічого не знайдено.</string>
     <string name="visa_unavailable_title">Немає візових даних</string>
-    <string name="visa_unavailable_body">Не вдалося прочитати вбудований список віз, тому в цьому режимі нічого показати. Карта подорожей не постраждала.</string>
+    <string name="visa_unavailable_body">Не вдалося прочитати вбудований список віз, тому в цьому режимі немає що показати. Карта подорожей не постраждала.</string>
 
     <!-- Summary card -->
-    <string name="visa_summary_visa_free_of">"  із %1$d місць без візи"</string>
+    <string name="visa_summary_visa_free_of">"  без візи (усього %1$d)"</string>
     <string name="visa_summary_easy">Доступно без запису в посольство: %1$d</string>
     <string name="visa_summary_disclaimer_short">Дані станом на %1$s: перевір перед бронюванням</string>
     <string name="visa_summary_info_label">Показати джерела даних і застереження</string>

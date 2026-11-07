@@ -39,9 +39,9 @@
 
     <!-- Map: region legend and card -->
     <string name="map_region_legend_official">Кожен колір — регіон; насиченіший = більше відвідано</string>
-    <string name="map_region_legend_informal">Кожен колір — угруповання; насиченіший = більше відвідано</string>
+    <string name="map_region_legend_informal">Кожен колір — група країн; насиченіший = більше відвідано</string>
     <string name="map_region_done_official">Завершено регіонів: %1$d із %2$d</string>
-    <string name="map_region_done_informal">Завершено угруповань: %1$d із %2$d</string>
+    <string name="map_region_done_informal">Завершено груп: %1$d із %2$d</string>
     <string name="map_region_card_done">Завершено: %1$d / %2$d</string>
 
     <!-- Map: controls -->
@@ -53,7 +53,7 @@
     <string name="map_lens_visa">Візи</string>
     <string name="map_regions_off">Регіони</string>
     <string name="map_regions_official">Регіони: ООН</string>
-    <string name="map_regions_informal">Регіони: за назвою</string>
+    <string name="map_regions_informal">Регіони: неофіційні</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Немає даних ні для одного з паспортів — перевір офіційні джерела перед поїздкою.</string>
@@ -63,7 +63,7 @@
     <string name="map_chip_want">Хочу</string>
 
     <!-- Share cards (drawn onto a canvas) -->
-    <string name="share_style_bar_label">Рядок підпису</string>
+    <string name="share_style_bar_label">Смуга з підписом</string>
     <string name="share_style_bar_blurb">Логотип і статистика внизу</string>
     <string name="share_style_stamp_label">Значок у куті</string>
     <string name="share_style_stamp_blurb">Компактний значок угорі ліворуч</string>
@@ -93,7 +93,7 @@
     <string name="places_mode_visa">Куди я можу поїхати</string>
     <string name="places_visa_filter_all">Усі</string>
     <string name="places_visa_filter_easy">Без посольства</string>
-    <string name="places_visa_filter_wishlist_easy">Бажані, легко</string>
+    <string name="places_visa_filter_wishlist_easy">Легкі з бажаних</string>
     <string name="places_visa_filter_long_stay">90+ днів</string>
     <string name="places_section_uninhabited">Безлюдні</string>
     <plurals name="places_nudge">
@@ -109,7 +109,7 @@
         <item quantity="many">Для %1$d із %2$d місць у твоєму списку бажань посольство не потрібне</item>
         <item quantity="other">Для %1$d із %2$d місця у твоєму списку бажань посольство не потрібне</item>
     </plurals>
-    <string name="places_coverage">%1$d%% площі суходолу світу, %2$d%% його населення</string>
+    <string name="places_coverage">%1$d%% суходолу планети та %2$d%% населення світу</string>
 
     <!-- Widget configuration screen -->
     <string name="widget_label_places_been">ВІДВІДАНО</string>
@@ -124,8 +124,8 @@
     <string name="widget_cfg_target_passport">Паспорт</string>
     <string name="widget_cfg_target_stats">Статистику</string>
     <string name="widget_cfg_background_title">Тло картки</string>
-    <string name="widget_cfg_background_filled">Заливка</string>
+    <string name="widget_cfg_background_filled">Суцільне</string>
     <string name="widget_cfg_background_transparent">Прозоре</string>
-    <string name="widget_cfg_preview_title">Розмір попереднього перегляду</string>
+    <string name="widget_cfg_preview_title">Розмір зразка</string>
     <string name="widget_cfg_add">Додати віджет</string>
 </resources>

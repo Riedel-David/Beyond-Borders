@@ -8,9 +8,9 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Познач на карті місця, де вже побувано, де прожито або куди хочеться потрапити. На ній усі %1$d місць, а не лише %2$d країн ООН.</string>
-    <string name="welcome_intro_bare">Познач місця, де вже побувано, де прожито або куди хочеться потрапити.</string>
-    <string name="welcome_privacy">Усе, що ти позначаєш, ніколи не надсилається нам. Жодного облікового запису, сервера чи мережі — резервну копію можна експортувати самому будь-коли. (Власне резервне копіювання Android усе одно може її охопити, якщо воно ввімкнене.)</string>
+    <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Тут усі місця світу (%1$d), а не лише країни ООН (%2$d).</string>
+    <string name="welcome_intro_bare">Познач, де вже вдалося побувати, де довелося жити і куди мрієш поїхати.</string>
+    <string name="welcome_privacy">Ми ніколи не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису, сервера чи мережі — резервну копію можна будь-коли експортувати самостійно. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
     <string name="welcome_passport_hint">Візові вимоги показано для одного паспорта за раз. Обери свій — згодом його можна змінити в налаштуваннях.</string>
     <string name="welcome_get_started">Почати</string>
 
@@ -23,7 +23,7 @@
     <string name="recovery_saved">Збережено.</string>
     <string name="recovery_save_failed">Не вдалося зберегти: %1$s</string>
     <string name="recovery_open_failed">Не вдалося відкрити вибраний файл.</string>
-    <string name="recovery_wipe_failed">Не вдалося видалити дані. Нічого не змінилося так, щоб на це можна було покластися; спробуй ще раз або очисть сховище застосунку в налаштуваннях Android.</string>
+    <string name="recovery_wipe_failed">Не вдалося видалити дані. Можливо, частину змінено, але покладатися на це не варто; спробуй ще раз або очисть сховище застосунку в налаштуваннях Android.</string>
     <string name="recovery_delete_start_fresh">Видалити дані й почати з нуля</string>
     <string name="recovery_confirm_title">Видалити все, що позначено?</string>
     <string name="recovery_confirm_saved">Копію збережено, тож дані можна буде прочитати пізніше. Усі позначені місця зникнуть із самого застосунку.</string>
@@ -38,7 +38,7 @@
     <string name="settings_theme_system">Системна</string>
     <string name="settings_theme_light">Світла</string>
     <string name="settings_theme_dark">Темна</string>
-    <string name="settings_pure_black">Суто чорна</string>
+    <string name="settings_pure_black">Повністю чорна</string>
     <string name="settings_pure_black_detail">Для OLED-екранів</string>
 
     <!-- Language -->
@@ -73,7 +73,7 @@
     <string name="settings_counting_title">Підрахунок місць</string>
     <string name="settings_counting_detail">З чим порівнює лічильник у вкладці «Паспорт».</string>
     <string name="settings_denominator_all">Усі %1$d</string>
-    <string name="settings_denominator_un">%1$d в ООН</string>
+    <string name="settings_denominator_un">ООН: %1$d</string>
     <string name="settings_denominator_all_bare">Усі</string>
     <string name="settings_denominator_un_bare">ООН</string>
     <string name="settings_denominator_inhabited">Населені</string>
@@ -89,7 +89,7 @@
     <string name="settings_import">Імпорт</string>
     <string name="settings_data_detail">Файл JSON, який можна зберігати де завгодно. Під час імпорту залишається новіший запис.</string>
     <string name="settings_restore_button">Відновити з резервної копії Android</string>
-    <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення зливає його з поточними даними, так само як імпорт файлу.</string>
+    <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення обʼєднує його з поточними даними, так само як імпорт файлу.</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Скасувати</string>
 
@@ -131,7 +131,7 @@
     <string name="settings_about_version">BeyondBorders %1$s</string>
     <string name="settings_about_open_source">Відкритий код (GPL-3.0)</string>
     <string name="settings_about_data_title">Про дані</string>
-    <string name="settings_about_disclaimer">Незалежний застосунок, не повʼязаний з жодним урядом і не представляє його. Візові дані — це знімок, і вони можуть застаріти: перед поїздкою підтверди правила вʼїзду в офіційному урядовому джерелі.</string>
+    <string name="settings_about_disclaimer">Незалежний застосунок: не повʼязаний із жодним урядом і не представляє жодного з них. Візові дані — це знімок, і вони можуть застаріти: перед поїздкою підтверди правила вʼїзду в офіційному урядовому джерелі.</string>
     <string name="settings_about_map_title">Дані карти</string>
     <string name="settings_about_map">Кордони з Natural Earth (суспільне надбання), відображені за допомогою MapLibre. Уся карта вбудована в застосунок, тож працює без мережі й облікового запису.</string>
     <string name="settings_about_backup_title">Резервні копії</string>

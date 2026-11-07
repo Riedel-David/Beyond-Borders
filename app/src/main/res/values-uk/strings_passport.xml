@@ -24,7 +24,7 @@
     <string name="passport_no_match_query">Жодне місце не відповідає запиту «%1$s».</string>
     <string name="passport_no_match_filter">Жодне місце не відповідає фільтру «%1$s».</string>
     <string name="passport_nothing_matches">Нічого не знайдено.</string>
-    <string name="passport_card_action">Переглянути континенти, регіони й угруповання</string>
+    <string name="passport_card_action">Переглянути континенти, регіони й групи країн</string>
     <plurals name="passport_card_total">
         <item quantity="one">із %1$d місця · %2$d%%</item>
         <item quantity="few">із %1$d місць · %2$d%%</item>
@@ -47,10 +47,10 @@
     <string name="stats_continents_info_label">Показати довідку про смуги континентів</string>
     <string name="stats_continents_info">Утримуй смугу, щоб побачити, яких місць ще бракує.</string>
     <string name="stats_regions">Регіони</string>
-    <string name="stats_named_groupings">Іменовані угруповання</string>
+    <string name="stats_named_groupings">Групи країн</string>
     <string name="stats_least_covered">Найменше охоплено</string>
-    <string name="stats_next_up">Далі</string>
-    <string name="stats_show_all_groupings">Показати всі угруповання</string>
+    <string name="stats_next_up">Наступні цілі</string>
+    <string name="stats_show_all_groupings">Показати всі групи країн</string>
     <string name="stats_collapse">Згорнути</string>
     <string name="stats_expand">Розгорнути</string>
     <string name="stats_bar_details">Показати подробиці: %1$s</string>
@@ -72,11 +72,11 @@
         <item quantity="many">Розблоковано %1$d із %2$d значків</item>
         <item quantity="other">Розблоковано %1$d із %2$d значка</item>
     </plurals>
-    <string name="stats_hero_description">Відвідано %2$d із %3$d місць (%1$d%%). Ранг: %4$s. %5$s. %6$s.</string>
+    <string name="stats_hero_description">Відвідано %2$d із %3$d (%1$d%%). Ранг: %4$s. %5$s. %6$s.</string>
 
     <!-- Traveller ranks -->
     <string name="rank_newcomer">Новачок</string>
-    <string name="rank_wanderer">Мандрівник</string>
+    <string name="rank_wanderer">Подорожній</string>
     <string name="rank_explorer">Дослідник</string>
     <string name="rank_adventurer">Шукач пригод</string>
     <string name="rank_globetrotter">Глобтротер</string>
@@ -94,7 +94,7 @@
     <string name="badge_group_header">%1$s · %2$d із %3$d</string>
     <string name="badge_show_details">Показати подробиці</string>
     <string name="badge_unlocked">Розблоковано</string>
-    <string name="badge_new">НОВЕ</string>
+    <string name="badge_new">НОВИЙ</string>
     <string name="badge_progress_of">%1$d із %2$d</string>
     <string name="badge_spoken_unlocked">%1$s, розблоковано. %2$s</string>
     <string name="badge_spoken_new">%1$s, щойно розблоковано. %2$s</string>
@@ -116,7 +116,7 @@
     <string name="badge_group_counts">Місця</string>
     <string name="badge_group_continents">Континенти</string>
     <string name="badge_group_regions">Регіони</string>
-    <string name="badge_group_groups">Іменовані угруповання</string>
+    <string name="badge_group_groups">Групи країн</string>
     <string name="badge_group_dependencies">Території</string>
     <string name="badge_group_non_un">Поза ООН</string>
     <string name="badge_group_tiny">Крихітні місця</string>
@@ -126,7 +126,7 @@
     <string name="badge_group_wishlist">Список бажань</string>
 
     <!-- Badge titles and descriptions -->
-    <string name="badge_count_1_title">Перша печатка</string>
+    <string name="badge_count_1_title">Перший штамп</string>
     <string name="badge_count_1_desc">Познач своє перше відвідане місце.</string>
     <plurals name="badge_count_n_title">
         <item quantity="one">%1$d місце</item>
@@ -152,10 +152,10 @@
         <item quantity="many">Побувай на %1$d континентах.</item>
         <item quantity="other">Побувай на %1$d континенту.</item>
     </plurals>
-    <string name="badge_continent_complete_title">Повністю: %1$s</string>
-    <string name="badge_continent_complete_desc">Побувай в усіх населених місцях: %1$s.</string>
+    <string name="badge_continent_complete_title">Уся %1$s</string>
+    <string name="badge_continent_complete_desc">%1$s: побувай в усіх населених місцях.</string>
     <string name="badge_region_desc">Побувай в усіх населених місцях регіону «%1$s» (усього %2$d).</string>
-    <string name="badge_group_desc">Побувай в усіх населених місцях угруповання «%1$s»: %2$s.</string>
+    <string name="badge_group_desc">Побувай в усіх населених місцях групи «%1$s»: %2$s.</string>
     <plurals name="badge_dependencies_title">
         <item quantity="one">%1$d територія</item>
         <item quantity="few">%1$d території</item>

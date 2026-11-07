@@ -45,6 +45,6 @@
     <string name="geo_group_maghreb">Магриб</string>
     <string name="geo_group_horn_of_africa">Африканський Ріг</string>
     <string name="geo_group_indochina">Індокитай</string>
-    <string name="geo_group_the_stans">«-стани»</string>
+    <string name="geo_group_the_stans">Країни на «-стан»</string>
     <string name="geo_group_balkans">Балкани</string>
 </resources>
