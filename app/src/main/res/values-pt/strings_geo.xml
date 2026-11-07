@@ -46,6 +46,6 @@
     <string name="geo_group_maghreb">Magrebe</string>
     <string name="geo_group_horn_of_africa">Chifre da África</string>
     <string name="geo_group_indochina">Indochina</string>
-    <string name="geo_group_the_stans">Os países “-stão”</string>
+    <string name="geo_group_the_stans">Países “-stão”</string>
     <string name="geo_group_balkans">Bálcãs</string>
 </resources>

@@ -4,14 +4,14 @@
     <!-- Root: bottom navigation tabs -->
     <string name="root_tab_map">Mapa</string>
     <string name="root_tab_passport">Passaporte</string>
-    <string name="root_tab_settings">Ajustes</string>
+    <string name="root_tab_settings">Configurações</string>
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Marque os lugares onde você já esteve, morou ou quer ir — em um mapa com todos os %1$d, e não só os %2$d da ONU.</string>
-    <string name="welcome_intro_bare">Marque os lugares onde você já esteve, morou ou quer ir.</string>
+    <string name="welcome_intro">Marque os lugares onde você já esteve ou morou e aonde quer ir — em um mapa com todos os %1$d, e não só os %2$d da ONU.</string>
+    <string name="welcome_intro_bare">Marque os lugares onde você já esteve ou morou e aonde quer ir.</string>
     <string name="welcome_privacy">Nada do que você marca é enviado para nós. Sem conta, sem servidor, sem rede — exporte um backup quando quiser. (O backup do próprio Android ainda pode incluir esses dados, se estiver ativado.)</string>
-    <string name="welcome_passport_hint">Os requisitos de visto valem para um passaporte por vez. Escolha o seu — você pode mudar depois nos Ajustes.</string>
+    <string name="welcome_passport_hint">Os requisitos de visto valem para um passaporte por vez. Escolha o seu — você pode mudar depois nos Configurações.</string>
     <string name="welcome_get_started">Começar</string>
 
     <!-- Database recovery -->
@@ -23,7 +23,7 @@
     <string name="recovery_saved">Salvo.</string>
     <string name="recovery_save_failed">Não foi possível salvar: %1$s</string>
     <string name="recovery_open_failed">Não foi possível abrir o arquivo escolhido.</string>
-    <string name="recovery_wipe_failed">Não foi possível apagar os dados. Nada foi alterado de forma confiável; tente de novo ou limpe o armazenamento do app nos ajustes do Android.</string>
+    <string name="recovery_wipe_failed">Não foi possível apagar os dados. Os dados podem ter ficado em um estado incompleto; tente de novo ou limpe o armazenamento do app nas configurações do Android.</string>
     <string name="recovery_delete_start_fresh">Apagar os dados e começar do zero</string>
     <string name="recovery_confirm_title">Apagar tudo o que você marcou?</string>
     <string name="recovery_confirm_saved">Você salvou uma cópia, então os dados poderão ser lidos depois. Todos os lugares que você marcou sumirão do próprio app.</string>
@@ -32,7 +32,7 @@
     <string name="recovery_keep">Manter</string>
 
     <!-- Settings: sections -->
-    <string name="settings_title">Ajustes</string>
+    <string name="settings_title">Configurações</string>
     <string name="settings_appearance_title">Aparência</string>
     <string name="settings_appearance_detail">Segue o sistema, a menos que você escolha um tema.</string>
     <string name="settings_theme_system">Sistema</string>
@@ -71,7 +71,7 @@
     <string name="settings_hue_amber">Âmbar</string>
 
     <string name="settings_counting_title">Contagem de lugares</string>
-    <string name="settings_counting_detail">Em relação a quê a aba Passaporte conta.</string>
+    <string name="settings_counting_detail">A base de contagem usada na aba Passaporte.</string>
     <string name="settings_denominator_all">Todos os %1$d</string>
     <string name="settings_denominator_un">%1$d da ONU</string>
     <string name="settings_denominator_all_bare">Todos</string>
@@ -89,7 +89,7 @@
     <string name="settings_import">Importar</string>
     <string name="settings_data_detail">Um arquivo JSON que você pode guardar onde quiser. Ao importar, vale a entrada mais recente.</string>
     <string name="settings_restore_button">Restaurar do backup do Android</string>
-    <string name="settings_restore_detail">O backup do Android deixou neste celular um instantâneo do seu histórico. Restaurar mescla esses dados, exatamente como importar um arquivo.</string>
+    <string name="settings_restore_detail">O backup do Android deixou neste celular uma cópia do seu histórico. Restaurar mescla esses dados, exatamente como importar um arquivo.</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancelar</string>
 
@@ -121,18 +121,18 @@
     <string name="settings_danger_detail">Não dá para desfazer. Exporte um backup antes.</string>
     <string name="settings_delete_everything">Apagar tudo</string>
     <string name="settings_delete_confirm_title">Apagar tudo?</string>
-    <string name="settings_delete_confirm_body">Todos os lugares que você marcou, seus passaportes e suas preferências de exibição serão apagados deste celular, junto com o instantâneo que o backup do Android guarda. O Google ainda pode manter um backup anterior até o Android fazer o próximo — nos ajustes de backup do Android você pode apagá-lo agora.</string>
+    <string name="settings_delete_confirm_body">Todos os lugares que você marcou, seus passaportes e suas preferências de exibição serão apagados deste celular, junto com a cópia que o backup do Android guarda. O Google ainda pode manter um backup anterior até o Android fazer o próximo — nas configurações de backup do Android você pode apagá-lo agora.</string>
     <string name="settings_delete">Apagar</string>
 
     <string name="settings_about_title">Sobre</string>
     <string name="settings_about_version">BeyondBorders %1$s</string>
     <string name="settings_about_open_source">Código aberto (GPL-3.0)</string>
     <string name="settings_about_data_title">Sobre os dados</string>
-    <string name="settings_about_disclaimer">Um app independente, sem vínculo com nenhum governo nem representação dele. Os dados de visto são um instantâneo e podem estar desatualizados: confirme as regras de entrada na fonte oficial do governo antes de viajar.</string>
+    <string name="settings_about_disclaimer">Um app independente, sem vínculo com nenhum governo e sem representá-lo. Os dados de visto são uma cópia e podem estar desatualizados: confirme as regras de entrada na fonte oficial do governo antes de viajar.</string>
     <string name="settings_about_map_title">Dados do mapa</string>
     <string name="settings_about_map">Fronteiras do Natural Earth (domínio público), desenhadas com o MapLibre. O mapa inteiro vem no app, então funciona sem rede e sem conta.</string>
     <string name="settings_about_backup_title">Backups</string>
-    <string name="settings_about_backup">O Backup Automático do próprio Android leva um instantâneo do seu histórico para a sua conta Google — quem faz essa cópia é o sistema, o app nunca envia nada por conta própria. Um celular reinstalado ou novo começa vazio: nada volta até você tocar em Restaurar. O banco de dados, os ajustes e um identificador por instalação ficam totalmente fora do backup. Desative-o nos ajustes de backup do Android se preferir.</string>
+    <string name="settings_about_backup">O Backup Automático do próprio Android leva uma cópia do seu histórico para a sua conta Google — quem faz essa cópia é o sistema, o app nunca envia nada por conta própria. Um celular reinstalado ou novo começa vazio: nada volta até você tocar em Restaurar. O banco de dados, as configurações e um identificador por instalação ficam totalmente fora do backup. Desative-o nas configurações de backup do Android se preferir.</string>
     <string name="settings_licences_button">Licenças de código aberto</string>
 
     <!-- Licences dialog -->
@@ -162,8 +162,8 @@
         <item quantity="many">%d remoções</item>
         <item quantity="other">%d remoções</item>
     </plurals>
-    <string name="backup_saved">Salvo: %1$s.</string>
-    <string name="backup_saved_with_removals">Salvo: %1$s e %2$s.</string>
+    <string name="backup_saved">Backup salvo: %1$s.</string>
+    <string name="backup_saved_with_removals">Backup salvo: %1$s e %2$s.</string>
 
     <string name="backup_import_nothing">Nada a alterar — tudo o que está nesse arquivo já está aqui.</string>
     <plurals name="backup_imported_new">
@@ -177,8 +177,8 @@
         <item quantity="other">%d lugares atualizados importados.</item>
     </plurals>
     <!-- Both kinds at once, so there are always at least two places -->
-    <string name="backup_imported_both">%1$d lugares novos e %2$d atualizados importados.</string>
-    <string name="backup_already_current">%1$d já estavam atualizados.</string>
+    <string name="backup_imported_both">Importados: novos, %1$d; atualizados, %2$d.</string>
+    <string name="backup_already_current">Já atualizados: %1$d.</string>
     <plurals name="backup_skipped_codes">
         <item quantity="one">%1$d código desconhecido ignorado: %2$s.</item>
         <item quantity="many">%1$d códigos desconhecidos ignorados: %2$s.</item>
@@ -207,7 +207,7 @@
     <string name="backup_delete_failed">Não foi possível apagar tudo.</string>
     <string name="backup_export_failed">A exportação falhou.</string>
     <string name="backup_import_failed">A importação falhou.</string>
-    <string name="backup_snapshot_gone">Esse instantâneo não existe mais.</string>
+    <string name="backup_snapshot_gone">Essa cópia não existe mais.</string>
     <string name="backup_write_open_failed">Não foi possível abrir o arquivo para gravação.</string>
     <string name="backup_read_open_failed">Não foi possível abrir o arquivo para leitura.</string>
     <string name="backup_too_large">Esse arquivo é grande demais para ser um backup do BeyondBorders.</string>

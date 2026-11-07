@@ -6,7 +6,7 @@
     <string name="visa_category_visa_free">Sem visto</string>
     <string name="visa_category_eta">Autorização de viagem</string>
     <string name="visa_category_visa_on_arrival">Visto na chegada</string>
-    <string name="visa_category_e_visa">e-Visto</string>
+    <string name="visa_category_e_visa">Visto eletrônico</string>
     <string name="visa_category_visa_required">Visto obrigatório</string>
     <string name="visa_category_check">Verificar requisitos</string>
     <string name="visa_category_permit_required">Permissão obrigatória</string>
@@ -16,7 +16,7 @@
     <string name="visa_band_visa_free">Sem visto</string>
     <string name="visa_band_eta">e-Ticket/ETA</string>
     <string name="visa_band_visa_on_arrival">Na chegada</string>
-    <string name="visa_band_visa_required">Pedir antes</string>
+    <string name="visa_band_visa_required">Solicitar antes</string>
     <string name="visa_band_check">Verificar</string>
     <string name="visa_band_closed">Fechado</string>
     <string name="visa_band_no_data">Sem dados</string>
@@ -35,7 +35,7 @@
     <!-- Summary line: category and day count, then optional passport attribution -->
     <string name="visa_summary_with_days">%1$s · %2$s</string>
     <string name="visa_summary_with_passport">%1$s (passaporte %2$s)</string>
-    <string name="visa_row_been">%1$s · visitado</string>
+    <string name="visa_row_been">%1$s · já estive</string>
     <string name="visa_row_wishlist">%1$s · na lista de desejos</string>
     <string name="visa_row_check">verificar</string>
 
@@ -45,7 +45,7 @@
     <string name="visa_as_of_notice">Dados de %1$s (passaporte %2$s): confirme na fonte oficial do governo antes de reservar</string>
     <string name="visa_as_of_notice_two">Dados de %1$s (passaportes %2$s e %3$s): confirme na fonte oficial do governo antes de reservar</string>
 
-    <string name="visa_official_link">Orientações do Ministério das Relações Exteriores</string>
+    <string name="visa_official_link">Orientações oficiais</string>
     <string name="visa_official_link_for">Orientações do Ministério das Relações Exteriores: %1$s</string>
     <string name="visa_iata_link">IATA Travel Centre (busque lá)</string>
 
@@ -68,7 +68,7 @@
     <string name="visa_dataset_credit">%1$s · %2$s</string>
     <string name="visa_licence_link">Licença</string>
     <string name="visa_source_link">Fonte: artigo %1$s</string>
-    <string name="visa_correction">%1$s diz \"%2$s\" — corrigido aqui</string>
+    <string name="visa_correction">%1$s diz “%2$s” — corrigido aqui</string>
 
     <!-- Passport picker -->
     <string name="picker_choose_passport">Escolha um passaporte</string>

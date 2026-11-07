@@ -12,9 +12,9 @@
     <string name="passport_chip_been">Visitei</string>
     <string name="passport_chip_lived">Morei</string>
     <string name="passport_chip_want">Quero ir</string>
-    <string name="passport_mark_been">Marcar %1$s como visitado</string>
+    <string name="passport_mark_been">Marcar %1$s como “Visitei”</string>
     <string name="passport_mark_lived">Marcar %1$s como lugar onde morei</string>
-    <string name="passport_mark_want">Marcar %1$s como desejado</string>
+    <string name="passport_mark_want">Marcar %1$s como “Quero ir”</string>
     <string name="passport_clear">Limpar</string>
     <string name="passport_clear_status">Limpar o status de %1$s</string>
     <string name="passport_status_chip_desc">%1$s, status: %2$s</string>
@@ -35,7 +35,7 @@
         <item quantity="many">%1$d de %2$d continentes</item>
         <item quantity="other">%1$d de %2$d continentes</item>
     </plurals>
-    <string name="passport_card_lived">%1$d onde morou</string>
+    <string name="passport_card_lived">%1$d onde morei</string>
     <string name="passport_card_wishlist">%1$d na lista de desejos</string>
 
     <!-- Stats screen -->
@@ -45,7 +45,7 @@
     <string name="stats_continents_info_label">Mostrar ajuda sobre as barras de continentes</string>
     <string name="stats_continents_info">Mantenha uma barra pressionada para ver quais lugares ainda faltam.</string>
     <string name="stats_regions">Regiões</string>
-    <string name="stats_named_groupings">Grupos nomeados</string>
+    <string name="stats_named_groupings">Grupos de países</string>
     <string name="stats_least_covered">Menos visitados</string>
     <string name="stats_next_up">Próximos</string>
     <string name="stats_show_all_groupings">Mostrar todos os grupos</string>
@@ -75,11 +75,11 @@
     <string name="rank_wanderer">Andarilho</string>
     <string name="rank_explorer">Explorador</string>
     <string name="rank_adventurer">Aventureiro</string>
-    <string name="rank_globetrotter">Trotamundos</string>
+    <string name="rank_globetrotter">Trota-mundos</string>
     <string name="rank_world_traveller">Viajante do mundo</string>
     <string name="rank_legend">Lenda</string>
     <string name="rank_top_reached">Nível máximo alcançado</string>
-    <string name="rank_progress">Mais %1$d para chegar a %2$s</string>
+    <string name="rank_progress">Mais %1$d para o nível %2$s</string>
 
     <!-- Badge sections and cards -->
     <string name="badge_recent">Desbloqueadas recentemente</string>
@@ -111,7 +111,7 @@
     <string name="badge_group_counts">Lugares</string>
     <string name="badge_group_continents">Continentes</string>
     <string name="badge_group_regions">Regiões</string>
-    <string name="badge_group_groups">Grupos nomeados</string>
+    <string name="badge_group_groups">Grupos de países</string>
     <string name="badge_group_dependencies">Territórios</string>
     <string name="badge_group_non_un">Além da ONU</string>
     <string name="badge_group_tiny">Lugares minúsculos</string>
@@ -143,10 +143,10 @@
         <item quantity="many">Visite algum lugar em %1$d continentes.</item>
         <item quantity="other">Visite algum lugar em %1$d continentes.</item>
     </plurals>
-    <string name="badge_continent_complete_title">Tudo em %1$s</string>
-    <string name="badge_continent_complete_desc">Visite todos os lugares habitados de %1$s.</string>
-    <string name="badge_region_desc">Visite todos os lugares habitados de %1$s (%2$d no total).</string>
-    <string name="badge_group_desc">Visite todos os lugares habitados de %1$s: %2$s.</string>
+    <string name="badge_continent_complete_title">Toda a %1$s</string>
+    <string name="badge_continent_complete_desc">Visite todos os lugares habitados da %1$s.</string>
+    <string name="badge_region_desc">Visite todos os lugares habitados da região %1$s (%2$d no total).</string>
+    <string name="badge_group_desc">Visite todos os lugares habitados do grupo %1$s: %2$s.</string>
     <plurals name="badge_dependencies_title">
         <item quantity="one">%1$d território</item>
         <item quantity="many">%1$d territórios</item>
@@ -186,9 +186,9 @@
     <string name="badge_lived_1_title">Morou no exterior</string>
     <string name="badge_lived_3_title">Morou em %1$d lugares</string>
     <plurals name="badge_lived_desc">
-        <item quantity="one">Marque %1$d lugar como lugar onde morou.</item>
-        <item quantity="many">Marque %1$d lugares como lugares onde morou.</item>
-        <item quantity="other">Marque %1$d lugares como lugares onde morou.</item>
+        <item quantity="one">Marque %1$d lugar como “Morei”.</item>
+        <item quantity="many">Marque %1$d lugares como “Morei”.</item>
+        <item quantity="other">Marque %1$d lugares como “Morei”.</item>
     </plurals>
     <string name="badge_wishlist_10_title">Sonhador</string>
     <string name="badge_wishlist_10_desc">Coloque %1$d lugares na sua lista de desejos.</string>

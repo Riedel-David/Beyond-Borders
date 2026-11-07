@@ -13,11 +13,11 @@
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Visitei</string>
     <string name="map_legend_short_lived">Morei</string>
-    <string name="map_legend_short_wanted">Quero</string>
+    <string name="map_legend_short_wanted">Quero ir</string>
     <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Toque em um lugar para marcá-lo</string>
     <string name="map_legend_visited">%1$d visitados</string>
-    <string name="map_legend_lived">%1$d onde morou</string>
+    <string name="map_legend_lived">%1$d onde morei</string>
     <string name="map_legend_wishlisted">%1$d na lista de desejos</string>
     <string name="map_legend_no_data">%1$d sem dados</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
@@ -41,7 +41,7 @@
     <string name="map_region_legend_informal">Cada cor é um grupo; mais intensa = mais visitado</string>
     <string name="map_region_done_official">%1$d de %2$d regiões concluídas</string>
     <string name="map_region_done_informal">%1$d de %2$d grupos concluídos</string>
-    <string name="map_region_card_done">%1$d / %2$d concluídos</string>
+    <string name="map_region_card_done">%1$d / %2$d visitados</string>
 
     <!-- Map: controls -->
     <string name="map_controls_hide">Ocultar controles do mapa</string>
@@ -52,7 +52,7 @@
     <string name="map_lens_visa">Visto</string>
     <string name="map_regions_off">Regiões</string>
     <string name="map_regions_official">Regiões: ONU</string>
-    <string name="map_regions_informal">Regiões: nomeadas</string>
+    <string name="map_regions_informal">Regiões: grupos</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Não há dados para nenhum dos passaportes — consulte as fontes oficiais antes de viajar.</string>
@@ -78,7 +78,7 @@
     </plurals>
     <string name="share_tile_places_been">VISITADOS</string>
     <string name="share_tile_continents">CONTINENTES</string>
-    <string name="share_tile_lived">VIVIDOS</string>
+    <string name="share_tile_lived">ONDE MOREI</string>
     <string name="share_tile_wishlist">DESEJADOS</string>
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
@@ -90,18 +90,18 @@
     <string name="places_mode_travel">Onde já estive</string>
     <string name="places_mode_visa">Aonde posso ir</string>
     <string name="places_visa_filter_all">Todos</string>
-    <string name="places_visa_filter_easy">Sem embaixada</string>
-    <string name="places_visa_filter_wishlist_easy">Desejados, fáceis</string>
+    <string name="places_visa_filter_easy">Entrada fácil</string>
+    <string name="places_visa_filter_wishlist_easy">Quero ir, fáceis</string>
     <string name="places_visa_filter_long_stay">90+ dias</string>
     <string name="places_section_uninhabited">Desabitados</string>
     <plurals name="places_nudge">
-        <item quantity="one">%1$d lugar para concluir %2$s</item>
-        <item quantity="many">%1$d lugares para concluir %2$s</item>
-        <item quantity="other">%1$d lugares para concluir %2$s</item>
+        <item quantity="one">Falta %1$d lugar para concluir a %2$s</item>
+        <item quantity="many">Faltam %1$d lugares para concluir a %2$s</item>
+        <item quantity="other">Faltam %1$d lugares para concluir a %2$s</item>
     </plurals>
     <string name="places_least_covered">%1$s: %2$d de %3$d</string>
     <plurals name="places_wishlist_easy">
-        <item quantity="one">%1$d de %2$d lugares desejados dispensa embaixada</item>
+        <item quantity="one">%1$d de %2$d lugar desejado dispensa embaixada</item>
         <item quantity="many">%1$d de %2$d lugares desejados dispensa embaixada</item>
         <item quantity="other">%1$d de %2$d lugares desejados dispensam embaixada</item>
     </plurals>
