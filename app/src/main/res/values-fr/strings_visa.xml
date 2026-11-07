@@ -16,10 +16,10 @@
     <string name="visa_band_visa_free">Sans visa</string>
     <string name="visa_band_eta">e-Ticket/ETA</string>
     <string name="visa_band_visa_on_arrival">À l\'arrivée</string>
-    <string name="visa_band_visa_required">À demander avant</string>
+    <string name="visa_band_visa_required">Visa requis</string>
     <string name="visa_band_check">Vérifier</string>
     <string name="visa_band_closed">Fermé</string>
-    <string name="visa_band_no_data">Aucune donnée</string>
+    <string name="visa_band_no_data">Sans données</string>
 
     <!-- Confidence of curated entries -->
     <string name="visa_confidence_high">Bien établi</string>
@@ -43,12 +43,12 @@
     <string name="visa_adjective_de">allemand</string>
     <string name="visa_adjective_gb">britannique</string>
 
-    <string name="visa_as_of_notice">Données de %1$s pour un passeport %2$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
-    <string name="visa_as_of_notice_two">Données de %1$s pour les passeports %2$s et %3$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
+    <string name="visa_as_of_notice">Données au %1$s pour un passeport %2$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
+    <string name="visa_as_of_notice_two">Données au %1$s pour les passeports %2$s et %3$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
 
-    <string name="visa_official_link">Conseils aux voyageurs du ministère des Affaires étrangères</string>
-    <string name="visa_official_link_for">Conseils aux voyageurs du ministère des Affaires étrangères : %1$s</string>
-    <string name="visa_iata_link">IATA Travel Centre (à chercher sur place)</string>
+    <string name="visa_official_link">Conseils aux voyageurs (Affaires étrangères)</string>
+    <string name="visa_official_link_for">Conseils aux voyageurs (Affaires étrangères) : %1$s</string>
+    <string name="visa_iata_link">IATA Travel Centre (recherche sur le site)</string>
 
     <!-- Passport list -->
     <string name="visa_search_destinations">Rechercher une destination</string>
@@ -62,7 +62,7 @@
     <!-- Summary card -->
     <string name="visa_summary_visa_free_of">"  sur %1$d lieux sans visa"</string>
     <string name="visa_summary_easy">Accessibles sans rendez-vous à l\'ambassade : %1$d</string>
-    <string name="visa_summary_disclaimer_short">Données de %1$s : vérifie avant de réserver</string>
+    <string name="visa_summary_disclaimer_short">Données au %1$s : vérifie avant de réserver</string>
     <string name="visa_summary_info_label">Afficher les sources des données et l\'avertissement</string>
     <string name="visa_summary_info_title">À propos des données de visa</string>
     <string name="visa_legend_item">%1$s %2$d</string>

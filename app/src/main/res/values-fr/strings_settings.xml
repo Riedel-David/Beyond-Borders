@@ -4,14 +4,14 @@
     <!-- Root: bottom navigation tabs -->
     <string name="root_tab_map">Carte</string>
     <string name="root_tab_passport">Passeport</string>
-    <string name="root_tab_settings">Réglages</string>
+    <string name="root_tab_settings">Paramètres</string>
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller, sur une carte des %1$d, pas seulement des %2$d de l\'ONU.</string>
+    <string name="welcome_intro">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller, sur une carte des %1$d lieux du monde, pas seulement des %2$d pays de l\'ONU.</string>
     <string name="welcome_intro_bare">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller.</string>
-    <string name="welcome_privacy">Rien de ce que tu marques ne nous est jamais envoyé. Pas de compte, pas de serveur, pas de réseau ; exporte toi-même une sauvegarde quand tu veux. (La sauvegarde d\'Android peut quand même les inclure si elle est activée.)</string>
-    <string name="welcome_passport_hint">Les conditions de visa dépendent d\'un passeport à la fois. Choisis le tien ; tu pourras le changer plus tard dans les Réglages.</string>
+    <string name="welcome_privacy">Rien de ce que tu marques ne nous est jamais envoyé. Pas de compte, pas de serveur, pas de réseau ; exporte toi-même une sauvegarde quand tu veux. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
+    <string name="welcome_passport_hint">Les conditions de visa s\'affichent pour un passeport à la fois. Choisis le tien ; tu pourras le changer plus tard dans les Paramètres.</string>
     <string name="welcome_get_started">Commencer</string>
 
     <!-- Database recovery -->
@@ -23,7 +23,7 @@
     <string name="recovery_saved">Enregistré.</string>
     <string name="recovery_save_failed">Échec de l\'enregistrement : %1$s</string>
     <string name="recovery_open_failed">Impossible d\'ouvrir le fichier choisi.</string>
-    <string name="recovery_wipe_failed">Impossible de supprimer les données. Rien n\'a été modifié de façon fiable ; réessaie, ou vide le stockage de l\'app dans les réglages d\'Android.</string>
+    <string name="recovery_wipe_failed">Impossible de supprimer les données. Rien n\'a été modifié de façon fiable ; réessaie, ou vide le stockage de l\'app dans les paramètres d\'Android.</string>
     <string name="recovery_delete_start_fresh">Supprimer les données et repartir de zéro</string>
     <string name="recovery_confirm_title">Supprimer tout ce que tu as marqué ?</string>
     <string name="recovery_confirm_saved">Tu as enregistré une copie, elle pourra donc être relue plus tard. Tous les lieux marqués disparaîtront de l\'app elle-même.</string>
@@ -32,7 +32,7 @@
     <string name="recovery_keep">Conserver</string>
 
     <!-- Settings: sections -->
-    <string name="settings_title">Réglages</string>
+    <string name="settings_title">Paramètres</string>
     <string name="settings_appearance_title">Apparence</string>
     <string name="settings_appearance_detail">Suit le système, sauf si tu en choisis une.</string>
     <string name="settings_theme_system">Système</string>
@@ -46,7 +46,7 @@
     <string name="settings_language_system">Par défaut du système</string>
 
     <string name="settings_passport_title">Passeport</string>
-    <string name="settings_passport_detail">Les réponses sur les visas, sur la carte et dans l\'onglet Passeport, valent pour ce passeport.</string>
+    <string name="settings_passport_detail">Les infos visa de la carte et de l\'onglet Passeport valent pour ce passeport.</string>
     <string name="settings_second_passport">Deuxième passeport</string>
     <string name="settings_add_second_passport">Ajouter un deuxième passeport</string>
     <string name="settings_dual_hint">Avec une double nationalité, c\'est le passeport qui donne la réponse la plus simple qui s\'applique</string>
@@ -62,21 +62,21 @@
     <string name="settings_status_want">Envie</string>
     <string name="settings_colours_reset">Rétablir les couleurs par défaut</string>
     <!-- Accessibility name of a colour swatch: status, then colour -->
-    <string name="settings_swatch_description">%1$s: %2$s</string>
+    <string name="settings_swatch_description">%1$s : %2$s</string>
     <string name="settings_hue_azure">Azur</string>
-    <string name="settings_hue_teal">Sarcelle</string>
+    <string name="settings_hue_teal">Bleu canard</string>
     <string name="settings_hue_green">Vert</string>
     <string name="settings_hue_rose">Rose</string>
     <string name="settings_hue_violet">Violet</string>
     <string name="settings_hue_amber">Ambre</string>
 
     <string name="settings_counting_title">Comptage des lieux</string>
-    <string name="settings_counting_detail">Le total auquel l\'onglet Passeport se compare.</string>
+    <string name="settings_counting_detail">Le total utilisé par l\'onglet Passeport.</string>
     <string name="settings_denominator_all">Tous les %1$d</string>
     <string name="settings_denominator_un">%1$d ONU</string>
     <string name="settings_denominator_all_bare">Tous</string>
     <string name="settings_denominator_un_bare">ONU</string>
-    <string name="settings_denominator_inhabited">Habités</string>
+    <string name="settings_denominator_inhabited">Peuplés</string>
 
     <string name="settings_background_title">Fond de la carte</string>
     <string name="settings_background_detail">L\'océan et les terres non marquées.</string>
@@ -98,7 +98,7 @@
     <string name="settings_preview_updated">Mis à jour</string>
     <string name="settings_preview_skipped">Ignorés (déjà à jour)</string>
     <string name="settings_preview_sample">p. ex. %1$s.</string>
-    <string name="settings_preview_sample_more">p. ex. %1$s, et %2$d de plus.</string>
+    <string name="settings_preview_sample_more">p. ex. %1$s et %2$d autres.</string>
     <!-- The caveat issues are joined with the locale's list wording (ListFormatter) and end with this -->
     <string name="settings_preview_caveat">%1$s.</string>
     <plurals name="settings_caveat_codes">
@@ -121,18 +121,18 @@
     <string name="settings_danger_detail">Irréversible. Exporte d\'abord une sauvegarde.</string>
     <string name="settings_delete_everything">Tout supprimer</string>
     <string name="settings_delete_confirm_title">Tout supprimer ?</string>
-    <string name="settings_delete_confirm_body">Tous les lieux que tu as marqués, tes passeports et tes réglages d\'affichage sont effacés de ce téléphone, ainsi que l\'instantané conservé par la sauvegarde d\'Android. Google peut encore détenir une sauvegarde plus ancienne jusqu\'à la prochaine sauvegarde d\'Android ; tu peux la supprimer dès maintenant dans les réglages de sauvegarde d\'Android.</string>
+    <string name="settings_delete_confirm_body">Tous les lieux que tu as marqués, tes passeports et tes paramètres d\'affichage sont effacés de ce téléphone, ainsi que l\'instantané conservé par la sauvegarde d\'Android. Google peut encore détenir une sauvegarde plus ancienne jusqu\'à la prochaine sauvegarde d\'Android ; tu peux la supprimer dès maintenant dans les paramètres de sauvegarde d\'Android.</string>
     <string name="settings_delete">Supprimer</string>
 
     <string name="settings_about_title">À propos</string>
     <string name="settings_about_version">BeyondBorders %1$s</string>
     <string name="settings_about_open_source">Logiciel libre (GPL-3.0)</string>
     <string name="settings_about_data_title">À propos des données</string>
-    <string name="settings_about_disclaimer">Une app indépendante, sans lien avec aucun gouvernement et ne représentant aucun gouvernement. Les données de visa sont un instantané et peuvent être périmées : confirme les conditions d\'entrée auprès de la source officielle du gouvernement avant de voyager.</string>
+    <string name="settings_about_disclaimer">Une app indépendante, liée à aucun gouvernement et n\'en représentant aucun. Les données de visa sont un instantané et peuvent être périmées : confirme les conditions d\'entrée auprès de la source officielle du gouvernement avant de voyager.</string>
     <string name="settings_about_map_title">Données cartographiques</string>
     <string name="settings_about_map">Frontières de Natural Earth (domaine public), dessinées avec MapLibre. Toute la carte est intégrée à l\'app, elle fonctionne donc sans réseau et sans compte.</string>
     <string name="settings_about_backup_title">Sauvegardes</string>
-    <string name="settings_about_backup">La sauvegarde automatique d\'Android transmet un instantané de ton historique à ton compte Google : c\'est le système qui crée cette copie, l\'app n\'envoie jamais rien elle-même. Un téléphone réinstallé ou neuf démarre vide : rien n\'est remis en place tant que tu n\'appuies pas sur Restaurer. La base de données, tes réglages et un identifiant propre à chaque installation restent entièrement hors de la sauvegarde. Désactive-la dans les réglages de sauvegarde d\'Android si tu préfères.</string>
+    <string name="settings_about_backup">La sauvegarde automatique d\'Android transmet un instantané de ton historique à ton compte Google : c\'est le système qui crée cette copie, l\'app n\'envoie jamais rien elle-même. Un téléphone réinstallé ou neuf démarre vide : rien n\'est remis en place tant que tu n\'appuies pas sur Restaurer. La base de données, tes paramètres et un identifiant propre à chaque installation restent entièrement hors de la sauvegarde. Désactive-la dans les paramètres de sauvegarde d\'Android si tu préfères.</string>
     <string name="settings_licences_button">Licences open source</string>
 
     <!-- Licences dialog -->
@@ -146,7 +146,7 @@
     <string name="settings_licence_font">Police</string>
     <string name="settings_licence_flags">Drapeaux</string>
     <string name="settings_licence_visa">Données de visa</string>
-    <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, dérivé des contributeurs de Wikipédia (CC BY-SA 4.0), voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
+    <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, dérivé de Wikipédia (contributeurs, CC BY-SA 4.0), voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
     <string name="settings_licence_advice">Liens vers les conseils officiels</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (ministère fédéral allemand des Affaires étrangères)</string>
     <string name="settings_licence_libraries">Bibliothèques</string>
@@ -172,12 +172,12 @@
         <item quantity="other">%d nouveaux lieux importés.</item>
     </plurals>
     <plurals name="backup_imported_updated">
-        <item quantity="one">%d lieu mis à jour importé.</item>
-        <item quantity="many">%d lieux mis à jour importés.</item>
-        <item quantity="other">%d lieux mis à jour importés.</item>
+        <item quantity="one">%d lieu mis à jour.</item>
+        <item quantity="many">%d lieux mis à jour.</item>
+        <item quantity="other">%d lieux mis à jour.</item>
     </plurals>
     <!-- Both kinds at once, so there are always at least two places -->
-    <string name="backup_imported_both">%1$d nouveaux lieux et %2$d mis à jour importés.</string>
+    <string name="backup_imported_both">Import : %1$d nouveaux, %2$d mis à jour.</string>
     <string name="backup_already_current">%1$d déjà à jour.</string>
     <plurals name="backup_skipped_codes">
         <item quantity="one">%1$d code inconnu ignoré : %2$s.</item>

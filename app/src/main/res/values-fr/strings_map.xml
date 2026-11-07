@@ -16,10 +16,10 @@
     <string name="map_legend_short_wanted">Envie</string>
     <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Touche un lieu pour le marquer</string>
-    <string name="map_legend_visited">%1$d visités</string>
-    <string name="map_legend_lived">%1$d habités</string>
-    <string name="map_legend_wishlisted">%1$d dans la liste d\'envies</string>
-    <string name="map_legend_no_data">%1$d sans données</string>
+    <string name="map_legend_visited">Visités : %1$d</string>
+    <string name="map_legend_lived">Habités : %1$d</string>
+    <string name="map_legend_wishlisted">%1$d envies</string>
+    <string name="map_legend_no_data">Sans données : %1$d</string>
     <!-- A band label supplied by the visa data, with its count: "12 Sans visa". -->
     <string name="map_legend_count_labeled">%1$d %2$s</string>
     <!-- Joins two spoken legend phrases. -->
@@ -39,9 +39,9 @@
     <!-- Map: region legend and card -->
     <string name="map_region_legend_official">Chaque couleur est une région ; plus foncé = plus visité</string>
     <string name="map_region_legend_informal">Chaque couleur est un groupe ; plus foncé = plus visité</string>
-    <string name="map_region_done_official">%1$d régions sur %2$d terminées</string>
-    <string name="map_region_done_informal">%1$d groupes sur %2$d terminés</string>
-    <string name="map_region_card_done">%1$d / %2$d terminé</string>
+    <string name="map_region_done_official">Régions terminées : %1$d sur %2$d</string>
+    <string name="map_region_done_informal">Groupes terminés : %1$d sur %2$d</string>
+    <string name="map_region_card_done">%1$d / %2$d visités</string>
 
     <!-- Map: controls -->
     <string name="map_controls_hide">Masquer les commandes de la carte</string>
@@ -52,10 +52,10 @@
     <string name="map_lens_visa">Visa</string>
     <string name="map_regions_off">Régions</string>
     <string name="map_regions_official">Régions : ONU</string>
-    <string name="map_regions_informal">Régions : nommées</string>
+    <string name="map_regions_informal">Régions : groupes</string>
 
     <!-- Map: selected place card -->
-    <string name="map_no_data_either">Aucune donnée pour aucun des deux passeports : consulte les sources officielles avant de voyager.</string>
+    <string name="map_no_data_either">Aucune donnée pour tes deux passeports : consulte les sources officielles avant de voyager.</string>
     <string name="map_no_data_this">Aucune donnée pour ce passeport : consulte les sources officielles avant de voyager.</string>
     <string name="map_chip_been">Visité</string>
     <string name="map_chip_lived">Habité</string>
@@ -64,9 +64,9 @@
     <!-- Share cards (drawn onto a canvas) -->
     <string name="share_style_bar_label">Barre de légende</string>
     <string name="share_style_bar_blurb">Logo et chiffres en bas</string>
-    <string name="share_style_stamp_label">Badge d\'angle</string>
+    <string name="share_style_stamp_label">Badge en coin</string>
     <string name="share_style_stamp_blurb">Badge compact en haut à gauche</string>
-    <string name="share_style_stats_label">Carte de statistiques</string>
+    <string name="share_style_stats_label">Chiffres seuls</string>
     <string name="share_style_stats_blurb">Juste les chiffres, sans carte</string>
     <string name="share_of_the_world_caps">DU MONDE</string>
     <string name="share_of_the_world">du monde</string>
@@ -90,14 +90,14 @@
     <string name="places_mode_travel">Où je suis allé</string>
     <string name="places_mode_visa">Où je peux aller</string>
     <string name="places_visa_filter_all">Tous</string>
-    <string name="places_visa_filter_easy">Sans ambassade</string>
-    <string name="places_visa_filter_wishlist_easy">Envies faciles</string>
+    <string name="places_visa_filter_easy">Sans démarche</string>
+    <string name="places_visa_filter_wishlist_easy">Envies sans démarche</string>
     <string name="places_visa_filter_long_stay">90+ jours</string>
-    <string name="places_section_uninhabited">Inhabités</string>
+    <string name="places_section_uninhabited">Sans habitants</string>
     <plurals name="places_nudge">
-        <item quantity="one">Plus que %1$d lieu pour terminer %2$s</item>
-        <item quantity="many">Plus que %1$d lieux pour terminer %2$s</item>
-        <item quantity="other">Plus que %1$d lieux pour terminer %2$s</item>
+        <item quantity="one">%2$s : plus que %1$d lieu à visiter</item>
+        <item quantity="many">%2$s : plus que %1$d lieux à visiter</item>
+        <item quantity="other">%2$s : plus que %1$d lieux à visiter</item>
     </plurals>
     <string name="places_least_covered">%1$s : %2$d sur %3$d</string>
     <plurals name="places_wishlist_easy">
@@ -119,7 +119,7 @@
     <string name="widget_cfg_target_map">Carte</string>
     <string name="widget_cfg_target_passport">Passeport</string>
     <string name="widget_cfg_target_stats">Statistiques</string>
-    <string name="widget_cfg_background_title">Fond de la carte</string>
+    <string name="widget_cfg_background_title">Fond du widget</string>
     <string name="widget_cfg_background_filled">Plein</string>
     <string name="widget_cfg_background_transparent">Transparent</string>
     <string name="widget_cfg_preview_title">Taille de l\'aperçu</string>
