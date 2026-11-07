@@ -23,9 +23,15 @@ unzip -q "$S/font/noto.zip" -d "$S/font/x"
 node tools/glyphs/gen.js "$S/tool/node_modules/fontnik" "$S/font/x/NotoSans/full/ttf/NotoSans-Regular.ttf" 1024 1279 "app/src/main/assets/glyphs/Noto Sans Regular/1024-1279.pbf"
 ```
 
-`1024-1279.pbf` (U+0400-U+04FF, 125058 bytes, sha256
-`ee79f4b586642a8ad5eac78d7a73088ae5ed55815821172e8682efaefa12e9da`) came from exactly
-this. Any other range is the same command with its start and end (multiples of 256).
+Shipped from exactly this (start and end are decimal code points):
+
+| file | block | bytes | sha256 |
+|---|---|---|---|
+| `512-767.pbf` | U+0200-02FF | 94733 | `15ee1c23cfb4a4619070aea3e47867d88d71c921bf12a87ea5856a1d461efa3f` |
+| `1024-1279.pbf` | U+0400-04FF | 125058 | `ee79f4b586642a8ad5eac78d7a73088ae5ed55815821172e8682efaefa12e9da` |
+| `8192-8447.pbf` | U+2000-20FF | 51993 | `4d8bb9628d0df942c887e3e4cf78cc63f9fa0760029aed74fbf28aa9bb43fbf7` |
+
+Any other range is the same command with its start and end (multiples of 256).
 
 ## How well this matches the older files
 
