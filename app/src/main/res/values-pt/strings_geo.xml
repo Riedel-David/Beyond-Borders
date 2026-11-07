@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Brazilian Portuguese draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="geo_continent_africa">África</string>
+    <string name="geo_continent_antarctica">Antártida</string>
+    <string name="geo_continent_asia">Ásia</string>
+    <string name="geo_continent_europe">Europa</string>
+    <string name="geo_continent_north_america">América do Norte</string>
+    <string name="geo_continent_oceania">Oceania</string>
+    <string name="geo_continent_south_america">América do Sul</string>
+    <string name="geo_region_antarctica">Antártida</string>
+    <string name="geo_region_australia_and_new_zealand">Austrália e Nova Zelândia</string>
+    <string name="geo_region_caribbean">Caribe</string>
+    <string name="geo_region_central_america">América Central</string>
+    <string name="geo_region_central_asia">Ásia Central</string>
+    <string name="geo_region_eastern_africa">África Oriental</string>
+    <string name="geo_region_eastern_asia">Ásia Oriental</string>
+    <string name="geo_region_eastern_europe">Europa Oriental</string>
+    <string name="geo_region_melanesia">Melanésia</string>
+    <string name="geo_region_micronesia">Micronésia</string>
+    <string name="geo_region_middle_africa">África Central</string>
+    <string name="geo_region_northern_africa">África Setentrional</string>
+    <string name="geo_region_northern_america">América Setentrional</string>
+    <string name="geo_region_northern_europe">Europa Setentrional</string>
+    <string name="geo_region_polynesia">Polinésia</string>
+    <string name="geo_region_seven_seas_open_ocean">Sete mares (alto-mar)</string>
+    <string name="geo_region_south_america">América do Sul</string>
+    <string name="geo_region_south_eastern_asia">Sudeste Asiático</string>
+    <string name="geo_region_southern_africa">África Austral</string>
+    <string name="geo_region_southern_asia">Sul da Ásia</string>
+    <string name="geo_region_southern_europe">Europa Meridional</string>
+    <string name="geo_region_western_africa">África Ocidental</string>
+    <string name="geo_region_western_asia">Ásia Ocidental</string>
+    <string name="geo_region_western_europe">Europa Ocidental</string>
+    <string name="geo_group_benelux">Benelux</string>
+    <string name="geo_group_scandinavia">Escandinávia</string>
+    <string name="geo_group_nordics">Países nórdicos</string>
+    <string name="geo_group_baltics">Países bálticos</string>
+    <string name="geo_group_british_isles">Ilhas Britânicas</string>
+    <string name="geo_group_iberia">Península Ibérica</string>
+    <string name="geo_group_alpine_states">Países alpinos</string>
+    <string name="geo_group_visegr_d_central_europe">Visegrado / Europa Central</string>
+    <string name="geo_group_caucasus">Cáucaso</string>
+    <string name="geo_group_levant">Levante</string>
+    <string name="geo_group_arabian_peninsula_gulf">Península Arábica / Golfo</string>
+    <string name="geo_group_maghreb">Magrebe</string>
+    <string name="geo_group_horn_of_africa">Chifre da África</string>
+    <string name="geo_group_indochina">Indochina</string>
+    <string name="geo_group_the_stans">Os países “-stão”</string>
+    <string name="geo_group_balkans">Bálcãs</string>
+</resources>
