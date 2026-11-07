@@ -14,7 +14,7 @@
 
     <!-- Map bands -->
     <string name="visa_band_visa_free">Без визы</string>
-    <string name="visa_band_eta">Эл. разрешение/ETA</string>
+    <string name="visa_band_eta">ETA</string>
     <string name="visa_band_visa_on_arrival">По прибытии</string>
     <string name="visa_band_visa_required">Виза заранее</string>
     <string name="visa_band_check">Уточнить</string>

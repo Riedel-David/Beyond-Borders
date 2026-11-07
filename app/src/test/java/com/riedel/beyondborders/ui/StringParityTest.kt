@@ -66,6 +66,7 @@ class StringParityTest {
     private val sameEverywhere = setOf(
         "app_name", "widget_wordmark", "welcome_title", "settings_licence_app", // brand
         "passport_group_alphabetical", // "A-Z"
+        "visa_band_eta", // "ETA" is the official abbreviation
         "settings_ok", "info_button_ok", // "OK"
         "stats_hero_percent", "badge_rank_line", "share_stamp", // pure format strings
         "visa_legend_item", "visa_dataset_credit", "visa_summary_with_days", "map_legend_count_labeled", "map_legend_chip",
@@ -84,17 +85,17 @@ class StringParityTest {
         "es" to setOf(
             "geo_group_benelux", "geo_group_indochina", // proper nouns
             "geo_continent_asia", "geo_region_melanesia", "geo_region_micronesia", // spelled the same in Spanish
-            "visa_band_eta", "visa_category_e_visa", // "e-Ticket/ETA" and "eVisa" are the official labels
+            "visa_category_e_visa", // "eVisa" is the official label
         ),
         "fr" to setOf(
             "geo_continent_europe", "geo_group_benelux", "geo_group_levant", "geo_group_maghreb", "geo_group_balkans",
             "map_lens_visa", "share_tile_continents", "widget_label_continents", "widget_cfg_metric_continents",
             "stats_continents", "badge_group_continents", "widget_cfg_background_transparent",
-            "settings_hue_rose", "settings_hue_violet", "visa_licence_link", "visa_band_eta", // spelled the same in French
+            "settings_hue_rose", "settings_hue_violet", "visa_licence_link", // spelled the same in French
         ),
         "pt" to setOf(
             "geo_continent_oceania", "geo_group_benelux", "geo_group_indochina", "passport_status_chip_desc",
-            "settings_about_backup_title", "visa_band_eta", // same word in Portuguese
+            "settings_about_backup_title", // same word in Portuguese
         ),
     )
 

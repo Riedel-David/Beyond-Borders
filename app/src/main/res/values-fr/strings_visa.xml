@@ -14,7 +14,7 @@
 
     <!-- Map bands -->
     <string name="visa_band_visa_free">Sans visa</string>
-    <string name="visa_band_eta">e-Ticket/ETA</string>
+    <string name="visa_band_eta">ETA</string>
     <string name="visa_band_visa_on_arrival">À l\'arrivée</string>
     <string name="visa_band_visa_required">Visa requis</string>
     <string name="visa_band_check">Vérifier</string>
