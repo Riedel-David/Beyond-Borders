@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.MAX_DIALOG_WIDTH_DP
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.data.place.foldForSort
 import com.riedel.beyondborders.ui.asString
 
 /**
@@ -127,10 +128,10 @@ internal fun PassportPickerDialog(
     }
 }
 
-/** Passport codes ordered by displayed name, accents folded so Ägypten files under A. */
+/** Passport codes ordered by displayed name, accents folded so Ägypten files under A, and Cyrillic in its own alphabet order (see [foldForSort]). */
 internal fun sortedPassportCodes(names: Map<String, String>, exclude: Set<String> = emptySet()): List<String> =
     names.keys.filterNot { it in exclude }
-        .map { code -> (names[code] ?: code).foldForSearch() to code }
+        .map { code -> (names[code] ?: code).foldForSort() to code }
         .sortedWith(compareBy({ it.first }, { it.second }))
         .map { it.second }
 

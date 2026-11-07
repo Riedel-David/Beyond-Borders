@@ -10,4 +10,13 @@ class PassportPickerSortTest {
         assertEquals(listOf("EG", "DE", "CY"), sortedPassportCodes(names))
         assertEquals(listOf("EG", "CY"), sortedPassportCodes(names, exclude = setOf("DE")))
     }
+
+    @Test
+    fun `ukrainian and russian passports keep their own letters in alphabet order`() {
+        val uk = mapOf("JM" to "Ямайка", "IT" to "Італія", "EG" to "Єгипет", "DE" to "Німеччина", "YE" to "Ємен")
+        // Є, І, Н, Я: the Ukrainian letters keep their place instead of sorting after Я.
+        assertEquals(listOf("EG", "YE", "IT", "DE", "JM"), sortedPassportCodes(uk))
+        val ru = mapOf("YE" to "Йемен", "JO" to "Иордания", "KE" to "Кения")
+        assertEquals(listOf("JO", "YE", "KE"), sortedPassportCodes(ru))
+    }
 }

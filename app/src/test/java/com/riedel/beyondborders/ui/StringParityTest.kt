@@ -48,7 +48,7 @@ class StringParityTest {
      * of its strings are legitimately identical to English, a [sameInLanguage] entry.
      */
     private fun translationTags(): List<String> =
-        File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}")) && f.name != "values-night" }!!
+        File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}")) }!!
             .map { it.name.removePrefix("values-") }.sorted()
 
     private val translations: Map<String, Map<String, Entry>> = translationTags().associateWith { load("values-$it") }
@@ -135,9 +135,7 @@ class StringParityTest {
         forEachLanguage { tag, tr ->
             val allowed = setOf("one", "other") + (extraQuantities[tag] ?: error("no extraQuantities entry for $tag"))
             for ((k, e) in tr.filter { it.value.plural }) {
-                assertTrue("[$tag] $k lacks one/other", e.items.keys.containsAll(listOf("one", "other")))
-                val extra = e.items.keys - allowed
-                assertTrue("[$tag] $k has quantities the language does not use: $extra", extra.isEmpty())
+                assertEquals("[$tag] $k must carry exactly the language's plural forms", allowed, e.items.keys)
             }
         }
     }
