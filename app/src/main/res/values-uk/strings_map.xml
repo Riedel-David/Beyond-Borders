@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Ukrainian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Map: share feedback -->
+    <string name="map_share_failed">Не вдалося поділитися картою</string>
+    <string name="map_share_retry">Повторити</string>
+    <string name="map_not_ready">Карта ще не готова</string>
+    <string name="map_share_action">Поділитися</string>
+    <string name="map_share_style_title">Стиль зображення</string>
+    <string name="map_share_cancel">Скасувати</string>
+    <string name="map_description">Карта світу. Торкнись країни чи території, щоб її вибрати.</string>
+
+    <!-- Map: travel legend -->
+    <string name="map_legend_short_visited">Відвідано</string>
+    <string name="map_legend_short_lived">Прожито</string>
+    <string name="map_legend_short_wanted">Хочу</string>
+    <string name="map_legend_chip">%1$s %2$d</string>
+    <string name="map_legend_nudge">Торкнись місця, щоб позначити</string>
+    <string name="map_legend_visited">Відвідано: %1$d</string>
+    <string name="map_legend_lived">Прожито: %1$d</string>
+    <string name="map_legend_wishlisted">У списку бажань: %1$d</string>
+    <string name="map_legend_no_data">Немає даних: %1$d</string>
+    <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
+    <string name="map_legend_count_labeled">%2$s: %1$d</string>
+    <!-- Joins two spoken legend phrases. -->
+    <string name="map_join_comma">%1$s, %2$s</string>
+
+    <!-- Map: visa legend -->
+    <string name="map_visa_legend_none">Немає візових даних</string>
+    <string name="map_visa_legend_free">Без візи: %1$d</string>
+    <string name="map_visa_summary_none_second">Візовий режим: немає даних для твоїх паспортів</string>
+    <string name="map_visa_summary_none_single">Візовий режим: немає даних для цього паспорта</string>
+    <plurals name="map_visa_summary">
+        <item quantity="one">Візовий режим: показано %1$d категорію, без візи: %2$d</item>
+        <item quantity="few">Візовий режим: показано %1$d категорії, без візи: %2$d</item>
+        <item quantity="many">Візовий режим: показано %1$d категорій, без візи: %2$d</item>
+        <item quantity="other">Візовий режим: показано %1$d категорії, без візи: %2$d</item>
+    </plurals>
+
+    <!-- Map: region legend and card -->
+    <string name="map_region_legend_official">Кожен колір — регіон; насиченіший = більше відвідано</string>
+    <string name="map_region_legend_informal">Кожен колір — угруповання; насиченіший = більше відвідано</string>
+    <string name="map_region_done_official">Завершено регіонів: %1$d із %2$d</string>
+    <string name="map_region_done_informal">Завершено угруповань: %1$d із %2$d</string>
+    <string name="map_region_card_done">Завершено: %1$d / %2$d</string>
+
+    <!-- Map: controls -->
+    <string name="map_controls_hide">Сховати елементи керування картою</string>
+    <string name="map_controls_show">Показати елементи керування картою</string>
+    <string name="map_search_open">Пошук</string>
+    <string name="map_search_label">Знайти місце</string>
+    <string name="map_search_no_matches">Нічого не знайдено</string>
+    <string name="map_lens_visa">Візи</string>
+    <string name="map_regions_off">Регіони</string>
+    <string name="map_regions_official">Регіони: ООН</string>
+    <string name="map_regions_informal">Регіони: за назвою</string>
+
+    <!-- Map: selected place card -->
+    <string name="map_no_data_either">Немає даних ні для одного з паспортів — перевір офіційні джерела перед поїздкою.</string>
+    <string name="map_no_data_this">Немає даних для цього паспорта — перевір офіційні джерела перед поїздкою.</string>
+    <string name="map_chip_been">Відвідано</string>
+    <string name="map_chip_lived">Прожито</string>
+    <string name="map_chip_want">Хочу</string>
+
+    <!-- Share cards (drawn onto a canvas) -->
+    <string name="share_style_bar_label">Рядок підпису</string>
+    <string name="share_style_bar_blurb">Логотип і статистика внизу</string>
+    <string name="share_style_stamp_label">Значок у куті</string>
+    <string name="share_style_stamp_blurb">Компактний значок угорі ліворуч</string>
+    <string name="share_style_stats_label">Картка статистики</string>
+    <string name="share_style_stats_blurb">Лише цифри, без карти</string>
+    <string name="share_of_the_world_caps">СВІТУ</string>
+    <string name="share_of_the_world">світу</string>
+    <string name="share_stamp">%1$d%% · %2$d/%3$d</string>
+    <plurals name="share_detail">
+        <item quantity="one">%1$d із %2$d · %3$d континент</item>
+        <item quantity="few">%1$d із %2$d · %3$d континенти</item>
+        <item quantity="many">%1$d із %2$d · %3$d континентів</item>
+        <item quantity="other">%1$d із %2$d · %3$d континенту</item>
+    </plurals>
+    <string name="share_tile_places_been">ВІДВІДАНО</string>
+    <string name="share_tile_continents">КОНТИНЕНТИ</string>
+    <string name="share_tile_lived">ПРОЖИТО</string>
+    <string name="share_tile_wishlist">СПИСОК БАЖАНЬ</string>
+
+    <!-- Passport filters and stats lines built in PlacesViewModel -->
+    <string name="places_filter_all">Усі</string>
+    <string name="places_filter_been">Відвідано</string>
+    <string name="places_filter_lived">Прожито</string>
+    <string name="places_filter_want">Хочу</string>
+    <string name="places_filter_none">Ще ні</string>
+    <string name="places_mode_travel">Мої подорожі</string>
+    <string name="places_mode_visa">Куди я можу поїхати</string>
+    <string name="places_visa_filter_all">Усі</string>
+    <string name="places_visa_filter_easy">Без посольства</string>
+    <string name="places_visa_filter_wishlist_easy">Бажані, легко</string>
+    <string name="places_visa_filter_long_stay">90+ днів</string>
+    <string name="places_section_uninhabited">Безлюдні</string>
+    <plurals name="places_nudge">
+        <item quantity="one">Ще %1$d місце до завершення: %2$s</item>
+        <item quantity="few">Ще %1$d місця до завершення: %2$s</item>
+        <item quantity="many">Ще %1$d місць до завершення: %2$s</item>
+        <item quantity="other">Ще %1$d місця до завершення: %2$s</item>
+    </plurals>
+    <string name="places_least_covered">%1$s — %2$d із %3$d</string>
+    <plurals name="places_wishlist_easy">
+        <item quantity="one">Для %1$d із %2$d місця у твоєму списку бажань посольство не потрібне</item>
+        <item quantity="few">Для %1$d із %2$d місць у твоєму списку бажань посольство не потрібне</item>
+        <item quantity="many">Для %1$d із %2$d місць у твоєму списку бажань посольство не потрібне</item>
+        <item quantity="other">Для %1$d із %2$d місця у твоєму списку бажань посольство не потрібне</item>
+    </plurals>
+    <string name="places_coverage">%1$d%% площі суходолу світу, %2$d%% його населення</string>
+
+    <!-- Widget configuration screen -->
+    <string name="widget_label_places_been">ВІДВІДАНО</string>
+    <string name="widget_label_of_the_world">СВІТУ</string>
+    <string name="widget_label_continents">КОНТИНЕНТИ</string>
+    <string name="widget_cfg_metric_title">Що показувати у віджеті?</string>
+    <string name="widget_cfg_metric_countries">Країни</string>
+    <string name="widget_cfg_metric_percent">Відсотки</string>
+    <string name="widget_cfg_metric_continents">Континенти</string>
+    <string name="widget_cfg_target_title">Торкання віджета відкриває</string>
+    <string name="widget_cfg_target_map">Карту</string>
+    <string name="widget_cfg_target_passport">Паспорт</string>
+    <string name="widget_cfg_target_stats">Статистику</string>
+    <string name="widget_cfg_background_title">Тло картки</string>
+    <string name="widget_cfg_background_filled">Заливка</string>
+    <string name="widget_cfg_background_transparent">Прозоре</string>
+    <string name="widget_cfg_preview_title">Розмір попереднього перегляду</string>
+    <string name="widget_cfg_add">Додати віджет</string>
+</resources>
