@@ -118,9 +118,9 @@ internal fun localizePlaces(
 
 /**
  * Languages the app localizes place names for. Not every platform language: the
- * bundled map glyphs cover Latin and Cyrillic (code points U+0000-U+04FF; German and
- * Spanish letters, incl. ä ö ü ß á é í ó ú ñ, and the Ukrainian and Russian alphabets
- * all sit inside it), so Japanese or Arabic names would render as blanks. Grows
+ * bundled map glyphs cover Latin, Cyrillic and general punctuation (U+0000-U+02FF,
+ * U+0400-U+04FF, U+2000-U+20FF; German and Spanish letters, incl. ä ö ü ß á é í ó ú ñ,
+ * the Ukrainian and Russian alphabets, the ’ ʼ – — in country names all sit inside), so Japanese or Arabic names would render as blanks. Grows
  * together with the glyph set.
  */
 internal val LOCALIZED_LANGUAGES = setOf("de", "es", "fr", "pt", "uk", "ru")

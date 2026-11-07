@@ -160,4 +160,23 @@ class LocalizePlacesTest {
         val bad = real.filter { p -> (p.name + p.sovereign).any { it.code > 0x1FF } }.map { "${it.code}:${it.name}" }
         assertEquals(emptyList<String>(), bad)
     }
+
+    @Test
+    fun `no country name in a localized language needs a code point outside the shipped glyph files`() {
+        val ranges = java.io.File("src/main/assets/glyphs/Noto Sans Regular").listFiles().orEmpty()
+            .mapNotNull { f -> Regex("""(\d+)-(\d+)\.pbf""").matchEntire(f.name)?.destructured }
+            .map { (a, b) -> a.toInt()..b.toInt() }
+        assertTrue("no glyph files found", ranges.isNotEmpty())
+        val bad = sortedSetOf<String>()
+        for (tag in LOCALIZED_LANGUAGES) {
+            val locale = Locale.forLanguageTag(tag)
+            for (code in Locale.getISOCountries()) {
+                val name = Locale("", code).getDisplayCountry(locale)
+                name.codePoints().forEach { cp ->
+                    if (ranges.none { cp in it }) bad += "$tag:$code:U+%04X".format(cp)
+                }
+            }
+        }
+        assertEquals(emptyList<String>(), bad.toList())
+    }
 }
