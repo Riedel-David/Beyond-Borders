@@ -11,13 +11,13 @@
     <string name="map_description">Карта мира. Нажми на страну или территорию, чтобы выбрать её.</string>
 
     <!-- Map: travel legend -->
-    <string name="map_legend_short_visited">Был(а)</string>
-    <string name="map_legend_short_lived">Жил(а)</string>
+    <string name="map_legend_short_visited">Посещено</string>
+    <string name="map_legend_short_lived">Прожито</string>
     <string name="map_legend_short_wanted">Хочу</string>
     <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Нажми на место, чтобы отметить его</string>
     <string name="map_legend_visited">Посещено: %1$d</string>
-    <string name="map_legend_lived">Жил(а): %1$d</string>
+    <string name="map_legend_lived">Прожито: %1$d</string>
     <string name="map_legend_wishlisted">В списке желаний: %1$d</string>
     <string name="map_legend_no_data">Нет данных: %1$d</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
@@ -58,8 +58,8 @@
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Нет данных ни для одного из паспортов — перед поездкой проверь официальные источники.</string>
     <string name="map_no_data_this">Нет данных для этого паспорта — перед поездкой проверь официальные источники.</string>
-    <string name="map_chip_been">Был(а)</string>
-    <string name="map_chip_lived">Жил(а)</string>
+    <string name="map_chip_been">Посещено</string>
+    <string name="map_chip_lived">Прожито</string>
     <string name="map_chip_want">Хочу</string>
 
     <!-- Share cards (drawn onto a canvas) -->
@@ -85,8 +85,8 @@
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
     <string name="places_filter_all">Все</string>
-    <string name="places_filter_been">Был(а)</string>
-    <string name="places_filter_lived">Жил(а)</string>
+    <string name="places_filter_been">Посещено</string>
+    <string name="places_filter_lived">Прожито</string>
     <string name="places_filter_want">Хочу</string>
     <string name="places_filter_none">Пока нет</string>
     <string name="places_mode_travel">Где я был(а)</string>

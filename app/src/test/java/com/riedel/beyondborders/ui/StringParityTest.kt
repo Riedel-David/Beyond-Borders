@@ -86,6 +86,16 @@ class StringParityTest {
             "geo_continent_asia", "geo_region_melanesia", "geo_region_micronesia", // spelled the same in Spanish
             "visa_band_eta", "visa_category_e_visa", // "e-Ticket/ETA" and "eVisa" are the official labels
         ),
+        "fr" to setOf(
+            "geo_continent_europe", "geo_group_benelux", "geo_group_levant", "geo_group_maghreb", "geo_group_balkans",
+            "map_lens_visa", "share_tile_continents", "widget_label_continents", "widget_cfg_metric_continents",
+            "stats_continents", "badge_group_continents", "widget_cfg_background_transparent",
+            "settings_hue_rose", "settings_hue_violet", "visa_licence_link", "visa_band_eta", // spelled the same in French
+        ),
+        "pt" to setOf(
+            "geo_continent_oceania", "geo_group_benelux", "geo_group_indochina", "passport_status_chip_desc",
+            "settings_about_backup_title", "visa_band_eta", // same word in Portuguese
+        ),
     )
 
     private fun forEachLanguage(check: (tag: String, tr: Map<String, Entry>) -> Unit) {
