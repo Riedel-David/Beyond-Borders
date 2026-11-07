@@ -4,11 +4,11 @@
     <!-- Requirement categories (list headers, summaries, filters) -->
     <string name="visa_category_home">Родная страна</string>
     <string name="visa_category_visa_free">Без визы</string>
-    <string name="visa_category_eta">Электронное разрешение на поездку</string>
+    <string name="visa_category_eta">Эл. разрешение на въезд</string>
     <string name="visa_category_visa_on_arrival">Виза по прибытии</string>
     <string name="visa_category_e_visa">Электронная виза</string>
     <string name="visa_category_visa_required">Нужна виза</string>
-    <string name="visa_category_check">Уточни условия въезда</string>
+    <string name="visa_category_check">Уточнить условия въезда</string>
     <string name="visa_category_permit_required">Нужно разрешение</string>
     <string name="visa_category_no_admission">Въезд закрыт</string>
 
@@ -16,7 +16,7 @@
     <string name="visa_band_visa_free">Без визы</string>
     <string name="visa_band_eta">Эл. разрешение/ETA</string>
     <string name="visa_band_visa_on_arrival">По прибытии</string>
-    <string name="visa_band_visa_required">Заранее</string>
+    <string name="visa_band_visa_required">Виза заранее</string>
     <string name="visa_band_check">Уточнить</string>
     <string name="visa_band_closed">Закрыто</string>
     <string name="visa_band_no_data">Нет данных</string>

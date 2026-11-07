@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Отмечай места, где ты был(а), жил(а) или хочешь побывать, — на карте всех %1$d мест, а не только %2$d членов ООН.</string>
     <string name="welcome_intro_bare">Отмечай места, где ты был(а), жил(а) или хочешь побывать.</string>
-    <string name="welcome_privacy">Ничего из того, что ты отмечаешь, нам не отправляется. Ни аккаунта, ни сервера, ни сети — резервную копию можно экспортировать самому в любой момент. (Собственное резервное копирование Android всё же может её включать, если оно у тебя включено.)</string>
+    <string name="welcome_privacy">Ничего из того, что ты отмечаешь, нам не отправляется. Ни аккаунта, ни сервера, ни сети — резервную копию можно экспортировать самостоятельно в любой момент. (Резервное копирование Android всё же может сохранять эти данные, если оно у тебя включено.)</string>
     <string name="welcome_passport_hint">Визовые требования показываются для одного паспорта за раз. Выбери свой — позже его можно сменить в настройках.</string>
     <string name="welcome_get_started">Начать</string>
 
@@ -23,7 +23,7 @@
     <string name="recovery_saved">Сохранено.</string>
     <string name="recovery_save_failed">Не удалось сохранить: %1$s</string>
     <string name="recovery_open_failed">Не удалось открыть выбранный файл.</string>
-    <string name="recovery_wipe_failed">Не удалось удалить данные. Ничего важного не изменилось; попробуй ещё раз или очисти хранилище приложения в настройках Android.</string>
+    <string name="recovery_wipe_failed">Не удалось удалить данные. Не рассчитывай, что что-то изменилось; попробуй ещё раз или очисти хранилище приложения в настройках Android.</string>
     <string name="recovery_delete_start_fresh">Удалить данные и начать заново</string>
     <string name="recovery_confirm_title">Удалить всё, что ты отметил(а)?</string>
     <string name="recovery_confirm_saved">Ты сохранил(а) копию, так что данные можно будет прочитать позже. Все отмеченные места исчезнут из самого приложения.</string>
@@ -38,7 +38,7 @@
     <string name="settings_theme_system">Системная</string>
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
-    <string name="settings_pure_black">Чисто чёрная</string>
+    <string name="settings_pure_black">Абсолютно чёрная</string>
     <string name="settings_pure_black_detail">Для OLED-экранов</string>
 
     <!-- Language -->
@@ -46,7 +46,7 @@
     <string name="settings_language_system">Как в системе</string>
 
     <string name="settings_passport_title">Паспорт</string>
-    <string name="settings_passport_detail">Визовые ответы на карте и во вкладке «Паспорт» относятся к этому паспорту.</string>
+    <string name="settings_passport_detail">Визовая информация на карте и во вкладке «Паспорт» — для этого паспорта.</string>
     <string name="settings_second_passport">Второй паспорт</string>
     <string name="settings_add_second_passport">Добавить второй паспорт</string>
     <string name="settings_dual_hint">Для людей с двойным гражданством показывается тот из двух паспортов, у которого условия проще</string>
@@ -57,8 +57,8 @@
 
     <string name="settings_colours_title">Цвета карты</string>
     <string name="settings_colours_detail">Если выбрать уже занятый цвет, два цвета поменяются местами.</string>
-    <string name="settings_status_been">Посещено</string>
-    <string name="settings_status_lived">Прожито</string>
+    <string name="settings_status_been">Был(а)</string>
+    <string name="settings_status_lived">Жил(а)</string>
     <string name="settings_status_want">Хочу</string>
     <string name="settings_colours_reset">Вернуть цвета по умолчанию</string>
     <!-- Accessibility name of a colour swatch: status, then colour -->
@@ -71,9 +71,9 @@
     <string name="settings_hue_amber">Янтарный</string>
 
     <string name="settings_counting_title">Подсчёт мест</string>
-    <string name="settings_counting_detail">Относительно чего вкладка «Паспорт» ведёт подсчёт.</string>
+    <string name="settings_counting_detail">От какого общего числа мест считать на вкладке «Паспорт».</string>
     <string name="settings_denominator_all">Все %1$d</string>
-    <string name="settings_denominator_un">%1$d в ООН</string>
+    <string name="settings_denominator_un">%1$d ООН</string>
     <string name="settings_denominator_all_bare">Все</string>
     <string name="settings_denominator_un_bare">ООН</string>
     <string name="settings_denominator_inhabited">Обитаемые</string>
@@ -131,7 +131,7 @@
     <string name="settings_about_version">BeyondBorders %1$s</string>
     <string name="settings_about_open_source">Открытый исходный код (GPL-3.0)</string>
     <string name="settings_about_data_title">О данных</string>
-    <string name="settings_about_disclaimer">Независимое приложение, не связанное ни с каким правительством и не представляющее его. Визовые данные — это моментальный снимок и могут устареть: перед поездкой уточняй правила въезда в официальном государственном источнике.</string>
+    <string name="settings_about_disclaimer">Независимое приложение, не связанное ни с каким правительством и не представляющее его. Визовые данные — это снимок на определённую дату, и они могут устареть: перед поездкой уточняй правила въезда в официальном государственном источнике.</string>
     <string name="settings_about_map_title">Данные карты</string>
     <string name="settings_about_map">Границы из Natural Earth (общественное достояние), отрисовка — MapLibre. Вся карта встроена в приложение, поэтому оно работает без сети и без аккаунта.</string>
     <string name="settings_about_backup_title">Резервные копии</string>
@@ -187,23 +187,23 @@
     <string name="backup_imported_both">Импортировано новых: %1$d, обновлённых: %2$d.</string>
     <string name="backup_already_current">Уже актуально: %1$d.</string>
     <plurals name="backup_skipped_codes">
-        <item quantity="one">Пропущено: %1$d неизвестный код: %2$s.</item>
-        <item quantity="few">Пропущено: %1$d неизвестных кода: %2$s.</item>
-        <item quantity="many">Пропущено: %1$d неизвестных кодов: %2$s.</item>
-        <item quantity="other">Пропущено: %1$d неизвестного кода: %2$s.</item>
+        <item quantity="one">Пропущен %1$d неизвестный код: %2$s.</item>
+        <item quantity="few">Пропущено %1$d неизвестных кода: %2$s.</item>
+        <item quantity="many">Пропущено %1$d неизвестных кодов: %2$s.</item>
+        <item quantity="other">Пропущено %1$d неизвестного кода: %2$s.</item>
     </plurals>
     <!-- Counted in rows, listed as distinct words; one plural per word count -->
     <plurals name="backup_skipped_status_one_word">
-        <item quantity="one">Пропущено: %1$d запись с нераспознанным статусом: %2$s.</item>
-        <item quantity="few">Пропущено: %1$d записи с нераспознанным статусом: %2$s.</item>
-        <item quantity="many">Пропущено: %1$d записей с нераспознанным статусом: %2$s.</item>
-        <item quantity="other">Пропущено: %1$d записи с нераспознанным статусом: %2$s.</item>
+        <item quantity="one">Пропущена %1$d запись с нераспознанным статусом: %2$s.</item>
+        <item quantity="few">Пропущено %1$d записи с нераспознанным статусом: %2$s.</item>
+        <item quantity="many">Пропущено %1$d записей с нераспознанным статусом: %2$s.</item>
+        <item quantity="other">Пропущено %1$d записи с нераспознанным статусом: %2$s.</item>
     </plurals>
     <plurals name="backup_skipped_status_many_words">
-        <item quantity="one">Пропущено: %1$d запись с нераспознанными статусами: %2$s.</item>
-        <item quantity="few">Пропущено: %1$d записи с нераспознанными статусами: %2$s.</item>
-        <item quantity="many">Пропущено: %1$d записей с нераспознанными статусами: %2$s.</item>
-        <item quantity="other">Пропущено: %1$d записи с нераспознанными статусами: %2$s.</item>
+        <item quantity="one">Пропущена %1$d запись с нераспознанными статусами: %2$s.</item>
+        <item quantity="few">Пропущено %1$d записи с нераспознанными статусами: %2$s.</item>
+        <item quantity="many">Пропущено %1$d записей с нераспознанными статусами: %2$s.</item>
+        <item quantity="other">Пропущено %1$d записи с нераспознанными статусами: %2$s.</item>
     </plurals>
     <plurals name="backup_unreadable_rows">
         <item quantity="one">Не удалось прочитать %d строку.</item>

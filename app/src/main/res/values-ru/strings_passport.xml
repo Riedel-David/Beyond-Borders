@@ -9,8 +9,8 @@
     <string name="passport_group_alphabetical">А–Я</string>
     <string name="passport_state_collapsed">Свёрнуто</string>
     <string name="passport_state_expanded">Развёрнуто</string>
-    <string name="passport_chip_been">Посещено</string>
-    <string name="passport_chip_lived">Прожито</string>
+    <string name="passport_chip_been">Был(а)</string>
+    <string name="passport_chip_lived">Жил(а)</string>
     <string name="passport_chip_want">Хочу</string>
     <string name="passport_mark_been">Отметить «%1$s» как посещённое</string>
     <string name="passport_mark_lived">Отметить «%1$s» как место, где ты жил(а)</string>
@@ -32,12 +32,12 @@
         <item quantity="other">из %1$d места · %2$d%%</item>
     </plurals>
     <plurals name="passport_card_continents">
-        <item quantity="one">%1$d из %2$d континентов</item>
+        <item quantity="one">%1$d из %2$d континента</item>
         <item quantity="few">%1$d из %2$d континентов</item>
         <item quantity="many">%1$d из %2$d континентов</item>
-        <item quantity="other">%1$d из %2$d континентов</item>
+        <item quantity="other">%1$d из %2$d континента</item>
     </plurals>
-    <string name="passport_card_lived">Прожито: %1$d</string>
+    <string name="passport_card_lived">Жил(а): %1$d</string>
     <string name="passport_card_wishlist">В списке желаний: %1$d</string>
 
     <!-- Stats screen -->
@@ -47,30 +47,30 @@
     <string name="stats_continents_info_label">Показать подсказку по столбцам континентов</string>
     <string name="stats_continents_info">Нажми на столбец и удерживай, чтобы увидеть, каких мест ещё не хватает.</string>
     <string name="stats_regions">Регионы</string>
-    <string name="stats_named_groupings">Именованные группы</string>
+    <string name="stats_named_groupings">Группы стран</string>
     <string name="stats_least_covered">Меньше всего охвачено</string>
-    <string name="stats_next_up">Дальше</string>
+    <string name="stats_next_up">Следующие цели</string>
     <string name="stats_show_all_groupings">Показать все группы</string>
     <string name="stats_collapse">Свернуть</string>
     <string name="stats_expand">Развернуть</string>
     <string name="stats_bar_details">Показать подробности: %1$s</string>
-    <string name="stats_dialog_been">Посещено (%1$d)</string>
+    <string name="stats_dialog_been">Был(а) (%1$d)</string>
     <string name="stats_dialog_missing">Осталось (%1$d)</string>
     <string name="stats_dialog_close">Закрыть</string>
 
     <!-- Stats hero -->
     <string name="stats_hero_percent">%1$d%%</string>
     <plurals name="stats_hero_places">
-        <item quantity="one">%1$d из %2$d мест</item>
+        <item quantity="one">%1$d из %2$d места</item>
         <item quantity="few">%1$d из %2$d мест</item>
         <item quantity="many">%1$d из %2$d мест</item>
-        <item quantity="other">%1$d из %2$d мест</item>
+        <item quantity="other">%1$d из %2$d места</item>
     </plurals>
     <plurals name="stats_hero_badges">
-        <item quantity="one">Открыто %1$d из %2$d значков</item>
+        <item quantity="one">Открыто %1$d из %2$d значка</item>
         <item quantity="few">Открыто %1$d из %2$d значков</item>
         <item quantity="many">Открыто %1$d из %2$d значков</item>
-        <item quantity="other">Открыто %1$d из %2$d значков</item>
+        <item quantity="other">Открыто %1$d из %2$d значка</item>
     </plurals>
     <string name="stats_hero_description">Доля посещённых мест: %1$d%%, %2$d из %3$d. Звание: %4$s. %5$s. %6$s.</string>
 
@@ -90,18 +90,18 @@
     <string name="badge_closest">Ближе всего к открытию</string>
     <string name="badge_section_title">Достижения</string>
     <string name="badge_section_info_label">Показать подсказку по достижениям</string>
-    <string name="badge_section_hint">Значки следуют за твоей картой в её текущем виде: сними отметку с места, и значок может снова пропасть.</string>
+    <string name="badge_section_hint">Значки отражают карту в её текущем виде: если снять отметку с места, значок может пропасть.</string>
     <string name="badge_group_header">%1$s · %2$d из %3$d</string>
     <string name="badge_show_details">Показать подробности</string>
     <string name="badge_unlocked">Открыто</string>
-    <string name="badge_new">НОВОЕ</string>
+    <string name="badge_new">НОВЫЙ</string>
     <string name="badge_progress_of">%1$d из %2$d</string>
     <string name="badge_spoken_unlocked">%1$s, открыто. %2$s</string>
     <string name="badge_spoken_new">%1$s, только что открыто. %2$s</string>
     <string name="badge_spoken_locked">%1$s, закрыто, %2$d из %3$d. %4$s</string>
     <string name="badge_share">Поделиться</string>
     <string name="badge_share_failed">Не удалось поделиться значком</string>
-    <string name="badge_share_caption">Я открыл(а) «%1$s» в Beyond Borders: %2$s</string>
+    <string name="badge_share_caption">Новое достижение в Beyond Borders — «%1$s»: %2$s</string>
     <string name="badge_rank_line">%1$s · %2$s</string>
     <plurals name="badge_places_count">
         <item quantity="one">%1$d место</item>
@@ -116,13 +116,13 @@
     <string name="badge_group_counts">Места</string>
     <string name="badge_group_continents">Континенты</string>
     <string name="badge_group_regions">Регионы</string>
-    <string name="badge_group_groups">Именованные группы</string>
+    <string name="badge_group_groups">Группы стран</string>
     <string name="badge_group_dependencies">Территории</string>
     <string name="badge_group_non_un">Вне ООН</string>
     <string name="badge_group_tiny">Крошечные места</string>
     <string name="badge_group_giants">Гиганты</string>
     <string name="badge_group_special">Особые</string>
-    <string name="badge_group_lived">Прожито</string>
+    <string name="badge_group_lived">Жил(а)</string>
     <string name="badge_group_wishlist">Список желаний</string>
 
     <!-- Badge titles and descriptions -->
@@ -199,13 +199,13 @@
     <string name="badge_hemispheres_title">Четыре полушария</string>
     <string name="badge_hemispheres_desc">Побывай на севере, юге, востоке и западе (по центральной точке каждого места).</string>
     <string name="badge_lived_1_title">Жизнь за границей</string>
-    <string name="badge_lived_3_title">Прожито в %1$d местах</string>
+    <string name="badge_lived_3_title">Жил(а) в %1$d местах</string>
     <plurals name="badge_lived_desc">
-        <item quantity="one">Отметь %1$d место как «Прожито».</item>
-        <item quantity="few">Отметь %1$d места как «Прожито».</item>
-        <item quantity="many">Отметь %1$d мест как «Прожито».</item>
-        <item quantity="other">Отметь %1$d места как «Прожито».</item>
+        <item quantity="one">Отметь %1$d место как «Жил(а)».</item>
+        <item quantity="few">Отметь %1$d места как «Жил(а)».</item>
+        <item quantity="many">Отметь %1$d мест как «Жил(а)».</item>
+        <item quantity="other">Отметь %1$d места как «Жил(а)».</item>
     </plurals>
     <string name="badge_wishlist_10_title">Мечтатель</string>
-    <string name="badge_wishlist_10_desc">Добавь в список желаний мест: %1$d.</string>
+    <string name="badge_wishlist_10_desc">Добавь %1$d мест в список желаний.</string>
 </resources>
