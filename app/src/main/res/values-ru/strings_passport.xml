@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Russian draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Passport list -->
+    <string name="passport_search_places">Поиск мест</string>
+    <string name="passport_group_list">Группировка списка</string>
+    <string name="passport_group_continent">По континентам</string>
+    <string name="passport_group_region">По регионам</string>
+    <string name="passport_group_alphabetical">А–Я</string>
+    <string name="passport_state_collapsed">Свёрнуто</string>
+    <string name="passport_state_expanded">Развёрнуто</string>
+    <string name="passport_chip_been">Был(а)</string>
+    <string name="passport_chip_lived">Жил(а)</string>
+    <string name="passport_chip_want">Хочу</string>
+    <string name="passport_mark_been">Отметить «%1$s» как посещённое</string>
+    <string name="passport_mark_lived">Отметить «%1$s» как место, где ты жил(а)</string>
+    <string name="passport_mark_want">Отметить «%1$s» как желаемое</string>
+    <string name="passport_clear">Сбросить</string>
+    <string name="passport_clear_status">Сбросить статус: %1$s</string>
+    <string name="passport_status_chip_desc">%1$s, статус: %2$s</string>
+    <string name="passport_status_unset">не задан</string>
+    <string name="passport_change_status">Изменить статус</string>
+    <string name="passport_loading">Загружаем твои места…</string>
+    <string name="passport_no_match_query">Нет мест по запросу «%1$s».</string>
+    <string name="passport_no_match_filter">Нет мест для фильтра «%1$s».</string>
+    <string name="passport_nothing_matches">Ничего не найдено.</string>
+    <string name="passport_card_action">Континенты, регионы и группы</string>
+    <plurals name="passport_card_total">
+        <item quantity="one">из %1$d места · %2$d%%</item>
+        <item quantity="few">из %1$d мест · %2$d%%</item>
+        <item quantity="many">из %1$d мест · %2$d%%</item>
+        <item quantity="other">из %1$d места · %2$d%%</item>
+    </plurals>
+    <plurals name="passport_card_continents">
+        <item quantity="one">%1$d из %2$d континентов</item>
+        <item quantity="few">%1$d из %2$d континентов</item>
+        <item quantity="many">%1$d из %2$d континентов</item>
+        <item quantity="other">%1$d из %2$d континентов</item>
+    </plurals>
+    <string name="passport_card_lived">Жил(а): %1$d</string>
+    <string name="passport_card_wishlist">В списке желаний: %1$d</string>
+
+    <!-- Stats screen -->
+    <string name="stats_title">Статистика</string>
+    <string name="stats_back">Назад</string>
+    <string name="stats_continents">Континенты</string>
+    <string name="stats_continents_info_label">Показать подсказку по столбцам континентов</string>
+    <string name="stats_continents_info">Нажми на столбец и удерживай, чтобы увидеть, каких мест ещё не хватает.</string>
+    <string name="stats_regions">Регионы</string>
+    <string name="stats_named_groupings">Именованные группы</string>
+    <string name="stats_least_covered">Меньше всего охвачено</string>
+    <string name="stats_next_up">Дальше</string>
+    <string name="stats_show_all_groupings">Показать все группы</string>
+    <string name="stats_collapse">Свернуть</string>
+    <string name="stats_expand">Развернуть</string>
+    <string name="stats_bar_details">Показать подробности: %1$s</string>
+    <string name="stats_dialog_been">Посещено (%1$d)</string>
+    <string name="stats_dialog_missing">Осталось (%1$d)</string>
+    <string name="stats_dialog_close">Закрыть</string>
+
+    <!-- Stats hero -->
+    <string name="stats_hero_percent">%1$d%%</string>
+    <plurals name="stats_hero_places">
+        <item quantity="one">%1$d из %2$d мест</item>
+        <item quantity="few">%1$d из %2$d мест</item>
+        <item quantity="many">%1$d из %2$d мест</item>
+        <item quantity="other">%1$d из %2$d мест</item>
+    </plurals>
+    <plurals name="stats_hero_badges">
+        <item quantity="one">Открыто %1$d из %2$d значков</item>
+        <item quantity="few">Открыто %1$d из %2$d значков</item>
+        <item quantity="many">Открыто %1$d из %2$d значков</item>
+        <item quantity="other">Открыто %1$d из %2$d значков</item>
+    </plurals>
+    <string name="stats_hero_description">Доля посещённых мест: %1$d%%, %2$d из %3$d. Звание: %4$s. %5$s. %6$s.</string>
+
+    <!-- Traveller ranks -->
+    <string name="rank_newcomer">Новичок</string>
+    <string name="rank_wanderer">Странник</string>
+    <string name="rank_explorer">Исследователь</string>
+    <string name="rank_adventurer">Искатель приключений</string>
+    <string name="rank_globetrotter">Глобтроттер</string>
+    <string name="rank_world_traveller">Путешественник по миру</string>
+    <string name="rank_legend">Легенда</string>
+    <string name="rank_top_reached">Высшее звание достигнуто</string>
+    <string name="rank_progress">Ещё %1$d до звания «%2$s»</string>
+
+    <!-- Badge sections and cards -->
+    <string name="badge_recent">Недавно открытые</string>
+    <string name="badge_closest">Ближе всего к открытию</string>
+    <string name="badge_section_title">Достижения</string>
+    <string name="badge_section_info_label">Показать подсказку по достижениям</string>
+    <string name="badge_section_hint">Значки следуют за твоей картой в её текущем виде: сними отметку с места, и значок может снова пропасть.</string>
+    <string name="badge_group_header">%1$s · %2$d из %3$d</string>
+    <string name="badge_show_details">Показать подробности</string>
+    <string name="badge_unlocked">Открыто</string>
+    <string name="badge_new">НОВОЕ</string>
+    <string name="badge_progress_of">%1$d из %2$d</string>
+    <string name="badge_spoken_unlocked">%1$s, открыто. %2$s</string>
+    <string name="badge_spoken_new">%1$s, только что открыто. %2$s</string>
+    <string name="badge_spoken_locked">%1$s, закрыто, %2$d из %3$d. %4$s</string>
+    <string name="badge_share">Поделиться</string>
+    <string name="badge_share_failed">Не удалось поделиться значком</string>
+    <string name="badge_share_caption">Я открыл(а) «%1$s» в Beyond Borders: %2$s</string>
+    <string name="badge_rank_line">%1$s · %2$s</string>
+    <plurals name="badge_places_count">
+        <item quantity="one">%1$d место</item>
+        <item quantity="few">%1$d места</item>
+        <item quantity="many">%1$d мест</item>
+        <item quantity="other">%1$d места</item>
+    </plurals>
+    <string name="badge_celebrate_one">Открыто: %1$s</string>
+    <string name="badge_celebrate_more">Открыто: %1$s и ещё %2$d</string>
+
+    <!-- Badge groups -->
+    <string name="badge_group_counts">Места</string>
+    <string name="badge_group_continents">Континенты</string>
+    <string name="badge_group_regions">Регионы</string>
+    <string name="badge_group_groups">Именованные группы</string>
+    <string name="badge_group_dependencies">Территории</string>
+    <string name="badge_group_non_un">Вне ООН</string>
+    <string name="badge_group_tiny">Крошечные места</string>
+    <string name="badge_group_giants">Гиганты</string>
+    <string name="badge_group_special">Особые</string>
+    <string name="badge_group_lived">Жил(а)</string>
+    <string name="badge_group_wishlist">Список желаний</string>
+
+    <!-- Badge titles and descriptions -->
+    <string name="badge_count_1_title">Первая печать</string>
+    <string name="badge_count_1_desc">Отметь первое место как посещённое.</string>
+    <plurals name="badge_count_n_title">
+        <item quantity="one">%1$d место</item>
+        <item quantity="few">%1$d места</item>
+        <item quantity="many">%1$d мест</item>
+        <item quantity="other">%1$d места</item>
+    </plurals>
+    <plurals name="badge_count_n_desc">
+        <item quantity="one">Побывай в %1$d месте.</item>
+        <item quantity="few">Побывай в %1$d местах.</item>
+        <item quantity="many">Побывай в %1$d местах.</item>
+        <item quantity="other">Побывай в %1$d места.</item>
+    </plurals>
+    <plurals name="badge_continents_touch_title">
+        <item quantity="one">%1$d континент</item>
+        <item quantity="few">%1$d континента</item>
+        <item quantity="many">%1$d континентов</item>
+        <item quantity="other">%1$d континента</item>
+    </plurals>
+    <plurals name="badge_continents_touch_desc">
+        <item quantity="one">Побывай на %1$d континенте.</item>
+        <item quantity="few">Побывай на %1$d континентах.</item>
+        <item quantity="many">Побывай на %1$d континентах.</item>
+        <item quantity="other">Побывай на %1$d континента.</item>
+    </plurals>
+    <string name="badge_continent_complete_title">%1$s целиком</string>
+    <string name="badge_continent_complete_desc">Побывай во всех населённых местах континента «%1$s».</string>
+    <string name="badge_region_desc">Побывай во всех населённых местах региона «%1$s» (всего %2$d).</string>
+    <string name="badge_group_desc">Побывай во всех населённых местах группы «%1$s»: %2$s.</string>
+    <plurals name="badge_dependencies_title">
+        <item quantity="one">%1$d территория</item>
+        <item quantity="few">%1$d территории</item>
+        <item quantity="many">%1$d территорий</item>
+        <item quantity="other">%1$d территории</item>
+    </plurals>
+    <plurals name="badge_dependencies_desc">
+        <item quantity="one">Побывай в %1$d месте, принадлежащем другой стране.</item>
+        <item quantity="few">Побывай в %1$d местах, принадлежащих другой стране.</item>
+        <item quantity="many">Побывай в %1$d местах, принадлежащих другой стране.</item>
+        <item quantity="other">Побывай в %1$d места, принадлежащих другой стране.</item>
+    </plurals>
+    <plurals name="badge_non_un_title">
+        <item quantity="one">%1$d вне ООН</item>
+        <item quantity="few">%1$d вне ООН</item>
+        <item quantity="many">%1$d вне ООН</item>
+        <item quantity="other">%1$d вне ООН</item>
+    </plurals>
+    <plurals name="badge_non_un_desc">
+        <item quantity="one">Побывай в %1$d месте, не являющемся членом или наблюдателем ООН.</item>
+        <item quantity="few">Побывай в %1$d местах, не являющихся членами или наблюдателями ООН.</item>
+        <item quantity="many">Побывай в %1$d местах, не являющихся членами или наблюдателями ООН.</item>
+        <item quantity="other">Побывай в %1$d места, не являющихся членами или наблюдателями ООН.</item>
+    </plurals>
+    <plurals name="badge_tiny_title">
+        <item quantity="one">%1$d крошечное место</item>
+        <item quantity="few">%1$d крошечных места</item>
+        <item quantity="many">%1$d крошечных мест</item>
+        <item quantity="other">%1$d крошечных места</item>
+    </plurals>
+    <plurals name="badge_tiny_desc">
+        <item quantity="one">Побывай в %1$d месте площадью менее %2$d км².</item>
+        <item quantity="few">Побывай в %1$d местах площадью менее %2$d км².</item>
+        <item quantity="many">Побывай в %1$d местах площадью менее %2$d км².</item>
+        <item quantity="other">Побывай в %1$d места площадью менее %2$d км².</item>
+    </plurals>
+    <string name="badge_giant_1_title">Гигант</string>
+    <string name="badge_giant_1_desc">Побывай в одном из %1$d крупнейших по площади мест.</string>
+    <string name="badge_antarctica_title">Белый континент</string>
+    <string name="badge_antarctica_desc">Ступи на землю Антарктиды.</string>
+    <string name="badge_hemispheres_title">Четыре полушария</string>
+    <string name="badge_hemispheres_desc">Побывай на севере, юге, востоке и западе (по центральной точке каждого места).</string>
+    <string name="badge_lived_1_title">Жизнь за границей</string>
+    <string name="badge_lived_3_title">Жил(а) в %1$d местах</string>
+    <plurals name="badge_lived_desc">
+        <item quantity="one">Отметь %1$d место как «Жил(а)».</item>
+        <item quantity="few">Отметь %1$d места как «Жил(а)».</item>
+        <item quantity="many">Отметь %1$d мест как «Жил(а)».</item>
+        <item quantity="other">Отметь %1$d места как «Жил(а)».</item>
+    </plurals>
+    <string name="badge_wishlist_10_title">Мечтатель</string>
+    <string name="badge_wishlist_10_desc">Добавь в список желаний мест: %1$d.</string>
+</resources>
