@@ -87,15 +87,17 @@ jobs:
           ./gradlew "${TASKS[@]}"
 
       # Fails the run if the APK is unsigned or its signature does not check out, and
-      # prints the certificate digest to compare with the key given to Play App Signing.
+      # prints the certificate digest of the release key. Play re-signs with its own app
+      # signing key, so its digest differs from this one on purpose.
       - name: Verify signature
         run: |
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs --verbose app/build/outputs/apk/release/app-release.apk
 
-      # The AAB is what Play takes; same key as the APK. jarsigner prints "jar verified"
-      # only for a bundle whose signature checks out, and the digest below should match
-      # the one apksigner printed above.
+      # The AAB is what Play takes. It is signed with the same release keystore as the
+      # APK, which acts as the upload key, so the digest below should match the one
+      # apksigner printed above. jarsigner prints "jar verified" only for a bundle whose
+      # signature checks out.
       - name: Verify bundle signature
         if: inputs.aab
         run: |
