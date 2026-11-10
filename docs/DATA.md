@@ -28,6 +28,16 @@ python3 tools/visa/build_visa.py --source ~/Visa-requirements/data   # offline, 
 After rebuilding, refresh the recorded hashes as described in
 [ASSET_SOURCES.md](../ASSET_SOURCES.md).
 
+### The weekly refresh pull request
+
+`.github/workflows/visa-refresh.yml` runs these same steps every Monday at 07:00 UTC (after
+Visa-requirements republishes), regenerates `docs/visa-checksums.txt`, and, only when the
+data differs from `main` beyond the `asOf` date and the per-passport `sourceRevision` (Wikipedia revision drift alone opens nothing; with no change an open data PR is closed), opens one `data/visa-YYYY-MM-DD` pull
+request listing the changed rows. A failed build opens nothing. Merging it does not release
+anything. The manual steps above remain the fallback (for example when the job is red or
+the territory CORRECTIONS need a re-review); the workflow needs "Allow GitHub Actions to
+create and approve pull requests" enabled under Settings > Actions > General.
+
 It refuses to write unless every one of the 252 places resolves to exactly one answer
 and every rule is still live — so the day the dataset starts covering a territory
 itself, the build says the override is dead instead of preserving a stale opinion
@@ -53,8 +63,8 @@ tab. It downloads the dataset's `index.json` and opens an issue (one per kind of
 per kind, none while one of that kind is open) only when a passport is added or removed upstream, the index
 `schema_version` major changes, or the index cannot be fetched or read. Wikipedia
 revision drift (`source_revision` against `dataset.sourceRevision` in `visa*.json`) is
-expected weekly and is only listed in the job summary. It changes nothing in the repo:
-refreshing stays the manual review above.
+expected weekly and is only listed in the job summary. It changes nothing in the repo;
+the weekly pull request above carries the data itself.
 
 ## Regenerating the geo assets
 

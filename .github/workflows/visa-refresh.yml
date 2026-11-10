@@ -1,0 +1,122 @@
+name: Visa data refresh
+
+# Weekly pull request that keeps the bundled visa data current. Visa-requirements
+# republishes on Mondays around 04:17 UTC; this runs at 07:00 UTC, after it.
+#
+# It runs the same build as docs/DATA.md (tools/visa/build_visa.py), which downloads the
+# published dataset and refuses to write unless every check passes. If the build fails the
+# job goes red and NO pull request is opened. If the rebuilt assets differ from main in
+# anything other than the "asOf" date and each passport's "sourceRevision" (Wikipedia
+# revisions drift weekly, so revision drift alone opens no PR), one data/visa-YYYY-MM-DD branch and PR are opened,
+# listing the changed rows; otherwise nothing is opened and any stale open data PR is closed.
+# Only one data PR is open at a time: an older one is closed in favour of the new one.
+#
+# Merging that PR does NOT release anything. It only updates the data on main; a release is
+# still cut by hand with release.yml. visa-freshness.yml stays as the alarm for what this
+# job cannot decide for itself: a passport added or removed upstream and a schema change.
+#
+# Repo setting needed: Settings > Actions > General > "Allow GitHub Actions to create and
+# approve pull requests". A PR opened with GITHUB_TOKEN does not trigger pull_request
+# workflows, so the checks are started with `gh workflow run ci.yml` (dispatch is allowed)
+# on the data branch, which attaches `test` and `lint` to its head commit.
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: visa-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    # A dispatch from another ref must not open a PR against main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Rebuild the visa assets
+        run: |
+          export LC_ALL=C  # glob order of visa*.json must be deterministic
+          mkdir -p tools/visa/cache
+          curl -fsSL --retry 3 -o tools/visa/cache/aa-travelwarning.json https://www.auswaertiges-amt.de/opendata/travelwarning
+          python3 -I tools/visa/build_visa.py
+          (cd app/src/main/assets && sha256sum visa*.json) > docs/visa-checksums.txt
+
+      - name: Decide whether anything changed
+        id: diff
+        run: |
+          # "asOf" moves on every build and "sourceRevision" on any Wikipedia edit, so
+          # neither counts as a change; the revisions file still ships with a real one.
+          strip() { sed -E 's/"(asOf|sourceRevision)":"[^"]*"//g'; }
+          changed=false
+          for f in app/src/main/assets/visa*.json; do
+            if ! diff -q <(git show "HEAD:$f" 2>/dev/null | strip) \
+                         <(strip < "$f") > /dev/null; then
+              changed=true
+              break
+            fi
+          done
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          if [ "$changed" = false ]; then
+            echo "No change in the visa data." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Close stale data pull requests
+        if: steps.diff.outputs.changed == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr list --state open --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("data/visa-")) | .number' |
+          while read -r N; do
+            gh pr close "$N" --delete-branch --comment "Data on main now matches the latest publication."
+          done
+
+      - name: Open or update the data pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="data/visa-$(date -u +%F)"
+          {
+            echo "Weekly refresh of the bundled visa data. Shipped as published by Visa-requirements; no app-side curation."
+            echo
+            echo "Merging does not release anything. Rows that differ from main (category and days):"
+            echo
+            echo '```'
+            python3 -I tools/visa/diff_rows.py HEAD app/src/main/assets
+            echo '```'
+          } > "$RUNNER_TEMP/body.md"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$BRANCH"
+          git add app/src/main/assets docs/visa-checksums.txt docs/visa-source-revisions.txt
+          git commit -m "Refresh the visa data from the latest Visa-requirements publication"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+
+          # One data PR at a time: close older ones (and drop their branches).
+          gh pr list --state open --json number,headRefName \
+            --jq '.[] | select((.headRefName | startswith("data/visa-")) and .headRefName != "'"$BRANCH"'") | .number' |
+          while read -r N; do
+            gh pr close "$N" --delete-branch --comment "Superseded by $BRANCH."
+          done
+
+          if [ -n "$(gh pr list --state open --head "$BRANCH" --json number --jq '.[].number')" ]; then
+            gh pr edit "$BRANCH" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --head "$BRANCH" --base main \
+              --title "Visa data refresh $(date -u +%F)" --body-file "$RUNNER_TEMP/body.md"
+          fi
+
+          # Start the required checks on the pushed head commit.
+          gh workflow run ci.yml --ref "$BRANCH"
