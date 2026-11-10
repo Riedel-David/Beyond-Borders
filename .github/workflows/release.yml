@@ -108,8 +108,8 @@ jobs:
         run: |
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs --verbose app/build/outputs/apk/release/app-release.apk | tee "$RUNNER_TEMP/apksigner.txt"
-          # Every signer digest must equal the pinned one (case and colons ignored).
-          GOT=$(grep -i 'certificate SHA-256 digest' "$RUNNER_TEMP/apksigner.txt" | sed 's/.*: *//' | tr -d ':[:space:]' | tr 'A-F' 'a-f' | sort -u)
+          # Exactly one distinct signer digest, equal to the pinned one (case and colons ignored).
+          GOT=$({ grep -i 'certificate SHA-256 digest' "$RUNNER_TEMP/apksigner.txt" || true; } | sed 's/.*: *//' | tr -d ':[:space:]' | tr 'A-F' 'a-f' | sort -u)
           if [ "$GOT" != "$EXPECTED_KEY_SHA256" ]; then
             echo "::error::APK signer digest '${GOT:-none}' does not match the pinned RELEASE_KEY_SHA256 ($EXPECTED_KEY_SHA256)."
             exit 1
@@ -126,7 +126,8 @@ jobs:
           echo "$OUT" | tail -5
           echo "$OUT" | grep -q "jar verified" || { echo "AAB signature did not verify" >&2; exit 1; }
           # jarsigner does not print the digest; keytool reads the signer certificate from the bundle.
-          GOT=$(keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -i 'SHA256:' | sed 's/.*SHA256: *//' | tr -d ':[:space:]' | tr 'A-F' 'a-f' | sort -u)
+          # The first SHA256 line is the signer's leaf certificate; later ones are its chain.
+          GOT=$({ keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -i 'SHA256:' || true; } | head -n1 | sed 's/.*SHA256: *//' | tr -d ':[:space:]' | tr 'A-F' 'a-f')
           if [ "$GOT" != "$EXPECTED_KEY_SHA256" ]; then
             echo "::error::AAB signer digest '${GOT:-none}' does not match the pinned RELEASE_KEY_SHA256 ($EXPECTED_KEY_SHA256)."
             exit 1

@@ -32,7 +32,7 @@ After rebuilding, refresh the recorded hashes as described in
 
 `.github/workflows/visa-refresh.yml` runs these same steps every Monday at 07:00 UTC (after
 Visa-requirements republishes), regenerates `docs/visa-checksums.txt`, and, only when the
-data differs from `main` beyond the `asOf` date, opens one `data/visa-YYYY-MM-DD` pull
+data differs from `main` beyond the `asOf` date and the per-passport `sourceRevision` (Wikipedia revision drift alone opens nothing; with no change an open data PR is closed), opens one `data/visa-YYYY-MM-DD` pull
 request listing the changed rows. A failed build opens nothing. Merging it does not release
 anything. The manual steps above remain the fallback (for example when the job is red or
 the territory CORRECTIONS need a re-review); the workflow needs "Allow GitHub Actions to
