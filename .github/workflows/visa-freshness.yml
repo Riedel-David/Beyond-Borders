@@ -5,7 +5,7 @@ name: Visa data freshness
 # schema_version, or an index that cannot be fetched or read. Wikipedia revision
 # differences are expected (the articles are edited daily, so some always differ);
 # they are only printed into the job summary. It changes nothing in the repo.
-# Refreshing the data stays a manual step (docs/DATA.md).
+# The data itself is refreshed by visa-refresh.yml's weekly pull request (docs/DATA.md).
 on:
   schedule:
     - cron: "17 6 * * 1"

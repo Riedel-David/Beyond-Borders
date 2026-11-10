@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Lets visa-refresh.yml run the checks on its data branch: a PR opened with the
+  # default GITHUB_TOKEN does not trigger pull_request workflows, but a dispatch is allowed.
+  workflow_dispatch:
 
 permissions:
   contents: read

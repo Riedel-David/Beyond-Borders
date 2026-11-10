@@ -69,6 +69,21 @@ jobs:
             exit 1
           fi
 
+      # The digest of the release key is pinned in a repo variable (Settings > Secrets and
+      # variables > Actions > Variables), so a swapped or regenerated keystore secret fails
+      # the run instead of publishing an APK users cannot update over. Unset is an error,
+      # never a skip.
+      - name: Require the pinned release key digest
+        env:
+          PIN: ${{ vars.RELEASE_KEY_SHA256 }}
+        run: |
+          NORM=$(printf '%s' "$PIN" | tr -d ': \t\r\n' | tr 'A-F' 'a-f')
+          if ! printf '%s' "$NORM" | grep -Eq '^[0-9a-f]{64}$'; then
+            echo "::error::Repo variable RELEASE_KEY_SHA256 is unset or not a SHA-256 hex digest; refusing to release without a pinned key."
+            exit 1
+          fi
+          echo "EXPECTED_KEY_SHA256=$NORM" >> "$GITHUB_ENV"
+
       - name: Decode keystore
         env:
           KS_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
@@ -92,7 +107,13 @@ jobs:
       - name: Verify signature
         run: |
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          "$APKSIGNER" verify --print-certs --verbose app/build/outputs/apk/release/app-release.apk
+          "$APKSIGNER" verify --print-certs --verbose app/build/outputs/apk/release/app-release.apk | tee "$RUNNER_TEMP/apksigner.txt"
+          # Every signer digest must equal the pinned one (case and colons ignored).
+          GOT=$(grep -i 'certificate SHA-256 digest' "$RUNNER_TEMP/apksigner.txt" | sed 's/.*: *//' | tr -d ':[:space:]' | tr 'A-F' 'a-f' | sort -u)
+          if [ "$GOT" != "$EXPECTED_KEY_SHA256" ]; then
+            echo "::error::APK signer digest '${GOT:-none}' does not match the pinned RELEASE_KEY_SHA256 ($EXPECTED_KEY_SHA256)."
+            exit 1
+          fi
 
       # The AAB is what Play takes. It is signed with the same release keystore as the
       # APK, which acts as the upload key, so the digest below should match the one
@@ -104,6 +125,12 @@ jobs:
           OUT=$(jarsigner -verify -certs -verbose app/build/outputs/bundle/release/app-release.aab)
           echo "$OUT" | tail -5
           echo "$OUT" | grep -q "jar verified" || { echo "AAB signature did not verify" >&2; exit 1; }
+          # jarsigner does not print the digest; keytool reads the signer certificate from the bundle.
+          GOT=$(keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -i 'SHA256:' | sed 's/.*SHA256: *//' | tr -d ':[:space:]' | tr 'A-F' 'a-f' | sort -u)
+          if [ "$GOT" != "$EXPECTED_KEY_SHA256" ]; then
+            echo "::error::AAB signer digest '${GOT:-none}' does not match the pinned RELEASE_KEY_SHA256 ($EXPECTED_KEY_SHA256)."
+            exit 1
+          fi
 
       # Uploaded before the release is published, so a failure here stops the run while nothing is public yet.
       # Needed to read a stack trace from the shipped (R8-obfuscated) APK. The AAB
