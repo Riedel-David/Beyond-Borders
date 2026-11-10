@@ -68,7 +68,9 @@ from the last several years.
    app (your browser or file manager); this is the "install unknown apps" setting.
 2. Play Protect may warn that the developer is unknown. To continue, tap
    **More details → Install anyway**; you only need to do this once. The APK is
-   signed with a fixed key, so updates install over it.
+   signed with a fixed key, so updates install over it. The Google Play build is
+   signed with a different key, so switching between the two needs an uninstall first;
+   use Settings → Export beforehand and Import afterwards to keep your places.
 3. To check the download, compare `sha256sum BeyondBorders.apk` with the
    contents of `BeyondBorders.apk.sha256` next to it.
 
