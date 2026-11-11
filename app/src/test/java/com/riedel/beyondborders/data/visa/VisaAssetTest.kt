@@ -270,7 +270,7 @@ class VisaAssetTest {
         // Every band the lens can paint has something in it, or a quarter of the ramp
         // is spent saying nothing.
         // CHECK is the exception: it exists only where the dataset has a `special`
-        // row for the passport, and DE has none (VisaAssetCoverageTest and the logic
+        // or `travel_ban` row for the passport, and DE has none (VisaAssetCoverageTest and the logic
         // tests cover that band).
         (VisaBand.entries - VisaBand.CHECK).forEach { band ->
             assertTrue("no places in band $band", (visa.countByBand[band] ?: 0) > 0)

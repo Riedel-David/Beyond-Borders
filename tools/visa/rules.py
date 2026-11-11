@@ -194,7 +194,7 @@ CATEGORIES = [
     "VISA_ON_ARRIVAL",
     "E_VISA",
     "VISA_REQUIRED",
-    "CHECK",            # the dataset's `special`: read the note
+    "CHECK",            # the dataset's `special` / `travel_ban`: read the note
     "PERMIT_REQUIRED",  # ours: research/reserve permission, not a visa
     "NO_ADMISSION",
 ]
@@ -204,6 +204,8 @@ CATEGORIES = [
 # visa on arrival it is the stay granted, not a visa-free allowance, and the app's
 # "N days visa-free" wording would be wrong. HOME has no upstream row (a passport
 # has no row for its own country), so the build adds it.
+SPECIAL_STATUS = "special"
+TRAVEL_BAN_STATUS = "travel_ban"
 REQUIREMENT_CATEGORY = {
     "visa_free": "VISA_FREE",
     "eta": "ETA",
@@ -215,7 +217,14 @@ REQUIREMENT_CATEGORY = {
     # Upstream's catch-all (tourist card, invitation, "travel banned" by the
     # passport's own government, ...): its own CHECK category, always at low
     # confidence with upstream's note.
-    "special": "CHECK",
+    SPECIAL_STATUS: "CHECK",
+    # Schema 1.1.0: the traveller's OWN government forbids travel there (these rows
+    # used to be `special`). Kept on CHECK, as before, until a dedicated category is
+    # a deliberate step of its own. A combined cell such as "eVisa / Travel banned"
+    # arrives as travel_ban with the destination's own rule in
+    # `alternative_statuses`; there `status` is NOT the least restrictive option,
+    # and nothing may read the alternatives to loosen it.
+    TRAVEL_BAN_STATUS: "CHECK",
 }
 
 # ETA_RULES. Upstream's `status` is "the least restrictive option", and it files two
@@ -253,11 +262,23 @@ ESTA_NEGATIONS = (
 ESTA_REQUIRED = r"esta(?:(?!\bnot\b)[^.\n])*\b(required|valid|apply)\b|\(esta\)"
 # A CHECK note ships at most about this many characters (see trim_note).
 NOTE_MAX_CHARS = 280
-SPECIAL_STATUS = "special"
+TRAVEL_BAN_FALLBACK_NOTE = (
+    "Your own government forbids travel to this destination. Check its current "
+    "travel advice and the destination's official entry requirements before booking."
+)
 SPECIAL_FALLBACK_NOTE = (
     "The dataset lists a special case here without further detail. Check the "
     "destination's official entry requirements before booking."
 )
+# Statuses that ship as a low-confidence CHECK carrying a note, with the note used
+# when upstream has none. A travel_ban note always *leads* with its fallback
+# (build_visa.row_from_record), so a combined cell's destination-only note
+# ("eVisa available") cannot hide the ban.
+NOTE_FALLBACKS = {
+    SPECIAL_STATUS: SPECIAL_FALLBACK_NOTE,
+    TRAVEL_BAN_STATUS: TRAVEL_BAN_FALLBACK_NOTE,
+}
+NOTE_STATUSES = tuple(NOTE_FALLBACKS)
 
 CONFIDENCE = ("high", "medium", "low")
 
@@ -946,10 +967,10 @@ _CTA = GENERIC_RULE["uk_eta"]["cta_answer"]
 
 # ANNOTATIONS: upstream's answer stands (category and days come from the dataset row),
 # but the old hand-curation carried a warning the app would otherwise lose, because
-# the app only shows a note for `special` rows. passport -> place -> (confidence,
+# the app only shows a note for `special` and `travel_ban` rows. passport -> place -> (confidence,
 # source, note). Not corrections: nothing here disagrees with upstream, so there is
 # nothing for the build to expire; the build only checks that the row still exists
-# and is not `special` (whose note is upstream's own). DE only, since the notes were
+# and is not `special` or `travel_ban` (whose note is upstream's own). DE only, since the notes were
 # written about German travellers' routes.
 ANNOTATIONS = {
     "DE": {

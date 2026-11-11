@@ -63,7 +63,7 @@ data class VisaRequirement(
  * because an ETA is a near-instant online yes/no while a visa on arrival is a
  * queue, a fee in cash and an official's discretion.
  *
- * [CHECK] is the dataset's `special` status: the rule is real but does not fit any
+ * [CHECK] is the dataset's `special` and `travel_ban` statuses: the rule is real but does not fit any
  * other category (a tourist card, an invitation, a travel ban), so the row's own note
  * is the answer. It sorts after [VISA_REQUIRED] and before the permit regimes. With
  * two passports the lower ordinal wins, so a definite visa path on the other passport
