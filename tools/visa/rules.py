@@ -117,9 +117,6 @@ AREA_IS_WHOLE_PLACE = {
     "PS": ("Palestine", "State of Palestine", "Palestinian Territory"),
     "MO": ("Macau",),
     "CW": ("Curacao",),
-    # Taiwan's own passport files China as `special` under this area (the
-    # Mainland Travel Permit); it is the whole-country answer, there is no other.
-    "CN": ("(People's Republic of)",),
 }
 
 # Whole sovereign states filed under an area instead of `area == null`. Wikipedia's
@@ -144,27 +141,14 @@ WHOLE_SOVEREIGN_AREAS = ("and territories", "and Crown dependencies")
 #   * EH, AQ, XK, XS, XN, TW as destinations: the articles of most passports have no
 #     row for them (EH 199 of 199 passports, AQ 172, XN/XS 56, XK 40, TW 39).
 #     DE gets EH/AQ/XK/XS/XN/TW from PROGRAMS or has them in the dataset.
-#   * HR -> the EU/EEA/CH states: Croatia's own article lists no free-movement rows.
-#   * EC -> CU and HK -> CN: single rows missing from those articles.
+#   * HK -> CN: a single row missing from that article.
 SOVEREIGN_GAP_DESTINATIONS = ("EH", "AQ", "XK", "XS", "XN", "TW")
-# GAP_FILLS: the one gap that is a fact rather than a mystery. Croatia is an EU
-# member, so free movement into the other EU states and the EEA/Switzerland is law;
-# upstream's article for HR has no such rows at all. passport -> place -> answer, used
-# like a generic-tier entry (so a dataset row would win, and the liveness check
-# fails once upstream fills these in).
-_HR_FREE = ("VISA_FREE", None, "high", "eu_movement",
-            "EU/EEA/Swiss freedom of movement for EU citizens: no visa, no time "
-            "limit.")
-GAP_FILLS = {
-    "HR": {c: _HR_FREE for c in
-           [m for m in EU_MEMBERS if m != "HR"] + list(SCHENGEN_NON_EU)},
-}
-SOVEREIGN_GAP_PAIRS = frozenset(
-    [("HR", c) for c in (
-        "AT BE BG CY CZ DK EE FI FR DE GR HU IS IE IT LV LI LT LU MT NL NO PL PT "
-        "RO SK SI ES SE CH").split()]
-    + [("EC", "CU"), ("HK", "CN")]
-)
+# GAP_FILLS: hand-written answers for a gap that is a fact rather than a mystery.
+# passport -> place -> answer, used like a generic-tier entry (so a dataset row would
+# win, and the liveness check fails once upstream fills these in). Empty since
+# 2026-11-11: upstream's Croatia article now carries the EU/EEA/Swiss rows.
+GAP_FILLS = {}
+SOVEREIGN_GAP_PAIRS = frozenset([("HK", "CN")])
 
 # A passport with fewer dataset answers than this is not shipped: its article is a
 # stub (Northern Cyprus has 2), and a picker entry that answers almost nothing is
@@ -518,11 +502,6 @@ PROGRAMS = {
             "PF": ("VISA_FREE", 90, "high", "eu_oct",
                    "French collectivity outside the EU. EU nationals enter "
                    "without a visa for up to three months."),
-            "MF": ("VISA_FREE", 90, "medium", "eu_oct",
-                   "French side of the island, a collectivity outside the "
-                   "EU. EU nationals enter without a visa. Sint Maarten next "
-                   "door is Dutch and listed separately; the land border is "
-                   "open."),
         },
     },
 
@@ -532,10 +511,6 @@ PROGRAMS = {
     "nl_caribbean": {
         "members": ("DE",),
         "places": {
-            "SX": ("VISA_FREE", 90, "medium", "nl_caribbean",
-                   "Dutch side of the island, outside the EU. No visa for "
-                   "German nationals. Saint Martin next door is French and "
-                   "listed separately."),
             "BQ": ("VISA_FREE", 90, "medium", "nl_caribbean",
                    "Bonaire, Saba and Sint Eustatius — Dutch special "
                    "municipalities, outside the EU. No visa for German "
@@ -560,53 +535,6 @@ PROGRAMS = {
                    "re-enter Schengen — carry a passport. Jan Mayen shares "
                    "the ISO code and is a manned station with no visitor "
                    "access."),
-        },
-    },
-
-    # --- British Overseas Territories: own immigration, no UK ETA ----------
-    "uk_ot": {
-        "members": ("DE",),
-        "places": {
-            "GI": ("VISA_FREE", 90, "medium", "aa",
-                   "British Overseas Territory with its own border control. "
-                   "No visa for German nationals, and the UK ETA does not "
-                   "apply. The land border with Spain is a Schengen external "
-                   "border."),
-            "VG": ("VISA_FREE", 30, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "rules. No visa for German nationals. Not the same place "
-                   "as the US Virgin Islands, which need an ESTA."),
-            "FK": ("VISA_FREE", 30, "medium", "aa",
-                   "British Overseas Territory with its own immigration "
-                   "ordinance. No visa for German nationals; a visitor "
-                   "permit for one month is issued on arrival, matching the "
-                   "UK government's own Falklands travel advice."),
-            "SH": ("VISA_FREE", 183, "medium", "aa",
-                   "Saint Helena's short-term entry permit is issued on "
-                   "arrival for a fee and is valid up to 183 days, per the "
-                   "UK government's own travel advice — you must show "
-                   "accommodation and a return booking. Ascension is "
-                   "separate and needs a 3-month visa arranged in advance; "
-                   "Tristan da Cunha needs the Island Council's consent and "
-                   "a ship, with no fixed day limit."),
-            "PN": ("VISA_FREE", 14, "medium", "aa",
-                   "No visa for a short visit, capped at 14 days if you "
-                   "arrive and depart on the same ship (matches the UK "
-                   "government's own Pitcairn travel advice); a longer stay "
-                   "needs a Long-Term Visit Visa. Landing also needs a "
-                   "licence from the Island Council and there is no "
-                   "airstrip — the only access is by ship from Mangareva."),
-        },
-    },
-
-    # --- US territories: mostly US immigration, with one exception ---------
-    "us_territory": {
-        "members": ("DE",),
-        "places": {
-            "VI": ("ETA", 90, "high", "esta",
-                   "US immigration applies in full, so German nationals "
-                   "need an ESTA. Not the same place as the British Virgin "
-                   "Islands."),
         },
     },
 
@@ -653,11 +581,6 @@ PROGRAMS = {
                    "here need an Umweltbundesamt permit under the Antarctic "
                    "Treaty's Environmental Protocol. Joining a licensed "
                    "cruise means the operator holds it."),
-            "TF": ("PERMIT_REQUIRED", None, "high", "aa",
-                   "Crozet, Kerguelen, Amsterdam, Saint-Paul and Adélie "
-                   "Land. Access needs the prefect's authorisation and a "
-                   "berth on the supply ship Marion Dufresne. Not a visa "
-                   "question."),
             "HM": ("PERMIT_REQUIRED", None, "high", "aa",
                    "An Australian external territory and a strict nature "
                    "reserve: entry needs an Australian Antarctic Division "
@@ -696,7 +619,7 @@ PROGRAMS = {
 # Dependencies as for Britain) plus one borrowed lookup for everyone outside
 # the CTA.
 #
-# Everything else PROGRAMS curates for DE — uk_ot, contested, the Tokelau
+# Everything else PROGRAMS curates for DE — contested, the Tokelau
 # entry in nz_realm, HM's Australian permit — has no generic entry at all. A
 # UK Overseas Territory's entry rules do not follow from any other country's
 # dataset row, and geopolitically contested places are not something to guess
@@ -767,7 +690,7 @@ GENERIC_RULE = {
                 "MP": None,
                 # AS is deliberately absent: American Samoa runs its own
                 # immigration and the US answer does not carry over — see
-                # PROGRAMS["us_territory"]["AS"] for DE's own researched
+                # CORRECTIONS["DE"]["AS"] for DE's own researched
                 # entry. Inheriting it here would be exactly the "blind
                 # parent inheritance" this file exists to avoid.
             },
@@ -1089,7 +1012,7 @@ EXPECTED = {
         # uk_eta's generic mapping: the Netherlands is not in the CTA, so this comes
         # from its own (dataset) GB requirement, not from a CTA HOME.
         "JE": ("ETA", "not in the CTA — derived from the Netherlands' own UK requirement"),
-        # us_territory's generic reference: derived from the Netherlands' own US row
+        # The US territories' generic reference: derived from the Netherlands' own US row
         # (visa_free with an ESTA, promoted to ETA by ESTA_DESTINATIONS).
         "GU": ("ETA", "US territory — derived from the Netherlands' own US (ESTA) requirement"),
         # The trap this whole generic tier exists to avoid: Guam gets an
