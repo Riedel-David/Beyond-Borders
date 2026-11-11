@@ -121,6 +121,7 @@ class SettingsStore(context: Context) {
         _secondNationality.value = null
         _collapsedHeaders.value = emptySet()
         _seenAchievements.value = null
+        _lastBackupAt.value = null
         prefs.edit { clear() }
     }
 
@@ -168,6 +169,20 @@ class SettingsStore(context: Context) {
     fun setCollapsedHeaders(headers: Set<String>) {
         _collapsedHeaders.value = headers
         prefs.edit { putStringSet(KEY_COLLAPSED_HEADERS, headers) }
+    }
+
+    private val _lastBackupAt = MutableStateFlow(
+        if (prefs.contains(KEY_LAST_BACKUP_AT)) prefs.getLong(KEY_LAST_BACKUP_AT, 0L) else null
+    )
+
+    /** Epoch millis of the last manual export that actually succeeded; `null` means never.
+     * Not Auto Backup's snapshot and not an import, and it lives in the excluded settings
+     * file, so a restored phone honestly says "never". */
+    val lastBackupAt: StateFlow<Long?> = _lastBackupAt.asStateFlow()
+
+    fun setLastBackupAt(millis: Long) {
+        _lastBackupAt.value = millis
+        prefs.edit { putLong(KEY_LAST_BACKUP_AT, millis) }
     }
 
     /**
@@ -266,6 +281,7 @@ class SettingsStore(context: Context) {
         const val KEY_SECOND_NATIONALITY = "second_nationality"
         const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
         const val KEY_SEEN_ACHIEVEMENTS = "seen_achievements"
+        const val KEY_LAST_BACKUP_AT = "last_backup_at"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"

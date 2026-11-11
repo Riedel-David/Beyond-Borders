@@ -1229,10 +1229,13 @@ private fun PlacesMapView(
     }
 
     val mapDescription = stringResource(R.string.map_description)
+    // The map is a canvas to TalkBack: the description also says where the same actions live.
+    val mapAlternative = stringResource(R.string.map_a11y_alternative)
+    val mapSpoken = "$mapDescription $mapAlternative"
     AndroidView(
         factory = { mapView },
         modifier = modifier.semantics {
-            contentDescription = mapDescription
+            contentDescription = mapSpoken
         },
         update = {
             controller.applyStatuses(statuses, lens, regionActive)

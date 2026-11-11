@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -88,6 +89,7 @@ import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
 import com.riedel.beyondborders.ui.visa.PassportPickerDialog
 import com.riedel.beyondborders.widget.TravelWidgetProvider
+import java.time.ZoneId
 
 /**
  * Settings: how the app looks, and how to get the data out.
@@ -127,6 +129,7 @@ fun SettingsScreen(
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
+    val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
     val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
     val importPreview by viewModel.importPreview.collectAsStateWithLifecycle()
@@ -366,6 +369,7 @@ fun SettingsScreen(
                                                 TravelWidgetProvider.requestUpdate(context.applicationContext)
                                             }
                                         }
+                                        .heightIn(min = 48.dp)
                                         .padding(vertical = 12.dp, horizontal = 16.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -430,6 +434,15 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),
+            )
+            val locale = LocalConfiguration.current.locales[0]
+            val lastBackupDate = formatLastBackup(lastBackupAt, ZoneId.systemDefault(), locale)
+            Text(
+                if (lastBackupDate == null) stringResource(R.string.settings_last_backup_never)
+                else stringResource(R.string.settings_last_backup, lastBackupDate),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
             )
 
             if (snapshotAvailable) {
@@ -660,7 +673,7 @@ private fun <T> DropdownRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
         ) {
             Text(label(selected), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            Text("\u25BE")
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             options.forEach { option ->
@@ -807,7 +820,7 @@ private val MapBase.displayName: Int
 private fun Swatch(color: Color, isSelected: Boolean, name: String, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(44.dp)
+            .size(48.dp)
             .clip(CircleShape)
             // selectable rather than clickable: it announces the swatch as a radio
             // button and carries the selected state, which a colour alone cannot.

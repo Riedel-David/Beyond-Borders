@@ -123,6 +123,7 @@ import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.StatusFilter
+import com.riedel.beyondborders.ui.places.offerWishlistVisaFree
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.sectionHeader
 import com.riedel.beyondborders.ui.places.visaFilters
@@ -328,11 +329,25 @@ fun PassportScreen(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    StatusFilter.entries.forEach { filter ->
+                    StatusFilter.entries.filter { it != StatusFilter.WISHLIST_VISA_FREE }.forEach { filter ->
                         FilterChip(
                             selected = filter == statusFilter,
                             onClick = { viewModel.setStatusFilter(filter) },
                             label = { Text(filter.text.asString()) },
+                        )
+                    }
+                    // Stays while selected, so a filter cannot become invisible (and
+                    // unclearable) when the last Want-to place is unticked.
+                    if (offerWishlistVisaFree(visa, statuses) || statusFilter == StatusFilter.WISHLIST_VISA_FREE) {
+                        FilterChip(
+                            selected = statusFilter == StatusFilter.WISHLIST_VISA_FREE,
+                            onClick = {
+                                viewModel.setStatusFilter(
+                                    if (statusFilter == StatusFilter.WISHLIST_VISA_FREE) StatusFilter.ALL
+                                    else StatusFilter.WISHLIST_VISA_FREE
+                                )
+                            },
+                            label = { Text(StatusFilter.WISHLIST_VISA_FREE.text.asString()) },
                         )
                     }
                 }

@@ -8,6 +8,7 @@
     <string name="map_share_style_title">Share style</string>
     <string name="map_share_cancel">Cancel</string>
     <string name="map_description">Map of the world. Tap a country or territory to select it.</string>
+    <string name="map_a11y_alternative">The same actions are available from the Passport tab and Search.</string>
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Been</string>
@@ -49,8 +50,8 @@
     <string name="map_search_no_matches">No matches</string>
     <string name="map_lens_visa">Visa</string>
     <string name="map_regions_off">Regions</string>
-    <string name="map_regions_official">Regions: UN</string>
-    <string name="map_regions_informal">Regions: named</string>
+    <string name="map_regions_official">Official regions</string>
+    <string name="map_regions_informal">Common regions</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">No data available for either passport — check official sources before travelling.</string>
@@ -83,6 +84,7 @@
     <string name="places_filter_been">Been</string>
     <string name="places_filter_lived">Lived</string>
     <string name="places_filter_want">Want</string>
+    <string name="places_filter_wishlist_visa_free">Wishlist, visa-free for me</string>
     <string name="places_filter_none">Not yet</string>
     <string name="places_mode_travel">Where I\'ve been</string>
     <string name="places_mode_visa">Where I can go</string>

@@ -25,7 +25,12 @@ import com.riedel.beyondborders.settings.ThemeMode
 import com.riedel.beyondborders.ui.UiText
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +77,7 @@ class SettingsViewModel(
     private val resolver: ContentResolver,
     private val snapshot: CloudSnapshot,
     private val today: () -> LocalDate = LocalDate::now,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
@@ -87,6 +93,7 @@ class SettingsViewModel(
         .map { it ?: VisaRegistry.DEFAULT_PASSPORT }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), VisaRegistry.DEFAULT_PASSPORT)
     val secondNationality: StateFlow<String?> = settings.secondNationality
+    val lastBackupAt: StateFlow<Long?> = settings.lastBackupAt
 
     // The detail of an unexpected failure goes to the log; the user sees the generic text.
     private fun loggedFailure(t: Throwable, @StringRes fallback: Int): UiText {
@@ -226,6 +233,9 @@ class SettingsViewModel(
                         ?: throw TransferException(UiText.Res(R.string.backup_write_open_failed))
                     stream.use { it.write(export.json.toByteArray()) }
                 }
+                // Only here, after the write returned: a failed or cancelled export
+                // reaches the catch below and leaves the last good date alone.
+                if (isWorthStamping(export.places, export.removals)) settings.setLastBackupAt(nowMillis())
                 TransferState.Done(exportMessage(export.places, export.removals))
             } catch (e: Exception) {
                 // Deliberately broad: this is a user-chosen file on a provider we
@@ -415,6 +425,16 @@ internal const val PREVIEW_SAMPLE_SIZE = 10
  */
 internal fun shouldOfferSnapshotRestore(present: Boolean, owned: Boolean, historyEmpty: Boolean): Boolean =
     present && (historyEmpty || !owned)
+
+/** The date shown in "Last backup: …", in the user's zone and locale; `null` for never. */
+/** An export with no places and no removals backed nothing up, so it is not a "last backup". */
+internal fun isWorthStamping(places: Int, removals: Int): Boolean = places > 0 || removals > 0
+
+internal fun formatLastBackup(millis: Long?, zone: ZoneId, locale: Locale): String? =
+    millis?.let {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+            .format(Instant.ofEpochMilli(it).atZone(zone))
+    }
 
 internal fun exportMessage(places: Int, removals: Int): UiText {
     val placesText = UiText.Plural(R.plurals.backup_places, places, places)

@@ -38,7 +38,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import android.util.Log
 import java.io.IOException
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -107,6 +109,7 @@ fun StatsScreen(
     val seenUpdate = remember(achievements) { newlyUnlocked(seenOnOpen, achievements) }
     val upNext = remember(achievements) { nextUp(achievements) }
     val snackbarHost = remember { SnackbarHostState() }
+    val shareScope = rememberCoroutineScope()
     val context = LocalContext.current
     // Read off the main thread; null until loaded, so the hero shows no strip meanwhile.
     val flagFiles by produceState<Set<String>?>(null) {
@@ -234,6 +237,9 @@ fun StatsScreen(
                 nextUp = upNext,
                 recent = seenUpdate.fresh,
                 placesVisited = placesVisited,
+                onShareFailed = {
+                    shareScope.launch { snackbarHost.showSnackbar(context.getString(R.string.badge_share_failed)) }
+                },
                 onToggleGroup = { g ->
                     expandedBadgeGroups = if (g in expandedBadgeGroups) expandedBadgeGroups - g else expandedBadgeGroups + g
                 },

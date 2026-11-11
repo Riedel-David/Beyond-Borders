@@ -88,6 +88,8 @@
     <string name="settings_export">Экспорт</string>
     <string name="settings_import">Импорт</string>
     <string name="settings_data_detail">JSON-файл, который можно хранить где угодно. При импорте остаётся более новая запись.</string>
+    <string name="settings_last_backup">Последняя копия: %1$s</string>
+    <string name="settings_last_backup_never">Последняя копия: никогда</string>
     <string name="settings_restore_button">Восстановить из резервной копии Android</string>
     <string name="settings_restore_detail">Резервное копирование Android оставило на этом телефоне снимок твоей истории. Восстановление объединяет его с текущими данными — так же, как импорт файла.</string>
     <string name="settings_ok">OK</string>
