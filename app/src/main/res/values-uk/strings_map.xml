@@ -15,7 +15,7 @@
     <string name="map_legend_short_lived">Прожито</string>
     <string name="map_legend_short_wanted">Хочу</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Торкнись місця, щоб позначити</string>
+    <string name="map_legend_nudge">Торкнись країни та обери «Відвідано», «Прожито» або «Хочу»</string>
     <string name="map_legend_visited">Відвідано: %1$d</string>
     <string name="map_legend_lived">Прожито: %1$d</string>
     <string name="map_legend_wishlisted">У списку бажань: %1$d</string>
@@ -128,4 +128,5 @@
     <string name="widget_cfg_background_transparent">Прозоре</string>
     <string name="widget_cfg_preview_title">Розмір зразка</string>
     <string name="widget_cfg_add">Додати віджет</string>
+    <string name="map_quick_add">Швидко додати</string>
 </resources>

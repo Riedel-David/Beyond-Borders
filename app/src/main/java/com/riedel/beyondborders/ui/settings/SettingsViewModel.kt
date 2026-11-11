@@ -80,12 +80,10 @@ class SettingsViewModel(
     val denominator: StateFlow<Denominator> = settings.denominator
     val hapticsEnabled: StateFlow<Boolean> = settings.hapticsEnabled
     val pureBlack: StateFlow<Boolean> = settings.pureBlack
-    // Settings is only reachable once welcome-gating has forced a real choice, so
-    // this fallback is structurally unreachable — kept only so the type stays
-    // non-null, not as a real default.
-    val nationality: StateFlow<String> = settings.nationality
-        .map { it ?: VisaRegistry.DEFAULT_PASSPORT }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), VisaRegistry.DEFAULT_PASSPORT)
+    // Null for as long as no passport is chosen, which is a steady state since the
+    // welcome screen can be skipped: shown as "Not set" rather than as the fallback
+    // passport, which would claim a choice the user never made.
+    val nationality: StateFlow<String?> = settings.nationality
     val secondNationality: StateFlow<String?> = settings.secondNationality
 
     // The detail of an unexpected failure goes to the log; the user sees the generic text.

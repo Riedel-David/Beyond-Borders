@@ -8,9 +8,9 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Тут усі місця світу (%1$d), а не лише країни ООН (%2$d).</string>
+    <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Тут %1$d місць. Території на кшталт Гренландії чи Пуерто-Рико враховуються окремо, не разом із країною, до якої вони належать.</string>
     <string name="welcome_intro_bare">Познач, де вже вдалося побувати, де довелося жити і куди мрієш поїхати.</string>
-    <string name="welcome_privacy">Ми ніколи не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису, сервера чи мережі — резервну копію можна будь-коли експортувати самостійно. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
+    <string name="welcome_privacy">Ми не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису, сервера чи мережі. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
     <string name="welcome_passport_hint">Візові вимоги показано для одного паспорта за раз. Обери свій — згодом його можна змінити в налаштуваннях.</string>
     <string name="welcome_get_started">Почати</string>
 
@@ -226,4 +226,6 @@
     <string name="backup_wrong_format">Це не файл резервної копії BeyondBorders.</string>
     <string name="backup_newer_version">Цю резервну копію створено новішою версією BeyondBorders (формат %1$d).</string>
     <string name="backup_no_places">У резервній копії немає місць.</string>
+    <string name="welcome_skip">Пропустити</string>
+    <string name="settings_passport_unset">Не вибрано</string>
 </resources>

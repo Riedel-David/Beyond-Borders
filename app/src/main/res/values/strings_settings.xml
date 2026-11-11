@@ -6,9 +6,9 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all %1$d, not just the %2$d in the UN.</string>
+    <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all %1$d places. Territories like Greenland or Puerto Rico count on their own, separate from the country they belong to.</string>
     <string name="welcome_intro_bare">Mark the places you\'ve been, lived in, or want to go.</string>
-    <string name="welcome_privacy">Nothing you mark is ever sent to us. No account, no server, no network — export a backup yourself whenever you want one. (Android\'s own device backup may still include it, if you have that switched on.)</string>
+    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server, no network. (Android\'s own device backup may include it, if you have that switched on.)</string>
     <string name="welcome_passport_hint">Visa requirements are for one passport at a time. Pick yours — you can change it later in Settings.</string>
     <string name="welcome_get_started">Get started</string>
 
@@ -202,4 +202,6 @@
     <string name="backup_wrong_format">This is not a BeyondBorders backup file.</string>
     <string name="backup_newer_version">This backup was written by a newer version of BeyondBorders (format %1$d).</string>
     <string name="backup_no_places">The backup has no places in it.</string>
+    <string name="welcome_skip">Skip for now</string>
+    <string name="settings_passport_unset">Not set</string>
 </resources>

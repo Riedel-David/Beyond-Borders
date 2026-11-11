@@ -74,7 +74,8 @@ class SettingsStore(context: Context) {
     private val _hasSeenWelcome = MutableStateFlow(prefs.getBoolean(KEY_HAS_SEEN_WELCOME, false))
     val hasSeenWelcome: StateFlow<Boolean> = _hasSeenWelcome.asStateFlow()
 
-    /** Null until the user actually picks one on the welcome screen — no silent
+    /** Null until the user picks one, on the welcome screen or later in Settings; it stays
+     * null if the welcome screen is skipped — no silent
      * default, per the welcome screen's own promise that a choice never made
      * never quietly resolves to DE. */
     private val _nationality = MutableStateFlow(prefs.getString(KEY_NATIONALITY, null))

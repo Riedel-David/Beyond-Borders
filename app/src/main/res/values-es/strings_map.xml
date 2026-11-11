@@ -15,7 +15,7 @@
     <string name="map_legend_short_lived">Vivido</string>
     <string name="map_legend_short_wanted">Pendiente</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Toca un lugar para marcarlo</string>
+    <string name="map_legend_nudge">Toca un país y elige Visitado, Vivido o Quiero ir</string>
     <string name="map_legend_visited">%1$d visitados</string>
     <string name="map_legend_lived">%1$d donde viví</string>
     <string name="map_legend_wishlisted">%1$d pendientes</string>
@@ -124,4 +124,5 @@
     <string name="widget_cfg_background_transparent">Transparente</string>
     <string name="widget_cfg_preview_title">Tamaño de la vista previa</string>
     <string name="widget_cfg_add">Añadir widget</string>
+    <string name="map_quick_add">Añadir rápido</string>
 </resources>

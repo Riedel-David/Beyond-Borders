@@ -8,9 +8,9 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller, sur une carte des %1$d lieux du monde, pas seulement des %2$d pays de l\'ONU.</string>
+    <string name="welcome_intro">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller, sur une carte de %1$d lieux. Des territoires comme le Groenland ou Porto Rico comptent à part, séparément du pays dont ils dépendent.</string>
     <string name="welcome_intro_bare">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller.</string>
-    <string name="welcome_privacy">Rien de ce que tu marques ne nous est jamais envoyé. Pas de compte, pas de serveur, pas de réseau ; exporte toi-même une sauvegarde quand tu veux. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
+    <string name="welcome_privacy">Rien de ce que tu marques ne nous est envoyé. Pas de compte, pas de serveur, pas de réseau. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
     <string name="welcome_passport_hint">Les conditions de visa s\'affichent pour un passeport à la fois. Choisis le tien ; tu pourras le changer plus tard dans les Paramètres.</string>
     <string name="welcome_get_started">Commencer</string>
 
@@ -215,4 +215,6 @@
     <string name="backup_wrong_format">Ce n\'est pas un fichier de sauvegarde BeyondBorders.</string>
     <string name="backup_newer_version">Cette sauvegarde a été créée par une version plus récente de BeyondBorders (format %1$d).</string>
     <string name="backup_no_places">La sauvegarde ne contient aucun lieu.</string>
+    <string name="welcome_skip">Passer pour l\'instant</string>
+    <string name="settings_passport_unset">Non défini</string>
 </resources>

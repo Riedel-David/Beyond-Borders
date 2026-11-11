@@ -106,8 +106,8 @@ fun BeyondBordersRoot(
             passportNames = passportNames,
             englishNames = englishNames,
             placeCount = placeCount,
-            unMemberCount = unMemberCount,
             onGetStarted = container.settings::setHasSeenWelcome,
+            onSkip = container.settings::setHasSeenWelcome,
             modifier = modifier,
         )
         return

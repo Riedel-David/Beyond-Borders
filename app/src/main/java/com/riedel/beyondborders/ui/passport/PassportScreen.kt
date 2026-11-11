@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -109,6 +110,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.ui.visa.PassportPickerButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
@@ -172,6 +174,13 @@ fun PassportScreen(
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val wishlistEasyText by viewModel.wishlistEasyText.collectAsStateWithLifecycle()
+    val nationality by viewModel.nationality.collectAsStateWithLifecycle()
+    val passportNames by viewModel.passportNames.collectAsStateWithLifecycle()
+    val englishPassportNames by viewModel.englishPassportNames.collectAsStateWithLifecycle()
+    // Same test as the map's nudge pill (see mapLegendKind), so the two prompts for
+    // "nothing marked yet" appear and disappear together.
+    val noMarks = stats.been == 0 && stats.wishlist == 0
+    var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     // Derived from an asset that is read once, so a flow would be a subscription to
     // something that never changes twice.
     val filters = remember(visa, secondVisa) { visaFilters(visa, secondVisa) }
@@ -228,7 +237,7 @@ fun PassportScreen(
     // the collapse skip.
     // Remembered, not rebuilt per composition: this walks all 252 rows calling
     // sectionHeader on each, which is not something to redo while a finger is down.
-    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query) {
+    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query, nationality == null, noMarks) {
         if (mode == PassportMode.VISA) {
             buildList {
                 add(null) // "mode"
@@ -245,6 +254,8 @@ fun PassportScreen(
         } else {
             buildList {
                 add(null) // "mode"
+                if (nationality == null) add(null) // "passport-prompt"
+                if (noMarks) add(null) // "start"
                 add(null) // "stats"
                 add(null) // "controls"
                 if (rows.isEmpty()) add(null) // "empty"
@@ -298,6 +309,39 @@ fun PassportScreen(
                 combinedRequirementOf = viewModel::combinedRequirementOf,
             )
             return@LazyColumn
+        }
+
+        // No passport yet (the welcome screen was skipped): the "Where I can go" tab and
+        // the map's visa lens are absent without it, so say why instead of leaving
+        // them to be hunted for.
+        if (nationality == null) {
+            item("passport-prompt") {
+                InfoCard(
+                    title = stringResource(R.string.passport_pick_title),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    PassportPickerButton(
+                        selected = null,
+                        names = passportNames,
+                        englishNames = englishPassportNames,
+                        onSelect = viewModel::setNationality,
+                    )
+                }
+            }
+        }
+
+        if (noMarks) {
+            item("start") {
+                InfoCard(
+                    title = stringResource(R.string.passport_start_title),
+                    body = stringResource(R.string.passport_start_body),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Button(onClick = { showQuickAdd = true }) {
+                        Text(stringResource(R.string.map_quick_add))
+                    }
+                }
+            }
         }
 
         item("stats") {
@@ -408,6 +452,7 @@ fun PassportScreen(
             modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
+    if (showQuickAdd) QuickAddDialog(viewModel, onDismiss = { showQuickAdd = false })
     }
 }
 
@@ -876,6 +921,30 @@ private fun PlaceListRow(row: PlaceRow, onSet: (PlaceStatus) -> Unit, modifier: 
             onDismiss = { open = false },
             onAction = { open = false; apply(it) },
         )
+    }
+}
+
+@Composable
+private fun InfoCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    body: String? = null,
+    action: @Composable () -> Unit,
+) {
+    Card(modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            if (body != null) {
+                Text(
+                    body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            action()
+        }
     }
 }
 

@@ -192,4 +192,11 @@
     </plurals>
     <string name="badge_wishlist_10_title">Soñador</string>
     <string name="badge_wishlist_10_desc">Añade %1$d lugares a tus pendientes.</string>
+    <string name="quick_add_title">Añadir rápido</string>
+    <string name="quick_add_search">Buscar países</string>
+    <string name="quick_add_close">Cerrar</string>
+    <string name="quick_add_been_desc">He estado en %1$s</string>
+    <string name="passport_start_title">Empieza marcando algunos lugares</string>
+    <string name="passport_start_body">Marca de una vez los países en los que has estado, o toca cualquier lugar del mapa.</string>
+    <string name="passport_pick_title">Elige tu pasaporte para ver los requisitos de visado</string>
 </resources>

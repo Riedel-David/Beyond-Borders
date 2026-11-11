@@ -15,7 +15,7 @@
     <string name="map_legend_short_lived">Жил(а)</string>
     <string name="map_legend_short_wanted">Хочу</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Нажми на место, чтобы отметить его</string>
+    <string name="map_legend_nudge">Нажми на страну и выбери «Был(а)», «Жил(а)» или «Хочу»</string>
     <string name="map_legend_visited">Был(а): %1$d</string>
     <string name="map_legend_lived">Жил(а): %1$d</string>
     <string name="map_legend_wishlisted">В списке желаний: %1$d</string>
@@ -128,4 +128,5 @@
     <string name="widget_cfg_background_transparent">Прозрачный</string>
     <string name="widget_cfg_preview_title">Размер предпросмотра</string>
     <string name="widget_cfg_add">Добавить виджет</string>
+    <string name="map_quick_add">Быстро добавить</string>
 </resources>
