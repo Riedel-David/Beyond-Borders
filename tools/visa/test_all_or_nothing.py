@@ -94,11 +94,12 @@ class SinglePassport(unittest.TestCase):
         self.assertEqual([], fetched)
 
 
-def tiny_dataset(root: Path, generated_at: str = "2026-10-30T15:07:24+00:00", n: int = 1):
+def tiny_dataset(root: Path, generated_at: str = "2026-10-30T15:07:24+00:00", n: int = 1,
+                 schema_version: str = "1.0.0"):
     """n passports AA, AB, ...; Dataset.open wants 150, a bare Dataset does not."""
     (root / "passports").mkdir(parents=True)
     codes = [chr(65 + i // 26) + chr(65 + i % 26) for i in range(n)]
-    index = {"generated_at": generated_at, "schema_version": "1.0.0",
+    index = {"generated_at": generated_at, "schema_version": schema_version,
              "passports": {c: {"file": f"passports/{c}.json", "source_revision": 1}
                            for c in codes}}
     (root / "index.json").write_text(json.dumps(index))
@@ -229,6 +230,81 @@ class Esta(unittest.TestCase):
         cat, usage = self.category("Travellers may be asked about ESTA at the gate.")
         self.assertEqual(1, len(usage.esta_unclassified))
         self.assertTrue(build_visa.check_esta(usage))
+
+
+class TravelBan(unittest.TestCase):
+    """Schema 1.1.0's `travel_ban`: the traveller's own government forbids the trip."""
+
+    def rec(self, status="travel_ban", alternatives=(), notes=None, days=None):
+        return {"passport": "KR", "destination": "AF", "status": status,
+                "alternative_statuses": list(alternatives), "allowed_stay_days": days,
+                "notes": notes}
+
+    def row(self, **kw):
+        usage = build_visa.Usage()
+        return build_visa.row_from_record(self.rec(**kw), usage), usage
+
+    def test_a_travel_ban_ships_as_a_low_confidence_check_row_with_the_upstream_note(self):
+        row, _ = self.row(notes="Travel banned by the Korean government.")
+        self.assertEqual(("CHECK", None, True), (row.category, row.days, row.noted))
+        self.assertEqual(build_visa.rules.TRAVEL_BAN_FALLBACK_NOTE
+                         + " Travel banned by the Korean government.", row.note)
+
+    def test_a_travel_ban_without_a_note_gets_its_own_fallback_not_the_special_one(self):
+        row, _ = self.row()
+        self.assertEqual(build_visa.rules.TRAVEL_BAN_FALLBACK_NOTE, row.note)
+        self.assertNotEqual(build_visa.rules.SPECIAL_FALLBACK_NOTE, row.note)
+        self.assertIn("own government forbids", row.note)
+
+    def test_a_destination_only_note_on_a_combined_cell_still_starts_with_the_ban(self):
+        row, _ = self.row(alternatives=["evisa"], notes="eVisa available")
+        self.assertTrue(row.note.startswith(build_visa.rules.TRAVEL_BAN_FALLBACK_NOTE))
+        self.assertTrue(row.note.endswith("eVisa available"))
+
+    def test_a_special_note_is_not_prefixed(self):
+        row, _ = self.row(status="special", notes="Tourist card required.")
+        self.assertEqual("Tourist card required.", row.note)
+
+    def test_a_travel_ban_to_an_esta_destination_never_becomes_eta(self):
+        record = self.rec(alternatives=["eta"], notes="ESTA required.")
+        record["destination"] = "US"
+        usage = build_visa.Usage()
+        row = build_visa.row_from_record(record, usage)
+        self.assertEqual("CHECK", row.category)
+        self.assertEqual(([], set()), (usage.esta_unclassified, usage.eta_rules))
+
+    def test_the_destinations_own_rule_in_alternatives_never_loosens_a_ban(self):
+        for alt in (["evisa"], ["visa_free"], ["eta"], ["evisa", "eta"]):
+            row, usage = self.row(alternatives=alt, notes="eVisa / Travel banned")
+            self.assertEqual("CHECK", row.category, alt)
+            self.assertEqual(set(), usage.eta_rules, alt)
+
+    def test_the_eta_rule_still_fires_for_visa_free_and_only_there(self):
+        row, usage = self.row(status="visa_free", alternatives=["eta"])
+        self.assertEqual(("ETA", {"alternative"}), (row.category, usage.eta_rules))
+
+    def test_a_partial_ban_filed_as_special_is_unchanged(self):
+        row, _ = self.row(status="special", notes="Travel banned in most areas.")
+        self.assertEqual(("CHECK", "special"), (row.category, row.status))
+
+    def test_a_status_outside_the_vocabulary_still_fails_the_build(self):
+        with self.assertRaises(SystemExit):
+            self.row(status="travel_forbidden")
+
+    def test_both_1_0_0_and_1_1_0_datasets_open(self):
+        for version in ("1.0.0", "1.1.0"):
+            root = Path(tempfile.mkdtemp())
+            self.addCleanup(shutil.rmtree, root, True)
+            tiny_dataset(root / "d", n=150, schema_version=version)
+            ds = build_visa.Dataset.open(root / "d")
+            self.assertEqual(version, ds.index["schema_version"])
+
+    def test_a_new_major_version_is_refused(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, True)
+        tiny_dataset(root / "d", n=150, schema_version="2.0.0")
+        with self.assertRaises(SystemExit):
+            build_visa.Dataset.open(root / "d")
 
 
 if __name__ == "__main__":

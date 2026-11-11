@@ -36,7 +36,7 @@ enum class VisaBand(@StringRes val labelRes: Int) {
 
     /**
      * [VisaCategory.CHECK]: the dataset has a rule that fits no other band (tourist
-     * card, invitation, travel ban). Its own hue rather than "Closed" or "Apply
+     * card, invitation, a ban by the traveller's own government). Its own hue rather than "Closed" or "Apply
      * first", because we do not know which of those it is.
      */
     CHECK(R.string.visa_band_check),

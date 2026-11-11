@@ -41,10 +41,26 @@ create and approve pull requests" enabled under Settings > Actions > General.
 It refuses to write unless every one of the 252 places resolves to exactly one answer
 and every rule is still live — so the day the dataset starts covering a territory
 itself, the build says the override is dead instead of preserving a stale opinion
-forever. The dataset's `special` status (tourist card, invitation, "travel banned", ...)
+forever. The dataset's `special` status (tourist card, invitation, partial bans such as
+"Travel banned in most areas", ...)
 is its own "Check requirements" category (a violet band on the map) at low confidence,
 with the dataset's note (cut to about 280 characters at a sentence end, `NOTE_MAX_CHARS`) or,
-when it has none, a generic "check the official requirements" note. Upstream files ESTA and Canada's eTA under `visa_free`;
+when it has none, a generic "check the official requirements" note.
+
+Schema 1.1.0 adds the status `travel_ban`: the traveller's *own* government forbids
+travel there (these rows used to be `special`; `allowed_stay_days` is always null, the raw
+text is in `allowed_stay_raw`). It maps to the same CHECK category at low confidence, with
+the upstream note or, when it has none, `TRAVEL_BAN_FALLBACK_NOTE` (English only, like the
+special fallback: the note is data in the asset, not a string resource). A combined cell
+such as "eVisa / Travel banned" is `travel_ban` with the destination's own rule in
+`alternative_statuses` (for example `["evisa"]`); unlike other combined cells, `status` is
+**not** the least restrictive option there. The shipped note always leads with the ban
+statement, then the upstream note. The build never reads the alternatives of a `travel_ban`
+row, so it cannot become less restrictive than CHECK. The app never sees `alternative_statuses` at all; its
+two-passport combine works on the shipped category, where CHECK loses to any definite visa
+path of the other passport. The build accepts any 1.x `schema_version` (1.0.0 and 1.1.0
+both build); `status.json` (a freshness file) is not read by the build.
+Upstream files ESTA and Canada's eTA under `visa_free`;
 `ETA_RULES` in `rules.py` turns those back into authorisations (the ESTA match skips the notes that say
 who is *exempt*, `ESTA_NEGATIONS`; a note that mentions ESTA but matches neither that nor
 `ESTA_REQUIRED` fails the build). The sovereign-gap exceptions are written to

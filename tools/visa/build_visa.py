@@ -206,8 +206,8 @@ class Row:
     category: str
     days: int | None
     status: str          # upstream's status, verbatim, for `datasetSaid`
-    special: bool
-    note: str | None     # only kept for `special`; the app shows it verbatim
+    noted: bool          # `special` or `travel_ban`: a CHECK stand-in carrying a note
+    note: str | None     # only kept for those; the app shows it verbatim
 
 
 @dataclass
@@ -284,7 +284,9 @@ def row_from_record(rec: dict, usage: Usage) -> Row:
             f"it to REQUIREMENT_CATEGORY in rules.py."
         )
     # Upstream files an authorisation you must obtain before flying under
-    # `visa_free` in two shapes (see rules.ETA_RULES); both are ETA for us.
+    # `visa_free` in two shapes (see rules.ETA_RULES); both are ETA for us. Gated on
+    # `visa_free`: a `travel_ban` row's alternative_statuses holds the destination's
+    # own rule (["evisa"], even ["eta"]), which must never loosen the ban.
     if status == "visa_free":
         if "eta" in rec["alternative_statuses"]:
             category = "ETA"
@@ -305,10 +307,17 @@ def row_from_record(rec: dict, usage: Usage) -> Row:
     if category == "VISA_FREE" and rec["allowed_stay_days"]:
         days = rec["allowed_stay_days"]
     note = None
-    if status == rules.SPECIAL_STATUS:
-        note = (trim_note(rec["notes"] or "", rules.NOTE_MAX_CHARS)
-                or rules.SPECIAL_FALLBACK_NOTE)
-    return Row(category, days, status, status == rules.SPECIAL_STATUS, note)
+    noted = status in rules.NOTE_STATUSES
+    if noted:
+        fallback = rules.NOTE_FALLBACKS[status]
+        upstream = trim_note(rec["notes"] or "", rules.NOTE_MAX_CHARS)
+        if status == rules.TRAVEL_BAN_STATUS:
+            # Lead with the ban: in a combined cell ("eVisa / Travel banned") the
+            # upstream note may describe only the destination's own rule.
+            note = f"{fallback} {upstream}" if upstream else fallback
+        else:
+            note = upstream or fallback
+    return Row(category, days, status, noted, note)
 
 
 def load_row(doc: dict, places: set[str], usage: Usage) -> dict[str, Row]:
@@ -411,9 +420,9 @@ def build(passport: str, ds: Dataset, advice: Path | None, usage: Usage) -> str:
         raise TooThin(f"{passport}: only {answered} dataset answers (minimum "
                       f"{rules.MIN_DATASET_ROWS}); not shipping a passport that "
                       f"is mostly blank")
-    # What the generic tier may borrow from: never a `special` row, whose category
+    # What the generic tier may borrow from: never a `special` or `travel_ban` row, whose category
     # is a stand-in and says nothing about the neighbouring territory.
-    reference_row = {c: (r.category, r.days) for c, r in row.items() if not r.special}
+    reference_row = {c: (r.category, r.days) for c, r in row.items() if not r.noted}
 
     curated = passport in rules.PASSPORTS
     corrections = rules.CORRECTIONS.get(passport, {})
@@ -478,10 +487,10 @@ def build(passport: str, ds: Dataset, advice: Path | None, usage: Usage) -> str:
     for code, (confidence, src, note) in annotations.items():
         if code not in names:
             problems.append(f"ANNOTATIONS[{passport}][{code}] is not a place")
-        elif code not in row or row[code].special or code in corrections:
+        elif code not in row or row[code].noted or code in corrections:
             problems.append(
                 f"ANNOTATIONS[{passport}][{code}] needs a plain dataset row to "
-                f"annotate (not missing, not special, not corrected)")
+                f"annotate (not missing, not special or travel_ban, not corrected)")
         if confidence not in rules.CONFIDENCE or src not in rules.SOURCES or not note:
             problems.append(f"ANNOTATIONS[{passport}][{code}] is malformed")
 
@@ -567,6 +576,7 @@ def build(passport: str, ds: Dataset, advice: Path | None, usage: Usage) -> str:
     from_override = 0
     corrected = 0
     specials = 0
+    bans = 0
     unresolved = []
 
     for code in codes:
@@ -576,11 +586,12 @@ def build(passport: str, ds: Dataset, advice: Path | None, usage: Usage) -> str:
             entry = {"code": code, "category": r.category, "source": "dataset"}
             if r.days is not None:
                 entry["days"] = r.days
-            if r.special:
+            if r.noted:
                 entry["confidence"] = "low"
                 entry["note"] = r.note
                 entry["sourceUrl"] = doc["source_url"]
                 specials += 1
+                bans += r.status == rules.TRAVEL_BAN_STATUS
             elif code in annotations:
                 confidence, src, note = annotations[code]
                 entry["confidence"] = confidence
@@ -699,7 +710,7 @@ def build(passport: str, ds: Dataset, advice: Path | None, usage: Usage) -> str:
     low = [e["code"] for e in entries if e.get("confidence") == "low"]
 
     print(f"resolved {len(entries)} places: {from_dataset} from the dataset "
-          f"({specials} special, shown as CHECK at low confidence), "
+          f"({specials - bans} special, {bans} travel_ban, shown as CHECK at low confidence), "
           f"{from_override} hand-curated, {corrected} corrected")
     for category in rules.CATEGORIES:
         n = by_category[category]
