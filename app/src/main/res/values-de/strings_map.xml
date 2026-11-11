@@ -9,6 +9,7 @@
     <string name="map_share_style_title">Darstellung</string>
     <string name="map_share_cancel">Abbrechen</string>
     <string name="map_description">Weltkarte. Land oder Gebiet antippen, um es auszuwählen.</string>
+    <string name="map_a11y_alternative">Dieselben Aktionen findest du im Reisepass-Tab und in der Suche.</string>
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Besucht</string>
@@ -50,8 +51,8 @@
     <string name="map_search_no_matches">Keine Treffer</string>
     <string name="map_lens_visa">Visum</string>
     <string name="map_regions_off">Regionen</string>
-    <string name="map_regions_official">Regionen: UN</string>
-    <string name="map_regions_informal">Regionen: benannt</string>
+    <string name="map_regions_official">Offizielle Regionen</string>
+    <string name="map_regions_informal">Gängige Regionen</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Keine Daten für beide Reisepässe – vor der Reise bei offiziellen Quellen prüfen.</string>
@@ -84,6 +85,7 @@
     <string name="places_filter_been">Besucht</string>
     <string name="places_filter_lived">Gelebt</string>
     <string name="places_filter_want">Wunsch</string>
+    <string name="places_filter_wishlist_visa_free">Wunschliste, visumfrei für mich</string>
     <string name="places_filter_none">Noch nicht</string>
     <string name="places_mode_travel">Wo ich war</string>
     <string name="places_mode_visa">Wohin ich kann</string>

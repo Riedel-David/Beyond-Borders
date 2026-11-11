@@ -88,6 +88,8 @@
     <string name="settings_export">Exportar</string>
     <string name="settings_import">Importar</string>
     <string name="settings_data_detail">Un archivo JSON que puedes guardar donde quieras. Al importar, prevalece la entrada más reciente.</string>
+    <string name="settings_last_backup">Última copia: %1$s</string>
+    <string name="settings_last_backup_never">Última copia: nunca</string>
     <string name="settings_restore_button">Restaurar desde la copia de Android</string>
     <string name="settings_restore_detail">La copia de seguridad de Android dejó una instantánea de tu historial en este teléfono. Al restaurarla se fusiona con los datos actuales, igual que al importar un archivo.</string>
     <string name="settings_ok">OK</string>

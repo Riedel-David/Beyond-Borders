@@ -29,7 +29,9 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -74,6 +76,10 @@ enum class StatusFilter(val text: UiText) {
     LIVED(UiText.Res(R.string.places_filter_lived)),
     WISHLIST(UiText.Res(R.string.places_filter_want)),
     NONE(UiText.Res(R.string.places_filter_none)),
+
+    /** Not a status: Want-to places the selected passport enters visa-free. Offered by its
+     * own chip, only when it can match something (see [offerWishlistVisaFree]). */
+    WISHLIST_VISA_FREE(UiText.Res(R.string.places_filter_wishlist_visa_free)),
 }
 
 /**
@@ -327,9 +333,23 @@ class PlacesViewModel(
             .stateIn(viewModelScope, SharingStarted.Eagerly, TravelStats.EMPTY)
 
     /** The rows the passport list should render, already filtered and ordered. */
+    @OptIn(ExperimentalCoroutinesApi::class)
     val rows: StateFlow<List<PlaceRow>> =
-        combine(allPlaces, statuses, _query, _statusFilter, _grouping) { places, st, q, filter, grouping ->
-            buildRows(places, st, q, filter, grouping)
+        // The registries only join the combine while the visa-free chip is selected, so
+        // everyone else keeps the plain path and a registry reload recomputes nothing.
+        _statusFilter.flatMapLatest { filter ->
+            if (filter == StatusFilter.WISHLIST_VISA_FREE) {
+                combine(
+                    allPlaces, statuses, _query, _grouping,
+                    combine(_visa, _secondVisa) { primary, second -> primary to second },
+                ) { places, st, q, grouping, (visa, secondVisa) ->
+                    buildRows(places, st, q, filter, grouping, visa, secondVisa)
+                }
+            } else {
+                combine(allPlaces, statuses, _query, _grouping) { places, st, q, grouping ->
+                    buildRows(places, st, q, filter, grouping)
+                }
+            }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /**
@@ -877,12 +897,28 @@ internal fun buildVisaRows(
         .toList()
 }
 
+/**
+ * Whether the selected passport(s) enter [code] visa-free, by the same lookup and the
+ * same two-passport rule the Visa tab uses. No registry means no answer, so false.
+ */
+internal fun isVisaFreeFor(code: String, visa: VisaRegistry?, secondVisa: VisaRegistry?): Boolean =
+    combineRequirements(visa?.get(code), secondVisa?.get(code))?.winner?.isVisaFree == true
+
+/**
+ * Whether the "Wishlist, visa-free for me" chip is worth showing: it needs a passport
+ * (no nationality chosen means no registry) and at least one Want-to place.
+ */
+internal fun offerWishlistVisaFree(visa: VisaRegistry?, statuses: Map<String, PlaceStatus>): Boolean =
+    visa != null && statuses.values.any { it == PlaceStatus.WISHLIST }
+
 internal fun buildRows(
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
     query: String,
     filter: StatusFilter,
     grouping: Grouping,
+    visa: VisaRegistry? = null,
+    secondVisa: VisaRegistry? = null,
 ): List<PlaceRow> {
     val needle = query.trim().foldForSearch()
     val matching = places.asSequence()
@@ -895,6 +931,8 @@ internal fun buildRows(
                 StatusFilter.LIVED -> it.status == PlaceStatus.LIVED
                 StatusFilter.WISHLIST -> it.status == PlaceStatus.WISHLIST
                 StatusFilter.NONE -> it.status == PlaceStatus.NONE
+                StatusFilter.WISHLIST_VISA_FREE ->
+                    it.status == PlaceStatus.WISHLIST && isVisaFreeFor(it.place.code, visa, secondVisa)
             }
         }
 

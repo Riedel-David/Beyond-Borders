@@ -1,6 +1,5 @@
 package com.riedel.beyondborders.ui.passport
 
-import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -40,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -87,12 +85,13 @@ internal fun AchievementsSection(
     nextUp: List<Achievement> = emptyList(),
     recent: List<Achievement> = emptyList(),
     placesVisited: Int = 0,
+    onShareFailed: () -> Unit,
 ) {
     // By id, so the sheet follows the live list rather than a stale copy.
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     val onOpen: (Achievement) -> Unit = { openId = it.id }
     achievements.firstOrNull { it.id == openId }?.let { badge ->
-        BadgeSheet(badge, placesVisited, onDismiss = { openId = null })
+        BadgeSheet(badge, placesVisited, onDismiss = { openId = null }, onShareFailed = onShareFailed)
     }
     if (recent.isNotEmpty()) {
         HighlightLabel(stringResource(R.string.badge_recent))
@@ -210,13 +209,12 @@ private fun BadgeRows(badges: List<Achievement>, onOpen: (Achievement) -> Unit, 
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> Unit) {
+private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> Unit, onShareFailed: () -> Unit) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val tone = badgeTone(badge.group)
     val accent = Color(if (dark) tone.accentDark else tone.accentLight)
     val glyph = Color(if (dark) GlyphOnAccentDark else GlyphOnAccentLight)
     val context = LocalContext.current
-    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
         Column(
@@ -251,7 +249,10 @@ private fun BadgeSheet(badge: Achievement, placesVisited: Int, onDismiss: () -> 
                         } catch (e: CancellationException) {
                             throw e
                         } catch (_: Exception) {
-                            Toast.makeText(context, resources.getString(R.string.badge_share_failed), Toast.LENGTH_SHORT).show()
+                            // The sheet is a separate window above the screen's snackbar
+                            // host, so close it first or the message sits under the scrim.
+                            onShareFailed()
+                            onDismiss()
                         }
                     } },
                     modifier = Modifier.padding(top = 8.dp),

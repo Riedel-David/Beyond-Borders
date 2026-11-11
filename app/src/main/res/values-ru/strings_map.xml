@@ -9,6 +9,7 @@
     <string name="map_share_style_title">Стиль публикации</string>
     <string name="map_share_cancel">Отмена</string>
     <string name="map_description">Карта мира. Нажми на страну или территорию, чтобы выбрать её.</string>
+    <string name="map_a11y_alternative">Те же действия доступны на вкладке «Паспорт» и в поиске.</string>
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Был(а)</string>
@@ -52,8 +53,8 @@
     <string name="map_search_no_matches">Ничего не найдено</string>
     <string name="map_lens_visa">Визы</string>
     <string name="map_regions_off">Регионы</string>
-    <string name="map_regions_official">Регионы: ООН</string>
-    <string name="map_regions_informal">Регионы: группы стран</string>
+    <string name="map_regions_official">Официальные регионы</string>
+    <string name="map_regions_informal">Привычные регионы</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Нет данных ни для одного из паспортов — перед поездкой проверь официальные источники.</string>
@@ -88,6 +89,7 @@
     <string name="places_filter_been">Был(а)</string>
     <string name="places_filter_lived">Жил(а)</string>
     <string name="places_filter_want">Хочу</string>
+    <string name="places_filter_wishlist_visa_free">Хочу побывать, без визы для меня</string>
     <string name="places_filter_none">Пока нет</string>
     <string name="places_mode_travel">Где я был(а)</string>
     <string name="places_mode_visa">Куда я могу поехать</string>

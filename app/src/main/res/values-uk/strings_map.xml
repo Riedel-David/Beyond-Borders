@@ -9,6 +9,7 @@
     <string name="map_share_style_title">Стиль зображення</string>
     <string name="map_share_cancel">Скасувати</string>
     <string name="map_description">Карта світу. Торкнись країни чи території, щоб її вибрати.</string>
+    <string name="map_a11y_alternative">Ті самі дії доступні на вкладці «Паспорт» і в пошуку.</string>
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Відвідано</string>
@@ -52,8 +53,8 @@
     <string name="map_search_no_matches">Нічого не знайдено</string>
     <string name="map_lens_visa">Візи</string>
     <string name="map_regions_off">Регіони</string>
-    <string name="map_regions_official">Регіони: ООН</string>
-    <string name="map_regions_informal">Регіони: неофіційні</string>
+    <string name="map_regions_official">Офіційні регіони</string>
+    <string name="map_regions_informal">Поширені регіони</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Немає даних ні для одного з паспортів — перевір офіційні джерела перед поїздкою.</string>
@@ -88,6 +89,7 @@
     <string name="places_filter_been">Відвідано</string>
     <string name="places_filter_lived">Прожито</string>
     <string name="places_filter_want">Хочу</string>
+    <string name="places_filter_wishlist_visa_free">Хочу відвідати, без візи для мене</string>
     <string name="places_filter_none">Ще ні</string>
     <string name="places_mode_travel">Мої подорожі</string>
     <string name="places_mode_visa">Куди я можу поїхати</string>

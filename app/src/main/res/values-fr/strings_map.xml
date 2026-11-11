@@ -9,6 +9,7 @@
     <string name="map_share_style_title">Style</string>
     <string name="map_share_cancel">Annuler</string>
     <string name="map_description">Carte du monde. Touche un pays ou un territoire pour le sélectionner.</string>
+    <string name="map_a11y_alternative">Les mêmes actions sont disponibles dans l\'onglet Passeport et dans la recherche.</string>
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Visité</string>
@@ -51,8 +52,8 @@
     <string name="map_search_no_matches">Aucun résultat</string>
     <string name="map_lens_visa">Visa</string>
     <string name="map_regions_off">Régions</string>
-    <string name="map_regions_official">Régions : ONU</string>
-    <string name="map_regions_informal">Régions : groupes</string>
+    <string name="map_regions_official">Régions officielles</string>
+    <string name="map_regions_informal">Régions courantes</string>
 
     <!-- Map: selected place card -->
     <string name="map_no_data_either">Aucune donnée pour tes deux passeports : consulte les sources officielles avant de voyager.</string>
@@ -86,6 +87,7 @@
     <string name="places_filter_been">Visités</string>
     <string name="places_filter_lived">Habités</string>
     <string name="places_filter_want">Envies</string>
+    <string name="places_filter_wishlist_visa_free">Envies, sans visa pour moi</string>
     <string name="places_filter_none">Pas encore</string>
     <string name="places_mode_travel">Où je suis allé</string>
     <string name="places_mode_visa">Où je peux aller</string>
