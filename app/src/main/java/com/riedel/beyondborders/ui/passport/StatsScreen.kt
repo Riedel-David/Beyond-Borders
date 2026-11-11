@@ -111,6 +111,8 @@ fun StatsScreen(
     val snackbarHost = remember { SnackbarHostState() }
     val shareScope = rememberCoroutineScope()
     val context = LocalContext.current
+    // Resolved at composition so it follows a language change; Context.getString in a callback would not.
+    val shareFailedText = stringResource(R.string.badge_share_failed)
     // Read off the main thread; null until loaded, so the hero shows no strip meanwhile.
     val flagFiles by produceState<Set<String>?>(null) {
         value = withContext(Dispatchers.IO) {
@@ -238,7 +240,7 @@ fun StatsScreen(
                 recent = seenUpdate.fresh,
                 placesVisited = placesVisited,
                 onShareFailed = {
-                    shareScope.launch { snackbarHost.showSnackbar(context.getString(R.string.badge_share_failed)) }
+                    shareScope.launch { snackbarHost.showSnackbar(shareFailedText) }
                 },
                 onToggleGroup = { g ->
                     expandedBadgeGroups = if (g in expandedBadgeGroups) expandedBadgeGroups - g else expandedBadgeGroups + g
