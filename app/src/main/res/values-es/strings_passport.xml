@@ -193,7 +193,7 @@
     <string name="badge_wishlist_10_title">Soñador</string>
     <string name="badge_wishlist_10_desc">Añade %1$d lugares a tus pendientes.</string>
     <string name="quick_add_title">Añadir rápido</string>
-    <string name="quick_add_search">Buscar países</string>
+    <string name="quick_add_search">Buscar todos los países</string>
     <string name="quick_add_close">Cerrar</string>
     <string name="quick_add_been_desc">He estado en %1$s</string>
     <string name="passport_start_title">Empieza marcando algunos lugares</string>

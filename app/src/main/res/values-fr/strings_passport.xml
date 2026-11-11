@@ -193,7 +193,7 @@
     <string name="badge_wishlist_10_title">Rêveur</string>
     <string name="badge_wishlist_10_desc">Ajoute %1$d lieux à ta liste d\'envies.</string>
     <string name="quick_add_title">Ajout rapide</string>
-    <string name="quick_add_search">Rechercher des pays</string>
+    <string name="quick_add_search">Rechercher tous les pays</string>
     <string name="quick_add_close">Fermer</string>
     <string name="quick_add_been_desc">Visité : %1$s</string>
     <string name="passport_start_title">Commence par marquer quelques lieux</string>

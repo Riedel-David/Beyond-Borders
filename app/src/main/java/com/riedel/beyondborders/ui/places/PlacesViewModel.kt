@@ -1051,17 +1051,42 @@ internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label
 }
 
 /**
- * The rows Quick add lists: sovereign states, continent by continent, filtered by
- * [query] with the same folding the Passport search uses. That is the UN members plus
- * the places that are their own sovereign (Taiwan, Kosovo...) — a place whose
- * [Place.englishSovereign] is itself — which leaves out dependencies such as
- * Greenland. Statuses are deliberately not an input: the order depends on the places
- * and the query only, so a tick does not re-sort the list. Each row reads its status
- * when it is drawn; the [PlaceRow.status] here is a placeholder.
+ * The 15 states that clear roughly 29 million international arrivals a year (UN Tourism
+ * basis, 2024/2025, read off regional tables, so approximate). Quick add opens on these
+ * only: the dialog is a fast way to tick the obvious ones, and the rest of the world is
+ * meant to be found through the Passport list or the map. The cut below 15 is blurry
+ * (Poland, Croatia, Hungary, Czechia sit nearby and were not confirmed), which is why
+ * the list stops where the evidence is firm. Hong Kong and Macau are territories, not
+ * states, and are not here.
  */
-internal fun quickAddRows(places: List<Place>, query: String): List<PlaceRow> =
+internal val QUICK_ADD_TOP_CODES: Set<String> = setOf(
+    "FR", "ES", "IT", "TR", "US", "MX", "CN", "JP", "GB", "DE", "GR", "AT", "TH", "PT", "SA",
+)
+
+/**
+ * The rows Quick add lists, continent by continent, filtered by [query] with the same
+ * folding the Passport search uses. With an empty query that is [QUICK_ADD_TOP_CODES]
+ * plus [alsoShow], the places the user had already marked when the dialog opened, so a
+ * Peru ticked last week is still there to review or untick. The caller fixes [alsoShow]
+ * at open: reading live statuses would make a row jump or vanish under the finger.
+ * Once the user types, it widens to every sovereign state — the UN members plus the
+ * places that are their own sovereign (Taiwan, Kosovo...), a place whose
+ * [Place.englishSovereign] is itself, which leaves out dependencies such as Greenland —
+ * so searching for "Peru" finds it instead of an empty list that looks broken. Statuses
+ * are deliberately not an input: the order depends on the places and the query only, so
+ * a tick does not re-sort the list. Each row reads its status when it is drawn; the
+ * [PlaceRow.status] here is a placeholder.
+ */
+internal fun quickAddRows(
+    places: List<Place>,
+    query: String,
+    alsoShow: Set<String> = emptySet(),
+): List<PlaceRow> =
     buildRows(
-        places.filter { it.unMember || it.englishSovereign == it.englishName },
+        places.filter {
+            val sovereign = it.unMember || it.englishSovereign == it.englishName
+            sovereign && (query.isNotBlank() || it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
+        },
         emptyMap(),
         query,
         StatusFilter.ALL,
