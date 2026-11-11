@@ -82,8 +82,10 @@ class VisaAssetCoverageTest {
 
     @Test
     fun `a CHECK note is cut short`() {
+        // Upstream's text is cut at 280 characters (NOTE_MAX_CHARS); a travel_ban row
+        // puts the ~150-character "your own government forbids travel" lead in front.
         shippedPassports().flatMap { v -> v.requirements.filter { it.category == VisaCategory.CHECK } }
-            .forEach { assertTrue("${it.code}: ${it.note!!.length} chars", it.note!!.length <= 300) }
+            .forEach { assertTrue("${it.code}: ${it.note!!.length} chars", it.note!!.length <= 450) }
     }
 
     @Test
