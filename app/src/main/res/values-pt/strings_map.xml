@@ -15,7 +15,7 @@
     <string name="map_legend_short_lived">Morei</string>
     <string name="map_legend_short_wanted">Quero ir</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Toque em um lugar para marcá-lo</string>
+    <string name="map_legend_nudge">Toque em um país e escolha Visitei, Morei ou Quero ir</string>
     <string name="map_legend_visited">%1$d visitados</string>
     <string name="map_legend_lived">%1$d onde morei</string>
     <string name="map_legend_wishlisted">%1$d na lista de desejos</string>
@@ -124,4 +124,5 @@
     <string name="widget_cfg_background_transparent">Transparente</string>
     <string name="widget_cfg_preview_title">Tamanho da prévia</string>
     <string name="widget_cfg_add">Adicionar widget</string>
+    <string name="map_quick_add">Adição rápida</string>
 </resources>

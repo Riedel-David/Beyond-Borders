@@ -62,6 +62,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -123,6 +124,7 @@ import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
+import com.riedel.beyondborders.ui.passport.QuickAddDialog
 import com.riedel.beyondborders.ui.passport.SearchField
 import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel
@@ -213,6 +215,7 @@ fun MapScreen(
     modifier: Modifier = Modifier,
 ) {
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
@@ -361,128 +364,142 @@ fun MapScreen(
 
         // Overlays sit on top of the map surface, deliberately compact: the map is
         // the point, and chrome that covers the Mediterranean is chrome too much.
-        MapPill(
-            // Only worth a toggle once there is something to spell out; the empty
-            // state's nudge and the region heatmap's own legend both stay static.
-            onClick = when {
-                lens -> {
-                    {
-                        viewModel.vibrate()
-                        visaLegendLabeled = !visaLegendLabeled
-                    }
-                }
-                !regionActive && (stats.been > 0 || stats.wishlist > 0) -> {
-                    {
-                        viewModel.vibrate()
-                        counterCompact = !counterCompact
-                    }
-                }
-                else -> null
-            },
-            modifier = Modifier
+        // The pill and, while nothing is marked, the Quick add chip under it: a chip of
+        // its own so a large font scale can't make the pill grow tall over the map.
+        Column(
+            Modifier
                 .align(Alignment.TopStart)
                 .padding(contentPadding)
-                .padding(12.dp)
-                // The asOf notice is a full sentence with no line break of its own,
-                // and this pill sits in the same unbounded Box as the ⋮ stack on
-                // the opposite corner — without a cap, a long enough sentence (two
-                // passports named instead of one) renders on one line right across
-                // the screen and under the ⋮ button instead of wrapping under itself.
-                .widthIn(max = pillMaxWidth),
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            // AnimatedContent, not animateContentSize on the pill: the pill's size
-            // animated while its content swapped in a single frame, so expanding read
-            // as smooth growth and collapsing read as the labels vanishing instantly.
-            // Crossfading the content and animating the size in one transition makes
-            // the two directions symmetric. The kind is what the transition keys on,
-            // so the outgoing content keeps drawing its own labelled or compact form
-            // while it fades out instead of jumping to the incoming one.
-            AnimatedContent(
-                targetState = mapLegendKind(
-                    lens = lens,
-                    visaLabeled = visaLegendLabeled,
-                    regionMode = regionMode,
-                    counterLabeled = !counterCompact,
-                    been = stats.been,
-                    wishlist = stats.wishlist,
-                ),
-                label = "legend",
-                transitionSpec = {
-                    ContentTransform(
-                        targetContentEnter = fadeIn(tween(180)),
-                        initialContentExit = fadeOut(tween(120)),
-                        sizeTransform = SizeTransform(clip = false) { _, _ -> tween(180) },
-                    )
+            MapPill(
+                // Only worth a toggle once there is something to spell out; the empty
+                // state's nudge and the region heatmap's own legend both stay static.
+                onClick = when {
+                    lens -> {
+                        {
+                            viewModel.vibrate()
+                            visaLegendLabeled = !visaLegendLabeled
+                        }
+                    }
+                    !regionActive && (stats.been > 0 || stats.wishlist > 0) -> {
+                        {
+                            viewModel.vibrate()
+                            counterCompact = !counterCompact
+                        }
+                    }
+                    else -> null
                 },
-            ) { kind ->
-                when (kind) {
-                    MapLegendKind.VISA_DOTS, MapLegendKind.VISA_LABELED -> VisaLegend(
-                        palette.visa,
-                        visa,
-                        secondVisa,
-                        noDataCount = visaNoData.size,
-                        labeled = kind == MapLegendKind.VISA_LABELED,
-                    )
-                    MapLegendKind.REGION_OFFICIAL ->
-                        RegionLegend(palette.region, palette.unvisited, RegionMode.OFFICIAL, stats)
-                    MapLegendKind.REGION_INFORMAL ->
-                        RegionLegend(palette.region, palette.unvisited, RegionMode.INFORMAL, stats)
-                    // Nothing marked yet, so the counter would say "0" and teach
-                    // nothing. Say what to do instead.
-                    MapLegendKind.NUDGE -> Text(
-                        stringResource(R.string.map_legend_nudge),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    MapLegendKind.COUNTER_LABELED, MapLegendKind.COUNTER_DOTS -> {
-                        val compact = kind == MapLegendKind.COUNTER_DOTS
-                        // Resolved here because the semantics block below is not composable.
-                        val legendContext = LocalContext.current
-                        val legendConfig = LocalConfiguration.current
-                        val legendDescription = remember(stats, legendConfig) {
-                            travelLegendDescription(stats).asString(legendContext)
-                        }
-                        // Only the statuses actually on the map get an entry: this is a
-                        // legend, so it counts each status strictly rather than showing
-                        // the combined "been" total the passport leads with.
-                        // Labelled chips stack one under another (they are wide); the
-                        // collapsed dot+count form sits in one row (it is narrow).
-                        // TalkBack would otherwise read the entries as separate
-                        // fragments; one sentence replaces them.
-                        val legendSemantics = Modifier.clearAndSetSemantics {
-                            contentDescription = legendDescription
-                        }
-                        val legendChips: @Composable () -> Unit = {
-                            legendEntries(stats).forEach { entry ->
-                                LegendChip(
-                                    color = when (entry.status) {
-                                        LegendStatus.VISITED -> palette.visited
-                                        LegendStatus.LIVED -> palette.lived
-                                        LegendStatus.WANTED -> palette.wishlist
-                                    },
-                                    text = if (compact) {
-                                        "${entry.count}"
-                                    } else {
-                                        stringResource(R.string.map_legend_chip, stringResource(entry.status.labelRes), entry.count)
-                                    },
-                                    compact = compact,
-                                )
+                modifier = Modifier
+                    // The asOf notice is a full sentence with no line break of its own,
+                    // and this pill sits in the same unbounded Box as the ⋮ stack on
+                    // the opposite corner — without a cap, a long enough sentence (two
+                    // passports named instead of one) renders on one line right across
+                    // the screen and under the ⋮ button instead of wrapping under itself.
+                    .widthIn(max = pillMaxWidth),
+            ) {
+                // AnimatedContent, not animateContentSize on the pill: the pill's size
+                // animated while its content swapped in a single frame, so expanding read
+                // as smooth growth and collapsing read as the labels vanishing instantly.
+                // Crossfading the content and animating the size in one transition makes
+                // the two directions symmetric. The kind is what the transition keys on,
+                // so the outgoing content keeps drawing its own labelled or compact form
+                // while it fades out instead of jumping to the incoming one.
+                AnimatedContent(
+                    targetState = mapLegendKind(
+                        lens = lens,
+                        visaLabeled = visaLegendLabeled,
+                        regionMode = regionMode,
+                        counterLabeled = !counterCompact,
+                        been = stats.been,
+                        wishlist = stats.wishlist,
+                    ),
+                    label = "legend",
+                    transitionSpec = {
+                        ContentTransform(
+                            targetContentEnter = fadeIn(tween(180)),
+                            initialContentExit = fadeOut(tween(120)),
+                            sizeTransform = SizeTransform(clip = false) { _, _ -> tween(180) },
+                        )
+                    },
+                ) { kind ->
+                    when (kind) {
+                        MapLegendKind.VISA_DOTS, MapLegendKind.VISA_LABELED -> VisaLegend(
+                            palette.visa,
+                            visa,
+                            secondVisa,
+                            noDataCount = visaNoData.size,
+                            labeled = kind == MapLegendKind.VISA_LABELED,
+                        )
+                        MapLegendKind.REGION_OFFICIAL ->
+                            RegionLegend(palette.region, palette.unvisited, RegionMode.OFFICIAL, stats)
+                        MapLegendKind.REGION_INFORMAL ->
+                            RegionLegend(palette.region, palette.unvisited, RegionMode.INFORMAL, stats)
+                        // Nothing marked yet, so the counter would say "0" and teach
+                        // nothing. Say what to do instead.
+                        MapLegendKind.NUDGE -> Text(
+                            stringResource(R.string.map_legend_nudge),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        MapLegendKind.COUNTER_LABELED, MapLegendKind.COUNTER_DOTS -> {
+                            val compact = kind == MapLegendKind.COUNTER_DOTS
+                            // Resolved here because the semantics block below is not composable.
+                            val legendContext = LocalContext.current
+                            val legendConfig = LocalConfiguration.current
+                            val legendDescription = remember(stats, legendConfig) {
+                                travelLegendDescription(stats).asString(legendContext)
                             }
-                        }
-                        if (compact) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = legendSemantics,
-                            ) { legendChips() }
-                        } else {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                                horizontalAlignment = Alignment.Start,
-                                modifier = legendSemantics,
-                            ) { legendChips() }
+                            // Only the statuses actually on the map get an entry: this is a
+                            // legend, so it counts each status strictly rather than showing
+                            // the combined "been" total the passport leads with.
+                            // Labelled chips stack one under another (they are wide); the
+                            // collapsed dot+count form sits in one row (it is narrow).
+                            // TalkBack would otherwise read the entries as separate
+                            // fragments; one sentence replaces them.
+                            val legendSemantics = Modifier.clearAndSetSemantics {
+                                contentDescription = legendDescription
+                            }
+                            val legendChips: @Composable () -> Unit = {
+                                legendEntries(stats).forEach { entry ->
+                                    LegendChip(
+                                        color = when (entry.status) {
+                                            LegendStatus.VISITED -> palette.visited
+                                            LegendStatus.LIVED -> palette.lived
+                                            LegendStatus.WANTED -> palette.wishlist
+                                        },
+                                        text = if (compact) {
+                                            "${entry.count}"
+                                        } else {
+                                            stringResource(R.string.map_legend_chip, stringResource(entry.status.labelRes), entry.count)
+                                        },
+                                        compact = compact,
+                                    )
+                                }
+                            }
+                            if (compact) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = legendSemantics,
+                                ) { legendChips() }
+                            } else {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    horizontalAlignment = Alignment.Start,
+                                    modifier = legendSemantics,
+                                ) { legendChips() }
+                            }
                         }
                     }
                 }
+            }
+            if (mapLegendKind(lens, visaLegendLabeled, regionMode, !counterCompact, stats.been, stats.wishlist) == MapLegendKind.NUDGE) {
+                SuggestionChip(
+                    onClick = { showQuickAdd = true },
+                    // SuggestionChip already pads its touch target out to 48 dp.
+                    label = { Text(stringResource(R.string.map_quick_add)) },
+                )
             }
         }
 
@@ -722,6 +739,8 @@ fun MapScreen(
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding),
         )
+
+        if (showQuickAdd) QuickAddDialog(viewModel, onDismiss = { showQuickAdd = false })
     }
 }
 

@@ -209,7 +209,7 @@ fun SettingsScreen(
             var showNationalityPicker by remember { mutableStateOf(false) }
             ValueRow(
                 title = stringResource(R.string.settings_passport_title),
-                currentValue = passportNames[nationality] ?: nationality,
+                currentValue = nationality?.let { passportNames[it] ?: it } ?: stringResource(R.string.settings_passport_unset),
                 onClick = { showNationalityPicker = true },
             )
             if (showNationalityPicker) {
@@ -245,7 +245,7 @@ fun SettingsScreen(
                         },
                         onDismiss = { showSecondPassportPicker = false },
                         title = stringResource(R.string.settings_second_passport),
-                        exclude = setOf(nationality),
+                        exclude = setOfNotNull(nationality),
                     )
                 }
                 Text(
@@ -274,7 +274,7 @@ fun SettingsScreen(
                             },
                             onDismiss = { showSecondPassportPicker = false },
                             title = stringResource(R.string.settings_second_passport),
-                            exclude = setOf(nationality),
+                            exclude = setOfNotNull(nationality),
                         )
                     }
                     Spacer(Modifier.height(4.dp))

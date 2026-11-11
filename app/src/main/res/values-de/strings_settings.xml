@@ -8,9 +8,9 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Orte markieren, an denen man war, gelebt hat oder noch hinwill – auf einer Karte mit allen %1$d, nicht nur den %2$d UN-Staaten.</string>
+    <string name="welcome_intro">Orte markieren, an denen man war, gelebt hat oder noch hinwill – auf einer Karte mit allen %1$d Orten. Gebiete wie Grönland oder Puerto Rico zählen einzeln und getrennt von dem Staat, zu dem sie gehören.</string>
     <string name="welcome_intro_bare">Orte markieren, an denen man war, gelebt hat oder noch hinwill.</string>
-    <string name="welcome_privacy">Nichts, was markiert wird, wird je an uns gesendet. Kein Konto, kein Server, kein Netzwerk – eine Sicherung lässt sich jederzeit selbst exportieren. (Die Android-Geräte-Sicherung kann die Daten trotzdem enthalten, wenn sie aktiviert ist.)</string>
+    <string name="welcome_privacy">Nichts, was markiert wird, wird an uns gesendet. Kein Konto, kein Server, kein Netzwerk. (Die Android-Geräte-Sicherung kann die Daten trotzdem enthalten, wenn sie aktiviert ist.)</string>
     <string name="welcome_passport_hint">Visumregeln gelten jeweils für einen Reisepass. Den eigenen wählen – später in den Einstellungen änderbar.</string>
     <string name="welcome_get_started">Los geht\'s</string>
 
@@ -204,4 +204,6 @@
     <string name="backup_wrong_format">Dies ist keine BeyondBorders-Sicherungsdatei.</string>
     <string name="backup_newer_version">Diese Sicherung stammt von einer neueren BeyondBorders-Version (Format %1$d).</string>
     <string name="backup_no_places">Die Sicherung enthält keine Orte.</string>
+    <string name="welcome_skip">Vorerst überspringen</string>
+    <string name="settings_passport_unset">Nicht festgelegt</string>
 </resources>

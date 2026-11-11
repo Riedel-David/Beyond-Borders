@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +54,8 @@ private val LauncherIconBackground = Brush.linearGradient(
  * nothing here leaves the phone, and that the visa answers are for one specific
  * passport — which this screen is also where that passport gets picked, since a
  * choice a user never makes defaults quietly to DE and never invites a second
- * look. Everything else — how marking works, what the colours mean — is
+ * look. The choice can be skipped, so a null passport is a lasting state, not just a
+ * pre-welcome one. Everything else — how marking works, what the colours mean — is
  * discoverable from using the app, so it stays out of this screen.
  */
 @Composable
@@ -63,8 +65,8 @@ fun WelcomeScreen(
     passportNames: Map<String, String>,
     englishNames: Map<String, String>,
     placeCount: Int,
-    unMemberCount: Int,
     onGetStarted: () -> Unit,
+    onSkip: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(modifier) { padding ->
@@ -110,8 +112,8 @@ fun WelcomeScreen(
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
-                    if (placeCount > 0 && unMemberCount > 0) {
-                        stringResource(R.string.welcome_intro, placeCount, unMemberCount)
+                    if (placeCount > 0) {
+                        stringResource(R.string.welcome_intro, placeCount)
                     } else {
                         stringResource(R.string.welcome_intro_bare)
                     },
@@ -146,6 +148,13 @@ fun WelcomeScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
                 ) {
                     Text(stringResource(R.string.welcome_get_started))
+                }
+                // Leaves nationality null on purpose: guessing one from the locale or SIM
+                // would give wrong visa answers with no sign they were guesses. The visa
+                // surfaces simply stay absent until a passport is picked in Settings or
+                // from the prompt on the Passport tab.
+                TextButton(onClick = onSkip, modifier = Modifier.padding(top = 4.dp)) {
+                    Text(stringResource(R.string.welcome_skip))
                 }
             }
         }

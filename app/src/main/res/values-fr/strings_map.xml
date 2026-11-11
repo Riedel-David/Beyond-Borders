@@ -15,7 +15,7 @@
     <string name="map_legend_short_lived">Habité</string>
     <string name="map_legend_short_wanted">Envie</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Touche un lieu pour le marquer</string>
+    <string name="map_legend_nudge">Touche un pays, puis choisis Visité, Habité ou Envie</string>
     <string name="map_legend_visited">Visités : %1$d</string>
     <string name="map_legend_lived">Habités : %1$d</string>
     <string name="map_legend_wishlisted">%1$d envies</string>
@@ -124,4 +124,5 @@
     <string name="widget_cfg_background_transparent">Transparent</string>
     <string name="widget_cfg_preview_title">Taille de l\'aperçu</string>
     <string name="widget_cfg_add">Ajouter le widget</string>
+    <string name="map_quick_add">Ajout rapide</string>
 </resources>

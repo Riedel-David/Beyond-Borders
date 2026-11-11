@@ -14,7 +14,7 @@
     <string name="map_legend_short_lived">Lived</string>
     <string name="map_legend_short_wanted">Want</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Tap a place to mark it</string>
+    <string name="map_legend_nudge">Tap any country, then choose Been, Lived or Want to go</string>
     <string name="map_legend_visited">%1$d visited</string>
     <string name="map_legend_lived">%1$d lived</string>
     <string name="map_legend_wishlisted">%1$d wishlisted</string>
@@ -119,4 +119,5 @@
     <string name="widget_cfg_background_transparent">Transparent</string>
     <string name="widget_cfg_preview_title">Preview size</string>
     <string name="widget_cfg_add">Add widget</string>
+    <string name="map_quick_add">Quick add</string>
 </resources>

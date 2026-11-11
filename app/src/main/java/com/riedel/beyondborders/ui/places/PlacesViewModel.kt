@@ -391,9 +391,10 @@ class PlacesViewModel(
             // switch from Settings — one path, not an init load plus a separate
             // reactor for later changes.
             settings.nationality.collect { nationality ->
-                // Still on the welcome screen with nothing chosen yet — nothing to
-                // load, and no fallback to apply; loading DEFAULT_PASSPORT here would
-                // recreate the silent-default bug the welcome screen exists to avoid.
+                // No passport chosen — a steady state after "Skip for now" on the
+                // welcome screen, not only a transient one. Nothing to load, and no
+                // fallback to apply; loading DEFAULT_PASSPORT here would recreate the
+                // silent-default bug the welcome screen exists to avoid.
                 if (nationality == null) return@collect
                 // A malformed or missing asset must not take the travel map down
                 // with it, so this is caught rather than allowed to kill the scope.
@@ -484,6 +485,11 @@ class PlacesViewModel(
     fun setStatus(code: String, status: PlaceStatus) {
         viewModelScope.launch { repo.setStatus(code, status) }
     }
+
+    /** Null until a passport is chosen; the Passport tab prompts for it while null. */
+    val nationality: StateFlow<String?> = settings.nationality
+
+    fun setNationality(code: String) = settings.setNationality(code)
 
     companion object {
         private const val TAG = "PlacesViewModel"
@@ -1005,3 +1011,44 @@ internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label
         folded.getOrPut(key) { label(key).foldForSort() }
     }
 }
+
+/**
+ * The rows Quick add lists: sovereign states, continent by continent, filtered by
+ * [query] with the same folding the Passport search uses. That is the UN members plus
+ * the places that are their own sovereign (Taiwan, Kosovo...) — a place whose
+ * [Place.englishSovereign] is itself — which leaves out dependencies such as
+ * Greenland. Statuses are deliberately not an input: the order depends on the places
+ * and the query only, so a tick does not re-sort the list. Each row reads its status
+ * when it is drawn; the [PlaceRow.status] here is a placeholder.
+ */
+internal fun quickAddRows(places: List<Place>, query: String): List<PlaceRow> =
+    buildRows(
+        places.filter { it.unMember || it.englishSovereign == it.englishName },
+        emptyMap(),
+        query,
+        StatusFilter.ALL,
+        Grouping.CONTINENT,
+    )
+
+/** [rows] under their continent key, in the order given — one section per continent. */
+internal fun quickAddSections(rows: List<PlaceRow>): List<Pair<String, List<PlaceRow>>> =
+    rows.groupBy { it.place.continent }.toList()
+
+/**
+ * Lived is a stronger answer than "Been", so Quick add leaves it alone: the row shows
+ * the status and is inert, since toggling it would downgrade or erase it on a stray
+ * tap in a fast list. Want is not locked: Want to Been is the commonest transition
+ * there is, so ticking it writes Been (and unticking returns it to unmarked, which
+ * does drop the wish). Lived is changed from the Passport list or the map.
+ */
+internal fun isQuickAddLocked(status: PlaceStatus): Boolean = status == PlaceStatus.LIVED
+
+/** What a tap on a row writes: null when the row is locked, otherwise Been or clear. */
+internal fun quickAddTarget(current: PlaceStatus): PlaceStatus? = when {
+    isQuickAddLocked(current) -> null
+    current == PlaceStatus.VISITED -> PlaceStatus.NONE
+    else -> PlaceStatus.VISITED
+}
+
+/** Whether the checkbox shows ticked: Lived counts as been, Want does not. */
+internal fun quickAddChecked(status: PlaceStatus): Boolean = status.isBeen

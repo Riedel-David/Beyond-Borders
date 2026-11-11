@@ -8,9 +8,9 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Marca los lugares en los que has estado o has vivido y a los que quieres ir, en un mapa con los %1$d lugares, no solo los %2$d países de la ONU.</string>
+    <string name="welcome_intro">Marca los lugares en los que has estado o has vivido y a los que quieres ir, en un mapa con los %1$d lugares. Territorios como Groenlandia o Puerto Rico cuentan por separado, aparte del país al que pertenecen.</string>
     <string name="welcome_intro_bare">Marca los lugares en los que has estado o has vivido y a los que quieres ir.</string>
-    <string name="welcome_privacy">Nada de lo que marques se nos envía jamás. Sin cuenta, sin servidor, sin red; puedes exportar una copia de seguridad cuando quieras. (La copia de seguridad de Android puede incluir los datos igualmente si está activada.)</string>
+    <string name="welcome_privacy">Nada de lo que marques se nos envía. Sin cuenta, sin servidor, sin red. (La copia de seguridad de Android puede incluir los datos igualmente si está activada.)</string>
     <string name="welcome_passport_hint">Las normas de visado dependen del pasaporte. Elige el tuyo; podrás cambiarlo después en Ajustes.</string>
     <string name="welcome_get_started">Empezar</string>
 
@@ -215,4 +215,6 @@
     <string name="backup_wrong_format">Este no es un archivo de copia de BeyondBorders.</string>
     <string name="backup_newer_version">Esta copia procede de una versión más reciente de BeyondBorders (formato %1$d).</string>
     <string name="backup_no_places">La copia no contiene ningún lugar.</string>
+    <string name="welcome_skip">Omitir por ahora</string>
+    <string name="settings_passport_unset">Sin elegir</string>
 </resources>
