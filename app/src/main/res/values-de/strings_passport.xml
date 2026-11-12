@@ -177,7 +177,7 @@
     <string name="badge_wishlist_10_title">Träumer</string>
     <string name="badge_wishlist_10_desc">%1$d Orte auf die Wunschliste setzen.</string>
     <string name="quick_add_title">Schnell eintragen</string>
-    <string name="quick_add_search">Länder suchen</string>
+    <string name="quick_add_search">Alle Länder suchen</string>
     <string name="quick_add_close">Schließen</string>
     <string name="quick_add_been_desc">%1$s besucht</string>
     <string name="passport_start_title">Mit ein paar Orten anfangen</string>

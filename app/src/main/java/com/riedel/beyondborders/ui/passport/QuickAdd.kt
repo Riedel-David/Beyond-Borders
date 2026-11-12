@@ -56,8 +56,9 @@ import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import com.riedel.beyondborders.ui.places.Grouping
 
 /**
- * A full-screen list of the UN member states with one "Been" checkbox each, for
- * marking many places in one sitting. Every tap writes straight through
+ * A full-screen list with one "Been" checkbox each, for marking many places in one
+ * sitting. It opens on the most-visited states plus whatever the user had already
+ * marked; typing in the search box widens it to every sovereign state. Every tap writes straight through
  * [PlacesViewModel.setStatus] — there is no Save, so nothing is lost if the process
  * dies mid-list, and closing the dialog has nothing to confirm.
  *
@@ -75,8 +76,16 @@ fun QuickAddDialog(viewModel: PlacesViewModel, onDismiss: () -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     // Keyed without statuses: a tick must not rebuild or re-sort the list under the
     // finger. Each row reads its own status below.
-    val sections = remember(places, query, locale) {
-        val rows = sortSectionsByLabel(quickAddRows(places, query), Grouping.CONTINENT) {
+    // The already-marked places are read once, from the first real emission of the statuses
+    // (not the empty initial value), and never again: not keyed on anything that can change.
+    val statusesLoaded by viewModel.statusesLoaded.collectAsStateWithLifecycle()
+    var snapshot by remember { mutableStateOf<Set<String>?>(null) }
+    if (snapshot == null && statusesLoaded) {
+        snapshot = statuses.filterValues { it != PlaceStatus.NONE }.keys
+    }
+    val marked = snapshot ?: emptySet()
+    val sections = remember(places, query, locale, marked) {
+        val rows = sortSectionsByLabel(quickAddRows(places, query, marked), Grouping.CONTINENT) {
             geoNameText(it).asString(context)
         }
         quickAddSections(rows)

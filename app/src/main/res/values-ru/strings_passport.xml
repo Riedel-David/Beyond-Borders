@@ -209,7 +209,7 @@
     <string name="badge_wishlist_10_title">Мечтатель</string>
     <string name="badge_wishlist_10_desc">Добавь %1$d мест в список желаний.</string>
     <string name="quick_add_title">Быстрое добавление</string>
-    <string name="quick_add_search">Поиск стран</string>
+    <string name="quick_add_search">Поиск по всем странам</string>
     <string name="quick_add_close">Закрыть</string>
     <string name="quick_add_been_desc">Был(а) в: %1$s</string>
     <string name="passport_start_title">Начни с нескольких отметок</string>

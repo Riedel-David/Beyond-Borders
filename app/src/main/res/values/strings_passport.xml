@@ -176,7 +176,7 @@
     <string name="badge_wishlist_10_title">Dreamer</string>
     <string name="badge_wishlist_10_desc">Put %1$d places on your wishlist.</string>
     <string name="quick_add_title">Quick add</string>
-    <string name="quick_add_search">Search countries</string>
+    <string name="quick_add_search">Search all countries</string>
     <string name="quick_add_close">Close</string>
     <string name="quick_add_been_desc">Been to %1$s</string>
     <string name="passport_start_title">Start by marking a few places</string>

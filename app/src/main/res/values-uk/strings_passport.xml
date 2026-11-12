@@ -209,7 +209,7 @@
     <string name="badge_wishlist_10_title">Мрійник</string>
     <string name="badge_wishlist_10_desc">Додай до списку бажань %1$d місць.</string>
     <string name="quick_add_title">Швидке додавання</string>
-    <string name="quick_add_search">Шукати країни</string>
+    <string name="quick_add_search">Шукати всі країни</string>
     <string name="quick_add_close">Закрити</string>
     <string name="quick_add_been_desc">Відвідано: %1$s</string>
     <string name="passport_start_title">Почни з кількох позначок</string>
