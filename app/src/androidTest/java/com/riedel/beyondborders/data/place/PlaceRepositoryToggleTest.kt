@@ -84,7 +84,7 @@ class PlaceRepositoryToggleTest {
         /** One place is enough: [PlaceRepository.toggleStatus] only ever touches one. */
         const val ONE_PLACE = """
             [{"code":"DE","name":"Germany","continent":"Europe","region":"Western Europe",
-              "sovereign":"DE","uninhabited":false,"unMember":true,"lat":51.0,"lon":10.0,
+              "sovereign":"DE","uninhabited":false,"unMember":true,"landlocked":false,"island":false,"lat":51.0,"lon":10.0,
               "bbox":[5.9,47.3,15.0,55.1],"areaKm2":357022,"popEst":83000000}]
         """
     }

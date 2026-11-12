@@ -899,6 +899,8 @@ def build(source: Path, eps_scale: float) -> int:
             "sovereign": p.get("SOVEREIGNT") or name,
             "uninhabited": code in rules.UNINHABITED,
             "unMember": code in rules.UN_MEMBER,
+            "landlocked": code in rules.LANDLOCKED,
+            "island": code in rules.ISLAND,
             "lat": round(clat, 5),
             "lon": round(clon, 5),
             # 5 decimals: 3 would round Vatican City's bbox into a single point.
@@ -929,6 +931,20 @@ def build(source: Path, eps_scale: float) -> int:
     unknown_un_member = rules.UN_MEMBER - codes
     if unknown_un_member:
         problems.append(f"UN_MEMBER has codes with no place: {sorted(unknown_un_member)}")
+    for name_, group_ in (("LANDLOCKED", rules.LANDLOCKED), ("ISLAND", rules.ISLAND)):
+        unknown_ = group_ - codes
+        if unknown_:
+            problems.append(f"{name_} has codes with no place: {sorted(unknown_)}")
+    if rules.ISLAND - rules.UN_MEMBER:
+        problems.append(f"ISLAND must be UN members only: {sorted(rules.ISLAND - rules.UN_MEMBER)}")
+    sov_ = {pl["code"]: pl for pl in places}
+    for name_, group_, ok_ in (("LANDLOCKED", rules.LANDLOCKED, {"XK", "VA"}), ("ISLAND", rules.ISLAND, set())):
+        for c_ in sorted(group_ & codes):
+            pl_ = sov_[c_]
+            if c_ not in rules.UN_MEMBER and pl_["sovereign"] != pl_["name"] and c_ not in ok_:
+                problems.append(f"{name_} contains dependency {c_} {pl_['name']}")
+    if rules.LANDLOCKED & rules.ISLAND:
+        problems.append(f"LANDLOCKED and ISLAND overlap: {sorted(rules.LANDLOCKED & rules.ISLAND)}")
     for pl in places:
         if pl["continent"] not in rules.VALID_CONTINENTS:
             problems.append(

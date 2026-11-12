@@ -47,6 +47,10 @@ data class Place(
     val englishName: String = name,
     /** Same idea for [sovereign]. */
     val englishSovereign: String = sovereign,
+    /** No coastline. Curated in `tools/geo/rules.py` (`LANDLOCKED`), not derived. */
+    val landlocked: Boolean = false,
+    /** A sovereign state made up entirely of islands with no land border (`ISLAND` in rules.py). */
+    val island: Boolean = false,
 ) {
     /** Case- and diacritic-insensitive haystack for the passport search field. */
     val searchKey: String = listOf(name, englishName, code, sovereign, englishSovereign)

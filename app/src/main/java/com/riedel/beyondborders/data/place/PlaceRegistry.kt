@@ -45,6 +45,8 @@ class PlaceRegistry private constructor(val places: List<Place>) {
                     sovereign = o.getString("sovereign"),
                     uninhabited = o.getBoolean("uninhabited"),
                     unMember = o.getBoolean("unMember"),
+                    landlocked = o.getBoolean("landlocked"),
+                    island = o.getBoolean("island"),
                     lat = o.getDouble("lat"),
                     lon = o.getDouble("lon"),
                     bounds = Bounds(

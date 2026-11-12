@@ -292,6 +292,38 @@ UN_MEMBER = {
 }
 
 # ---------------------------------------------------------------------------
+# LANDLOCKED: no coastline. 43 landlocked UN member states plus Kosovo plus
+# the Holy See = 45 (the last two are in the app as places and have no coast either).
+# Kazakhstan and Azerbaijan count (their only "coast" is the Caspian, a lake by
+# the usual definition). Palestine is left out on purpose: the West Bank is
+# landlocked but Gaza is not, so the place is not clearly either. Dependencies
+# are never badge material here, so none appear.
+# ---------------------------------------------------------------------------
+LANDLOCKED = {
+    "AF", "AD", "AM", "AT", "AZ", "BY", "BT", "BO", "BW", "BF", "BI", "CF", "TD", "CZ", "SZ", "ET",
+    "HU", "KZ", "KG", "LA", "LS", "LI", "LU", "MW", "ML", "MD", "MN", "NP", "NE", "MK", "PY", "RW",
+    "SM", "RS", "SK", "SS", "CH", "TJ", "TM", "UG", "UZ", "ZM", "ZW",
+    "XK",  # Kosovo
+    "VA",  # Holy See
+}
+
+# ---------------------------------------------------------------------------
+# ISLAND: a UN member state that is made up entirely of islands AND has no land
+# border. The second clause is what keeps out Ireland (borders the UK), the UK
+# (same island), Cyprus (buffer zone / Northern Cyprus), Haiti and the Dominican
+# Republic (Hispaniola), Indonesia, Papua New Guinea and Timor-Leste (shared
+# islands), and Australia (a continent's mainland). Taiwan and dependencies are
+# not UN members and stay out, matching the "sovereign states" reading of the
+# badge. Singapore and Bahrain qualify: their islands have no land border (the
+# causeways are bridges).
+# ---------------------------------------------------------------------------
+ISLAND = {
+    "AG", "BS", "BH", "BB", "CV", "KM", "CU", "DM", "FJ", "GD", "IS", "JM", "JP", "KI", "MG", "MV",
+    "MT", "MH", "MU", "FM", "NR", "NZ", "PW", "PH", "KN", "LC", "VC", "WS", "ST", "SC", "SG", "SB",
+    "LK", "TO", "TT", "TV", "VU",
+}
+
+# ---------------------------------------------------------------------------
 # SPLIT_ASSERTIONS: the regression test for the place registry.
 # Each tuple must come out as distinct, independently selectable places.
 # If a future Natural Earth release merges any of these, the build fails loudly

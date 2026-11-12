@@ -25,9 +25,11 @@ class AchievementsTest {
         lat: Double = 10.0,
         lon: Double = 10.0,
         area: Long = 50_000,
+        landlocked: Boolean = false,
+        island: Boolean = false,
     ) = Place(
         code, name, continent, region, sovereign, uninhabited, unMember, lat, lon,
-        Bounds(0.0, 0.0, 1.0, 1.0), area,
+        Bounds(0.0, 0.0, 1.0, 1.0), area, landlocked = landlocked, island = island,
     )
 
     private fun been(vararg codes: String) = codes.associateWith { PlaceStatus.VISITED }
@@ -261,6 +263,35 @@ class AchievementsTest {
         }
         assertTrue(all.filter { it.id.startsWith("continent_complete_") }.all { it.unlocked })
         assertTrue(all.all { it.unlocked || it.group in setOf(AchievementGroup.LIVED, AchievementGroup.WISHLIST) })
+    }
+
+    @Test
+    fun `landlocked tiers are a few, a third and all of the landlocked places`() {
+        val places = numbered(9) { place("L$it", landlocked = true) } + place("S", island = true)
+        val l = computeAchievements(places, been("L1", "L2", "L3", "S")).filter { it.id.startsWith("landlocked_") }
+        assertEquals(listOf(3, 9), l.map { it.target })
+        assertEquals(listOf("landlocked_few", "landlocked_all"), l.map { it.id })
+        assertEquals(listOf(true, false), l.map { it.unlocked })
+        assertTrue(l.all { it.group == AchievementGroup.LANDLOCKED })
+    }
+
+    @Test
+    fun `island badges count only island places and give none when the set is empty`() {
+        val places = numbered(6) { place("I$it", island = true) } + place("L", landlocked = true)
+        val all = computeAchievements(places, been("I1", "I2", "L"))
+        val i = all.filter { it.id.startsWith("island_") }
+        assertEquals(listOf(3, 6), i.map { it.target })
+        assertEquals(listOf(2, 2), i.map { it.progress })
+        assertTrue(computeAchievements(listOf(place("A")), emptyMap()).none { it.id.startsWith("island_") })
+    }
+
+    @Test
+    fun `tier targets collapse sensibly on tiny sets`() {
+        assertEquals(listOf(1), tierTargets(1).map { it.second })
+        assertEquals(listOf(2), tierTargets(2).map { it.second })
+        assertEquals(listOf(3), tierTargets(3).map { it.second })
+        assertEquals(listOf(3, 4), tierTargets(4).map { it.second })
+        assertEquals(listOf(3, 15, 46), tierTargets(46).map { it.second })
     }
 
     private fun slug(s: String) = s.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')
