@@ -455,8 +455,11 @@ internal fun importMessage(plan: BackupMerge.Plan): UiText {
     // can reorder the words inside one but never has to split a sentence in two.
     val sentences = buildList<UiText> {
         val changed = plan.added + plan.updated
-        if (changed == 0) {
+        val visitsChanged = plan.visitsAdded + plan.visitsUpdated
+        if (changed == 0 && visitsChanged == 0) {
             add(UiText.Res(R.string.backup_import_nothing))
+        } else if (changed == 0) {
+            // Visits only: nothing to say about places, and nothing "already current" either.
         } else {
             add(
                 when {
@@ -466,6 +469,9 @@ internal fun importMessage(plan: BackupMerge.Plan): UiText {
                 },
             )
             if (plan.unchanged > 0) add(UiText.Res(R.string.backup_already_current, plan.unchanged))
+        }
+        if (visitsChanged > 0) {
+            add(UiText.Res(R.string.backup_imported_visits, plan.visitsAdded, plan.visitsUpdated))
         }
         if (plan.unknownCodes.isNotEmpty()) {
             // Worth naming rather than counting: an unknown code almost always means

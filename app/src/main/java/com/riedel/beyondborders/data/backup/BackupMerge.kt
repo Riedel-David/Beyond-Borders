@@ -25,6 +25,8 @@ object BackupMerge {
      *   having a status this build does not know. Carried rather than computed here —
      *   those rows never reach [plan] — so that the import report can name them next
      *   to the unknown codes instead of staying silent about them.
+     * @property visitsAdded / visitsUpdated what the file's visits would add or replace;
+     *   see [planVisits]. Visit rows for unknown codes are folded into [unreadableRows].
      * @property unreadableRows a count of rows [TravelBackup.decode] dropped for
      *   having no code, no positive `updatedAt`, or not being an object at all.
      *   Carried through for the same reason as [unknownStatuses], but as a count: none
@@ -38,6 +40,8 @@ object BackupMerge {
         val unknownCodes: List<String>,
         val unknownStatuses: List<String> = emptyList(),
         val unreadableRows: Int = 0,
+        val visitsAdded: Int = 0,
+        val visitsUpdated: Int = 0,
     ) {
         val skipped: Int get() = unchanged + unknownCodes.size + unknownStatuses.size + unreadableRows
     }
@@ -114,5 +118,63 @@ object BackupMerge {
             unknownStatuses = unknownStatuses,
             unreadableRows = unreadableRows,
         )
+    }
+
+    /**
+     * @property apply the visits to write, deduplicated by id.
+     * @property unknownCodes how many file rows were dropped for naming a place this
+     *   build does not have.
+     */
+    data class VisitPlan(
+        val apply: List<TravelBackup.VisitEntry>,
+        val added: Int,
+        val updated: Int,
+        val unchanged: Int,
+        val unknownCodes: Int,
+    )
+
+    /**
+     * Visits merge as a union by id, not by place: two phones that each added a visit
+     * to France both keep both, and only a shared id is ever a conflict. For a shared
+     * id the higher `updatedAt` wins, so a tombstone beats an older edit and loses to a
+     * newer one. Equal timestamps lose, making a second import of one file a no-op.
+     *
+     * A visit of a place that is not currently Been/Lived is kept: it is hidden, not
+     * dropped, and comes back if the place is marked again. Only codes missing from the
+     * registry are dropped.
+     *
+     * @param localUpdatedAt id -> updatedAt of every local visit, tombstones included.
+     */
+    internal fun planVisits(
+        visits: List<TravelBackup.VisitEntry>,
+        localUpdatedAt: Map<String, Long>,
+        knownCodes: Set<String>,
+    ): VisitPlan {
+        var unknown = 0
+        val newestPerId = LinkedHashMap<String, TravelBackup.VisitEntry>()
+        for (visit in visits) {
+            if (visit.code !in knownCodes) {
+                unknown++
+                continue
+            }
+            val seen = newestPerId[visit.id]
+            if (seen == null || visit.updatedAt >= seen.updatedAt) newestPerId[visit.id] = visit
+        }
+        val apply = ArrayList<TravelBackup.VisitEntry>(newestPerId.size)
+        var added = 0
+        var updated = 0
+        var unchanged = 0
+        for (visit in newestPerId.values) {
+            val local = localUpdatedAt[visit.id]
+            when {
+                // A tombstone for an unseen id is stored too: unlike a place, a visit has no
+                // natural key, so the tombstone is what stops an older copy of the same
+                // id from a second file resurrecting it.
+                local == null -> { added++; apply.add(visit) }
+                visit.updatedAt > local -> { updated++; apply.add(visit) }
+                else -> unchanged++
+            }
+        }
+        return VisitPlan(apply, added, updated, unchanged, unknown)
     }
 }

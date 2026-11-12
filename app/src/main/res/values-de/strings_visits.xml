@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made German draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="visits_row_label">Besuche</string>
+    <string name="visits_add">Hinzufügen</string>
+    <string name="visits_undated">Ohne Datum</string>
+    <string name="visits_dialog_title">Besuche in %1$s</string>
+    <string name="visits_pick_year">Besuch hinzufügen im Jahr</string>
+    <string name="visits_no_date">Kein Datum</string>
+    <string name="visits_delete">Besuch löschen</string>
+    <string name="visits_done">Fertig</string>
+    <string name="visits_none_yet">Noch keine Besuche</string>
+    <string name="stats_visits_title">Besuche pro Jahr</string>
+    <string name="stats_visits_first_recent">Erster Besuch: %1$d · Letzter: %2$d</string>
+    <string name="backup_imported_visits">Besuche: %1$d neu, %2$d aktualisiert.</string>
+    <string name="settings_preview_visits">Besuche</string>
+    <string name="visits_whole_year">Ganzes Jahr</string>
+    <string name="visits_pick_month">Monat (optional)</string>
+</resources>

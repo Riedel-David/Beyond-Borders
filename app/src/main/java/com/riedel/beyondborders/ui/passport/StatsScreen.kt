@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,6 +64,7 @@ import com.riedel.beyondborders.data.place.PlaceStatus
 import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.VisitStats
 import com.riedel.beyondborders.ui.places.geoNameText
 import com.riedel.beyondborders.ui.places.leastCoveredContinentText
 
@@ -84,6 +86,7 @@ fun StatsScreen(
     stats: TravelStats,
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
+    visitStats: VisitStats,
     seenAchievements: Set<String>?,
     onSeenAchievements: (Set<String>) -> Unit,
     onBack: () -> Unit,
@@ -232,6 +235,8 @@ fun StatsScreen(
                     )
                 }
             }
+
+            if (visitStats.hasVisits) VisitsByYear(visitStats, Modifier.padding(top = 16.dp))
 
             AchievementsSection(
                 achievements,
@@ -433,4 +438,51 @@ private fun BucketDetailDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.stats_dialog_close)) } },
     )
+}
+
+/**
+ * Visits per year as horizontal bars scaled to the largest bucket. Plain Compose boxes: widths come from fractions of the track, so there
+ * is no measuring and no Canvas.
+ */
+@Composable
+private fun VisitsByYear(stats: VisitStats, modifier: Modifier = Modifier) {
+    val rows = stats.byYear.map { it.first.toString() to it.second }
+    val max = rows.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+    Column(modifier) {
+        Text(
+            stringResource(R.string.stats_visits_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            rows.forEach { (label, count) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, Modifier.width(72.dp), style = MaterialTheme.typography.bodySmall)
+                    Box(Modifier.weight(1f).height(12.dp)) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(count.toFloat() / max)
+                                .height(12.dp)
+                                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
+                        )
+                    }
+                    Text(
+                        count.toString(),
+                        Modifier.width(32.dp).padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+        val first = stats.first
+        val recent = stats.mostRecent
+        if (first != null && recent != null) {
+            Text(
+                stringResource(R.string.stats_visits_first_recent, first, recent),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
 }
