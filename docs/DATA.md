@@ -96,7 +96,7 @@ python3 tools/geo/build_geo.py
 ```
 
 This writes `app/src/main/assets/places.geojson` (polygons, ~2.6 MB),
-`places_labels.geojson` (label points, ~40 kB) and `places.json` (the registry, ~60 kB). It fails loudly rather than shipping a
+`places_labels.geojson` (label points, ~40 kB) and `places.json` (the registry, ~70 kB; besides names and areas it carries curated `landlocked` and `island` flags, which the achievement badges read). It fails loudly rather than shipping a
 regression: the territory splits, the reverse merges and the continent buckets are
 all asserted before anything is written.
 
