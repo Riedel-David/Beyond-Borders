@@ -5,6 +5,7 @@ without a visa. Offline, no account, no network permission.
 
 **Needs Android 11+ on an arm64 phone** (no x86 emulators). Install steps are [below](#install).
 
+[![Get it on Google Play](https://img.shields.io/badge/Google%20Play-Get%20it%20on%20Google%20Play-3DDC84?style=for-the-badge&logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.riedel.beyondborders)
 [![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Riedel-David/Beyond-Borders/releases/latest/download/BeyondBorders.apk)
 
 [![CI](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml/badge.svg)](https://github.com/Riedel-David/Beyond-Borders/actions/workflows/ci.yml)
