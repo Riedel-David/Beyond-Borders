@@ -7,7 +7,7 @@ and no `INTERNET` permission, so it cannot send data anywhere.
 
 **Data shared:** with no one. There are no third-party SDKs, advertisers or analytics providers. The only outside party involved is Google, through Android's optional Auto Backup (see below), and only if you have that switched on.
 
-What you enter (places visited, passport choice) is stored on your device only.
+What you enter (places visited, visit dates, passport choice) is stored on your device only.
 Achievements are worked out from your map each time and store nothing of their own,
 apart from a list of which badges you have already seen, kept on the device. The app
 language (English, German, Spanish, French, Portuguese, Ukrainian or Russian) is a per-app locale that Android itself keeps in its own
