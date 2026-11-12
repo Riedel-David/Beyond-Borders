@@ -103,7 +103,7 @@ without restarting the app.
 
 The passport card's headline number opens a stats screen: a bar per continent, the
 least-covered continent and the next milestone, and a grid of achievement badges
-(counts, continents, regions, named groupings, territories, tiny places). Badges are
+(counts, continents, regions, named groupings, territories, tiny places, landlocked countries and island nations). Badges are
 derived from the current map, so unticking a place can take one away again; they ignore
 the Denominator setting and store nothing of their own. Each badge group has an icon and
 colour, and Regions and named groupings have their own headers ("Regions · 3 of 28") that
@@ -161,3 +161,26 @@ Tapping a place on the map shows it in a banner: its flag as a thumbnail beside 
 name, on a background tinted in the flag's own colours. The flags are bundled, so this
 works offline; the two places without one (Northern Cyprus, Somaliland) get a plain
 dark banner. The Share button steps aside while a place is selected.
+
+## Visit dates
+
+For a place marked Been or Lived, the map's place card has a Visits row. Tapping it opens a
+dialog to add a visit with a year and, optionally, a month ("Whole year" is the default; months
+later than the current one are not offered), or to delete one. A place can have many visits.
+Once it has any, a small timeline at the bottom of the card shows them oldest to newest, with
+an "Undated" dot for visits added without a year; tapping it opens the same dialog. Marking a
+place Been does not create a visit by itself, and clearing its status hides its visits rather
+than deleting them, so marking it again brings them back.
+
+Stats gets a "Visits by year" section with a bar per year and a "First visit / Most recent"
+line. Only dated visits are counted; the section is hidden until there is one. Dates are part of
+Export and Import (an optional `visits` list): importing merges visits by their id, the most
+recently edited copy of the same visit wins, and visits from two phones are otherwise all kept.
+
+## Quick add
+
+After the first-run welcome (the passport can be skipped), Quick add lists the 15 most visited
+countries to tick off in one go; places you have already marked stay in the list. Typing in its
+search box widens it to every sovereign state, except Northern Cyprus and Somaliland, which are
+marked from the map or the Passport list. Lived places are locked there so a stray tap cannot
+downgrade them.
