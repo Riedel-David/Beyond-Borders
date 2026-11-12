@@ -16,6 +16,8 @@ enum class AchievementGroup(@StringRes val label: Int) {
     DEPENDENCIES(R.string.badge_group_dependencies),
     NON_UN(R.string.badge_group_non_un),
     TINY(R.string.badge_group_tiny),
+    LANDLOCKED(R.string.badge_group_landlocked),
+    ISLANDS(R.string.badge_group_islands),
     GIANTS(R.string.badge_group_giants),
     SPECIAL(R.string.badge_group_special),
     LIVED(R.string.badge_group_lived),
@@ -148,6 +150,30 @@ internal fun computeAchievements(
         been.count { it.code in giants }.coerceAtMost(1), 1, AchievementGroup.GIANTS,
     )
 
+    // Three tiers per curated set: a first taste, about a third, all of it. Targets come from
+    // the data (the sets are curated in tools/geo/rules.py, 45 landlocked and 37 island), so a
+    // change to the sets keeps "all" reachable; the ids name the tier, not the number.
+    fun tiered(
+        idPrefix: String, set: List<Place>, group: AchievementGroup,
+        title: (Int) -> UiText, description: (Int) -> UiText,
+    ) {
+        if (set.isEmpty()) return
+        val count = set.count(::isBeen)
+        for ((tier, n) in tierTargets(set.size)) {
+            out += Achievement("${idPrefix}_$tier", title(n), description(n), count.coerceAtMost(n), n, group)
+        }
+    }
+    tiered(
+        "landlocked", places.filter { it.landlocked }, AchievementGroup.LANDLOCKED,
+        { UiText.Plural(R.plurals.badge_landlocked_title, it, it) },
+        { UiText.Plural(R.plurals.badge_landlocked_desc, it, it) },
+    )
+    tiered(
+        "island", places.filter { it.island }, AchievementGroup.ISLANDS,
+        { UiText.Plural(R.plurals.badge_island_title, it, it) },
+        { UiText.Plural(R.plurals.badge_island_desc, it, it) },
+    )
+
     out += Achievement(
         "antarctica", UiText.Res(R.string.badge_antarctica_title), UiText.Res(R.string.badge_antarctica_desc),
         if (statuses["AQ"]?.isBeen == true) 1 else 0, 1, AchievementGroup.SPECIAL,
@@ -181,6 +207,15 @@ internal fun computeAchievements(
         count(PlaceStatus.WISHLIST).coerceAtMost(10), 10, AchievementGroup.WISHLIST,
     )
 
+    return out
+}
+
+/** Tier name to target for a set of [total]: a few (3), about a third, all. Tiers must strictly increase, so tiny sets collapse to fewer badges. */
+internal fun tierTargets(total: Int): List<Pair<String, Int>> {
+    val out = ArrayList<Pair<String, Int>>()
+    for (t in listOf("few" to 3.coerceAtMost(total), "third" to total / 3, "all" to total)) {
+        if (t.second > (out.lastOrNull()?.second ?: 0)) out += t
+    }
     return out
 }
 

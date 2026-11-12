@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Spanish draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="visits_row_label">Visitas</string>
+    <string name="visits_add">Añadir</string>
+    <string name="visits_undated">Sin fecha</string>
+    <string name="visits_dialog_title">Visitas a %1$s</string>
+    <string name="visits_pick_year">Añadir una visita en</string>
+    <string name="visits_no_date">Sin fecha</string>
+    <string name="visits_delete">Eliminar visita</string>
+    <string name="visits_done">Listo</string>
+    <string name="visits_none_yet">Aún no hay visitas</string>
+    <string name="stats_visits_title">Visitas por año</string>
+    <string name="stats_visits_first_recent">Primera visita: %1$d · Más reciente: %2$d</string>
+    <string name="backup_imported_visits">Visitas: %1$d nuevas, %2$d actualizadas.</string>
+    <string name="settings_preview_visits">Visitas</string>
+    <string name="visits_whole_year">Todo el año</string>
+    <string name="visits_pick_month">Mes (opcional)</string>
+</resources>

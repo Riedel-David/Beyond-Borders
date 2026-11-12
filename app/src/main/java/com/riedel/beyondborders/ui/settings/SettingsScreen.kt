@@ -873,6 +873,12 @@ private fun ImportPreviewSummary(plan: BackupMerge.Plan, sampleNames: List<Strin
     Column {
         PreviewCountRow(stringResource(R.string.settings_preview_added), plan.added)
         PreviewCountRow(stringResource(R.string.settings_preview_updated), plan.updated)
+        if (plan.visitsAdded + plan.visitsUpdated > 0) {
+            PreviewCountRow(
+                stringResource(R.string.settings_preview_visits),
+                plan.visitsAdded + plan.visitsUpdated,
+            )
+        }
         // "Skipped" here is [plan.unchanged]: entries the file also has, but not
         // newer than what is already on this phone — the plan is built against
         // the rows as they stand right now, so this is also why a "nothing to

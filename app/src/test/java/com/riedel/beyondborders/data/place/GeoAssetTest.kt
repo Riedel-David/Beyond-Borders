@@ -119,4 +119,17 @@ class GeoAssetTest {
             }
         }
     }
+
+    @Test
+    fun `curated landlocked and island sets keep their pinned size and never overlap`() {
+        val landlocked = registry.places.filter { it.landlocked }.map { it.code }.toSet()
+        val island = registry.places.filter { it.island }.map { it.code }.toSet()
+        assertEquals(45, landlocked.size)
+        assertEquals(37, island.size)
+        assertEquals(emptySet<String>(), landlocked intersect island)
+        // Spot checks on the judgement calls: Kosovo and the Holy See in, shared islands and Palestine out.
+        assertTrue(listOf("XK", "VA", "LI", "SM", "AD").all { it in landlocked })
+        assertTrue(listOf("PS", "GB", "IE", "CY", "AU", "ID", "TW").none { it in island || it in landlocked })
+        assertTrue(listOf("IS", "JP", "NZ", "MT", "SG").all { it in island })
+    }
 }

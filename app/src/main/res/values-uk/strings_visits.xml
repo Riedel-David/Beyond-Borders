@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made Ukrainian draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="visits_row_label">Візити</string>
+    <string name="visits_add">Додати</string>
+    <string name="visits_undated">Без дати</string>
+    <string name="visits_dialog_title">Візити: %1$s</string>
+    <string name="visits_pick_year">Додати візит за</string>
+    <string name="visits_no_date">Без дати</string>
+    <string name="visits_delete">Видалити візит</string>
+    <string name="visits_done">Готово</string>
+    <string name="visits_none_yet">Ще немає візитів</string>
+    <string name="stats_visits_title">Візити за роками</string>
+    <string name="stats_visits_first_recent">Перший візит: %1$d · Останній: %2$d</string>
+    <string name="backup_imported_visits">Візити: %1$d нових, %2$d оновлено.</string>
+    <string name="settings_preview_visits">Візити</string>
+    <string name="visits_whole_year">Весь рік</string>
+    <string name="visits_pick_month">Місяць (необов’язково)</string>
+</resources>

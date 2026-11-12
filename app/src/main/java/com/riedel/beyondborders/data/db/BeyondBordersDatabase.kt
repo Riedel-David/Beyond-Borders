@@ -12,8 +12,9 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 @Database(
     entities = [
         PlaceStatusEntity::class,
+        VisitEntity::class,
     ],
-    version = 10,
+    version = 12,
     // Schemas are committed under app/schemas so migrations can be tested against
     // the real previous version instead of a reconstruction of it.
     exportSchema = true,
@@ -21,6 +22,8 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 abstract class BeyondBordersDatabase : RoomDatabase() {
 
     abstract fun placeStatusDao(): PlaceStatusDao
+
+    abstract fun visitDao(): VisitDao
 
     companion object {
         const val NAME = "beyondborders.db"
@@ -79,6 +82,37 @@ abstract class BeyondBordersDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Visit dates: one new table, nothing existing is touched. The SQL is what Room
+         * exports to schemas/11.json, character for character where it matters.
+         */
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `visit` (
+                        `id` TEXT NOT NULL,
+                        `code` TEXT NOT NULL,
+                        `year` INTEGER,
+                        `updatedAt` INTEGER NOT NULL,
+                        `deletedAt` INTEGER,
+                        `deviceId` TEXT NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_visit_code` ON `visit` (`code`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_visit_updatedAt` ON `visit` (`updatedAt`)")
+            }
+        }
+
+        /** Visits gain an optional month. A plain nullable column: no default, no rebuild. */
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `visit` ADD COLUMN `month` INTEGER")
+            }
+        }
+
         /** [name] is only ever overridden by tests, which must not open the real file. */
         fun open(context: Context, name: String = NAME): BeyondBordersDatabase =
             Room.databaseBuilder(context, BeyondBordersDatabase::class.java, name)
@@ -86,7 +120,7 @@ abstract class BeyondBordersDatabase : RoomDatabase() {
                 // thing in the app that cannot be re-fetched from anywhere. A
                 // missing migration must fail the build's tests, not quietly wipe
                 // a decade of travel history on upgrade.
-                .addMigrations(MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                 .openHelperFactory(KeepOnCorruptionFactory(FrameworkSQLiteOpenHelperFactory()))
                 .build()
     }

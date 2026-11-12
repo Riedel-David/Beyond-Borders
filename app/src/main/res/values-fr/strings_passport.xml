@@ -115,6 +115,8 @@
     <string name="badge_group_dependencies">Territoires</string>
     <string name="badge_group_non_un">Hors ONU</string>
     <string name="badge_group_tiny">Lieux minuscules</string>
+    <string name="badge_group_landlocked">Sans littoral</string>
+    <string name="badge_group_islands">Pays insulaires</string>
     <string name="badge_group_giants">Géants</string>
     <string name="badge_group_special">Spécial</string>
     <string name="badge_group_lived">Habités</string>
@@ -176,6 +178,26 @@
         <item quantity="one">Visite %1$d lieu de moins de %2$d km².</item>
         <item quantity="many">Visite %1$d lieux de moins de %2$d km².</item>
         <item quantity="other">Visite %1$d lieux de moins de %2$d km².</item>
+    </plurals>
+    <plurals name="badge_landlocked_title">
+        <item quantity="one">%1$d pays sans littoral</item>
+        <item quantity="many">%1$d pays sans littoral</item>
+        <item quantity="other">%1$d pays sans littoral</item>
+    </plurals>
+    <plurals name="badge_landlocked_desc">
+        <item quantity="one">Visite %1$d pays sans littoral.</item>
+        <item quantity="many">Visite %1$d pays sans littoral.</item>
+        <item quantity="other">Visite %1$d pays sans littoral.</item>
+    </plurals>
+    <plurals name="badge_island_title">
+        <item quantity="one">%1$d pays insulaire</item>
+        <item quantity="many">%1$d pays insulaires</item>
+        <item quantity="other">%1$d pays insulaires</item>
+    </plurals>
+    <plurals name="badge_island_desc">
+        <item quantity="one">Visite %1$d pays insulaire sans frontière terrestre.</item>
+        <item quantity="many">Visite %1$d pays insulaires sans frontière terrestre.</item>
+        <item quantity="other">Visite %1$d pays insulaires sans frontière terrestre.</item>
     </plurals>
     <string name="badge_giant_1_title">Un géant</string>
     <string name="badge_giant_1_desc">Visite l\'un des %1$d plus grands lieux par superficie.</string>

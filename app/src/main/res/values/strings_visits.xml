@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="visits_row_label">Visits</string>
+    <string name="visits_add">Add</string>
+    <string name="visits_undated">Undated</string>
+    <string name="visits_dialog_title">Visits to %1$s</string>
+    <string name="visits_pick_year">Add a visit in</string>
+    <string name="visits_no_date">No date</string>
+    <string name="visits_delete">Delete visit</string>
+    <string name="visits_done">Done</string>
+    <string name="visits_none_yet">No visits yet</string>
+    <string name="stats_visits_title">Visits by year</string>
+    <string name="stats_visits_first_recent">First visit: %1$d · Most recent: %2$d</string>
+    <string name="backup_imported_visits">Visits: %1$d new, %2$d updated.</string>
+    <string name="settings_preview_visits">Visits</string>
+    <string name="visits_whole_year">Whole year</string>
+    <string name="visits_pick_month">Month (optional)</string>
+</resources>

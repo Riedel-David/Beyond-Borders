@@ -109,6 +109,8 @@
     <string name="badge_group_dependencies">Territories</string>
     <string name="badge_group_non_un">Beyond the UN</string>
     <string name="badge_group_tiny">Tiny places</string>
+    <string name="badge_group_landlocked">Landlocked</string>
+    <string name="badge_group_islands">Island nations</string>
     <string name="badge_group_giants">Giants</string>
     <string name="badge_group_special">Special</string>
     <string name="badge_group_lived">Lived</string>
@@ -160,6 +162,22 @@
     <plurals name="badge_tiny_desc">
         <item quantity="one">Be in %1$d place under %2$d km².</item>
         <item quantity="other">Be in %1$d places under %2$d km².</item>
+    </plurals>
+    <plurals name="badge_landlocked_title">
+        <item quantity="one">%1$d landlocked state</item>
+        <item quantity="other">%1$d landlocked states</item>
+    </plurals>
+    <plurals name="badge_landlocked_desc">
+        <item quantity="one">Be in %1$d state with no coastline.</item>
+        <item quantity="other">Be in %1$d states with no coastline.</item>
+    </plurals>
+    <plurals name="badge_island_title">
+        <item quantity="one">%1$d island nation</item>
+        <item quantity="other">%1$d island nations</item>
+    </plurals>
+    <plurals name="badge_island_desc">
+        <item quantity="one">Be in %1$d island nation with no land border.</item>
+        <item quantity="other">Be in %1$d island nations with no land border.</item>
     </plurals>
     <string name="badge_giant_1_title">A giant</string>
     <string name="badge_giant_1_desc">Be in one of the %1$d largest places by area.</string>

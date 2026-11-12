@@ -64,6 +64,8 @@ internal fun iconFor(group: AchievementGroup): Int = when (group) {
     AchievementGroup.DEPENDENCIES -> R.drawable.ic_badge_island
     AchievementGroup.NON_UN -> R.drawable.ic_badge_flag
     AchievementGroup.TINY -> R.drawable.ic_badge_pin
+    AchievementGroup.LANDLOCKED -> R.drawable.ic_badge_landlocked
+    AchievementGroup.ISLANDS -> R.drawable.ic_badge_waves
     AchievementGroup.GIANTS -> R.drawable.ic_badge_mountain
     AchievementGroup.SPECIAL -> R.drawable.ic_badge_star
     AchievementGroup.LIVED -> R.drawable.ic_badge_home

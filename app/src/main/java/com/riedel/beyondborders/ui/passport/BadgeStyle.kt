@@ -30,6 +30,8 @@ internal fun badgeTone(group: AchievementGroup): BadgeTone = when (group) {
     AchievementGroup.DEPENDENCIES -> tone(0xFFFFEEDB, 0xFFA84A00, 0xFF3A2410, 0xFFFFB74D)
     AchievementGroup.NON_UN -> tone(0xFFFDE6E6, 0xFFC62828, 0xFF3D1A1A, 0xFFEF9A9A)
     AchievementGroup.TINY -> tone(0xFFFCE4F0, 0xFFAD1457, 0xFF3B1A2B, 0xFFF48FB1)
+    AchievementGroup.LANDLOCKED -> tone(0xFFF1F1D9, 0xFF6B6B00, 0xFF2B2B10, 0xFFD4D96B)
+    AchievementGroup.ISLANDS -> tone(0xFFDFF3FC, 0xFF0277BD, 0xFF0F2A3A, 0xFF81D4FA)
     AchievementGroup.GIANTS -> tone(0xFFEFE6DF, 0xFF6D4C41, 0xFF2E231E, 0xFFBCAAA4)
     AchievementGroup.SPECIAL -> tone(0xFFFFF3CC, 0xFF7A5F00, 0xFF332B0D, 0xFFFFD54F)
     AchievementGroup.LIVED -> tone(0xFFDDF3FA, 0xFF00677C, 0xFF0F2C35, 0xFF80DEEA)

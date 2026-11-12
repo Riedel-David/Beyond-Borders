@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made French draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="visits_row_label">Visites</string>
+    <string name="visits_add">Ajouter</string>
+    <string name="visits_undated">Sans date</string>
+    <string name="visits_dialog_title">Visites : %1$s</string>
+    <string name="visits_pick_year">Ajouter une visite en</string>
+    <string name="visits_no_date">Sans date</string>
+    <string name="visits_delete">Supprimer la visite</string>
+    <string name="visits_done">Terminé</string>
+    <string name="visits_none_yet">Aucune visite pour l’instant</string>
+    <string name="stats_visits_title">Visites par année</string>
+    <string name="stats_visits_first_recent">Première visite : %1$d · La plus récente : %2$d</string>
+    <string name="backup_imported_visits">Visites : %1$d nouvelles, %2$d mises à jour.</string>
+    <string name="settings_preview_visits">Visites</string>
+    <string name="visits_whole_year">Toute l’année</string>
+    <string name="visits_pick_month">Mois (facultatif)</string>
+</resources>

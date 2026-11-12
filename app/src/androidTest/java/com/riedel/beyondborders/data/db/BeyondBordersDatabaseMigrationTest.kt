@@ -201,8 +201,71 @@ class BeyondBordersDatabaseMigrationTest {
     }
 
     /**
-     * A known gap, pinned rather than fixed: `open` registers 8 -> 9 and 9 -> 10 only,
-     * so anything still on 1..7 has no path to 10 and Room refuses to open it.
+     * `MIGRATION_10_11` only adds the `visit` table. What can go wrong is the existing
+     * statuses being touched, the new table being unusable (its SQL must match the
+     * exported schema, which Room validates on open), or the indices going missing.
+     */
+    @Test
+    fun `adding visits keeps every status and creates an empty usable visit table`() {
+        createLegacyDatabase(10) {
+            execSQL(
+                "INSERT INTO place_status (id, code, status, updatedAt, deletedAt, deviceId) VALUES (?, ?, ?, ?, ?, ?)",
+                arrayOf("id-dk", "DK", "visited", 1_700_000_000_000, null, "device-a"),
+            )
+        }
+
+        val db = BeyondBordersDatabase.open(context)
+        try {
+            assertEquals("visited", runBlocking { db.placeStatusDao().findByCode("DK") }?.status)
+            assertTrue(runBlocking { db.visitDao().allRows() }.isEmpty())
+            assertEquals(
+                setOf("id", "code", "year", "updatedAt", "deletedAt", "deviceId"),
+                db.columnNames("visit"),
+            )
+            assertTrue(
+                "indices missing: ${db.indexNames("visit")}",
+                db.indexNames("visit").containsAll(listOf("index_visit_code", "index_visit_updatedAt")),
+            )
+            runBlocking {
+                db.visitDao().insert(VisitEntity("v1", "DK", null, 1_700_000_001_000, null, "device-a"))
+                db.visitDao().insert(VisitEntity("v2", "DK", 2019, 1_700_000_002_000, null, "device-a"))
+            }
+            assertEquals(2, runBlocking { db.visitDao().observeActive().first() }.size)
+        } finally {
+            db.close()
+        }
+    }
+
+    /**
+     * `MIGRATION_11_12` adds the nullable `month` column. Existing visits must keep
+     * every other column and read back with month null; a new visit can carry one.
+     */
+    @Test
+    fun `adding the month column keeps existing visits and leaves them whole year`() {
+        createLegacyDatabase(11) {
+            execSQL(
+                "INSERT INTO visit (id, code, year, updatedAt, deletedAt, deviceId) VALUES (?, ?, ?, ?, ?, ?)",
+                arrayOf("v1", "DK", 2019, 1_700_000_000_000, null, "device-a"),
+            )
+        }
+
+        val db = BeyondBordersDatabase.open(context)
+        try {
+            val rows = runBlocking { db.visitDao().allRows() }
+            assertEquals(listOf("v1"), rows.map { it.id })
+            assertEquals(2019, rows.single().year)
+            assertNull(rows.single().month)
+            assertTrue("month column missing", "month" in db.columnNames("visit"))
+            runBlocking { db.visitDao().insert(VisitEntity("v2", "DK", 2023, 1_700_000_001_000, null, "device-a", 3)) }
+            assertEquals(3, runBlocking { db.visitDao().allRows() }.first { it.id == "v2" }.month)
+        } finally {
+            db.close()
+        }
+    }
+
+    /**
+     * A known gap, pinned rather than fixed: `open` registers 8 -> 9 through 11 -> 12 only,
+     * so anything still on 1..7 has no path to 12 and Room refuses to open it.
      *
      * That is the honest behaviour to assert — better a crash than the wipe
      * `fallbackToDestructiveMigration` would do — but it is a gap, and one this project

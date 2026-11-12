@@ -9,6 +9,8 @@ import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.db.BeyondBordersDatabase
 import com.riedel.beyondborders.data.db.PlaceStatusDao
 import com.riedel.beyondborders.data.db.PlaceStatusEntity
+import com.riedel.beyondborders.data.db.VisitDao
+import com.riedel.beyondborders.data.db.VisitEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -25,6 +27,7 @@ class PlaceRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val dao: PlaceStatusDao = database.placeStatusDao()
+    private val visitDao: VisitDao = database.visitDao()
     // Thread-safe by default, and only ever touched from inside withContext(IO),
     // so the ~50 kB parse never runs on the main thread.
     private val registry: PlaceRegistry by lazy(registryLoader)
@@ -34,6 +37,29 @@ class PlaceRepository(
         dao.observeActive().map { rows ->
             rows.associate { it.code to PlaceStatus.fromStorage(it.status) }
         }
+
+    /**
+     * Code -> active visits, newest year first and undated last. Includes places that
+     * are not currently Been/Lived: hiding those is the reader's job, because the
+     * visits must survive a status being cleared and come back when it is re-marked.
+     */
+    val visits: Flow<Map<String, List<Visit>>> =
+        visitDao.observeActive().map { rows -> groupVisits(rows.map { Visit(it.id, it.code, it.year, it.month) }) }
+
+    /** @throws IllegalArgumentException for an unknown code or a year outside 1900..this year. */
+    suspend fun addVisit(code: String, year: Int?, month: Int? = null) = withContext(Dispatchers.IO) {
+        require(registry[code] != null) { "unknown place code: $code" }
+        val now = clock()
+        require(isValidVisitYear(year, yearOf(now))) { "visit year out of range: $year" }
+        require(!isFutureVisitMonth(year, month, yearOf(now), monthOf(now))) { "visit month is in the future: $month $year" }
+        require(isValidVisitMonth(year, month)) { "visit month invalid: $month for year $year" }
+        visitDao.insert(VisitEntity(Uuid.v7(now), code, year, now, null, deviceId, month))
+    }
+
+    /** A tombstone, so the delete survives a merge with an older backup. */
+    suspend fun deleteVisit(id: String) = withContext(Dispatchers.IO) {
+        visitDao.tombstone(id, clock(), deviceId)
+    }
 
     suspend fun places(): List<Place> = withContext(Dispatchers.IO) { registry.places }
 
@@ -87,7 +113,12 @@ class PlaceRepository(
 
     /** Wipe every place status. The emergency reset in Settings — irreversible, and
      * meant to be: there is no undo for the one table this app cannot re-download. */
-    suspend fun deleteAll() = withContext(Dispatchers.IO) { dao.clearAll() }
+    suspend fun deleteAll() = withContext(Dispatchers.IO) {
+        database.withTransaction {
+            dao.clearAll()
+            visitDao.clearAll()
+        }
+    }
 
     /**
      * Everything the user has decided, as a backup file's contents.
@@ -99,7 +130,9 @@ class PlaceRepository(
         // Rows whose stored status this build cannot read are left out rather than
         // exported as NONE, which an import would read as a tombstone and use to
         // delete the place on another phone. Only a corrupt row can be like this.
-        val rows = dao.allRows().filter { PlaceStatus.parseOrNull(it.status) != null }
+        // One transaction so places and visits come from the same moment.
+        val (allPlaceRows, visitRows) = database.withTransaction { dao.allRows() to visitDao.allRows() }
+        val rows = allPlaceRows.filter { PlaceStatus.parseOrNull(it.status) != null }
         val names = rows.mapNotNull { row -> registry[row.code]?.let { row.code to it.name } }.toMap()
         val json = TravelBackup.encode(
             entries = rows.map { row ->
@@ -114,6 +147,9 @@ class PlaceRepository(
             exportedAt = clock(),
             deviceId = deviceId,
             names = names,
+            visits = visitRows.map { row ->
+                TravelBackup.VisitEntry(row.id, row.code, row.year, row.updatedAt, row.deletedAt, row.deviceId, row.month)
+            },
         )
         BackupExport(
             json = json,
@@ -177,6 +213,17 @@ class PlaceRepository(
                     )
                 }
             )
+            val visitPlan = BackupMerge.planVisits(
+                payload.visits,
+                visitDao.allRows().associate { it.id to it.updatedAt },
+                knownCodes,
+            )
+            visitDao.upsertAll(
+                visitPlan.apply.map { v ->
+                    VisitEntity(v.id, v.code, v.year, v.updatedAt, v.deletedAt, v.deviceId ?: deviceId, v.month)
+                }
+            )
+            // The counts for the report come from the plan above; this one only supplies the rows.
             plan
         }
     }
@@ -188,12 +235,26 @@ class PlaceRepository(
         knownCodes: Set<String>,
     ): BackupMerge.Plan {
         val local = dao.allRows().associate { it.code to it.updatedAt }
+        val visitPlan = BackupMerge.planVisits(
+            payload.visits,
+            visitDao.allRows().associate { it.id to it.updatedAt },
+            knownCodes,
+        )
         return BackupMerge.plan(
             entries = payload.entries,
             localUpdatedAt = local,
             knownCodes = knownCodes,
             unknownStatuses = payload.unknownStatuses,
-            unreadableRows = payload.unreadableRows,
-        )
+            unreadableRows = payload.unreadableRows + visitPlan.unknownCodes,
+        ).copy(visitsAdded = visitPlan.added, visitsUpdated = visitPlan.updated)
     }
 }
+
+/** Newest first by (year, month), undated last; a stable tie-break on id so the order never flickers. */
+internal fun groupVisits(visits: List<Visit>): Map<String, List<Visit>> =
+    visits.groupBy { it.code }.mapValues { (_, list) ->
+        // Month null (whole year) counts as 0 so it follows the dated months of its year.
+        list.sortedWith(
+            compareByDescending<Visit> { it.year ?: Int.MIN_VALUE }.thenByDescending { it.month ?: 0 }.thenBy { it.id }
+        )
+    }

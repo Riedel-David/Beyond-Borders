@@ -11,6 +11,7 @@ import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.data.place.Visit
 import com.riedel.beyondborders.data.place.foldForSearch
 import com.riedel.beyondborders.data.place.foldForSort
 import com.riedel.beyondborders.data.place.sortInitial
@@ -340,6 +341,32 @@ class PlacesViewModel(
     val stats: StateFlow<TravelStats> =
         combine(allPlaces, statuses, settings.denominator) { places, statuses, denom -> computeStats(places, statuses, denom) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, TravelStats.EMPTY)
+
+    /**
+     * Code -> active visits, newest first. Includes places that are not Been/Lived
+     * (hidden, not deleted); readers filter with [visibleVisits] or [computeVisitStats].
+     */
+    val visits: StateFlow<Map<String, List<Visit>>> =
+        repo.visits.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    val visitStats: StateFlow<VisitStats> =
+        combine(visits, statuses) { visits, statuses -> computeVisitStats(visits, statuses) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, VisitStats.EMPTY)
+
+    /** An out-of-range year is rejected by the repository; the dialog only offers valid ones. */
+    fun addVisit(code: String, year: Int?, month: Int? = null) {
+        viewModelScope.launch {
+            try {
+                repo.addVisit(code, year, month)
+            } catch (_: IllegalArgumentException) {
+                // Rejected input only; other failures and cancellation propagate.
+            }
+        }
+    }
+
+    fun deleteVisit(id: String) {
+        viewModelScope.launch { repo.deleteVisit(id) }
+    }
 
     /** The rows the passport list should render, already filtered and ordered. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -1060,6 +1087,13 @@ internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label
 }
 
 /**
+ * Sovereign-by-data places that search does not widen to: Northern Cyprus and Somaliland are
+ * not recognised states, so Quick add leaves them to the map and the Passport list. One that
+ * was already marked still appears through `alsoShow`, so it can be reviewed or unticked.
+ */
+internal val QUICK_ADD_SEARCH_SKIP: Set<String> = setOf("XN", "XS")
+
+/**
  * The 15 states that clear roughly 29 million international arrivals a year (UN Tourism
  * basis, 2024/2025, read off regional tables, so approximate). Quick add opens on these
  * only: the dialog is a fast way to tick the obvious ones, and the rest of the world is
@@ -1080,7 +1114,8 @@ internal val QUICK_ADD_TOP_CODES: Set<String> = setOf(
  * at open: reading live statuses would make a row jump or vanish under the finger.
  * Once the user types, it widens to every sovereign state — the UN members plus the
  * places that are their own sovereign (Taiwan, Kosovo...), a place whose
- * [Place.englishSovereign] is itself, which leaves out dependencies such as Greenland —
+ * [Place.englishSovereign] is itself, which leaves out dependencies such as Greenland,
+ * and the curated [QUICK_ADD_SEARCH_SKIP] pair (a skipped place already in [alsoShow] stays) —
  * so searching for "Peru" finds it instead of an empty list that looks broken. Statuses
  * are deliberately not an input: the order depends on the places and the query only, so
  * a tick does not re-sort the list. Each row reads its status when it is drawn; the
@@ -1096,8 +1131,8 @@ internal fun quickAddRows(
             val sovereign = it.unMember || it.englishSovereign == it.englishName
             // The same needle buildRows uses: a query that folds to nothing (a lone combining
             // mark) must not widen the set while buildRows treats it as no search at all.
-            sovereign && (query.trim().foldForSearch().isNotEmpty() ||
-                it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
+            val widenedTo = query.trim().foldForSearch().isNotEmpty() && it.code !in QUICK_ADD_SEARCH_SKIP
+            sovereign && (widenedTo || it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
         },
         emptyMap(),
         query,
@@ -1127,3 +1162,50 @@ internal fun quickAddTarget(current: PlaceStatus): PlaceStatus? = when {
 
 /** Whether the checkbox shows ticked: Lived counts as been, Want does not. */
 internal fun quickAddChecked(status: PlaceStatus): Boolean = status.isBeen
+
+/**
+ * Visits of places that are currently Been/Lived. A cleared place keeps its visits in
+ * the database but they stop existing as far as any screen is concerned.
+ */
+internal fun visibleVisits(
+    visits: Map<String, List<Visit>>,
+    statuses: Map<String, PlaceStatus>,
+): Map<String, List<Visit>> =
+    visits.filterKeys { statuses[it]?.isBeen == true }.filterValues { it.isNotEmpty() }
+
+/**
+ * Dated visits of Been/Lived places only. Undated visits and places without visits are
+ * deliberately not counted anywhere in the stats.
+ *
+ * @property byYear (year, visits) ascending by year.
+ * @property hasVisits whether any dated visit exists; the stats section is hidden
+ *   while this is false so existing users see no empty chart.
+ * @property first earliest year.
+ * @property mostRecent latest year.
+ */
+data class VisitStats(
+    val byYear: List<Pair<Int, Int>>,
+    val first: Int?,
+    val mostRecent: Int?,
+) {
+    val hasVisits: Boolean get() = byYear.isNotEmpty()
+
+    companion object {
+        val EMPTY = VisitStats(emptyList(), null, null)
+    }
+}
+
+internal fun computeVisitStats(
+    visits: Map<String, List<Visit>>,
+    statuses: Map<String, PlaceStatus>,
+): VisitStats {
+    val perYear = sortedMapOf<Int, Int>()
+    for (list in visibleVisits(visits, statuses).values) {
+        for (visit in list) visit.year?.let { perYear.merge(it, 1, Int::plus) }
+    }
+    return VisitStats(
+        byYear = perYear.map { it.key to it.value },
+        first = if (perYear.isEmpty()) null else perYear.firstKey(),
+        mostRecent = if (perYear.isEmpty()) null else perYear.lastKey(),
+    )
+}

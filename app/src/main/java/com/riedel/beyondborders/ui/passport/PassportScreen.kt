@@ -223,6 +223,7 @@ fun PassportScreen(
             stats = stats,
             places = places,
             statuses = statuses,
+            visitStats = viewModel.visitStats.collectAsStateWithLifecycle().value,
             seenAchievements = seenAchievements,
             onSeenAchievements = viewModel::setSeenAchievements,
             onBack = { showStatsDetail = false },

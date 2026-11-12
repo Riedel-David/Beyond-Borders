@@ -120,6 +120,8 @@
     <string name="badge_group_dependencies">Території</string>
     <string name="badge_group_non_un">Поза ООН</string>
     <string name="badge_group_tiny">Крихітні місця</string>
+    <string name="badge_group_landlocked">Без виходу до моря</string>
+    <string name="badge_group_islands">Острівні держави</string>
     <string name="badge_group_giants">Гіганти</string>
     <string name="badge_group_special">Особливі</string>
     <string name="badge_group_lived">Прожито</string>
@@ -191,6 +193,30 @@
         <item quantity="few">Побувай у %1$d місцях площею менш як %2$d км².</item>
         <item quantity="many">Побувай у %1$d місцях площею менш як %2$d км².</item>
         <item quantity="other">Побувай у %1$d місця площею менш як %2$d км².</item>
+    </plurals>
+    <plurals name="badge_landlocked_title">
+        <item quantity="one">%1$d країна без моря</item>
+        <item quantity="few">%1$d країни без моря</item>
+        <item quantity="many">%1$d країн без моря</item>
+        <item quantity="other">%1$d країни без моря</item>
+    </plurals>
+    <plurals name="badge_landlocked_desc">
+        <item quantity="one">Побувай у %1$d країні без виходу до моря.</item>
+        <item quantity="few">Побувай у %1$d країнах без виходу до моря.</item>
+        <item quantity="many">Побувай у %1$d країнах без виходу до моря.</item>
+        <item quantity="other">Побувай у %1$d країни без виходу до моря.</item>
+    </plurals>
+    <plurals name="badge_island_title">
+        <item quantity="one">%1$d острівна держава</item>
+        <item quantity="few">%1$d острівні держави</item>
+        <item quantity="many">%1$d острівних держав</item>
+        <item quantity="other">%1$d острівної держави</item>
+    </plurals>
+    <plurals name="badge_island_desc">
+        <item quantity="one">Побувай в %1$d острівній державі без сухопутного кордону.</item>
+        <item quantity="few">Побувай в %1$d острівних державах без сухопутного кордону.</item>
+        <item quantity="many">Побувай в %1$d острівних державах без сухопутного кордону.</item>
+        <item quantity="other">Побувай в %1$d острівної держави без сухопутного кордону.</item>
     </plurals>
     <string name="badge_giant_1_title">Гігант</string>
     <string name="badge_giant_1_desc">Побувай в одному з %1$d найбільших за площею місць.</string>

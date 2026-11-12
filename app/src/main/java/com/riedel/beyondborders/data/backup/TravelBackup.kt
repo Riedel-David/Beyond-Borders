@@ -3,6 +3,9 @@ package com.riedel.beyondborders.data.backup
 import androidx.annotation.StringRes
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.data.place.cleanVisitMonth
+import com.riedel.beyondborders.data.place.MAX_IMPORT_VISIT_YEAR
+import com.riedel.beyondborders.data.place.MIN_VISIT_YEAR
 import com.riedel.beyondborders.ui.UiText
 import org.json.JSONArray
 import org.json.JSONException
@@ -29,7 +32,8 @@ object TravelBackup {
     /**
      * Bumped only for a change that an older reader would misinterpret. Adding an
      * optional field does not qualify — unknown keys are ignored on read and
-     * missing ones fall back to their defaults.
+     * missing ones fall back to their defaults. The optional `visits` array is such a
+     * key: older readers ignore it, and a file without it simply has no visits.
      */
     const val VERSION = 1
 
@@ -57,6 +61,17 @@ object TravelBackup {
         val deviceId: String? = null,
     )
 
+    /** One visit's row as it appears in the file; [year] null is an undated visit. */
+    data class VisitEntry(
+        val id: String,
+        val code: String,
+        val year: Int?,
+        val updatedAt: Long,
+        val deletedAt: Long? = null,
+        val deviceId: String? = null,
+        val month: Int? = null,
+    )
+
     /**
      * A decoded file: the header plus its rows.
      *
@@ -76,6 +91,7 @@ object TravelBackup {
         val entries: List<Entry>,
         val unknownStatuses: List<String> = emptyList(),
         val unreadableRows: Int = 0,
+        val visits: List<VisitEntry> = emptyList(),
     )
 
     /**
@@ -95,6 +111,7 @@ object TravelBackup {
         exportedAt: Long,
         deviceId: String,
         names: Map<String, String> = emptyMap(),
+        visits: List<VisitEntry> = emptyList(),
     ): String {
         val places = JSONArray()
         // Sorted by code so two exports of the same data are byte-identical and a
@@ -117,6 +134,21 @@ object TravelBackup {
         root.put("exportedAt", exportedAt)
         root.put("deviceId", deviceId)
         root.put("places", places)
+        val visitRows = JSONArray()
+        // Tombstones included, for the same reason as places; sorted so exports are stable.
+        visits.sortedWith(compareBy({ it.code }, { it.id })).forEach { visit ->
+            val row = JSONObject()
+            row.put("id", visit.id)
+            row.put("code", visit.code)
+            names[visit.code]?.let { row.put("name", it) }
+            visit.year?.let { row.put("year", it) }
+            visit.month?.let { row.put("month", it) }
+            row.put("updatedAt", visit.updatedAt)
+            visit.deletedAt?.let { row.put("deletedAt", it) }
+            visit.deviceId?.let { row.put("deviceId", it) }
+            visitRows.put(row)
+        }
+        root.put("visits", visitRows)
         return root.toString(2)
     }
 
@@ -191,6 +223,43 @@ object TravelBackup {
             )
         }
 
+        // Absent in a version 1 file: no visits, not an error. A row without id, code or
+        // timestamp is counted with the unreadable place rows rather than failing the import.
+        val visits = ArrayList<VisitEntry>()
+        val visitArray = root.optJSONArray("visits")
+        val ceiling = now + MAX_FUTURE_SKEW_MS
+        if (visitArray != null) {
+            for (i in 0 until visitArray.length()) {
+                val row = visitArray.optJSONObject(i) ?: run { unreadableRows++; continue }
+                val id = row.optStringOrNull("id")
+                val code = row.optStringOrNull("code")
+                val updatedAt = row.optLong("updatedAt", 0L).takeIf { it > 0L }?.coerceAtMost(ceiling)
+                // Never a reason to lose a row: a tombstone must still propagate, and a
+                // live visit with an impossible year is still a visit. The bounds are fixed
+                // rather than clock-based so a wrong device clock cannot change what imports;
+                // anything outside them becomes undated.
+                val rawYear = if (row.isNull("year")) null else row.optInt("year", Int.MIN_VALUE)
+                val year = rawYear?.takeIf { it in MIN_VISIT_YEAR..MAX_IMPORT_VISIT_YEAR }
+                // A month with no year, or outside 1..12, is dropped; the row stays.
+                val month = if (row.isNull("month")) null else cleanVisitMonth(year, row.optInt("month", 0))
+                if (id == null || code == null || updatedAt == null) {
+                    unreadableRows++
+                    continue
+                }
+                visits.add(
+                    VisitEntry(
+                        id = id,
+                        code = code,
+                        year = year,
+                        month = month,
+                        updatedAt = updatedAt,
+                        deletedAt = row.optLong("deletedAt", 0L).takeIf { it > 0L }?.coerceAtMost(ceiling),
+                        deviceId = row.optStringOrNull("deviceId"),
+                    )
+                )
+            }
+        }
+
         return Payload(
             version = version,
             exportedAt = root.optLong("exportedAt", 0L),
@@ -198,6 +267,7 @@ object TravelBackup {
             entries = entries,
             unknownStatuses = unknownStatuses.sorted(),
             unreadableRows = unreadableRows,
+            visits = visits,
         )
     }
 

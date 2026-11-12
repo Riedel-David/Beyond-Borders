@@ -117,7 +117,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
+import com.riedel.beyondborders.data.place.Visit
 import com.riedel.beyondborders.data.place.foldForSearch
+import com.riedel.beyondborders.data.place.monthOf
+import com.riedel.beyondborders.data.place.yearOf
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
@@ -132,6 +135,9 @@ import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
 import com.riedel.beyondborders.ui.places.RegionStyleKey
 import com.riedel.beyondborders.ui.places.TravelStats
+import com.riedel.beyondborders.ui.places.VisitTimeline
+import com.riedel.beyondborders.ui.places.VisitsDialog
+import com.riedel.beyondborders.ui.places.VisitsRow
 import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.geoNameText
 import com.riedel.beyondborders.ui.places.nextRegionMode
@@ -218,6 +224,7 @@ fun MapScreen(
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val allVisits by viewModel.visits.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
     val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
@@ -675,8 +682,23 @@ fun MapScreen(
                 } else {
                     null
                 }
+                var showVisits by remember(place.code) { mutableStateOf(false) }
+                val placeVisits = allVisits[place.code].orEmpty()
+                if (showVisits) {
+                    VisitsDialog(
+                        placeName = place.name,
+                        visits = placeVisits,
+                        currentYear = remember { yearOf(System.currentTimeMillis()) },
+                        currentMonth = remember { monthOf(System.currentTimeMillis()) },
+                        onAdd = { year, month -> viewModel.addVisit(place.code, year, month) },
+                        onDelete = viewModel::deleteVisit,
+                        onDismiss = { showVisits = false },
+                    )
+                }
                 SelectedPlaceCard(
                     place = place,
+                    visits = placeVisits,
+                    onVisits = { showVisits = true },
                     status = statuses[place.code] ?: PlaceStatus.NONE,
                     requirement = combined?.winner,
                     attributeTo = attributeTo,
@@ -1632,6 +1654,8 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
 @Composable
 private fun SelectedPlaceCard(
     place: Place,
+    visits: List<Visit>,
+    onVisits: () -> Unit,
     status: PlaceStatus,
     requirement: VisaRequirement?,
     attributeTo: String?,
@@ -1787,6 +1811,11 @@ private fun SelectedPlaceCard(
                     StatusChip(PlaceStatus.VISITED, stringResource(R.string.map_chip_been))
                     StatusChip(PlaceStatus.LIVED, stringResource(R.string.map_chip_lived))
                     StatusChip(PlaceStatus.WISHLIST, stringResource(R.string.map_chip_want))
+                }
+                // Been/Lived only; the visits of a cleared place stay stored but unseen.
+                if (status.isBeen) VisitsRow(visits, onClick = onVisits)
+                if (status.isBeen && visits.isNotEmpty()) {
+                    VisitTimeline(visits, onClick = onVisits, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }

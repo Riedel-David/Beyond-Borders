@@ -110,6 +110,8 @@
     <string name="badge_group_dependencies">Gebiete</string>
     <string name="badge_group_non_un">Jenseits der UN</string>
     <string name="badge_group_tiny">Winzige Orte</string>
+    <string name="badge_group_landlocked">Binnenstaaten</string>
+    <string name="badge_group_islands">Inselstaaten</string>
     <string name="badge_group_giants">Riesen</string>
     <string name="badge_group_special">Spezial</string>
     <string name="badge_group_lived">Gelebt</string>
@@ -161,6 +163,22 @@
     <plurals name="badge_tiny_desc">
         <item quantity="one">An %1$d Ort unter %2$d km² gewesen.</item>
         <item quantity="other">An %1$d Orten unter %2$d km² gewesen.</item>
+    </plurals>
+    <plurals name="badge_landlocked_title">
+        <item quantity="one">%1$d Binnenstaat</item>
+        <item quantity="other">%1$d Binnenstaaten</item>
+    </plurals>
+    <plurals name="badge_landlocked_desc">
+        <item quantity="one">In %1$d Binnenstaat gewesen.</item>
+        <item quantity="other">In %1$d Binnenstaaten gewesen.</item>
+    </plurals>
+    <plurals name="badge_island_title">
+        <item quantity="one">%1$d Inselstaat</item>
+        <item quantity="other">%1$d Inselstaaten</item>
+    </plurals>
+    <plurals name="badge_island_desc">
+        <item quantity="one">In %1$d Inselstaat ohne Landgrenze gewesen.</item>
+        <item quantity="other">In %1$d Inselstaaten ohne Landgrenze gewesen.</item>
     </plurals>
     <string name="badge_giant_1_title">Ein Riese</string>
     <string name="badge_giant_1_desc">An einem der %1$d flächengrößten Orte gewesen.</string>
