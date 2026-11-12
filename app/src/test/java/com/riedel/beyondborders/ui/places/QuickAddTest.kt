@@ -82,6 +82,20 @@ class QuickAddTest {
     }
 
     @Test
+    fun `search skips Northern Cyprus and Somaliland unless they were already marked`() {
+        val withUnrecognised = places + listOf(
+            place("XN", "Northern Cyprus", "Asia", unMember = false),
+            place("XS", "Somaliland", "Africa", unMember = false),
+        )
+        assertTrue(quickAddRows(withUnrecognised, "cyprus").isEmpty())
+        assertTrue(quickAddRows(withUnrecognised, "somali").isEmpty())
+        val opening = quickAddRows(withUnrecognised, "", alsoShow = setOf("XS")).map { it.place.code }
+        assertTrue("XS" in opening && "XN" !in opening)
+        assertEquals(listOf("XS"), quickAddRows(withUnrecognised, "somali", alsoShow = setOf("XS")).map { it.place.code })
+        assertEquals(listOf("TW"), quickAddRows(withUnrecognised, "taiw").map { it.place.code })
+    }
+
+    @Test
     fun `a query that folds to nothing does not widen the list`() {
         assertEquals(setOf("FR", "JP", "DE"), quickAddRows(places, "́").map { it.place.code }.toSet())
     }

@@ -1060,6 +1060,13 @@ internal fun sortSectionsByLabel(rows: List<PlaceRow>, grouping: Grouping, label
 }
 
 /**
+ * Sovereign-by-data places that search does not widen to: Northern Cyprus and Somaliland are
+ * not recognised states, so Quick add leaves them to the map and the Passport list. One that
+ * was already marked still appears through `alsoShow`, so it can be reviewed or unticked.
+ */
+internal val QUICK_ADD_SEARCH_SKIP: Set<String> = setOf("XN", "XS")
+
+/**
  * The 15 states that clear roughly 29 million international arrivals a year (UN Tourism
  * basis, 2024/2025, read off regional tables, so approximate). Quick add opens on these
  * only: the dialog is a fast way to tick the obvious ones, and the rest of the world is
@@ -1080,7 +1087,8 @@ internal val QUICK_ADD_TOP_CODES: Set<String> = setOf(
  * at open: reading live statuses would make a row jump or vanish under the finger.
  * Once the user types, it widens to every sovereign state — the UN members plus the
  * places that are their own sovereign (Taiwan, Kosovo...), a place whose
- * [Place.englishSovereign] is itself, which leaves out dependencies such as Greenland —
+ * [Place.englishSovereign] is itself, which leaves out dependencies such as Greenland,
+ * and the curated [QUICK_ADD_SEARCH_SKIP] pair (a skipped place already in [alsoShow] stays) —
  * so searching for "Peru" finds it instead of an empty list that looks broken. Statuses
  * are deliberately not an input: the order depends on the places and the query only, so
  * a tick does not re-sort the list. Each row reads its status when it is drawn; the
@@ -1096,8 +1104,8 @@ internal fun quickAddRows(
             val sovereign = it.unMember || it.englishSovereign == it.englishName
             // The same needle buildRows uses: a query that folds to nothing (a lone combining
             // mark) must not widen the set while buildRows treats it as no search at all.
-            sovereign && (query.trim().foldForSearch().isNotEmpty() ||
-                it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
+            val widenedTo = query.trim().foldForSearch().isNotEmpty() && it.code !in QUICK_ADD_SEARCH_SKIP
+            sovereign && (widenedTo || it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
         },
         emptyMap(),
         query,
