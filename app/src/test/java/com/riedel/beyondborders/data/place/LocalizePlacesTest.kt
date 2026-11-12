@@ -49,7 +49,7 @@ class LocalizePlacesTest {
     @Test
     fun `spanish names replace the english ones too`() {
         val es = mapOf("DE" to "Alemania", "AT" to "Austria")
-        val byCode = localizePlaces(places, Locale("es"), { c, _ -> es[c] }).associateBy { it.code }
+        val byCode = localizePlaces(places, Locale.forLanguageTag("es"), { c, _ -> es[c] }).associateBy { it.code }
         assertEquals("Alemania", byCode.getValue("DE").name)
         assertEquals("Germany", byCode.getValue("DE").englishName)
         assertEquals("Egypt", byCode.getValue("EG").name)
@@ -171,7 +171,7 @@ class LocalizePlacesTest {
         for (tag in LOCALIZED_LANGUAGES) {
             val locale = Locale.forLanguageTag(tag)
             for (code in Locale.getISOCountries()) {
-                val name = Locale("", code).getDisplayCountry(locale)
+                val name = Locale.Builder().setRegion(code).build().getDisplayCountry(locale)
                 name.codePoints().forEach { cp ->
                     if (ranges.none { cp in it }) bad += "$tag:$code:U+%04X".format(cp)
                 }

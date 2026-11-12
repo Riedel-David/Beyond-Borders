@@ -70,9 +70,6 @@ android {
             // app/build/outputs/mapping/release is also embedded in the AAB for Play.
             optimization {
                 enable = true
-                keepRules {
-                    files.add(file("proguard-rules.pro"))
-                }
             }
             if (releaseKeystore != null) {
                 signingConfig = signingConfigs.getByName("release")
@@ -90,7 +87,7 @@ android {
         // fails at runtime with "Cannot find the schema file in the assets folder"
         // rather than at compile time.
         getByName("androidTest") {
-            assets.srcDir("$projectDir/schemas")
+            assets.directories.add("$projectDir/schemas")
         }
     }
     buildFeatures {
@@ -99,6 +96,14 @@ android {
         // version name, and reading it back through PackageManager instead means a
         // deprecated call and a try/catch for something the build already knows.
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        // Opt in to Kotlin's upcoming default: annotations on constructor
+        // properties (@StringRes etc.) apply to the field as well.
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
