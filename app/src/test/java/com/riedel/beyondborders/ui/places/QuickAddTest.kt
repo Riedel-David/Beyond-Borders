@@ -82,6 +82,11 @@ class QuickAddTest {
     }
 
     @Test
+    fun `a query that folds to nothing does not widen the list`() {
+        assertEquals(setOf("FR", "JP", "DE"), quickAddRows(places, "́").map { it.place.code }.toSet())
+    }
+
+    @Test
     fun `quick add search matches on the folded name`() {
         assertEquals(listOf("FR"), quickAddRows(places, " fran ").map { it.place.code })
     }

@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -327,6 +328,14 @@ class PlacesViewModel(
     /** Code -> status for every place the user has marked. Drives the map colours. */
     val statuses: StateFlow<Map<String, PlaceStatus>> =
         repo.statuses.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /**
+     * False until Room has delivered its first statuses. [statuses] starts as an empty map,
+     * which is indistinguishable from a user who has marked nothing; Quick add needs the
+     * difference to take its "already marked at open" snapshot once, from real data.
+     */
+    val statusesLoaded: StateFlow<Boolean> =
+        repo.statuses.map { true }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val stats: StateFlow<TravelStats> =
         combine(allPlaces, statuses, settings.denominator) { places, statuses, denom -> computeStats(places, statuses, denom) }
@@ -1085,7 +1094,10 @@ internal fun quickAddRows(
     buildRows(
         places.filter {
             val sovereign = it.unMember || it.englishSovereign == it.englishName
-            sovereign && (query.isNotBlank() || it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
+            // The same needle buildRows uses: a query that folds to nothing (a lone combining
+            // mark) must not widen the set while buildRows treats it as no search at all.
+            sovereign && (query.trim().foldForSearch().isNotEmpty() ||
+                it.code in QUICK_ADD_TOP_CODES || it.code in alsoShow)
         },
         emptyMap(),
         query,

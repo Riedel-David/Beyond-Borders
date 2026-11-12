@@ -76,8 +76,14 @@ fun QuickAddDialog(viewModel: PlacesViewModel, onDismiss: () -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     // Keyed without statuses: a tick must not rebuild or re-sort the list under the
     // finger. Each row reads its own status below.
-    // The already-marked places are read once, at open, for the same reason.
-    val marked = remember(places) { statuses.filterValues { it != PlaceStatus.NONE }.keys }
+    // The already-marked places are read once, from the first real emission of the statuses
+    // (not the empty initial value), and never again: not keyed on anything that can change.
+    val statusesLoaded by viewModel.statusesLoaded.collectAsStateWithLifecycle()
+    var snapshot by remember { mutableStateOf<Set<String>?>(null) }
+    if (snapshot == null && statusesLoaded) {
+        snapshot = statuses.filterValues { it != PlaceStatus.NONE }.keys
+    }
+    val marked = snapshot ?: emptySet()
     val sections = remember(places, query, locale, marked) {
         val rows = sortSectionsByLabel(quickAddRows(places, query, marked), Grouping.CONTINENT) {
             geoNameText(it).asString(context)
