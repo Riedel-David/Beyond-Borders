@@ -208,4 +208,10 @@
     <string name="backup_no_places">Die Sicherung enthält keine Orte.</string>
     <string name="welcome_skip">Vorerst überspringen</string>
     <string name="settings_passport_unset">Nicht festgelegt</string>
+    <string name="review_title">Gefällt dir Beyond Borders?</string>
+    <string name="review_body">Wenn die App nützlich ist, hilft eine Bewertung bei Google Play anderen Reisenden, sie zu finden. Das dauert nur ein paar Sekunden.</string>
+    <string name="review_rate">Bewerten</string>
+    <string name="review_later">Später</string>
+    <string name="review_never">Nicht mehr fragen</string>
+    <string name="settings_rate_play">Bei Google Play bewerten</string>
 </resources>

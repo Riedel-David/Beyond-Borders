@@ -84,6 +84,7 @@ import com.riedel.beyondborders.settings.MapSlot
 import com.riedel.beyondborders.settings.ThemeMode
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
+import com.riedel.beyondborders.ui.openPlayStorePage
 import com.riedel.beyondborders.ui.places.localizedName
 import com.riedel.beyondborders.ui.theme.LocalIsDarkTheme
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
@@ -576,6 +577,12 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             ReportProblemLink()
+            HorizontalDivider()
+            val playContext = LocalContext.current
+            InfoRow(
+                title = stringResource(R.string.settings_rate_play),
+                onClick = { openPlayStorePage(playContext) },
+            )
             if (showDataInfo) {
                 AlertDialog(
                     onDismissRequest = { showDataInfo = false },
