@@ -31,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,6 +41,8 @@ import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.map.MapScreen
 import com.riedel.beyondborders.ui.passport.PassportScreen
 import com.riedel.beyondborders.ui.places.PlacesViewModel
+import com.riedel.beyondborders.ui.places.ReviewChoice
+import com.riedel.beyondborders.ui.places.reviewChannelAllowed
 import com.riedel.beyondborders.ui.settings.SettingsScreen
 import com.riedel.beyondborders.ui.welcome.WelcomeScreen
 import com.riedel.beyondborders.widget.WidgetIntent
@@ -129,6 +132,39 @@ fun BeyondBordersRoot(
         }
     }
     val tab = Tab.entries[selected]
+
+    val context = LocalContext.current
+    val statusesLoaded by placesViewModel.statusesLoaded.collectAsStateWithLifecycle()
+    val selectedCode by placesViewModel.selectedCode.collectAsStateWithLifecycle()
+    val showReviewPrompt by placesViewModel.showReviewPrompt.collectAsStateWithLifecycle()
+    // Keyed on the load flag only: the ViewModel itself makes the decision once per cold
+    // start, so a later change of selection or tab cannot re-open it.
+    LaunchedEffect(statusesLoaded) {
+        // Only for Play Store installs: a GitHub APK or F-Droid build has no Play listing to
+        // rate in practice. Debug builds are exempt so the dialog can be looked at.
+        val installer = if (!statusesLoaded) null else runCatching {
+            context.packageManager.getInstallSourceInfo(context.packageName).installingPackageName
+        }.getOrNull()
+        if (statusesLoaded && reviewChannelAllowed(installer, com.riedel.beyondborders.BuildConfig.DEBUG)) {
+            val installedAt = runCatching {
+                context.packageManager.getPackageInfo(context.packageName, 0).firstInstallTime
+            }.getOrDefault(System.currentTimeMillis())
+            placesViewModel.evaluateReviewPrompt(installedAt, System.currentTimeMillis(), sheetOpen = selectedCode != null)
+        }
+    }
+    if (showReviewPrompt) {
+        ReviewPromptDialog(
+            onChoice = { choice ->
+                if (choice == ReviewChoice.RATE && !openPlayStorePage(context)) {
+                    // Nothing opened, so the user has not rated: hide it, record nothing.
+                    placesViewModel.hideReviewPrompt()
+                } else {
+                    placesViewModel.answerReviewPrompt(choice, System.currentTimeMillis())
+                }
+            },
+            onDismiss = { placesViewModel.dismissReviewPrompt(System.currentTimeMillis()) },
+        )
+    }
 
     Scaffold(
         modifier = modifier,

@@ -219,4 +219,10 @@
     <string name="backup_no_places">La copia no contiene ningún lugar.</string>
     <string name="welcome_skip">Omitir por ahora</string>
     <string name="settings_passport_unset">Sin elegir</string>
+    <string name="review_title">¿Te gusta Beyond Borders?</string>
+    <string name="review_body">Si te ha resultado útil, una valoración en Google Play ayuda a otros viajeros a encontrarla. Solo lleva unos segundos.</string>
+    <string name="review_rate">Valorar</string>
+    <string name="review_later">Más tarde</string>
+    <string name="review_never">No volver a preguntar</string>
+    <string name="settings_rate_play">Valorar en Google Play</string>
 </resources>

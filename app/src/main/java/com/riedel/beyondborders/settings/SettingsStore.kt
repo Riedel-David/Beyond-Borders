@@ -18,6 +18,13 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 enum class Denominator { ALL, UN_MEMBER, INHABITED }
 
 /**
+ * Where the "rate us on Google Play" prompt stands. [asksCount] is how many times the
+ * user has answered it, [lastAskedAtMs] when they last did (0 = never), and [done]
+ * means they will not be asked again — they rated, said no, or ran out of asks.
+ */
+data class ReviewState(val asksCount: Int = 0, val lastAskedAtMs: Long = 0L, val done: Boolean = false)
+
+/**
  * Preferences, on plain SharedPreferences.
  *
  * DataStore would be the modern choice, but the only stable release is behind an
@@ -109,7 +116,9 @@ class SettingsStore(context: Context) {
      * colours go with the trips, because "Delete everything" has to mean everything;
      * the welcome screen then shows again, and its "nothing leaves this phone" pitch
      * is true again from a blank slate. Only [deviceId] survives, in its own file —
-     * it is an install id, not something the user entered. */
+     * it is an install id, not something the user entered. The three review keys also
+     * survive, deliberately: the user has already answered the rating prompt, and wiping
+     * their data is not a reason to ask again. */
     fun resetAll() {
         _themeMode.value = ThemeMode.SYSTEM
         _mapColors.value = MapColors.parse(visited = null, lived = null, wishlist = null)
@@ -123,7 +132,32 @@ class SettingsStore(context: Context) {
         _collapsedHeaders.value = emptySet()
         _seenAchievements.value = null
         _lastBackupAt.value = null
-        prefs.edit { clear() }
+        // Not clear(): the review answer survives "Delete everything". The user has
+        // already told us whether they want to be asked, and wiping the data is not a
+        // reason to ask again.
+        prefs.edit { prefs.all.keys.filter { it !in REVIEW_KEYS }.forEach { remove(it) } }
+    }
+
+    private val _reviewState = MutableStateFlow(
+        ReviewState(
+            asksCount = prefs.getInt(KEY_REVIEW_ASKS, 0),
+            lastAskedAtMs = prefs.getLong(KEY_REVIEW_LAST_ASKED, 0L),
+            done = prefs.getBoolean(KEY_REVIEW_DONE, false),
+        )
+    )
+
+    /** Written only by [setReviewState] (the prompt's buttons), read by the cold-start
+     * eligibility check, never cleared: [resetAll] skips these keys, and the file is
+     * outside the JSON export. */
+    val reviewState: StateFlow<ReviewState> = _reviewState.asStateFlow()
+
+    fun setReviewState(state: ReviewState) {
+        _reviewState.value = state
+        prefs.edit {
+            putInt(KEY_REVIEW_ASKS, state.asksCount)
+            putLong(KEY_REVIEW_LAST_ASKED, state.lastAskedAtMs)
+            putBoolean(KEY_REVIEW_DONE, state.done)
+        }
     }
 
     /**
@@ -284,6 +318,10 @@ class SettingsStore(context: Context) {
         const val KEY_SEEN_ACHIEVEMENTS = "seen_achievements"
         const val KEY_LAST_BACKUP_AT = "last_backup_at"
         const val KEY_DEVICE_ID = "device_id"
+        const val KEY_REVIEW_ASKS = "review_asks"
+        const val KEY_REVIEW_LAST_ASKED = "review_last_asked"
+        const val KEY_REVIEW_DONE = "review_done"
+        val REVIEW_KEYS = setOf(KEY_REVIEW_ASKS, KEY_REVIEW_LAST_ASKED, KEY_REVIEW_DONE)
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"
         const val KEY_HUE_WISHLIST = "map_hue_wishlist"

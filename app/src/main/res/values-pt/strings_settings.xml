@@ -219,4 +219,10 @@
     <string name="backup_no_places">O backup não tem nenhum lugar.</string>
     <string name="welcome_skip">Pular por enquanto</string>
     <string name="settings_passport_unset">Não definido</string>
+    <string name="review_title">Está a gostar do Beyond Borders?</string>
+    <string name="review_body">Se foi útil, uma avaliação no Google Play ajuda outros viajantes a encontrá-lo. Demora apenas alguns segundos.</string>
+    <string name="review_rate">Avaliar</string>
+    <string name="review_later">Mais tarde</string>
+    <string name="review_never">Não perguntar novamente</string>
+    <string name="settings_rate_play">Avaliar no Google Play</string>
 </resources>

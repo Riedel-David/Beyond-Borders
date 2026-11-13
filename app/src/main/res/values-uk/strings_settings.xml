@@ -230,4 +230,10 @@
     <string name="backup_no_places">У резервній копії немає місць.</string>
     <string name="welcome_skip">Пропустити</string>
     <string name="settings_passport_unset">Не вибрано</string>
+    <string name="review_title">Подобається Beyond Borders?</string>
+    <string name="review_body">Якщо застосунок був корисним, оцінка в Google Play допоможе іншим мандрівникам його знайти. Це займе кілька секунд.</string>
+    <string name="review_rate">Оцінити</string>
+    <string name="review_later">Пізніше</string>
+    <string name="review_never">Більше не питати</string>
+    <string name="settings_rate_play">Оцінити в Google Play</string>
 </resources>

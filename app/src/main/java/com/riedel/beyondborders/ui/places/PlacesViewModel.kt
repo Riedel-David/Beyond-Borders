@@ -23,6 +23,7 @@ import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.data.visa.band
 import com.riedel.beyondborders.settings.Denominator
+import com.riedel.beyondborders.settings.ReviewState
 import com.riedel.beyondborders.settings.SettingsStore
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.theme.RegionSlots
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -434,6 +436,49 @@ class PlacesViewModel(
             computeWishlistEasyText(places, st, visa, denom)
         }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _showReviewPrompt = MutableStateFlow(false)
+
+    /** True while the "rate us" dialog should be up. Set at most once per ViewModel, i.e.
+     * once per cold start, so a dismissed prompt cannot come back on a tab switch. */
+    val showReviewPrompt: StateFlow<Boolean> = _showReviewPrompt
+
+    private var reviewEvaluated = false
+
+    /**
+     * Call once the main UI is showing and the statuses have loaded. Only the first call
+     * per ViewModel decides; [sheetOpen] makes that call a no-op for this start rather
+     * than interrupting an action.
+     */
+    fun evaluateReviewPrompt(installedAtMs: Long, nowMs: Long, sheetOpen: Boolean) {
+        if (reviewEvaluated) return
+        reviewEvaluated = true
+        if (sheetOpen) return
+        // One read of the repository flow rather than `statuses.value`: that is a separate
+        // collector from the one behind `statusesLoaded` and can still be empty when the
+        // latter flips, which would judge a real user as having no places.
+        viewModelScope.launch {
+            val beenCount = repo.statuses.first().values.count { it.isBeen }
+            _showReviewPrompt.value = reviewPromptEligible(beenCount, installedAtMs, nowMs, settings.reviewState.value)
+        }
+    }
+
+    /** Hide without recording anything (used when Rate could not open the store). */
+    fun hideReviewPrompt() {
+        _showReviewPrompt.value = false
+    }
+
+    /** Back or tap-outside: not an answer, so it costs no ask, but it snoozes the prompt for
+     * the retry period, otherwise an eligible user would meet it on every single start. */
+    fun dismissReviewPrompt(nowMs: Long) {
+        settings.setReviewState(settings.reviewState.value.copy(lastAskedAtMs = nowMs))
+        _showReviewPrompt.value = false
+    }
+
+    fun answerReviewPrompt(choice: ReviewChoice, nowMs: Long) {
+        settings.setReviewState(reviewStateAfter(settings.reviewState.value, choice, nowMs))
+        _showReviewPrompt.value = false
+    }
 
     init {
         viewModelScope.launch { rawPlaces.value = repo.places() }
@@ -1207,5 +1252,37 @@ internal fun computeVisitStats(
         byYear = perYear.map { it.key to it.value },
         first = if (perYear.isEmpty()) null else perYear.firstKey(),
         mostRecent = if (perYear.isEmpty()) null else perYear.lastKey(),
+    )
+}
+
+internal const val REVIEW_MIN_BEEN = 5
+internal const val REVIEW_MIN_INSTALL_DAYS = 7
+internal const val REVIEW_MAX_ASKS = 2
+internal const val REVIEW_RETRY_DAYS = 30
+private const val DAY_MS = 24L * 60 * 60 * 1000
+
+enum class ReviewChoice { RATE, LATER, NEVER }
+
+/** The rating prompt points at Google Play, so it is only for installs from the Play Store
+ * (or any debug build, which is how it gets looked at). Sideloaded and F-Droid installs
+ * report another installer, or none. */
+internal fun reviewChannelAllowed(installer: String?, isDebug: Boolean): Boolean =
+    isDebug || installer == "com.android.vending"
+
+/** Whether the "rate us" dialog may appear on this cold start; every condition must hold. */
+internal fun reviewPromptEligible(beenCount: Int, installedAtMs: Long, nowMs: Long, state: ReviewState): Boolean =
+    beenCount >= REVIEW_MIN_BEEN &&
+        nowMs - installedAtMs >= REVIEW_MIN_INSTALL_DAYS * DAY_MS &&
+        !state.done &&
+        state.asksCount < REVIEW_MAX_ASKS &&
+        (state.lastAskedAtMs == 0L || state.lastAskedAtMs > nowMs || nowMs - state.lastAskedAtMs >= REVIEW_RETRY_DAYS * DAY_MS)
+
+/** The state after an answer. A "Later" on the last allowed ask counts as "never". */
+internal fun reviewStateAfter(state: ReviewState, choice: ReviewChoice, nowMs: Long): ReviewState {
+    val asks = state.asksCount + 1
+    return ReviewState(
+        asksCount = asks,
+        lastAskedAtMs = nowMs,
+        done = choice != ReviewChoice.LATER || asks >= REVIEW_MAX_ASKS,
     )
 }
