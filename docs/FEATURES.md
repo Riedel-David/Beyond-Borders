@@ -85,6 +85,17 @@ settings, and removes the staged snapshot so there is nothing for a restore to o
 Google may still hold an earlier backup until Android next runs one, so a reinstall
 before that can bring the places back; Android's backup settings can delete that copy.
 
+## Rating prompt
+
+Installs from the Play Store (and debug builds) get one small dialog asking for a
+rating, once you have marked five places Been or Lived and the app is a week old.
+**Rate** opens the Play page, **Later** asks again after 30 days, **Don't ask again**
+ends it; it never asks more than twice. Dismissing it by back or tapping outside is
+not an answer, but it waits 30 days too. The app uses no Google library for this, so it
+stays free of Google dependencies and has no internet permission. Settings →
+**Rate on Google Play** opens the same page at any time. The answer is kept on the device
+only, survives *Delete everything* and is not part of the JSON export.
+
 ## Language
 
 Settings → **Language** switches the app between English, German, Spanish, French,
