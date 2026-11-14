@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,6 +55,7 @@ import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
+import com.riedel.beyondborders.ui.places.TravelAdviceRow
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.places.combinedBandCounts
@@ -63,6 +65,7 @@ import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.places.PartnerComparison
 import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.partnerAsOfNoticeText
 import com.riedel.beyondborders.ui.visa.officialLinkText
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
 
@@ -102,19 +105,23 @@ internal fun LazyListScope.visaSection(
     }
 
     item("visa-summary") {
-        VisaSummaryCard(visa, secondVisa, placesTotal, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        VisaSummaryCard(visa, secondVisa, placesTotal, partnerMode, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
     }
 
     if (partnerAvailable && onPartnerMode != null) {
         item("visa-partner") {
             Column(Modifier.padding(horizontal = 16.dp)) {
+                // The whole row is the switch, so the label is its accessible name and the
+                // touch target is the row rather than the thumb.
                 Row(
-                    Modifier.fillMaxWidth(),
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(value = partnerMode, role = Role.Switch, onValueChange = onPartnerMode),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.visa_partner_toggle), style = MaterialTheme.typography.bodyLarge)
-                    Switch(checked = partnerMode, onCheckedChange = onPartnerMode)
+                    Switch(checked = partnerMode, onCheckedChange = null)
                 }
                 if (partnerMode) {
                     Text(
@@ -224,6 +231,7 @@ private fun VisaSummaryCard(
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
     placesTotal: Int,
+    partnerMode: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
@@ -265,6 +273,15 @@ private fun VisaSummaryCard(
                 )
             }
             BandBar(visa, secondVisa, placesTotal, ramp, Modifier.padding(top = 12.dp))
+            // The registry in partner mode carries the user's metadata but is no single
+            // passport's data; say what it is.
+            if (partnerMode) {
+                Text(
+                    stringResource(R.string.visa_summary_partner),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
             // With two passports the staler date is the honest one, as in asOfNoticeText.
             val asOf = if (secondVisa != null) minOf(visa.asOf, secondVisa.asOf) else visa.asOf
             Row(
@@ -286,7 +303,11 @@ private fun VisaSummaryCard(
                     dialogBody = {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+                                (when {
+                                    partnerMode -> partnerAsOfNoticeText(visa)
+                                    secondVisa != null -> asOfNoticeText(visa, secondVisa)
+                                    else -> asOfNoticeText(visa)
+                                }).asString(),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                             // Attribution links: one compact block, same left edge, uniform small gaps.
@@ -566,7 +587,11 @@ private fun VisaDetail(
             )
         }
         Text(
-            (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+            (when {
+                partner != null -> partnerAsOfNoticeText(visa)
+                secondVisa != null -> asOfNoticeText(visa, secondVisa)
+                else -> asOfNoticeText(visa)
+            }).asString(),
             // labelSmall — one step below the LOW-confidence warning's
             // labelMedium, at full-strength onSurfaceVariant. The separation is
             // size, not contrast: cutting this colour's alpha would put a
@@ -583,6 +608,7 @@ private fun VisaDetail(
         // world, so calling it "IATA: Suriname" would promise a page that does not
         // exist.
         LinkText(stringResource(R.string.visa_iata_link), visa.iataUrl)
+        TravelAdviceRow(row.place.code)
     }
 }
 

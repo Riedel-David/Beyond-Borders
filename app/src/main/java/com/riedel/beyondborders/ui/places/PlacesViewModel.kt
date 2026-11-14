@@ -288,13 +288,14 @@ class PlacesViewModel(
      * second one. Routing the list, the bands, the counts and the filters through this one
      * pair is what keeps them agreeing, the failure PLAN.md records for dual passports.
      */
-    private val viewVisas: StateFlow<Pair<VisaRegistry?, VisaRegistry?>> =
+    private val viewVisas: StateFlow<VisaViews> =
         combine(_visa, _secondVisa, _partnerVisa, _partnerMode) { visa, second, partner, mode ->
-            visaViews(visa, second, partner, mode)
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, null to null)
+            val (v, s) = visaViews(visa, second, partner, mode)
+            VisaViews(v, s, partner.takeIf { mode && visa != null })
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, VisaViews(null, null, null))
 
     val visa: StateFlow<VisaRegistry?> =
-        viewVisas.map { it.first }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        viewVisas.map { it.visa }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val secondVisa: StateFlow<VisaRegistry?> =
         viewVisas.map { it.second }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -461,7 +462,7 @@ class PlacesViewModel(
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
     val wishlistEasyText: StateFlow<UiText?> =
-        combine(allPlaces, statuses, visa, settings.denominator) { places, st, visa, denom ->
+        combine(allPlaces, statuses, _visa, settings.denominator) { places, st, visa, denom ->
             computeWishlistEasyText(places, st, visa, denom)
         }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -553,12 +554,18 @@ class PlacesViewModel(
                 _partnerVisa.value = partner?.let { load(it) }
                 // Removing the partner (or losing their asset) must not leave the mode on
                 // with nothing behind it: the toggle disappears, so nothing could turn it off.
-                if (_partnerVisa.value == null) _partnerMode.value = false
+                if (_partnerVisa.value == null) setPartnerMode(false)
             }
         }
     }
 
-    fun setPartnerMode(value: Boolean) { _partnerMode.value = value }
+    /** Switching partner mode changes which categories exist, so a selected chip that
+     * the new list does not offer would leave an empty list with nothing to explain it. */
+    fun setPartnerMode(value: Boolean) {
+        _partnerMode.value = value
+        val (v, s) = visaViews(_visa.value, _secondVisa.value, _partnerVisa.value, value)
+        _visaFilter.value = filterOrAll(_visaFilter.value, visaFilters(v, s))
+    }
 
     fun setQuery(value: String) { _query.value = value }
     fun setGrouping(value: Grouping) { _grouping.value = value }
@@ -569,12 +576,16 @@ class PlacesViewModel(
 
     fun setVisaLens(value: Boolean) {
         _visaLens.value = value
-        if (value) _regionMode.value = RegionMode.OFF
+        if (value) _regionMode.value = RegionMode.OFF else setPartnerMode(false)
     }
 
     fun setRegionMode(value: RegionMode) {
         _regionMode.value = value
-        if (value != RegionMode.OFF) _visaLens.value = false
+        if (value != RegionMode.OFF) {
+            _visaLens.value = false
+            // Partner mode is a way of reading the lens; it does not outlive it.
+            setPartnerMode(false)
+        }
     }
 
     /**
@@ -607,8 +618,10 @@ class PlacesViewModel(
      */
     fun combinedRequirementOf(code: String): CombinedRequirement? {
         val own = combineRequirements(_visa.value?.get(code), _secondVisa.value?.get(code))
-        val partner = _partnerVisa.value
-        if (!_partnerMode.value || partner == null || _visa.value == null) return own
+        // The partner registry comes from the same snapshot the rows are built from, not
+        // from the mode flag: a row and its decoration can then only disagree for the
+        // moment the downstream list lags the snapshot, never by reading two sources.
+        val partner = viewVisas.value.partner ?: return own
         return combineForPartners(own?.winner, partner[code])
     }
 
@@ -1111,6 +1124,13 @@ data class CombinedRequirement(
     /** Set only by partner mode: both people's answers and who limits the pair. */
     val partner: PartnerComparison? = null,
 )
+
+/** What the visa surfaces read: the registries to show, and the partner's when partner mode is in force. */
+internal data class VisaViews(val visa: VisaRegistry?, val second: VisaRegistry?, val partner: VisaRegistry?)
+
+/** The selected chip if the new list still offers it, otherwise back to All. */
+internal fun filterOrAll(selected: VisaFilter, offered: List<VisaFilter>): VisaFilter =
+    if (selected in offered) selected else VisaFilter.All
 
 /** Which of the two travellers' passports sets the pair's answer. */
 enum class PartnerBlocker { YOU, PARTNER, NEITHER }

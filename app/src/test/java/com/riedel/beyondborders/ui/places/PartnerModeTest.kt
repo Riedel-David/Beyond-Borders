@@ -164,6 +164,19 @@ class PartnerModeTest {
         assertEquals(combinedTotals(visa, second).answered, rows.size)
     }
 
+    @Test
+    fun `a selected category chip the partner view does not offer falls back to All`() {
+        val primary = reg("DE", rows = arrayOf(Triple("FR", "VISA_FREE", null), Triple("CN", "ETA", null)))
+        val partner = reg("UA", rows = arrayOf(Triple("FR", "VISA_FREE", null), Triple("CN", "E_VISA", null)))
+        val eta = VisaFilter.Category(VisaCategory.ETA)
+        val own = visaFilters(primary, null)
+        assertTrue(eta in own)
+        assertEquals(eta, filterOrAll(eta, own))
+        val (v, s) = visaViews(primary, null, partner, partnerMode = true)
+        assertEquals(VisaFilter.All, filterOrAll(eta, visaFilters(v, s)))
+        assertEquals(VisaFilter.Easy, filterOrAll(VisaFilter.Easy, visaFilters(v, s)))
+    }
+
     private fun place(code: String) = Place(
         code = code, name = code, continent = "Europe", region = "Europe", sovereign = code,
         uninhabited = false, unMember = true, lat = 0.0, lon = 0.0,

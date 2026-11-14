@@ -150,6 +150,7 @@ import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.partnerAsOfNoticeText
 import com.riedel.beyondborders.ui.places.PartnerComparison
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import kotlinx.coroutines.CoroutineScope
@@ -1495,7 +1496,11 @@ private fun VisaLegend(
         }
         if (visa != null) {
             Text(
-                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+                (when {
+                    partnerMode -> partnerAsOfNoticeText(visa)
+                    secondVisa != null -> asOfNoticeText(visa, secondVisa)
+                    else -> asOfNoticeText(visa)
+                }).asString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

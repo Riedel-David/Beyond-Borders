@@ -161,6 +161,8 @@ fun PassportScreen(
     val places by viewModel.places.collectAsStateWithLifecycle()
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
+    val partnerAvailable by viewModel.partnerAvailable.collectAsStateWithLifecycle()
+    val partnerMode by viewModel.partnerMode.collectAsStateWithLifecycle()
     val grouping by viewModel.grouping.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
@@ -239,7 +241,7 @@ fun PassportScreen(
     // the collapse skip.
     // Remembered, not rebuilt per composition: this walks all 252 rows calling
     // sectionHeader on each, which is not something to redo while a finger is down.
-    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query, nationality == null, noMarks) {
+    val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query, nationality == null, noMarks, partnerAvailable) {
         if (mode == PassportMode.VISA) {
             buildList {
                 add(null) // "mode"
@@ -247,6 +249,7 @@ fun PassportScreen(
                     add(null) // "visa-missing"
                 } else {
                     add(null) // "visa-summary"
+                    if (partnerAvailable) add(null) // "visa-partner"
                     add(null) // "visa-search"
                     add(null) // "visa-filters"
                     if (visaRows.isEmpty()) add(null) // "visa-empty"
@@ -309,6 +312,9 @@ fun PassportScreen(
                 onSelect = viewModel::select,
                 nameOf = { code -> viewModel.placeOf(code)?.name },
                 combinedRequirementOf = viewModel::combinedRequirementOf,
+                partnerAvailable = partnerAvailable,
+                partnerMode = partnerMode,
+                onPartnerMode = viewModel::setPartnerMode,
             )
             return@LazyColumn
         }

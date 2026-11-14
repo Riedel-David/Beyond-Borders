@@ -79,4 +79,6 @@
     <string name="visa_partner_blocker_none">Same for both of you</string>
     <string name="visa_partner_caveat">Per passport only: residence permits and EU/Schengen family-member rules are not taken into account.</string>
     <string name="visa_partner_toggle">Partner mode: where we both can go</string>
+    <string name="visa_summary_partner">Combined answer for both passports</string>
+    <string name="visa_as_of_notice_partner">Combined answer for both passports, as of %1$s — verify with the official government source before booking</string>
 </resources>
