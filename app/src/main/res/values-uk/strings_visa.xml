@@ -75,4 +75,12 @@
     <!-- Passport picker -->
     <string name="picker_choose_passport">Обери паспорт</string>
     <string name="picker_search">Пошук</string>
+
+    <string name="visa_partner_you">Ти: %1$s</string>
+    <string name="visa_partner_partner">Партнер: %1$s</string>
+    <string name="visa_partner_blocker_you">Тут обмеження задає твій паспорт</string>
+    <string name="visa_partner_blocker_partner">Тут обмеження задає паспорт партнера</string>
+    <string name="visa_partner_blocker_none">Для вас обох однаково</string>
+    <string name="visa_partner_caveat">Лише за паспортами: посвідки на проживання та правила ЄС/Шенгену для членів родини не враховуються.</string>
+    <string name="visa_partner_toggle">Режим пари: куди можемо обоє</string>
 </resources>

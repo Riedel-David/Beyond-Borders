@@ -123,4 +123,8 @@
     <string name="widget_cfg_preview_title">Vorschaugröße</string>
     <string name="widget_cfg_add">Widget hinzufügen</string>
     <string name="map_quick_add">Schnell eintragen</string>
+
+    <string name="map_partner_mode">Partnermodus</string>
+    <string name="map_legend_partner">Wohin ihr beide könnt</string>
+    <string name="map_no_data_partner">Für mindestens einen der beiden Reisepässe liegt keine Antwort vor – vor der Reise bei offiziellen Quellen prüfen.</string>
 </resources>

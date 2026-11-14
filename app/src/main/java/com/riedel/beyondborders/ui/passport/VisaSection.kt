@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +60,8 @@ import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.combinedTotals
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.VisaRamp
+import com.riedel.beyondborders.ui.places.PartnerComparison
+import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
 import com.riedel.beyondborders.ui.visa.officialLinkText
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
@@ -86,6 +89,12 @@ internal fun LazyListScope.visaSection(
     onSelect: (String?) -> Unit,
     nameOf: (String) -> String?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
+    // Partner mode's switch is offered only when a caller supplies [onPartnerMode]. The
+    // mode itself needs no wiring here: [visa], [rows] and [filters] already arrive as the
+    // pair's view of the world.
+    partnerAvailable: Boolean = false,
+    partnerMode: Boolean = false,
+    onPartnerMode: ((Boolean) -> Unit)? = null,
 ) {
     if (visa == null) {
         item("visa-missing") { VisaUnavailable() }
@@ -94,6 +103,28 @@ internal fun LazyListScope.visaSection(
 
     item("visa-summary") {
         VisaSummaryCard(visa, secondVisa, placesTotal, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+    }
+
+    if (partnerAvailable && onPartnerMode != null) {
+        item("visa-partner") {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.visa_partner_toggle), style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = partnerMode, onCheckedChange = onPartnerMode)
+                }
+                if (partnerMode) {
+                    Text(
+                        stringResource(R.string.visa_partner_caveat),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 
     item("visa-search") {
@@ -406,9 +437,10 @@ private fun VisaListRow(
     modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
-    // Attribution only when a second passport is configured and it won
-    val combined = if (secondVisa != null) combinedRequirementOf(row.place.code) else null
-    val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
+    // Attribution only when a second passport is configured and it won. In partner mode
+    // the effective [secondVisa] is null and the pair's two rows replace attribution.
+    val combined = combinedRequirementOf(row.place.code)
+    val attributeTo = if (combined != null && combined.partner == null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
 
     Column(
         modifier
@@ -464,6 +496,7 @@ private fun VisaListRow(
                 row = row,
                 visa = visa,
                 secondVisa = secondVisa,
+                partner = combined?.partner,
                 nameOf = nameOf,
                 modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 8.dp),
             )
@@ -483,11 +516,13 @@ private fun VisaDetail(
     row: VisaRow,
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
+    partner: PartnerComparison?,
     nameOf: (String) -> String?,
     modifier: Modifier = Modifier,
 ) {
     val requirement = row.requirement
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        partner?.let { PartnerRows(it, Modifier.padding(bottom = 4.dp)) }
         requirement.note?.let { note ->
             Text(note, style = MaterialTheme.typography.bodyMedium)
         }

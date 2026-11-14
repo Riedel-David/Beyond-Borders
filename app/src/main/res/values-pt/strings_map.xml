@@ -127,4 +127,8 @@
     <string name="widget_cfg_preview_title">Tamanho da prévia</string>
     <string name="widget_cfg_add">Adicionar widget</string>
     <string name="map_quick_add">Adição rápida</string>
+
+    <string name="map_partner_mode">Modo parceiro</string>
+    <string name="map_legend_partner">Para onde vocês dois podem ir</string>
+    <string name="map_no_data_partner">Não há resposta para pelo menos um dos dois passaportes — consulte as fontes oficiais antes de viajar.</string>
 </resources>

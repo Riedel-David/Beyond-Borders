@@ -225,4 +225,9 @@
     <string name="review_later">Más tarde</string>
     <string name="review_never">No volver a preguntar</string>
     <string name="settings_rate_play">Valorar en Google Play</string>
+
+    <string name="settings_partner_passport">Pasaporte de tu pareja de viaje</string>
+    <string name="settings_add_partner_passport">Añadir pasaporte de la pareja</string>
+    <string name="settings_remove_partner_passport">Quitar pasaporte de la pareja</string>
+    <string name="settings_partner_hint">Así el mapa y la lista de visados muestran adónde podéis viajar fácilmente los dos. Cada pasaporte se considera por separado: la app no conoce los permisos de residencia ni las normas de la UE/Schengen para familiares.</string>
 </resources>

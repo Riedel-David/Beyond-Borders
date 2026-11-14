@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
@@ -147,7 +148,9 @@ import com.riedel.beyondborders.ui.theme.MapPalette
 import com.riedel.beyondborders.ui.theme.RegionRamp
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.ui.theme.VisaRamp
+import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.places.PartnerComparison
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -230,6 +233,8 @@ fun MapScreen(
     val visaBands by viewModel.visaBands.collectAsStateWithLifecycle()
     val visaNoData by viewModel.visaNoData.collectAsStateWithLifecycle()
     val lens by viewModel.visaLens.collectAsStateWithLifecycle()
+    val partnerMode by viewModel.partnerMode.collectAsStateWithLifecycle()
+    val partnerAvailable by viewModel.partnerAvailable.collectAsStateWithLifecycle()
     val regionMode by viewModel.regionMode.collectAsStateWithLifecycle()
     val regionBands by viewModel.regionBands.collectAsStateWithLifecycle()
     val places by viewModel.places.collectAsStateWithLifecycle()
@@ -438,6 +443,7 @@ fun MapScreen(
                             secondVisa,
                             noDataCount = visaNoData.size,
                             labeled = kind == MapLegendKind.VISA_LABELED,
+                            partnerMode = partnerMode,
                         )
                         MapLegendKind.REGION_OFFICIAL ->
                             RegionLegend(palette.region, palette.unvisited, RegionMode.OFFICIAL, stats)
@@ -561,7 +567,29 @@ fun MapScreen(
                         icon = painterResource(R.drawable.ic_tab_passport),
                         label = stringResource(R.string.map_lens_visa),
                         selected = MapControl.VISA in selectedControls,
-                        onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
+                        onClick = {
+                            viewModel.vibrate()
+                            // Partner mode is a way of reading the lens; leaving the lens with
+                            // it still on would leave the Visa list answering for two people
+                            // with no control on this screen to say so.
+                            if (lens) viewModel.setPartnerMode(false)
+                            viewModel.setVisaLens(!lens)
+                        },
+                    )
+                }
+                // Only when there is a partner passport to compare with. Turning it on also
+                // turns the lens on, since partner mode changes nothing on the travel colours.
+                if (visa != null && partnerAvailable) {
+                    MapControlItem(
+                        icon = rememberVectorPainter(Icons.Filled.Person),
+                        label = stringResource(R.string.map_partner_mode),
+                        selected = partnerMode && lens,
+                        onClick = {
+                            viewModel.vibrate()
+                            val on = !(partnerMode && lens)
+                            viewModel.setPartnerMode(on)
+                            if (on) viewModel.setVisaLens(true)
+                        },
                     )
                 }
                 // One item cycles all three states rather than three for one
@@ -677,7 +705,7 @@ fun MapScreen(
                 // uses (bandCodes unions both passports), so the card can never
                 // show an answer that contradicts the colour the place is drawn in.
                 val combined = if (lens) viewModel.combinedRequirementOf(place.code) else null
-                val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) {
+                val attributeTo = if (combined != null && combined.partner == null && !combined.fromPrimary && secondVisa != null) {
                     secondVisa!!.passport
                 } else {
                     null
@@ -704,6 +732,8 @@ fun MapScreen(
                     attributeTo = attributeTo,
                     noVisaData = lens && place.code in visaNoData,
                     hasSecondPassport = secondVisa != null,
+                    partnerComparison = combined?.partner,
+                    partnerActive = partnerMode,
                     // The visa lens is answering "can I go", not "have I been" — the
                     // travel-status chips are the other lens's question, and showing
                     // both on the same tap reads as if they're related.
@@ -1377,6 +1407,7 @@ private fun VisaLegend(
     secondVisa: VisaRegistry?,
     noDataCount: Int,
     labeled: Boolean,
+    partnerMode: Boolean = false,
 ) {
     // The combined bands, as painted: with two passports the primary's own counts
     // would leave a drawn band without a legend entry.
@@ -1454,6 +1485,13 @@ private fun VisaLegend(
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
+        }
+        if (partnerMode) {
+            Text(
+                stringResource(R.string.map_legend_partner),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         if (visa != null) {
             Text(
@@ -1661,6 +1699,8 @@ private fun SelectedPlaceCard(
     attributeTo: String?,
     noVisaData: Boolean,
     hasSecondPassport: Boolean,
+    partnerComparison: PartnerComparison?,
+    partnerActive: Boolean,
     showStatusToggle: Boolean,
     onToggle: (PlaceStatus) -> Unit,
     modifier: Modifier = Modifier,
@@ -1757,6 +1797,9 @@ private fun SelectedPlaceCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                partnerComparison?.let {
+                    PartnerRows(it, Modifier.padding(top = 4.dp))
+                }
                 if (requirement.confidence == VisaConfidence.LOW) {
                     Text(
                         stringResource(VisaConfidence.LOW.labelRes),
@@ -1771,7 +1814,11 @@ private fun SelectedPlaceCard(
                 // used to leave on both the map and the card.
                 Text(
                     stringResource(
-                        if (hasSecondPassport) R.string.map_no_data_either else R.string.map_no_data_this
+                        when {
+                            partnerActive -> R.string.map_no_data_partner
+                            hasSecondPassport -> R.string.map_no_data_either
+                            else -> R.string.map_no_data_this
+                        }
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
