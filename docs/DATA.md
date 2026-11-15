@@ -72,12 +72,31 @@ sovereign place has no dataset row for a passport unless it is a named gap
 (`SOVEREIGN_GAP_*`); and a passport with fewer than `MIN_DATASET_ROWS` (150) dataset
 answers is not shipped at all (Northern Cyprus, whose article gives one).
 
+### Publication for the app's updater
+
+The same workflow has a `publish` job that rebuilds the assets every Monday and deploys them to
+GitHub Pages (Settings > Pages > Source = "GitHub Actions"): `manifest.json` plus one
+`visa_<code>.json` per passport (the default passport's `visa.json` is published as `visa_de.json`),
+assembled by `tools/visa/make_site.py`. It publishes whether or not a data PR is open or merged, so
+installed apps are current without a release. It refuses to publish unless every file parses, names
+its passport and has requirements, and at least 150 passports are present. The manifest's
+`dataFormat` must be bumped together with any change to the shape of a visa file.
+
+The app side lives in `app/src/main/java/com/riedel/beyondborders/data/visa/update/`; the manifest's
+`dataFormat` is checked against `SUPPORTED_DATA_FORMAT` in `VisaUpdate.kt`. Pages must be set to
+Source = GitHub Actions and the workflow run once (Actions tab, "Run workflow" on main) before a release,
+or the app has nothing to fetch. The publish job rebuilds from upstream independently of the data PR, so
+published data can be newer than what is on main until the PR merges. That is intentional: ship as
+published, no app-side curation. `visa-freshness.yml` also checks the published `manifest.json` (reachable,
+versions 1, generated within 10 days, at least 150 passports).
+
 ### Is a newer snapshot out?
 
 `.github/workflows/visa-freshness.yml` runs every Monday, and on demand from the Actions
 tab. It downloads the dataset's `index.json` and opens an issue (one per kind of problem, with a fixed title
 per kind, none while one of that kind is open) only when a passport is added or removed upstream, the index
-`schema_version` major changes, or the index cannot be fetched or read. Wikipedia
+`schema_version` major changes, the index cannot be fetched or read, or the published
+site's manifest is missing, older than 10 days, from another format version or has fewer than 150 passports. Wikipedia
 revision drift (`source_revision` against `dataset.sourceRevision` in `visa*.json`) is
 expected weekly and is only listed in the job summary. It changes nothing in the repo;
 the weekly pull request above carries the data itself.
