@@ -227,5 +227,5 @@
     <string name="settings_partner_passport">Travel partner passport</string>
     <string name="settings_add_partner_passport">Add partner passport</string>
     <string name="settings_remove_partner_passport">Remove partner passport</string>
-    <string name="settings_partner_hint">Lets the map and the Visa list show where you both can travel easily. It uses each passport on its own: residence permits and EU/Schengen family-member rules are not known to the app.</string>
+    <string name="settings_partner_hint">Lets the map and the Visa list show where you both can travel easily. Only one partner passport can be entered, so pick the one that is least restrictive for the trip; a second passport is not combined with it. Residence permits and EU/Schengen family-member rules are not known to the app.</string>
 </resources>

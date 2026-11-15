@@ -229,5 +229,5 @@
     <string name="settings_partner_passport">Reisepass der Reisebegleitung</string>
     <string name="settings_add_partner_passport">Reisepass der Begleitung hinzufügen</string>
     <string name="settings_remove_partner_passport">Reisepass der Begleitung entfernen</string>
-    <string name="settings_partner_hint">Damit zeigen Karte und Visa-Liste, wohin ihr beide leicht reisen könnt. Jeder Reisepass wird für sich betrachtet: Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums kennt die App nicht.</string>
+    <string name="settings_partner_hint">Damit zeigen Karte und Visa-Liste, wohin ihr beide leicht reisen könnt. Es lässt sich nur ein Partner-Reisepass eintragen, nimm den, der für die Reise am wenigsten restriktiv ist; ein zweiter Pass wird nicht dazugerechnet. Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums kennt die App nicht.</string>
 </resources>

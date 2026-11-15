@@ -57,6 +57,8 @@
     <string name="visa_empty_query">Нет направлений по запросу «%1$s».</string>
     <string name="visa_empty_filter">Нет направлений для фильтра «%1$s».</string>
     <string name="visa_empty_nothing">Ничего не найдено.</string>
+    <string name="visa_empty_wishlist">Добавьте места в список желаний.</string>
+    <string name="visa_empty_wishlist_filter">Ни одно место из списка желаний не подходит под фильтр «%1$s».</string>
     <string name="visa_unavailable_title">Нет визовых данных</string>
     <string name="visa_unavailable_body">Встроенный список виз не удалось прочитать, поэтому в этом режиме нечего показать. На твою карту поездок это не влияет.</string>
 

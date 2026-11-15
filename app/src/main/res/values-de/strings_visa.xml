@@ -55,6 +55,8 @@
     <string name="visa_empty_query">Keine Reiseziele zu „%1$s".</string>
     <string name="visa_empty_filter">Keine Reiseziele im Filter „%1$s".</string>
     <string name="visa_empty_nothing">Nichts gefunden.</string>
+    <string name="visa_empty_wishlist">Orte zur Wunschliste hinzufügen.</string>
+    <string name="visa_empty_wishlist_filter">Keine Wunschlisten-Orte im Filter „%1$s".</string>
     <string name="visa_unavailable_title">Keine Visumdaten</string>
     <string name="visa_unavailable_body">Die mitgelieferte Visumliste konnte nicht gelesen werden, daher gibt es in diesem Modus nichts anzuzeigen. Die Reisekarte ist nicht betroffen.</string>
 

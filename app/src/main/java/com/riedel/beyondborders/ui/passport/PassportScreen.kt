@@ -125,7 +125,6 @@ import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.StatusFilter
-import com.riedel.beyondborders.ui.places.offerWishlistVisaFree
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.sectionHeader
 import com.riedel.beyondborders.ui.places.visaFilters
@@ -176,6 +175,7 @@ fun PassportScreen(
     val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
     val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
+    val wishlistOnly by viewModel.wishlistOnly.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val wishlistEasyText by viewModel.wishlistEasyText.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
@@ -216,6 +216,14 @@ fun PassportScreen(
     // Declared above the stats early return so leaving and re-entering the stats
     // detail does not throw the list's scroll position away with the composition slot.
     val listState = rememberLazyListState()
+
+    // A different mode or filter is a different list, so the old offset points at nothing
+    // meaningful. The first run is skipped so a return to this tab (or from the stats detail)
+    // keeps its position; the flag is per composition, which is exactly that boundary.
+    var scrollResetArmed by remember { mutableStateOf(false) }
+    LaunchedEffect(mode, statusFilter, visaFilter, wishlistOnly) {
+        if (scrollResetArmed) listState.scrollToItem(0) else scrollResetArmed = true
+    }
 
     if (showStatsDetail) {
         // Not a real back-stack entry — just this boolean — so without this the
@@ -303,6 +311,9 @@ fun PassportScreen(
                 rows = visaRows,
                 filter = visaFilter,
                 filters = filters,
+                wishlistOnly = wishlistOnly,
+                wishlistEmpty = statuses.values.none { it == PlaceStatus.WISHLIST },
+                onWishlistOnly = viewModel::setWishlistOnly,
                 query = query,
                 // The same selection the map's card uses. Sharing it is what makes a
                 // row you opened here the country still selected when you switch to
@@ -382,25 +393,11 @@ fun PassportScreen(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    StatusFilter.entries.filter { it != StatusFilter.WISHLIST_VISA_FREE }.forEach { filter ->
+                    StatusFilter.entries.forEach { filter ->
                         FilterChip(
                             selected = filter == statusFilter,
                             onClick = { viewModel.setStatusFilter(filter) },
                             label = { Text(filter.text.asString()) },
-                        )
-                    }
-                    // Stays while selected, so a filter cannot become invisible (and
-                    // unclearable) when the last Want-to place is unticked.
-                    if (offerWishlistVisaFree(visa, statuses) || statusFilter == StatusFilter.WISHLIST_VISA_FREE) {
-                        FilterChip(
-                            selected = statusFilter == StatusFilter.WISHLIST_VISA_FREE,
-                            onClick = {
-                                viewModel.setStatusFilter(
-                                    if (statusFilter == StatusFilter.WISHLIST_VISA_FREE) StatusFilter.ALL
-                                    else StatusFilter.WISHLIST_VISA_FREE
-                                )
-                            },
-                            label = { Text(StatusFilter.WISHLIST_VISA_FREE.text.asString()) },
                         )
                     }
                 }
@@ -548,7 +545,10 @@ internal fun SearchField(
                     focusManager.clearFocus()
                     keyboard?.hide()
                 }),
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .semantics { contentDescription = label },
             )
         }
         if (query.isNotEmpty()) {
@@ -560,7 +560,18 @@ internal fun SearchField(
         // are both provided. Opens a dropdown menu with the three grouping options.
         if (grouping != null && onGrouping != null) {
             Box {
-                IconButton(onClick = { dropdownExpanded = true }) {
+                val groupingName = stringResource(
+                    when (grouping) {
+                        Grouping.CONTINENT -> R.string.passport_group_continent
+                        Grouping.REGION -> R.string.passport_group_region
+                        Grouping.ALPHABETICAL -> R.string.passport_group_alphabetical
+                    }
+                )
+                IconButton(
+                    onClick = { dropdownExpanded = true },
+                    // "Group list, Continent": the button's name alone does not say what the list is grouped by now.
+                    modifier = Modifier.semantics { stateDescription = groupingName },
+                ) {
                     Icon(SortIcon, contentDescription = stringResource(R.string.passport_group_list))
                 }
                 DropdownMenu(

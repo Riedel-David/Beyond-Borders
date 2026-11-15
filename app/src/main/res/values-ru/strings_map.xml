@@ -89,13 +89,12 @@
     <string name="places_filter_been">Был(а)</string>
     <string name="places_filter_lived">Жил(а)</string>
     <string name="places_filter_want">Хочу</string>
-    <string name="places_filter_wishlist_visa_free">Хочу побывать, без визы для меня</string>
     <string name="places_filter_none">Пока нет</string>
     <string name="places_mode_travel">Где я был(а)</string>
     <string name="places_mode_visa">Куда я могу поехать</string>
     <string name="places_visa_filter_all">Все</string>
     <string name="places_visa_filter_easy">Без посольства</string>
-    <string name="places_visa_filter_wishlist_easy">Желания: легко</string>
+    <string name="places_visa_filter_wishlist">Мой список желаний</string>
     <string name="places_visa_filter_long_stay">90+ дней</string>
     <string name="places_section_uninhabited">Необитаемые</string>
     <plurals name="places_nudge">

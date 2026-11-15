@@ -53,6 +53,8 @@
     <string name="visa_empty_query">No destinations match “%1$s”.</string>
     <string name="visa_empty_filter">No destinations match the “%1$s” filter.</string>
     <string name="visa_empty_nothing">Nothing matches.</string>
+    <string name="visa_empty_wishlist">Add places to your wishlist.</string>
+    <string name="visa_empty_wishlist_filter">No wishlist places match the “%1$s” filter.</string>
     <string name="visa_unavailable_title">No visa data</string>
     <string name="visa_unavailable_body">The bundled visa list could not be read, so this mode has nothing to show. Your travel map is unaffected.</string>
 

@@ -39,6 +39,27 @@ class VisaSectionTest {
     }
 
     @Test
+    fun `an empty wishlist is named when the wishlist toggle is on`() {
+        assertEquals(
+            UiText.Res(R.string.visa_empty_wishlist),
+            visaEmptyMessage(query = "", filter = VisaFilter.Easy, wishlistOnly = true, wishlistEmpty = true),
+        )
+    }
+
+    @Test
+    fun `a non-empty wishlist that the filter empties names the filter`() {
+        assertEquals(
+            UiText.Res(R.string.visa_empty_wishlist_filter, VisaFilter.Easy.text),
+            visaEmptyMessage(query = "", filter = VisaFilter.Easy, wishlistOnly = true, wishlistEmpty = false),
+        )
+    }
+
+    @Test
+    fun `clear is offered when only the wishlist toggle is on`() {
+        assertTrue(canClearVisaFilter(query = "", filter = VisaFilter.All, wishlistOnly = true))
+    }
+
+    @Test
     fun `nothing matches is the fallback with no query or filter active`() {
         assertEquals(UiText.Res(R.string.visa_empty_nothing), visaEmptyMessage(query = "", filter = VisaFilter.All))
     }

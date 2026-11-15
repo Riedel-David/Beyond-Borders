@@ -55,6 +55,8 @@
     <string name="visa_empty_query">Nenhum destino corresponde a “%1$s”.</string>
     <string name="visa_empty_filter">Nenhum destino corresponde ao filtro “%1$s”.</string>
     <string name="visa_empty_nothing">Nada corresponde.</string>
+    <string name="visa_empty_wishlist">Adicione lugares à sua lista de desejos.</string>
+    <string name="visa_empty_wishlist_filter">Nenhum lugar da sua lista de desejos corresponde ao filtro “%1$s”.</string>
     <string name="visa_unavailable_title">Sem dados de visto</string>
     <string name="visa_unavailable_body">Não foi possível ler a lista de vistos incluída no app, então este modo não tem o que mostrar. Seu mapa de viagens não é afetado.</string>
 

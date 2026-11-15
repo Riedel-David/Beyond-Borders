@@ -84,13 +84,12 @@
     <string name="places_filter_been">Been</string>
     <string name="places_filter_lived">Lived</string>
     <string name="places_filter_want">Want</string>
-    <string name="places_filter_wishlist_visa_free">Wishlist, visa-free for me</string>
     <string name="places_filter_none">Not yet</string>
     <string name="places_mode_travel">Where I\'ve been</string>
     <string name="places_mode_visa">Where I can go</string>
     <string name="places_visa_filter_all">All</string>
     <string name="places_visa_filter_easy">No embassy</string>
-    <string name="places_visa_filter_wishlist_easy">Wishlist, easy</string>
+    <string name="places_visa_filter_wishlist">My wishlist</string>
     <string name="places_visa_filter_long_stay">90+ days</string>
     <string name="places_section_uninhabited">Uninhabited</string>
     <plurals name="places_nudge">

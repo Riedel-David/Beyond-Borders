@@ -85,15 +85,14 @@
     <!-- Passport filters and stats lines built in PlacesViewModel -->
     <string name="places_filter_all">Tous</string>
     <string name="places_filter_been">Visités</string>
-    <string name="places_filter_lived">Habités</string>
+    <string name="places_filter_lived">Vécus</string>
     <string name="places_filter_want">Envies</string>
-    <string name="places_filter_wishlist_visa_free">Envies, sans visa pour moi</string>
     <string name="places_filter_none">Pas encore</string>
     <string name="places_mode_travel">Où je suis allé</string>
     <string name="places_mode_visa">Où je peux aller</string>
     <string name="places_visa_filter_all">Tous</string>
     <string name="places_visa_filter_easy">Sans démarche</string>
-    <string name="places_visa_filter_wishlist_easy">Envies sans démarche</string>
+    <string name="places_visa_filter_wishlist">Mes envies</string>
     <string name="places_visa_filter_long_stay">90+ jours</string>
     <string name="places_section_uninhabited">Sans habitants</string>
     <plurals name="places_nudge">
