@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?><!--
    The downloaded visa files live in noBackupFilesDir/visa, which Auto Backup never
    includes, so they need no exclusion here: a reinstall starts from the bundled assets.
+   WorkManager's own database (androidx.work.workdb and its -wal/-shm) is a different
+   matter: it sits in databases/ and would be restored, so it is excluded below. Its
+   schedule is re-created on every launch.
 
    Auto Backup on API 26-30; data_extraction_rules.xml is the same decision for 31+.
 
@@ -30,6 +33,9 @@
     <exclude domain="database" path="beyondborders.db-wal"/>
     <exclude domain="database" path="beyondborders.db-shm"/>
     <exclude domain="sharedpref" path="beyondborders.settings.xml"/>
+    <exclude domain="database" path="androidx.work.workdb"/>
+    <exclude domain="database" path="androidx.work.workdb-wal"/>
+    <exclude domain="database" path="androidx.work.workdb-shm"/>
     <exclude domain="sharedpref" path="widget_prefs.xml"/>
     <exclude domain="sharedpref" path="beyondborders.device.xml"/>
 </full-backup-content>

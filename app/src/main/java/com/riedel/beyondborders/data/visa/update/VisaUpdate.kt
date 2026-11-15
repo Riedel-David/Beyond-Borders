@@ -104,7 +104,8 @@ internal fun runUpdate(
             val bytes = fetcher.fetch(entry.file, MAX_FILE_BYTES)
             val inUse = newestInUse(storedAsOf[code], bundledAsOf(code), now)
             if (verifyDownload(bytes, entry, code, inUse, now) != null) continue
-            store.write(code, bytes)
+            // A disk error here is ours, not the network's: skip the passport, no retry.
+            if (runCatching { store.write(code, bytes) }.isFailure) continue
             applied += code
             if (appliedAsOf == null || entry.asOf > appliedAsOf) appliedAsOf = entry.asOf
         } catch (e: IOException) {
@@ -181,13 +182,14 @@ internal fun planFetches(
 ): FetchPlan {
     val fetch = (wanted + stored.keys).filter { code ->
         val entry = manifest.passports[code] ?: return@filter false
-        val inUse = newestInUse(stored[code], bundledAsOf(code), today)
-        inUse == null || entry.asOf > inUse
+        // Only passports the app already ships are improved; no bundled asset, no fetch.
+        val bundled = bundledAsOf(code) ?: return@filter false
+        entry.asOf > newestInUse(stored[code], bundled, today)!!
     }.sorted()
     val latest = latestAllowed(today)
     val delete = stored.filter { (code, asOf) ->
         val bundled = bundledAsOf(code)
-        code !in manifest.listed ||
+        code !in manifest.listed || bundled == null ||
             asOf == null || asOf > latest || (bundled != null && !shouldUse(asOf, bundled))
     }.keys.sorted()
     return FetchPlan(fetch, delete)
@@ -227,6 +229,9 @@ internal fun preferStored(bundled: VisaRegistry, today: () -> String = ::todayUt
 } catch (e: Exception) {
     bundled
 }
+
+/** Timeouts, throttling and server errors may pass; any other 4xx is final. */
+internal fun isRetryableStatus(status: Int): Boolean = status == 408 || status == 429 || status >= 500
 
 internal fun isHttps(url: String): Boolean = url.startsWith("https://", ignoreCase = true)
 

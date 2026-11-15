@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui.settings
 
 import android.icu.text.ListFormatter
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -445,7 +446,10 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = viewModel::checkVisaNow) { Text(stringResource(R.string.settings_visa_check_now)) }
+                TextButton(onClick = {
+                    Toast.makeText(context, R.string.settings_visa_checking, Toast.LENGTH_SHORT).show()
+                    viewModel.checkVisaNow()
+                }) { Text(stringResource(R.string.settings_visa_check_now)) }
             }
         }
 

@@ -13,6 +13,7 @@ class VisaUpdateTest {
 
     private val TODAY = "2026-11-15"
     private val noBundled: (String) -> String? = { null }
+    private val oldBundle: (String) -> String? = { "2026-01-01" }
 
     private fun probe(): String = File("src/main/assets/visa.json").readText()
 
@@ -84,33 +85,33 @@ class VisaUpdateTest {
 
     @Test
     fun `wanted passports in the manifest are fetched and others skipped`() {
-        val plan = planFetches(manifest, setOf("DE", "ZZ"), emptyMap(), noBundled, TODAY)
+        val plan = planFetches(manifest, setOf("DE", "ZZ"), emptyMap(), oldBundle, TODAY)
         assertEquals(listOf("DE"), plan.fetch)
         assertTrue(plan.delete.isEmpty())
     }
 
     @Test
     fun `a stored passport missing from the manifest is deleted`() {
-        val plan = planFetches(manifest, setOf("DE"), mapOf("US" to "2026-01-01"), noBundled, TODAY)
+        val plan = planFetches(manifest, setOf("DE"), mapOf("US" to "2026-01-01"), oldBundle, TODAY)
         assertEquals(listOf("US"), plan.delete)
         assertFalse("US" in plan.fetch)
     }
 
     @Test
     fun `a stored passport is refreshed even when no longer wanted`() {
-        val plan = planFetches(manifest, emptySet(), mapOf("FR" to "2026-01-01"), noBundled, TODAY)
+        val plan = planFetches(manifest, emptySet(), mapOf("FR" to "2026-01-01"), oldBundle, TODAY)
         assertEquals(listOf("FR"), plan.fetch)
     }
 
     @Test
     fun `a stored copy that is already current is not fetched again`() {
-        val plan = planFetches(manifest, setOf("FR"), mapOf("FR" to "2026-11-11"), noBundled, TODAY)
+        val plan = planFetches(manifest, setOf("FR"), mapOf("FR" to "2026-11-11"), oldBundle, TODAY)
         assertTrue(plan.fetch.isEmpty())
     }
 
     @Test
     fun `an unparseable stored copy is fetched again`() {
-        val plan = planFetches(manifest, emptySet(), mapOf("FR" to null), noBundled, TODAY)
+        val plan = planFetches(manifest, emptySet(), mapOf("FR" to null), oldBundle, TODAY)
         assertEquals(listOf("FR"), plan.fetch)
     }
 
@@ -271,7 +272,7 @@ class VisaUpdateTest {
         files["visa_fr.json"] = json("FR", "2026-11-11").also { it[0] = ' '.code.toByte() }
         val old = json("FR", "2026-01-01")
         val store = FakeStore(mapOf("FR" to old))
-        val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { null }, { TODAY })
+        val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { "2025-01-01" }, { TODAY })
         assertTrue(r.applied.isEmpty())
         assertTrue(store.read("FR")!!.contentEquals(old))
     }
@@ -279,7 +280,7 @@ class VisaUpdateTest {
     @Test
     fun `a failed file fetch is reported as a retry but other passports still apply`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11"), failing = setOf("visa_fr.json")), store, setOf("FR", "US"), { null }, { TODAY })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11"), failing = setOf("visa_fr.json")), store, setOf("FR", "US"), oldBundle, { TODAY })
         assertTrue(r.ioFailure)
         assertEquals(listOf("US"), r.applied)
     }
@@ -292,7 +293,7 @@ class VisaUpdateTest {
         val m = parseManifest(manifestJson(mapOf("FR" to entryFor(b, "FR", "2030-01-01"))), TODAY)!!
         assertTrue(m.passports.isEmpty())
         assertEquals(setOf("FR"), m.listed)
-        val plan = planFetches(m, setOf("FR"), mapOf("FR" to "2026-11-01"), noBundled, TODAY)
+        val plan = planFetches(m, setOf("FR"), mapOf("FR" to "2026-11-01"), oldBundle, TODAY)
         assertTrue(plan.fetch.isEmpty())
         assertTrue(plan.delete.isEmpty())
     }
@@ -333,7 +334,7 @@ class VisaUpdateTest {
     fun `a malformed manifest entry keeps the stored copy`() {
         val raw = """{"manifestVersion":1,"dataFormat":1,"passports":{"FR":{"file":"nope"}}}"""
         val m = parseManifest(raw, TODAY)!!
-        val plan = planFetches(m, setOf("FR"), mapOf("FR" to "2026-11-01"), noBundled, TODAY)
+        val plan = planFetches(m, setOf("FR"), mapOf("FR" to "2026-11-01"), oldBundle, TODAY)
         assertTrue(plan.delete.isEmpty())
         assertTrue(plan.fetch.isEmpty())
     }
@@ -364,6 +365,34 @@ class VisaUpdateTest {
         } finally {
             dir.deleteRecursively()
         }
+    }
+
+    @Test
+    fun `408 429 and 5xx are retryable while other 4xx are final`() {
+        listOf(408, 429, 500, 503).forEach { assertTrue(it.toString(), isRetryableStatus(it)) }
+        listOf(400, 403, 404, 410).forEach { assertFalse(it.toString(), isRetryableStatus(it)) }
+    }
+
+    @Test
+    fun `a passport with no bundled asset is neither fetched nor kept`() {
+        val plan = planFetches(manifest, setOf("FR"), mapOf("DE" to "2026-11-01"), { if (it == "DE") "2026-01-01" else null }, TODAY)
+        assertFalse("FR" in plan.fetch)
+        val orphan = planFetches(manifest, emptySet(), mapOf("FR" to "2026-11-01"), noBundled, TODAY)
+        assertEquals(listOf("FR"), orphan.delete)
+    }
+
+    @Test
+    fun `a failing disk write is skipped and does not ask for a retry`() {
+        val failing = object : VisaStore {
+            override fun codes() = emptySet<String>()
+            override fun read(code: String): ByteArray? = null
+            override fun write(code: String, bytes: ByteArray) = throw IOException("disk full")
+            override fun delete(code: String) = Unit
+        }
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11")), failing, setOf("FR", "US"), oldBundle, { TODAY })
+        assertFalse(r.ioFailure)
+        assertTrue(r.manifestSeen)
+        assertTrue(r.applied.isEmpty())
     }
 
     // --- FileVisaStore ---------------------------------------------------------

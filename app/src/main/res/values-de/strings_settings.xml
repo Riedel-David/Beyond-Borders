@@ -93,7 +93,8 @@
     <string name="settings_restore_button">Aus Android-Sicherung wiederherstellen</string>
     <string name="settings_restore_detail">Die Android-Sicherung hat einen Schnappschuss des Verlaufs auf diesem Handy hinterlassen. Das Wiederherstellen führt ihn zusammen, genau wie der Import einer Datei.</string>
     <string name="settings_visa_title">Visa-Daten</string>
-    <string name="settings_visa_detail">Lädt kleine Dateien von GitHub herunter, es werden keine persönlichen Daten gesendet. Automatische Prüfungen laufen nur im WLAN oder in einem anderen unbegrenzten Netz. Neue Daten gelten ab dem nächsten Start der App.</string>
+    <string name="settings_visa_detail">Lädt kleine Dateien von GitHub herunter, es werden keine persönlichen Daten gesendet. Automatische Prüfungen laufen nur im WLAN oder in einem anderen unbegrenzten Netz. Neue Daten gelten, sobald die App vollständig beendet und neu geöffnet wurde.</string>
+    <string name="settings_visa_checking">Suche nach Visa-Daten …</string>
     <string name="settings_visa_auto">Visa-Daten automatisch aktualisieren</string>
     <string name="settings_visa_last_checked">Zuletzt geprüft: %1$s</string>
     <string name="settings_visa_last_checked_never">Zuletzt geprüft: nie</string>

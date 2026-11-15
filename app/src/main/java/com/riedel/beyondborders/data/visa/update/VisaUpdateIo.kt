@@ -78,9 +78,11 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
             conn.readTimeout = NETWORK_TIMEOUT_MS
             conn.useCaches = false
             val status = conn.responseCode
-            // 4xx will not fix itself on a retry; timeouts and 5xx might.
-            if (status in 400..499) throw VisaFetchRejected("HTTP $status")
-            if (status != HttpURLConnection.HTTP_OK) throw IOException("HTTP $status")
+            // Most 4xx will not fix themselves on a retry; 408, 429, timeouts and 5xx might.
+            if (status != HttpURLConnection.HTTP_OK) {
+                if (status in 400..499 && !isRetryableStatus(status)) throw VisaFetchRejected("HTTP $status")
+                throw IOException("HTTP $status")
+            }
             if (!isHttps(conn.url.toString())) throw VisaFetchRejected("redirected off https")
             if (conn.contentLengthLong > maxBytes) throw VisaFetchRejected("too large")
             conn.inputStream.use { input ->
@@ -100,6 +102,9 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
     }
 }
 
+/** Marks the user-initiated request, which is never retried. */
+const val ONCE_TAG = "visa-update-once"
+
 class VisaUpdateWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -115,9 +120,9 @@ class VisaUpdateWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 },
             )
             if (result.changed) container.visa.invalidate()
-            result.appliedAsOf?.let(settings::setVisaLastAppliedAsOf)
             if (result.manifestSeen) settings.setVisaLastCheckAt(System.currentTimeMillis())
-            if (result.ioFailure) Result.retry() else Result.success()
+            // A one-time check is the user's tap: no surprise retry an hour later.
+            if (result.ioFailure && ONCE_TAG !in tags) Result.retry() else Result.success()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -144,7 +149,9 @@ class WorkManagerVisaScheduling(context: Context) : VisaUpdateScheduling {
     override fun sync(enabled: Boolean) {
         val wm = WorkManager.getInstance(appContext)
         if (!enabled) {
+            // Off means no network requests, including a Check now still queued.
             wm.cancelUniqueWork(PERIODIC_NAME)
+            wm.cancelUniqueWork(ONCE_NAME)
             return
         }
         val request = PeriodicWorkRequestBuilder<VisaUpdateWorker>(7, TimeUnit.DAYS)
@@ -156,10 +163,11 @@ class WorkManagerVisaScheduling(context: Context) : VisaUpdateScheduling {
 
     override fun checkNow() {
         val request = OneTimeWorkRequestBuilder<VisaUpdateWorker>()
+            .addTag(ONCE_TAG)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
             .build()
-        WorkManager.getInstance(appContext).enqueueUniqueWork(ONCE_NAME, ExistingWorkPolicy.REPLACE, request)
+        WorkManager.getInstance(appContext).enqueueUniqueWork(ONCE_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
     private companion object {
