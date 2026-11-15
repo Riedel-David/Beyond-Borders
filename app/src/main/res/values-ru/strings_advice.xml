@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="advice_link">Проверить актуальные рекомендации для путешественников</string>
+    <string name="advice_link">Проверить рекомендации для путешественников правительства Великобритании (FCDO)</string>
     <string name="advice_note">Откроет внешний сайт в браузере. Само приложение остаётся офлайн.</string>
     <string name="advice_no_browser">Не найден браузер для открытия ссылки.</string>
 </resources>

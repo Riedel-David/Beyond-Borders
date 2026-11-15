@@ -163,6 +163,7 @@ fun PassportScreen(
     val query by viewModel.query.collectAsStateWithLifecycle()
     val partnerAvailable by viewModel.partnerAvailable.collectAsStateWithLifecycle()
     val partnerMode by viewModel.partnerMode.collectAsStateWithLifecycle()
+    val partnerSources by viewModel.partnerSources.collectAsStateWithLifecycle()
     val grouping by viewModel.grouping.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
@@ -315,6 +316,7 @@ fun PassportScreen(
                 partnerAvailable = partnerAvailable,
                 partnerMode = partnerMode,
                 onPartnerMode = viewModel::setPartnerMode,
+                partnerSources = partnerSources,
             )
             return@LazyColumn
         }

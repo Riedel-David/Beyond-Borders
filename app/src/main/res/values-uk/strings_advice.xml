@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="advice_link">Перевірити актуальні рекомендації для мандрівників</string>
+    <string name="advice_link">Перевірити рекомендації для мандрівників уряду Великобританії (FCDO)</string>
     <string name="advice_note">Відкриє зовнішній сайт у браузері. Сам застосунок залишається офлайн.</string>
     <string name="advice_no_browser">Не знайдено браузера для відкриття посилання.</string>
 </resources>

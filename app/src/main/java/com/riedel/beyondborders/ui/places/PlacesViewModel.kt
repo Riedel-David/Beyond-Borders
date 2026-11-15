@@ -291,13 +291,22 @@ class PlacesViewModel(
     private val viewVisas: StateFlow<VisaViews> =
         combine(_visa, _secondVisa, _partnerVisa, _partnerMode) { visa, second, partner, mode ->
             val (v, s) = visaViews(visa, second, partner, mode)
-            VisaViews(v, s, partner.takeIf { mode && visa != null })
+            VisaViews(
+                v, s,
+                partner.takeIf { mode && visa != null },
+                if (mode && visa != null && partner != null) PartnerSources(visa, second, partner) else null,
+            )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, VisaViews(null, null, null))
 
     val visa: StateFlow<VisaRegistry?> =
         viewVisas.map { it.visa }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val secondVisa: StateFlow<VisaRegistry?> =
         viewVisas.map { it.second }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The real registries behind the pair while partner mode is on, for credit and per-row
+     * links: [visa] then carries only the user's metadata. Null otherwise. */
+    internal val partnerSources: StateFlow<PartnerSources?> =
+        viewVisas.map { it.sources }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
@@ -557,14 +566,17 @@ class PlacesViewModel(
                 if (_partnerVisa.value == null) setPartnerMode(false)
             }
         }
+        // The categories on offer change whenever any registry behind the view does (the
+        // mode flipping, a passport switched in Settings, a partner added), and a selected
+        // chip the new list lacks would leave an empty list with nothing to explain it.
+        // One collector on the view, so the pair registry is built once per change.
+        viewModelScope.launch {
+            viewVisas.collect { _visaFilter.value = revalidatedFilter(_visaFilter.value, it) }
+        }
     }
 
-    /** Switching partner mode changes which categories exist, so a selected chip that
-     * the new list does not offer would leave an empty list with nothing to explain it. */
     fun setPartnerMode(value: Boolean) {
-        _partnerMode.value = value
-        val (v, s) = visaViews(_visa.value, _secondVisa.value, _partnerVisa.value, value)
-        _visaFilter.value = filterOrAll(_visaFilter.value, visaFilters(v, s))
+        if (_partnerMode.value != value) _partnerMode.value = value
     }
 
     fun setQuery(value: String) { _query.value = value }
@@ -576,15 +588,13 @@ class PlacesViewModel(
 
     fun setVisaLens(value: Boolean) {
         _visaLens.value = value
-        if (value) _regionMode.value = RegionMode.OFF else setPartnerMode(false)
+        if (value) _regionMode.value = RegionMode.OFF
     }
 
     fun setRegionMode(value: RegionMode) {
         _regionMode.value = value
         if (value != RegionMode.OFF) {
             _visaLens.value = false
-            // Partner mode is a way of reading the lens; it does not outlive it.
-            setPartnerMode(false)
         }
     }
 
@@ -1123,10 +1133,36 @@ data class CombinedRequirement(
     val fromPrimary: Boolean,
     /** Set only by partner mode: both people's answers and who limits the pair. */
     val partner: PartnerComparison? = null,
-)
+) {
+    /**
+     * Whether a dual-passport comparison was won by the second passport, the only case
+     * that needs attributing to it. Always false in partner mode, where [fromPrimary]
+     * only says whose answer limits the pair and there is no second passport to credit.
+     */
+    val secondWon: Boolean get() = partner == null && !fromPrimary
+}
 
 /** What the visa surfaces read: the registries to show, and the partner's when partner mode is in force. */
-internal data class VisaViews(val visa: VisaRegistry?, val second: VisaRegistry?, val partner: VisaRegistry?)
+internal data class VisaViews(
+    val visa: VisaRegistry?,
+    val second: VisaRegistry?,
+    val partner: VisaRegistry?,
+    val sources: PartnerSources? = null,
+)
+
+/** The three real registries behind a partner-mode view, which all need crediting. */
+internal data class PartnerSources(val you: VisaRegistry, val second: VisaRegistry?, val partner: VisaRegistry) {
+    val all: List<VisaRegistry> get() = listOfNotNull(you, second, partner)
+    val own: List<VisaRegistry> get() = listOfNotNull(you, second)
+}
+
+/** The registry a row's links and credit come from: the partner's where their answer limits the pair. */
+internal fun rowSource(visa: VisaRegistry, sources: PartnerSources?, comparison: PartnerComparison?): VisaRegistry =
+    if (sources != null && comparison?.blocker == PartnerBlocker.PARTNER) sources.partner else visa
+
+/** The chip to keep after the registries behind [views] changed: the selected one if still offered, else All. */
+internal fun revalidatedFilter(selected: VisaFilter, views: VisaViews): VisaFilter =
+    filterOrAll(selected, visaFilters(views.visa, views.second))
 
 /** The selected chip if the new list still offers it, otherwise back to All. */
 internal fun filterOrAll(selected: VisaFilter, offered: List<VisaFilter>): VisaFilter =
@@ -1188,8 +1224,9 @@ internal fun combineRequirements(
  * `maxBy`: an unknown ([VisaCategory.CHECK]) on either side makes the result CHECK, since
  * ordinal alone would let a definite refusal or permit on the other side hide it and
  * claim a certainty the data does not have; and when the categories tie but both state
- * days and they differ, the shorter stay is shown, as the stay the pair can count on.
- * Ties of every other kind go to [you]. The winning requirement is returned whole, never
+ * days and they differ, the shorter stay is shown, as the stay the pair can count on. A
+ * stated limit is stricter than none, so 30 days against an unstated stay shows the 30,
+ * either way round; only two unstated or two equal limits are a tie, which goes to [you]. The winning requirement is returned whole, never
  * synthesized, so its note and source belong to the passport that sets the answer.
  *
  * Null when either side has no answer: one person's unknown cannot make a place "easy
@@ -1205,12 +1242,19 @@ internal fun combineForPartners(you: VisaRequirement?, partner: VisaRequirement?
         partnerCheck -> PartnerBlocker.PARTNER
         you.category.ordinal != partner.category.ordinal ->
             if (you.category.ordinal > partner.category.ordinal) PartnerBlocker.YOU else PartnerBlocker.PARTNER
-        you.days != null && partner.days != null && you.days != partner.days ->
-            if (you.days < partner.days) PartnerBlocker.YOU else PartnerBlocker.PARTNER
-        else -> PartnerBlocker.NEITHER
+        else -> stricterStay(you.days, partner.days)
     }
     val winner = if (blocker == PartnerBlocker.PARTNER) partner else you
     return CombinedRequirement(winner, fromPrimary = blocker != PartnerBlocker.PARTNER, PartnerComparison(you, partner, blocker))
+}
+
+/** Who the shorter stay belongs to: a stated limit beats an unstated one, equal (or both unstated) is neither. */
+private fun stricterStay(you: Int?, partner: Int?): PartnerBlocker = when {
+    you == partner -> PartnerBlocker.NEITHER
+    you == null -> PartnerBlocker.PARTNER
+    partner == null -> PartnerBlocker.YOU
+    you < partner -> PartnerBlocker.YOU
+    else -> PartnerBlocker.PARTNER
 }
 
 /**

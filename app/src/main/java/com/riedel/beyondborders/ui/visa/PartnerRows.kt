@@ -24,7 +24,7 @@ import com.riedel.beyondborders.ui.places.PartnerComparison
  * promise.
  */
 @Composable
-fun PartnerRows(comparison: PartnerComparison, modifier: Modifier = Modifier) {
+fun PartnerRows(comparison: PartnerComparison, modifier: Modifier = Modifier, showCaveat: Boolean = true) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             stringResource(R.string.visa_partner_you, requirementSummaryText(comparison.you).asString()),
@@ -46,10 +46,13 @@ fun PartnerRows(comparison: PartnerComparison, modifier: Modifier = Modifier) {
             ),
             style = MaterialTheme.typography.labelMedium,
         )
-        Text(
-            stringResource(R.string.visa_partner_caveat),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        // The visa list says it once under the switch; repeating it on every opened row is noise.
+        if (showCaveat) {
+            Text(
+                stringResource(R.string.visa_partner_caveat),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

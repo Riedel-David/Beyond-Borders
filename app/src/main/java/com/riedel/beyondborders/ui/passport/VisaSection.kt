@@ -63,6 +63,9 @@ import com.riedel.beyondborders.ui.places.combinedTotals
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.places.PartnerComparison
+import com.riedel.beyondborders.ui.places.PartnerSources
+import com.riedel.beyondborders.ui.places.rowSource
+import com.riedel.beyondborders.ui.places.showTravelAdvice
 import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
 import com.riedel.beyondborders.ui.visa.partnerAsOfNoticeText
@@ -98,6 +101,7 @@ internal fun LazyListScope.visaSection(
     partnerAvailable: Boolean = false,
     partnerMode: Boolean = false,
     onPartnerMode: ((Boolean) -> Unit)? = null,
+    partnerSources: PartnerSources? = null,
 ) {
     if (visa == null) {
         item("visa-missing") { VisaUnavailable() }
@@ -105,7 +109,7 @@ internal fun LazyListScope.visaSection(
     }
 
     item("visa-summary") {
-        VisaSummaryCard(visa, secondVisa, placesTotal, partnerMode, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        VisaSummaryCard(visa, secondVisa, placesTotal, partnerMode, partnerSources, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
     }
 
     if (partnerAvailable && onPartnerMode != null) {
@@ -212,6 +216,7 @@ internal fun LazyListScope.visaSection(
                 nameOf = nameOf,
                 visa = visa,
                 secondVisa = secondVisa,
+                partnerSources = partnerSources,
                 combinedRequirementOf = combinedRequirementOf,
                 modifier = Modifier.animateItem(),
             )
@@ -232,6 +237,7 @@ private fun VisaSummaryCard(
     secondVisa: VisaRegistry?,
     placesTotal: Int,
     partnerMode: Boolean,
+    partnerSources: PartnerSources?,
     modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
@@ -314,7 +320,9 @@ private fun VisaSummaryCard(
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 CompactLink(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
                                 visa.licenceUrl?.let { CompactLink(stringResource(R.string.visa_licence_link), it) }
-                                listOfNotNull(visa, secondVisa).forEach { v ->
+                                // Partner mode credits every article behind the pair (CC BY-SA),
+                                // not just the one the user's metadata happens to carry.
+                                (partnerSources?.all ?: listOfNotNull(visa, secondVisa)).forEach { v ->
                                     v.sourceUrl?.let { CompactLink(stringResource(R.string.visa_source_link, v.passport), it) }
                                 }
                             }
@@ -454,6 +462,7 @@ private fun VisaListRow(
     nameOf: (String) -> String?,
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
+    partnerSources: PartnerSources?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
     modifier: Modifier = Modifier,
 ) {
@@ -461,7 +470,7 @@ private fun VisaListRow(
     // Attribution only when a second passport is configured and it won. In partner mode
     // the effective [secondVisa] is null and the pair's two rows replace attribution.
     val combined = combinedRequirementOf(row.place.code)
-    val attributeTo = if (combined != null && combined.partner == null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
+    val attributeTo = if (combined?.secondWon == true) secondVisa?.passport else null
 
     Column(
         modifier
@@ -518,6 +527,7 @@ private fun VisaListRow(
                 visa = visa,
                 secondVisa = secondVisa,
                 partner = combined?.partner,
+                partnerSources = partnerSources,
                 nameOf = nameOf,
                 modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 8.dp),
             )
@@ -538,12 +548,18 @@ private fun VisaDetail(
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
     partner: PartnerComparison?,
+    partnerSources: PartnerSources?,
     nameOf: (String) -> String?,
     modifier: Modifier = Modifier,
 ) {
     val requirement = row.requirement
+    // Where the partner's answer limits the pair, their registry is the one the links point at.
+    val source = rowSource(visa, partnerSources, partner)
+    // The user's own passport countries: FCDO advice for home is noise on those rows.
+    val ownPassports = partnerSources?.own?.map { it.passport }
+        ?: listOfNotNull(visa.passport, secondVisa?.passport)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        partner?.let { PartnerRows(it, Modifier.padding(bottom = 4.dp)) }
+        partner?.let { PartnerRows(it, Modifier.padding(bottom = 4.dp), showCaveat = false) }
         requirement.note?.let { note ->
             Text(note, style = MaterialTheme.typography.bodyMedium)
         }
@@ -581,7 +597,7 @@ private fun VisaDetail(
         // app's answer is the wrong one, the reader can see there is a second one.
         if (requirement.origin == VisaOrigin.CORRECTION && requirement.datasetSaid != null) {
             Text(
-                stringResource(R.string.visa_correction, visa.datasetName, requirement.datasetSaid),
+                stringResource(R.string.visa_correction, source.datasetName, requirement.datasetSaid),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -607,8 +623,13 @@ private fun VisaDetail(
         // Named for what it is. The IATA Travel Centre is one form for the whole
         // world, so calling it "IATA: Suriname" would promise a page that does not
         // exist.
-        LinkText(stringResource(R.string.visa_iata_link), visa.iataUrl)
-        TravelAdviceRow(row.place.code)
+        LinkText(stringResource(R.string.visa_iata_link), source.iataUrl)
+        if (source !== visa) {
+            source.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, source.passport), it) }
+        }
+        if (showTravelAdvice(row.place.code, requirement.officialUrl, ownPassports)) {
+            TravelAdviceRow(row.place.code)
+        }
     }
 }
 

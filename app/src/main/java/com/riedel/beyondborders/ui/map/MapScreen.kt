@@ -570,10 +570,6 @@ fun MapScreen(
                         selected = MapControl.VISA in selectedControls,
                         onClick = {
                             viewModel.vibrate()
-                            // Partner mode is a way of reading the lens; leaving the lens with
-                            // it still on would leave the Visa list answering for two people
-                            // with no control on this screen to say so.
-                            if (lens) viewModel.setPartnerMode(false)
                             viewModel.setVisaLens(!lens)
                         },
                     )
@@ -706,11 +702,7 @@ fun MapScreen(
                 // uses (bandCodes unions both passports), so the card can never
                 // show an answer that contradicts the colour the place is drawn in.
                 val combined = if (lens) viewModel.combinedRequirementOf(place.code) else null
-                val attributeTo = if (combined != null && combined.partner == null && !combined.fromPrimary && secondVisa != null) {
-                    secondVisa!!.passport
-                } else {
-                    null
-                }
+                val attributeTo = if (combined?.secondWon == true) secondVisa?.passport else null
                 var showVisits by remember(place.code) { mutableStateOf(false) }
                 val placeVisits = allVisits[place.code].orEmpty()
                 if (showVisits) {

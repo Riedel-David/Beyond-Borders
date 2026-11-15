@@ -68,11 +68,33 @@ class PartnerModeTest {
     }
 
     @Test
-    fun `a missing day count is not read as zero and a full tie goes to you`() {
-        val unstated = req(VisaCategory.VISA_FREE, days = null)
-        val stated = req(VisaCategory.VISA_FREE, days = 30)
-        assertSame(unstated, combineForPartners(unstated, stated)?.winner)
-        assertEquals(PartnerBlocker.NEITHER, combineForPartners(unstated, stated)?.partner?.blocker)
+    fun `a stated day limit is stricter than an unstated one either way round`() {
+        val unstated = req(VisaCategory.VISA_FREE, days = null, note = "open")
+        val stated = req(VisaCategory.VISA_FREE, days = 30, note = "limited")
+        val youOpen = combineForPartners(unstated, stated)!!
+        assertSame(stated, youOpen.winner)
+        assertEquals(PartnerBlocker.PARTNER, youOpen.partner?.blocker)
+        assertEquals(false, youOpen.fromPrimary)
+        val youLimited = combineForPartners(stated, unstated)!!
+        assertSame(stated, youLimited.winner)
+        assertEquals(PartnerBlocker.YOU, youLimited.partner?.blocker)
+        assertEquals(true, youLimited.fromPrimary)
+    }
+
+    @Test
+    fun `two unstated stays and two equal stays are a tie that goes to you`() {
+        val a = req(VisaCategory.VISA_FREE, days = null)
+        val b = req(VisaCategory.VISA_FREE, days = null)
+        assertSame(a, combineForPartners(a, b)?.winner)
+        assertEquals(PartnerBlocker.NEITHER, combineForPartners(a, b)?.partner?.blocker)
+        val c = req(VisaCategory.VISA_FREE, days = 30)
+        val d = req(VisaCategory.VISA_FREE, days = 30)
+        assertSame(c, combineForPartners(c, d)?.winner)
+        assertEquals(PartnerBlocker.NEITHER, combineForPartners(c, d)?.partner?.blocker)
+    }
+
+    @Test
+    fun `a full tie goes to you and keeps fromPrimary`() {
         val same = req(VisaCategory.ETA, days = 90)
         val other = req(VisaCategory.ETA, days = 90)
         val tie = combineForPartners(same, other)!!
@@ -175,6 +197,48 @@ class PartnerModeTest {
         val (v, s) = visaViews(primary, null, partner, partnerMode = true)
         assertEquals(VisaFilter.All, filterOrAll(eta, visaFilters(v, s)))
         assertEquals(VisaFilter.Easy, filterOrAll(VisaFilter.Easy, visaFilters(v, s)))
+    }
+
+    @Test
+    fun `revalidating keeps a chip the new registries offer and drops one they do not`() {
+        val primary = reg("DE", rows = arrayOf(Triple("FR", "VISA_FREE", null), Triple("CN", "ETA", null)))
+        val partner = reg("UA", rows = arrayOf(Triple("FR", "VISA_FREE", null), Triple("CN", "E_VISA", null)))
+        val eta = VisaFilter.Category(VisaCategory.ETA)
+        val own = VisaViews(primary, null, null)
+        assertEquals(eta, revalidatedFilter(eta, own))
+        val (v, s) = visaViews(primary, null, partner, partnerMode = true)
+        assertEquals(VisaFilter.All, revalidatedFilter(eta, VisaViews(v, s, partner)))
+        assertEquals(VisaFilter.Easy, revalidatedFilter(VisaFilter.Easy, VisaViews(v, s, partner)))
+    }
+
+    @Test
+    fun `second won is false in partner mode and in a tie and true only for a second passport win`() {
+        val free = req(VisaCategory.VISA_FREE)
+        val eta = req(VisaCategory.ETA)
+        assertEquals(true, combineRequirements(eta, free)?.secondWon)
+        assertEquals(false, combineRequirements(free, eta)?.secondWon)
+        assertEquals(false, combineForPartners(eta, free)?.secondWon)
+        assertEquals(false, combineForPartners(free, eta)?.secondWon)
+    }
+
+    @Test
+    fun `a row takes its links from the partner registry only where the partner limits the pair`() {
+        val you = reg("DE", rows = arrayOf(Triple("FR", "VISA_FREE", null)))
+        val partner = reg("UA", rows = arrayOf(Triple("FR", "VISA_FREE", null)))
+        val sources = PartnerSources(you, null, partner)
+        val limit = { b: PartnerBlocker -> PartnerComparison(req(VisaCategory.ETA), req(VisaCategory.ETA), b) }
+        assertSame(partner, rowSource(you, sources, limit(PartnerBlocker.PARTNER)))
+        assertSame(you, rowSource(you, sources, limit(PartnerBlocker.YOU)))
+        assertSame(you, rowSource(you, sources, limit(PartnerBlocker.NEITHER)))
+        assertSame(you, rowSource(you, null, null))
+    }
+
+    @Test
+    fun `travel advice is hidden for the own passports and where the official link shows`() {
+        assertEquals(false, showTravelAdvice("DE", null, listOf("DE")))
+        assertEquals(false, showTravelAdvice("fr", null, listOf("DE", "FR")))
+        assertEquals(false, showTravelAdvice("JP", "https://auswaertiges-amt.example", listOf("DE")))
+        assertEquals(true, showTravelAdvice("JP", null, listOf("DE", "FR")))
     }
 
     private fun place(code: String) = Place(
