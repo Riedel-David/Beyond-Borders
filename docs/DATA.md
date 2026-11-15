@@ -82,6 +82,14 @@ installed apps are current without a release. It refuses to publish unless every
 its passport and has requirements, and at least 150 passports are present. The manifest's
 `dataFormat` must be bumped together with any change to the shape of a visa file.
 
+The app side lives in `app/src/main/java/com/riedel/beyondborders/data/visa/update/`; the manifest's
+`dataFormat` is checked against `SUPPORTED_DATA_FORMAT` in `VisaUpdate.kt`. Pages must be set to
+Source = GitHub Actions and the workflow run once (Actions tab, "Run workflow" on main) before a release,
+or the app has nothing to fetch. The publish job rebuilds from upstream independently of the data PR, so
+published data can be newer than what is on main until the PR merges. That is intentional: ship as
+published, no app-side curation. `visa-freshness.yml` also checks the published `manifest.json` (reachable,
+versions 1, generated within 10 days, at least 150 passports).
+
 ### Is a newer snapshot out?
 
 `.github/workflows/visa-freshness.yml` runs every Monday, and on demand from the Actions

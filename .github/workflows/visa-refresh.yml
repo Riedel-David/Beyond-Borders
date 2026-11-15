@@ -22,6 +22,10 @@ name: Visa data refresh
 # refused to write unless its own checks passed, so a bad run publishes nothing and the
 # previous deployment stays live.
 #
+# The publish job rebuilds from upstream independently of the data PR, so the published data can
+# be newer than what is on main until the PR merges (intentional: ship as published, no app-side
+# curation). visa-freshness.yml is the weekly alarm for what this workflow cannot decide itself.
+#
 # Repo settings needed: Settings > Pages > Source = "GitHub Actions", and
 # Settings > Actions > General > "Allow GitHub Actions to create and
 # approve pull requests". A PR opened with GITHUB_TOKEN does not trigger pull_request
