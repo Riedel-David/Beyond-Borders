@@ -129,6 +129,8 @@
     <string name="map_quick_add">Ajout rapide</string>
 
     <string name="map_partner_mode">Mode partenaire</string>
+    <string name="map_partner_state_on">Activé</string>
+    <string name="map_partner_state_off">Désactivé</string>
     <string name="map_legend_partner">Où vous pouvez aller tous les deux</string>
     <string name="map_no_data_partner">Aucune réponse pour au moins un des deux passeports : consulte les sources officielles avant de voyager.</string>
 </resources>

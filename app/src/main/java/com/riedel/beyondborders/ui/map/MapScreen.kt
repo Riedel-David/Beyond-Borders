@@ -99,6 +99,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -148,6 +149,7 @@ import com.riedel.beyondborders.ui.theme.MapPalette
 import com.riedel.beyondborders.ui.theme.RegionRamp
 import com.riedel.beyondborders.ui.theme.RegionSlots
 import com.riedel.beyondborders.ui.theme.VisaRamp
+import com.riedel.beyondborders.ui.passport.FlagThumb
 import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
 import com.riedel.beyondborders.ui.visa.partnerAsOfNoticeText
@@ -236,6 +238,7 @@ fun MapScreen(
     val lens by viewModel.visaLens.collectAsStateWithLifecycle()
     val partnerMode by viewModel.partnerMode.collectAsStateWithLifecycle()
     val partnerAvailable by viewModel.partnerAvailable.collectAsStateWithLifecycle()
+    val partnerPassport by viewModel.partnerPassport.collectAsStateWithLifecycle()
     val regionMode by viewModel.regionMode.collectAsStateWithLifecycle()
     val regionBands by viewModel.regionBands.collectAsStateWithLifecycle()
     val places by viewModel.places.collectAsStateWithLifecycle()
@@ -571,21 +574,6 @@ fun MapScreen(
                         onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
                     )
                 }
-                // Only when there is a partner passport to compare with. Turning it on also
-                // turns the lens on, since partner mode changes nothing on the travel colours.
-                if (visa != null && partnerAvailable) {
-                    MapControlItem(
-                        icon = rememberVectorPainter(Icons.Filled.Person),
-                        label = stringResource(R.string.map_partner_mode),
-                        selected = partnerMode && lens,
-                        onClick = {
-                            viewModel.vibrate()
-                            val on = !(partnerMode && lens)
-                            viewModel.setPartnerMode(on)
-                            if (on) viewModel.setVisaLens(true)
-                        },
-                    )
-                }
                 // One item cycles all three states rather than three for one
                 // choice: Off/Official/Informal is a single question, not three.
                 MapControlItem(
@@ -749,14 +737,29 @@ fun MapScreen(
                 .padding(contentPadding)
                 .padding(16.dp),
         ) {
-            MapOverlayButton(
-                icon = Icons.Filled.Share,
-                contentDescription = stringResource(R.string.map_share_action),
-                onClick = {
-                    viewModel.vibrate()
-                    showShareStyleDialog = true
-                },
-            )
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Above the share button, in the same fade, so it never sits under the
+                // full-width selection banner either. Fixed sizes only, nothing measured.
+                val partnerCode = partnerPassport
+                if (partnerCode != null && partnerToggleVisible(lens, partnerAvailable)) {
+                    PartnerToggle(
+                        passport = partnerCode,
+                        active = partnerMode,
+                        onToggle = { viewModel.vibrate(); viewModel.setPartnerMode(!partnerMode) },
+                    )
+                }
+                MapOverlayButton(
+                    icon = Icons.Filled.Share,
+                    contentDescription = stringResource(R.string.map_share_action),
+                    onClick = {
+                        viewModel.vibrate()
+                        showShareStyleDialog = true
+                    },
+                )
+            }
         }
 
         if (showShareStyleDialog) {
@@ -1967,6 +1970,52 @@ internal fun changedRegionKeys(
     new: Map<RegionStyleKey, Set<String>>,
 ): Set<RegionStyleKey> =
     (old.keys + new.keys).filterTo(mutableSetOf()) { old[it].orEmpty() != new[it].orEmpty() }
+
+/**
+ * Partner mode is not a map view: its control exists only while the Visa lens is shown and
+ * a partner passport is loaded. Other lenses hide it without touching the mode itself.
+ */
+internal fun partnerToggleVisible(lens: Boolean, partnerAvailable: Boolean): Boolean =
+    lens && partnerAvailable
+
+/** Small on/off chip with the partner's flag; the 48dp touch target is wider than the box. */
+@Composable
+private fun PartnerToggle(passport: String, active: Boolean, onToggle: () -> Unit) {
+    val label = stringResource(R.string.map_partner_mode)
+    val state = stringResource(if (active) R.string.map_partner_state_on else R.string.map_partner_state_off)
+    Surface(
+        onClick = onToggle,
+        modifier = Modifier
+            .minimumInteractiveComponentSize()
+            .widthIn(max = 200.dp)
+            .semantics {
+                role = Role.Switch
+                contentDescription = label
+                stateDescription = state
+            },
+        shape = RoundedCornerShape(16.dp),
+        color = if (active) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+        contentColor = if (active) MaterialTheme.colorScheme.onPrimaryContainer
+        else MaterialTheme.colorScheme.onSurface,
+        shadowElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FlagThumb(passport)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+    }
+}
 
 /** The map's mode controls, in the order they are stacked. */
 internal enum class MapControl { SEARCH, VISA, REGIONS }

@@ -133,6 +133,8 @@
     <string name="map_quick_add">Быстро добавить</string>
 
     <string name="map_partner_mode">Режим пары</string>
+    <string name="map_partner_state_on">Включено</string>
+    <string name="map_partner_state_off">Выключено</string>
     <string name="map_legend_partner">Куда можете оба</string>
     <string name="map_no_data_partner">Нет ответа как минимум для одного из двух паспортов — перед поездкой проверь официальные источники.</string>
 </resources>

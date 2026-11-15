@@ -125,6 +125,8 @@
     <string name="map_quick_add">Schnell eintragen</string>
 
     <string name="map_partner_mode">Partnermodus</string>
+    <string name="map_partner_state_on">An</string>
+    <string name="map_partner_state_off">Aus</string>
     <string name="map_legend_partner">Wohin ihr beide könnt</string>
     <string name="map_no_data_partner">Für mindestens einen der beiden Reisepässe liegt keine Antwort vor – vor der Reise bei offiziellen Quellen prüfen.</string>
 </resources>

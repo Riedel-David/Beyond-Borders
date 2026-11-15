@@ -50,4 +50,12 @@ class MapChromeTest {
             legendEntries(stats(40, lived = 2, wishlist = 7)),
         )
     }
+
+    @Test
+    fun `partner toggle is shown only on the visa lens with a partner passport`() {
+        assertEquals(true, partnerToggleVisible(lens = true, partnerAvailable = true))
+        assertEquals(false, partnerToggleVisible(lens = false, partnerAvailable = true))
+        assertEquals(false, partnerToggleVisible(lens = true, partnerAvailable = false))
+        assertEquals(false, partnerToggleVisible(lens = false, partnerAvailable = false))
+    }
 }

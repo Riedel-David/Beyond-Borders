@@ -124,6 +124,8 @@
     <string name="map_quick_add">Quick add</string>
 
     <string name="map_partner_mode">Partner mode</string>
+    <string name="map_partner_state_on">On</string>
+    <string name="map_partner_state_off">Off</string>
     <string name="map_legend_partner">Where you both can go</string>
     <string name="map_no_data_partner">No answer for at least one of the two passports — check official sources before travelling.</string>
 </resources>

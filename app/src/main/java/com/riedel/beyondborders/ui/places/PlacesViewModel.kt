@@ -283,6 +283,10 @@ class PlacesViewModel(
         combine(_visa, _partnerVisa) { visa, partner -> visa != null && partner != null }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    /** The partner's passport code while their registry is loaded; the map control shows its flag. */
+    val partnerPassport: StateFlow<String?> =
+        _partnerVisa.map { it?.passport }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     /**
      * What every visa surface reads. Normally the user's own registries; in partner mode a
      * single registry of the worse answer per place, built by [partnerRegistry], with no
