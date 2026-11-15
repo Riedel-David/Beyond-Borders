@@ -10,7 +10,7 @@
     <string name="visits_delete">Удалить визит</string>
     <string name="visits_done">Готово</string>
     <string name="visits_none_yet">Пока нет визитов</string>
-    <string name="stats_visits_title">Визиты по годам</string>
+    <string name="stats_visits_title">Места по годам</string>
     <string name="stats_visits_first_recent">Первый визит: %1$d · Последний: %2$d</string>
     <string name="backup_imported_visits">Визиты: %1$d новых, %2$d обновлено.</string>
     <string name="settings_preview_visits">Визиты</string>

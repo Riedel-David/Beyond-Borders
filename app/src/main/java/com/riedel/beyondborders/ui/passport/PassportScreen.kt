@@ -547,8 +547,7 @@ internal fun SearchField(
                 }),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .semantics { contentDescription = label },
+                    .focusRequester(focusRequester),
             )
         }
         if (query.isNotEmpty()) {

@@ -9,7 +9,7 @@
     <string name="visits_delete">Delete visit</string>
     <string name="visits_done">Done</string>
     <string name="visits_none_yet">No visits yet</string>
-    <string name="stats_visits_title">Visits by year</string>
+    <string name="stats_visits_title">Places by year</string>
     <string name="stats_visits_first_recent">First visit: %1$d · Most recent: %2$d</string>
     <string name="backup_imported_visits">Visits: %1$d new, %2$d updated.</string>
     <string name="settings_preview_visits">Visits</string>

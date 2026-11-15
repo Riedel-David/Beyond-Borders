@@ -10,7 +10,7 @@
     <string name="visits_delete">Besuch löschen</string>
     <string name="visits_done">Fertig</string>
     <string name="visits_none_yet">Noch keine Besuche</string>
-    <string name="stats_visits_title">Besuche pro Jahr</string>
+    <string name="stats_visits_title">Orte pro Jahr</string>
     <string name="stats_visits_first_recent">Erster Besuch: %1$d · Letzter: %2$d</string>
     <string name="backup_imported_visits">Besuche: %1$d neu, %2$d aktualisiert.</string>
     <string name="settings_preview_visits">Besuche</string>

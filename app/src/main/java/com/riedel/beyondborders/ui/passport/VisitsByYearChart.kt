@@ -214,7 +214,7 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
                     points.forEachIndexed { i, p ->
                         if ((points.size - 1 - i) % step == 0) {
                             val text = measurer.measure(p.year.toString(), labelStyle)
-                            val x = (slotPx * i + slotPx / 2 - text.size.width / 2f).coerceIn(0f, size.width - text.size.width)
+                            val x = (slotPx * i + slotPx / 2 - text.size.width / 2f).coerceIn(0f, maxOf(0f, size.width - text.size.width))
                             drawText(text, topLeft = Offset(x, top + h + 6.dp.toPx()))
                         }
                     }
