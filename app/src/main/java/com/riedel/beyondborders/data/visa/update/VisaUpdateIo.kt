@@ -77,6 +77,8 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
             conn.connectTimeout = NETWORK_TIMEOUT_MS
             conn.readTimeout = NETWORK_TIMEOUT_MS
             conn.useCaches = false
+            // The platform default names the device model and Android build; send nothing of that.
+            conn.setRequestProperty("User-Agent", "BeyondBorders")
             val status = conn.responseCode
             // Most 4xx will not fix themselves on a retry; 408, 429, timeouts and 5xx might.
             if (status != HttpURLConnection.HTTP_OK) {

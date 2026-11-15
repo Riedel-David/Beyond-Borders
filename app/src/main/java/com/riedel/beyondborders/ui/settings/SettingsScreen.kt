@@ -446,7 +446,8 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = {
+                // Off means off: no request of any kind, including a manual one.
+                TextButton(enabled = visaAutoUpdate, onClick = {
                     Toast.makeText(context, R.string.settings_visa_checking, Toast.LENGTH_SHORT).show()
                     viewModel.checkVisaNow()
                 }) { Text(stringResource(R.string.settings_visa_check_now)) }
