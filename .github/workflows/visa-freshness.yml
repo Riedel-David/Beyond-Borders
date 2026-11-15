@@ -2,7 +2,8 @@ name: Visa data freshness
 
 # Weekly look at the published visa dataset. An issue is opened only for a change
 # that needs a person: a passport added or removed upstream, a new index
-# schema_version, or an index that cannot be fetched or read. Wikipedia revision
+# schema_version, an index that cannot be fetched or read, or an unhealthy published
+# site (stale, truncated or wrong-version manifest). Wikipedia revision
 # differences are expected (the articles are edited daily, so some always differ);
 # they are only printed into the job summary. It changes nothing in the repo.
 # The data itself is refreshed by visa-refresh.yml's weekly pull request (docs/DATA.md).
@@ -37,9 +38,11 @@ jobs:
             fi
           }
           python3 -I tools/visa/check_published.py > "$RUNNER_TEMP/published.txt"
-          while IFS= read -r PROBLEM; do
-            report "published site is unhealthy" "$PROBLEM."
-          done < "$RUNNER_TEMP/published.txt"
+          # One issue for the published site, all problems in its body: report() opens one
+          # issue per title, so a second problem under the same title would be dropped.
+          if [ -s "$RUNNER_TEMP/published.txt" ]; then
+            report "published site is unhealthy" "$(paste -sd ';' "$RUNNER_TEMP/published.txt" | sed 's/;/; /g')."
+          fi
           if ! curl -fsSL --retry 3 "https://riedel-david.github.io/Visa-requirements/index.json" -o "$RUNNER_TEMP/index.json"; then
             report "published index is unreadable" "The published index.json could not be fetched."
             exit 0

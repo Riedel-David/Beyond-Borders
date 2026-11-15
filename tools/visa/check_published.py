@@ -6,12 +6,17 @@ issue. Nothing printed means the site looks healthy.
 """
 import json
 import sys
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# -I drops the script directory from sys.path, so add it back for the shared constants.
+sys.path.insert(0, str(Path(__file__).parent))
+from make_site import DATA_FORMAT, MANIFEST_VERSION, MIN_PASSPORTS  # noqa: E402
 
 URL = "https://riedel-david.github.io/Beyond-Borders/manifest.json"
 MAX_AGE = timedelta(days=10)
-MIN_PASSPORTS = 150
 
 
 def check(text: str, now: datetime) -> list:
@@ -22,9 +27,9 @@ def check(text: str, now: datetime) -> list:
     if not isinstance(m, dict):
         return ["the manifest is not a JSON object"]
     problems = []
-    for key in ("manifestVersion", "dataFormat"):
-        if m.get(key) != 1:
-            problems.append(f"{key} is {m.get(key)!r}, expected 1")
+    for key, want in (("manifestVersion", MANIFEST_VERSION), ("dataFormat", DATA_FORMAT)):
+        if m.get(key) != want:
+            problems.append(f"{key} is {m.get(key)!r}, expected {want}")
     try:
         generated = datetime.fromisoformat(str(m.get("generatedAt")).replace("Z", "+00:00"))
         if generated.tzinfo is None:
@@ -42,11 +47,17 @@ def check(text: str, now: datetime) -> list:
 
 def main(argv: list) -> int:
     url = argv[1] if len(argv) > 1 else URL
-    try:
-        with urllib.request.urlopen(url, timeout=20) as r:
-            text = r.read().decode("utf-8")
-    except Exception as e:  # HTTP error, DNS, timeout, bad encoding
-        print(f"the manifest could not be fetched: {e}")
+    text = None
+    for attempt in range(3):  # one blip must not open an issue
+        try:
+            with urllib.request.urlopen(url, timeout=20) as r:
+                text = r.read().decode("utf-8")
+            break
+        except Exception as e:  # HTTP error, DNS, timeout, bad encoding
+            error = e
+            time.sleep(5 * attempt)
+    if text is None:
+        print(f"the manifest could not be fetched: {error}")
         return 0
     for p in check(text, datetime.now(timezone.utc)):
         print(p)

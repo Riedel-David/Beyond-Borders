@@ -95,7 +95,8 @@ versions 1, generated within 10 days, at least 150 passports).
 `.github/workflows/visa-freshness.yml` runs every Monday, and on demand from the Actions
 tab. It downloads the dataset's `index.json` and opens an issue (one per kind of problem, with a fixed title
 per kind, none while one of that kind is open) only when a passport is added or removed upstream, the index
-`schema_version` major changes, or the index cannot be fetched or read. Wikipedia
+`schema_version` major changes, the index cannot be fetched or read, or the published
+site's manifest is missing, older than 10 days, from another format version or has fewer than 150 passports. Wikipedia
 revision drift (`source_revision` against `dataset.sourceRevision` in `visa*.json`) is
 expected weekly and is only listed in the job summary. It changes nothing in the repo;
 the weekly pull request above carries the data itself.
