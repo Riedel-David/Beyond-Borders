@@ -42,12 +42,19 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
   252-place curated answer; a second passport is optional, and the easier of its two
   answers wins. A snapshot that can be out of date: confirm entry rules with
   [the official source](#data-and-licences) before you travel.
+- **Partner mode** — pick a travel partner's passport and the Visa tab and the map's Visa
+  lens show the stricter of your two passports, and who sets the limit.
+- **Visa data updater** — a weekly check on Wi-Fi for newer visa files for your own passports,
+  over HTTPS, verified before use; the bundled data is the fallback. Off in Settings.
+- **Rating prompt** — once or twice the app asks for a Google Play rating, and Settings has a
+  *Rate on Google Play* row.
 - **Share** — your travels as an image in one of three styles: the map with a caption bar,
   the map with a corner badge, or a numbers-only stats card.
 - **Home-screen widget** — configurable per instance: headline metric and card background.
   It adds the logo, wordmark and stat tiles as it is resized. Tapping it opens the map, or
   the stats screen for the percent and continents widgets.
-- **Settings** — theme (including a pure black option for OLED screens), map colours, JSON export / import, restoring from Android's backup
+- **Settings** — theme (including a pure black option for OLED screens), map colours, *Visa data*
+  (automatic updates, *Check now*), a *Partner passport*, JSON export / import, restoring from Android's backup
   after a reinstall, and *Delete everything*, which clears your places, passports and
   display settings.
 
