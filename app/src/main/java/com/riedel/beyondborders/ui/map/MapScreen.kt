@@ -568,10 +568,7 @@ fun MapScreen(
                         icon = painterResource(R.drawable.ic_tab_passport),
                         label = stringResource(R.string.map_lens_visa),
                         selected = MapControl.VISA in selectedControls,
-                        onClick = {
-                            viewModel.vibrate()
-                            viewModel.setVisaLens(!lens)
-                        },
+                        onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
                     )
                 }
                 // Only when there is a partner passport to compare with. Turning it on also

@@ -309,7 +309,8 @@ fun SettingsScreen(
                     },
                     onDismiss = { showPartnerPicker = false },
                     title = stringResource(R.string.settings_partner_passport),
-                    exclude = emptySet(),
+                    // Your own passports are not a travel partner's.
+                    exclude = setOfNotNull(nationality, secondNationality),
                 )
             }
             Text(

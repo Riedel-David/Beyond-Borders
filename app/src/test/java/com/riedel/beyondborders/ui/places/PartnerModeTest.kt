@@ -48,13 +48,42 @@ class PartnerModeTest {
     }
 
     @Test
-    fun `an unknown on either side makes the result unknown even against a refusal`() {
+    fun `a definite refusal outranks unknown and unknown outranks every easier answer`() {
         val check = req(VisaCategory.CHECK)
-        for (other in listOf(VisaCategory.VISA_FREE, VisaCategory.PERMIT_REQUIRED, VisaCategory.NO_ADMISSION)) {
-            assertEquals(VisaCategory.CHECK, combineForPartners(check, req(other))?.winner?.category)
-            assertEquals(VisaCategory.CHECK, combineForPartners(req(other), check)?.winner?.category)
+        for (hard in listOf(VisaCategory.PERMIT_REQUIRED, VisaCategory.NO_ADMISSION)) {
+            val h = req(hard)
+            assertEquals(hard, combineForPartners(check, h)?.winner?.category)
+            assertEquals(PartnerBlocker.PARTNER, combineForPartners(check, h)?.partner?.blocker)
+            assertEquals(hard, combineForPartners(h, check)?.winner?.category)
+            assertEquals(PartnerBlocker.YOU, combineForPartners(h, check)?.partner?.blocker)
         }
+        for (easy in listOf(VisaCategory.VISA_FREE, VisaCategory.E_VISA, VisaCategory.VISA_REQUIRED)) {
+            assertEquals(VisaCategory.CHECK, combineForPartners(check, req(easy))?.winner?.category)
+            assertEquals(PartnerBlocker.YOU, combineForPartners(check, req(easy))?.partner?.blocker)
+            assertEquals(PartnerBlocker.PARTNER, combineForPartners(req(easy), check)?.partner?.blocker)
+        }
+        assertEquals(VisaCategory.NO_ADMISSION, combineForPartners(req(VisaCategory.PERMIT_REQUIRED), req(VisaCategory.NO_ADMISSION))?.winner?.category)
         assertEquals(PartnerBlocker.NEITHER, combineForPartners(check, check)?.partner?.blocker)
+    }
+
+    @Test
+    fun `low confidence on either side is carried onto the pair result`() {
+        fun low(c: VisaCategory) = req(c).copy(confidence = com.riedel.beyondborders.data.visa.VisaConfidence.LOW)
+        val solidHard = req(VisaCategory.E_VISA)
+        val lowEasy = low(VisaCategory.VISA_FREE)
+        assertEquals(com.riedel.beyondborders.data.visa.VisaConfidence.LOW, combineForPartners(lowEasy, solidHard)?.winner?.confidence)
+        assertEquals(com.riedel.beyondborders.data.visa.VisaConfidence.LOW, combineForPartners(solidHard, lowEasy)?.winner?.confidence)
+        assertEquals(null, combineForPartners(solidHard, req(VisaCategory.VISA_FREE))?.winner?.confidence)
+    }
+
+    @Test
+    fun `the via passport rides along and a partner equal to your own passport is no partner`() {
+        assertEquals("FR", combineForPartners(req(VisaCategory.ETA), req(VisaCategory.ETA), "FR")?.partner?.youVia)
+        assertEquals(null, combineForPartners(req(VisaCategory.ETA), req(VisaCategory.ETA))?.partner?.youVia)
+        assertEquals(null, effectivePartner("DE", "DE", null))
+        assertEquals(null, effectivePartner("FR", "DE", "FR"))
+        assertEquals("UA", effectivePartner("UA", "DE", "FR"))
+        assertEquals(null, effectivePartner(null, "DE", null))
     }
 
     @Test
@@ -172,7 +201,8 @@ class PartnerModeTest {
         val counts = combinedBandCounts(visa, second)
         assertEquals(bands.mapValues { it.value.size }, counts)
         assertEquals(setOf("FR", "TH"), bands[VisaBand.VISA_FREE])
-        assertEquals(setOf("RU"), bands[VisaBand.CHECK])
+        // RU: your definite refusal outranks their unknown, so it is CLOSED, not CHECK.
+        assertEquals(setOf("RU"), bands[VisaBand.CLOSED])
         // CN: the partner is visa-free but you need an e-visa; AU: your ETA, their visa.
         assertEquals(setOf("CN", "AU"), bands[VisaBand.VISA_REQUIRED])
         // KP has no partner answer: grey, and never also painted.

@@ -18,6 +18,7 @@ import com.riedel.beyondborders.data.place.sortInitial
 import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.VisaRequirement
@@ -298,6 +299,11 @@ class PlacesViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, VisaViews(null, null, null))
 
+    /** The user's own passports, never the pair: for surfaces partner mode must not reach. */
+    private val ownVisas: StateFlow<VisaViews> =
+        combine(_visa, _secondVisa) { visa, second -> VisaViews(visa, second, null) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, VisaViews(null, null, null))
+
     val visa: StateFlow<VisaRegistry?> =
         viewVisas.map { it.visa }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val secondVisa: StateFlow<VisaRegistry?> =
@@ -418,7 +424,7 @@ class PlacesViewModel(
             if (filter == StatusFilter.WISHLIST_VISA_FREE) {
                 combine(
                     allPlaces, statuses, _query, _grouping,
-                    viewVisas,
+                    ownVisas,
                 ) { places, st, q, grouping, (visa, secondVisa) ->
                     buildRows(places, st, q, filter, grouping, visa, secondVisa)
                 }
@@ -559,7 +565,9 @@ class PlacesViewModel(
             }
         }
         viewModelScope.launch {
-            settings.partnerNationality.collect { partner ->
+            combine(settings.partnerNationality, settings.nationality, settings.secondNationality) { partner, own, second ->
+                effectivePartner(partner, own, second)
+            }.collect { partner ->
                 _partnerVisa.value = partner?.let { load(it) }
                 // Removing the partner (or losing their asset) must not leave the mode on
                 // with nothing behind it: the toggle disappears, so nothing could turn it off.
@@ -593,9 +601,7 @@ class PlacesViewModel(
 
     fun setRegionMode(value: RegionMode) {
         _regionMode.value = value
-        if (value != RegionMode.OFF) {
-            _visaLens.value = false
-        }
+        if (value != RegionMode.OFF) _visaLens.value = false
     }
 
     /**
@@ -632,7 +638,7 @@ class PlacesViewModel(
         // from the mode flag: a row and its decoration can then only disagree for the
         // moment the downstream list lags the snapshot, never by reading two sources.
         val partner = viewVisas.value.partner ?: return own
-        return combineForPartners(own?.winner, partner[code])
+        return combineForPartners(own?.winner, partner[code], if (own?.secondWon == true) _secondVisa.value?.passport else null)
     }
 
     /**
@@ -1176,6 +1182,8 @@ data class PartnerComparison(
     val you: VisaRequirement,
     val partner: VisaRequirement,
     val blocker: PartnerBlocker,
+    /** The user's passport that gave their side, when it is their second one ("via FR"). */
+    val youVia: String? = null,
 )
 
 /**
@@ -1220,33 +1228,48 @@ internal fun combineRequirements(
  * Combine the user's answer and the travel partner's for one place: the pair is only as
  * easy as the harder of the two, the opposite of [combineRequirements].
  *
- * "Harder" is the higher [VisaCategory.ordinal]. Two deliberate departures from a plain
- * `maxBy`: an unknown ([VisaCategory.CHECK]) on either side makes the result CHECK, since
- * ordinal alone would let a definite refusal or permit on the other side hide it and
- * claim a certainty the data does not have; and when the categories tie but both state
- * days and they differ, the shorter stay is shown, as the stay the pair can count on. A
- * stated limit is stricter than none, so 30 days against an unstated stay shows the 30,
- * either way round; only two unstated or two equal limits are a tie, which goes to [you]. The winning requirement is returned whole, never
- * synthesized, so its note and source belong to the passport that sets the answer.
+ * "Harder" is the higher [VisaCategory.ordinal], which already puts a definite permit or
+ * refusal above an unknown ([VisaCategory.CHECK]), and CHECK above every easier answer: a
+ * definite "no" must not be hidden behind "unknown", while CHECK still stops the pair
+ * claiming a certainty the data lacks. When the categories tie, the stricter stay is
+ * shown, as the stay the pair can count on; a stated limit is stricter than none, and only
+ * two unstated or two equal limits are a tie, which goes to [you]. The winning requirement
+ * is returned whole so its note and source belong to the passport that sets the answer,
+ * except that LOW confidence on either side is carried onto the result. [youVia] names
+ * the user's second passport when it gave their side, for the "via" wording.
  *
  * Null when either side has no answer: one person's unknown cannot make a place "easy
  * for both", and the map draws that as no data.
  */
-internal fun combineForPartners(you: VisaRequirement?, partner: VisaRequirement?): CombinedRequirement? {
+internal fun combineForPartners(
+    you: VisaRequirement?,
+    partner: VisaRequirement?,
+    youVia: String? = null,
+): CombinedRequirement? {
     if (you == null || partner == null) return null
-    val youCheck = you.category == VisaCategory.CHECK
-    val partnerCheck = partner.category == VisaCategory.CHECK
+    // Precedence is the category order itself: a definite permit or refusal outranks an
+    // unknown (CHECK), which outranks any easier definite answer. Within a category the
+    // stricter stay decides.
     val blocker = when {
-        youCheck && partnerCheck -> PartnerBlocker.NEITHER
-        youCheck -> PartnerBlocker.YOU
-        partnerCheck -> PartnerBlocker.PARTNER
         you.category.ordinal != partner.category.ordinal ->
             if (you.category.ordinal > partner.category.ordinal) PartnerBlocker.YOU else PartnerBlocker.PARTNER
         else -> stricterStay(you.days, partner.days)
     }
-    val winner = if (blocker == PartnerBlocker.PARTNER) partner else you
-    return CombinedRequirement(winner, fromPrimary = blocker != PartnerBlocker.PARTNER, PartnerComparison(you, partner, blocker))
+    var winner = if (blocker == PartnerBlocker.PARTNER) partner else you
+    // A shaky answer on either side must not be laundered by the other side's solid one.
+    if ((you.confidence == VisaConfidence.LOW || partner.confidence == VisaConfidence.LOW) &&
+        winner.confidence != VisaConfidence.LOW
+    ) winner = winner.copy(confidence = VisaConfidence.LOW)
+    return CombinedRequirement(
+        winner,
+        fromPrimary = blocker != PartnerBlocker.PARTNER,
+        PartnerComparison(you, partner, blocker, youVia),
+    )
 }
+
+/** The partner passport to use: none if it is one of the user's own, which is no partner at all. */
+internal fun effectivePartner(partner: String?, own: String?, second: String?): String? =
+    partner?.takeIf { it != own && it != second }
 
 /** Who the shorter stay belongs to: a stated limit beats an unstated one, equal (or both unstated) is neither. */
 private fun stricterStay(you: Int?, partner: Int?): PartnerBlocker = when {

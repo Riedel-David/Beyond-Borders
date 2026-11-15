@@ -27,7 +27,7 @@ import com.riedel.beyondborders.ui.places.PartnerComparison
 fun PartnerRows(comparison: PartnerComparison, modifier: Modifier = Modifier, showCaveat: Boolean = true) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            stringResource(R.string.visa_partner_you, requirementSummaryText(comparison.you).asString()),
+            stringResource(R.string.visa_partner_you, requirementSummaryText(comparison.you, comparison.youVia).asString()),
             style = MaterialTheme.typography.bodySmall,
             fontWeight = if (comparison.blocker == PartnerBlocker.YOU) FontWeight.SemiBold else null,
         )

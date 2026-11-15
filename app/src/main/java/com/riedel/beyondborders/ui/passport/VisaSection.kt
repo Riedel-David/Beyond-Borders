@@ -469,7 +469,7 @@ private fun VisaListRow(
     val ramp = LocalMapPalette.current.visa
     // Attribution only when a second passport is configured and it won. In partner mode
     // the effective [secondVisa] is null and the pair's two rows replace attribution.
-    val combined = combinedRequirementOf(row.place.code)
+    val combined = if (secondVisa != null || partnerSources != null) combinedRequirementOf(row.place.code) else null
     val attributeTo = if (combined?.secondWon == true) secondVisa?.passport else null
 
     Column(
