@@ -75,4 +75,14 @@
     <!-- Passport picker -->
     <string name="picker_choose_passport">Выбери паспорт</string>
     <string name="picker_search">Поиск</string>
+
+    <string name="visa_partner_you">Ты: %1$s</string>
+    <string name="visa_partner_partner">Спутник: %1$s</string>
+    <string name="visa_partner_blocker_you">Здесь ограничение задаёт твой паспорт</string>
+    <string name="visa_partner_blocker_partner">Здесь ограничение задаёт паспорт спутника</string>
+    <string name="visa_partner_blocker_none">Для вас обоих одинаково</string>
+    <string name="visa_partner_caveat">Только по паспортам: вид на жительство и правила ЕС/Шенгена для членов семьи не учитываются.</string>
+    <string name="visa_partner_toggle">Режим пары: куда можем оба</string>
+    <string name="visa_summary_partner">Общий ответ для обоих паспортов</string>
+    <string name="visa_as_of_notice_partner">Общий ответ для обоих паспортов, данные на %1$s — перед бронированием сверься с официальным государственным источником</string>
 </resources>

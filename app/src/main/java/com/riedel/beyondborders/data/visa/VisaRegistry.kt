@@ -64,6 +64,18 @@ class VisaRegistry private constructor(
     val uncertain: List<VisaRequirement>
         get() = requirements.filter { it.confidence == VisaConfidence.LOW }
 
+    /**
+     * This registry's metadata over a different set of answers. Partner mode builds its
+     * "where can we both go" view this way so that every consumer of a registry (legend,
+     * band buckets, list) reads it unchanged; [asOf] is passed in because the honest date
+     * for a result built from several datasets is the oldest of them.
+     */
+    internal fun withRequirements(requirements: List<VisaRequirement>, asOf: String = this.asOf) =
+        VisaRegistry(
+            passport, asOf, datasetName, datasetUrl, datasetLicence, licenceUrl,
+            sourceUrl, sourceRevision, iataUrl, requirements,
+        )
+
     companion object {
         const val ASSET_NAME = "visa.json"
         const val DEFAULT_PASSPORT = "DE"

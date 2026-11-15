@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advice_link">Check UK government travel advice (FCDO)</string>
+    <string name="advice_note">Opens an external website in your browser. The app itself stays offline.</string>
+    <string name="advice_no_browser">No browser found to open the link.</string>
+</resources>

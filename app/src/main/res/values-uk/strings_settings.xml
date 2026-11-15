@@ -247,4 +247,9 @@
     <string name="review_later">Пізніше</string>
     <string name="review_never">Більше не питати</string>
     <string name="settings_rate_play">Оцінити в Google Play</string>
+
+    <string name="settings_partner_passport">Паспорт супутника або супутниці</string>
+    <string name="settings_add_partner_passport">Додати паспорт партнера</string>
+    <string name="settings_remove_partner_passport">Прибрати паспорт партнера</string>
+    <string name="settings_partner_hint">Карта й список віз покажуть, куди ви обоє можете легко поїхати. Кожен паспорт враховується окремо: посвідки на проживання та правила ЄС/Шенгену для членів родини застосунку невідомі.</string>
 </resources>

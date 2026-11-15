@@ -223,4 +223,9 @@
     <string name="review_later">Later</string>
     <string name="review_never">Don’t ask again</string>
     <string name="settings_rate_play">Rate on Google Play</string>
+
+    <string name="settings_partner_passport">Travel partner passport</string>
+    <string name="settings_add_partner_passport">Add partner passport</string>
+    <string name="settings_remove_partner_passport">Remove partner passport</string>
+    <string name="settings_partner_hint">Lets the map and the Visa list show where you both can travel easily. It uses each passport on its own: residence permits and EU/Schengen family-member rules are not known to the app.</string>
 </resources>

@@ -127,4 +127,10 @@
     <string name="widget_cfg_preview_title">Tamaño de la vista previa</string>
     <string name="widget_cfg_add">Añadir widget</string>
     <string name="map_quick_add">Añadir rápido</string>
+
+    <string name="map_partner_mode">Modo pareja</string>
+    <string name="map_partner_state_on">Activado</string>
+    <string name="map_partner_state_off">Desactivado</string>
+    <string name="map_legend_partner">Adónde podéis ir los dos</string>
+    <string name="map_no_data_partner">No hay respuesta para al menos uno de los dos pasaportes: consulta las fuentes oficiales antes de viajar.</string>
 </resources>

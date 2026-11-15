@@ -101,6 +101,7 @@ class SettingsViewModel(
     // passport, which would claim a choice the user never made.
     val nationality: StateFlow<String?> = settings.nationality
     val secondNationality: StateFlow<String?> = settings.secondNationality
+    val partnerNationality: StateFlow<String?> = settings.partnerNationality
     val lastBackupAt: StateFlow<Long?> = settings.lastBackupAt
     val visaAutoUpdate: StateFlow<Boolean> = settings.visaAutoUpdate
     val visaLastCheckAt: StateFlow<Long?> = settings.visaLastCheckAt
@@ -202,6 +203,8 @@ class SettingsViewModel(
     fun setNationality(value: String) = settings.setNationality(value)
 
     fun setSecondNationality(value: String?) = settings.setSecondNationality(value)
+
+    fun setPartnerNationality(value: String?) = settings.setPartnerNationality(value)
 
     /** What the save dialog opens with. The user can rename it. */
     fun suggestedFileName(): String = TravelBackup.suggestedFileName(today().toString())

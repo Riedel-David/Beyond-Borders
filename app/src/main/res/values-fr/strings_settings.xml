@@ -236,4 +236,9 @@
     <string name="review_later">Plus tard</string>
     <string name="review_never">Ne plus demander</string>
     <string name="settings_rate_play">Noter sur Google Play</string>
+
+    <string name="settings_partner_passport">Passeport du ou de la partenaire de voyage</string>
+    <string name="settings_add_partner_passport">Ajouter le passeport du partenaire</string>
+    <string name="settings_remove_partner_passport">Retirer le passeport du partenaire</string>
+    <string name="settings_partner_hint">La carte et la liste des visas montrent alors où vous pouvez tous les deux voyager facilement. Chaque passeport est pris séparément : les titres de séjour et les règles UE/Schengen pour les membres de famille ne sont pas connus de l\'appli.</string>
 </resources>

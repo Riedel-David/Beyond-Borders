@@ -28,6 +28,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,13 +55,20 @@ import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
+import com.riedel.beyondborders.ui.places.TravelAdviceRow
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.combinedTotals
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.VisaRamp
+import com.riedel.beyondborders.ui.places.PartnerComparison
+import com.riedel.beyondborders.ui.places.PartnerSources
+import com.riedel.beyondborders.ui.places.rowSource
+import com.riedel.beyondborders.ui.places.showTravelAdvice
+import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
+import com.riedel.beyondborders.ui.visa.partnerAsOfNoticeText
 import com.riedel.beyondborders.ui.visa.officialLinkText
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
 
@@ -86,6 +95,13 @@ internal fun LazyListScope.visaSection(
     onSelect: (String?) -> Unit,
     nameOf: (String) -> String?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
+    // Partner mode's switch is offered only when a caller supplies [onPartnerMode]. The
+    // mode itself needs no wiring here: [visa], [rows] and [filters] already arrive as the
+    // pair's view of the world.
+    partnerAvailable: Boolean = false,
+    partnerMode: Boolean = false,
+    onPartnerMode: ((Boolean) -> Unit)? = null,
+    partnerSources: PartnerSources? = null,
 ) {
     if (visa == null) {
         item("visa-missing") { VisaUnavailable() }
@@ -93,7 +109,33 @@ internal fun LazyListScope.visaSection(
     }
 
     item("visa-summary") {
-        VisaSummaryCard(visa, secondVisa, placesTotal, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+        VisaSummaryCard(visa, secondVisa, placesTotal, partnerMode, partnerSources, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+    }
+
+    if (partnerAvailable && onPartnerMode != null) {
+        item("visa-partner") {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                // The whole row is the switch, so the label is its accessible name and the
+                // touch target is the row rather than the thumb.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(value = partnerMode, role = Role.Switch, onValueChange = onPartnerMode),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.visa_partner_toggle), style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = partnerMode, onCheckedChange = null)
+                }
+                if (partnerMode) {
+                    Text(
+                        stringResource(R.string.visa_partner_caveat),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 
     item("visa-search") {
@@ -174,6 +216,7 @@ internal fun LazyListScope.visaSection(
                 nameOf = nameOf,
                 visa = visa,
                 secondVisa = secondVisa,
+                partnerSources = partnerSources,
                 combinedRequirementOf = combinedRequirementOf,
                 modifier = Modifier.animateItem(),
             )
@@ -193,6 +236,8 @@ private fun VisaSummaryCard(
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
     placesTotal: Int,
+    partnerMode: Boolean,
+    partnerSources: PartnerSources?,
     modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
@@ -234,6 +279,15 @@ private fun VisaSummaryCard(
                 )
             }
             BandBar(visa, secondVisa, placesTotal, ramp, Modifier.padding(top = 12.dp))
+            // The registry in partner mode carries the user's metadata but is no single
+            // passport's data; say what it is.
+            if (partnerMode) {
+                Text(
+                    stringResource(R.string.visa_summary_partner),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
             // With two passports the staler date is the honest one, as in asOfNoticeText.
             val asOf = if (secondVisa != null) minOf(visa.asOf, secondVisa.asOf) else visa.asOf
             Row(
@@ -255,14 +309,20 @@ private fun VisaSummaryCard(
                     dialogBody = {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+                                (when {
+                                    partnerMode -> partnerAsOfNoticeText(visa)
+                                    secondVisa != null -> asOfNoticeText(visa, secondVisa)
+                                    else -> asOfNoticeText(visa)
+                                }).asString(),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                             // Attribution links: one compact block, same left edge, uniform small gaps.
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 CompactLink(stringResource(R.string.visa_dataset_credit, visa.datasetName, visa.datasetLicence), visa.datasetUrl)
                                 visa.licenceUrl?.let { CompactLink(stringResource(R.string.visa_licence_link), it) }
-                                listOfNotNull(visa, secondVisa).forEach { v ->
+                                // Partner mode credits every article behind the pair (CC BY-SA),
+                                // not just the one the user's metadata happens to carry.
+                                (partnerSources?.all ?: listOfNotNull(visa, secondVisa)).forEach { v ->
                                     v.sourceUrl?.let { CompactLink(stringResource(R.string.visa_source_link, v.passport), it) }
                                 }
                             }
@@ -402,13 +462,15 @@ private fun VisaListRow(
     nameOf: (String) -> String?,
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
+    partnerSources: PartnerSources?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
     modifier: Modifier = Modifier,
 ) {
     val ramp = LocalMapPalette.current.visa
-    // Attribution only when a second passport is configured and it won
-    val combined = if (secondVisa != null) combinedRequirementOf(row.place.code) else null
-    val attributeTo = if (combined != null && !combined.fromPrimary && secondVisa != null) secondVisa.passport else null
+    // Attribution only when a second passport is configured and it won. In partner mode
+    // the effective [secondVisa] is null and the pair's two rows replace attribution.
+    val combined = if (secondVisa != null || partnerSources != null) combinedRequirementOf(row.place.code) else null
+    val attributeTo = if (combined?.secondWon == true) secondVisa?.passport else null
 
     Column(
         modifier
@@ -464,6 +526,8 @@ private fun VisaListRow(
                 row = row,
                 visa = visa,
                 secondVisa = secondVisa,
+                partner = combined?.partner,
+                partnerSources = partnerSources,
                 nameOf = nameOf,
                 modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 8.dp),
             )
@@ -483,11 +547,19 @@ private fun VisaDetail(
     row: VisaRow,
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
+    partner: PartnerComparison?,
+    partnerSources: PartnerSources?,
     nameOf: (String) -> String?,
     modifier: Modifier = Modifier,
 ) {
     val requirement = row.requirement
+    // Where the partner's answer limits the pair, their registry is the one the links point at.
+    val source = rowSource(visa, partnerSources, partner)
+    // The user's own passport countries, and the partner's while partner mode is on: FCDO advice for home is noise on those rows.
+    val ownPassports = partnerSources?.all?.map { it.passport }
+        ?: listOfNotNull(visa.passport, secondVisa?.passport)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        partner?.let { PartnerRows(it, Modifier.padding(bottom = 4.dp), showCaveat = false) }
         requirement.note?.let { note ->
             Text(note, style = MaterialTheme.typography.bodyMedium)
         }
@@ -525,13 +597,17 @@ private fun VisaDetail(
         // app's answer is the wrong one, the reader can see there is a second one.
         if (requirement.origin == VisaOrigin.CORRECTION && requirement.datasetSaid != null) {
             Text(
-                stringResource(R.string.visa_correction, visa.datasetName, requirement.datasetSaid),
+                stringResource(R.string.visa_correction, source.datasetName, requirement.datasetSaid),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Text(
-            (if (secondVisa != null) asOfNoticeText(visa, secondVisa) else asOfNoticeText(visa)).asString(),
+            (when {
+                partner != null -> partnerAsOfNoticeText(visa)
+                secondVisa != null -> asOfNoticeText(visa, secondVisa)
+                else -> asOfNoticeText(visa)
+            }).asString(),
             // labelSmall — one step below the LOW-confidence warning's
             // labelMedium, at full-strength onSurfaceVariant. The separation is
             // size, not contrast: cutting this colour's alpha would put a
@@ -547,7 +623,13 @@ private fun VisaDetail(
         // Named for what it is. The IATA Travel Centre is one form for the whole
         // world, so calling it "IATA: Suriname" would promise a page that does not
         // exist.
-        LinkText(stringResource(R.string.visa_iata_link), visa.iataUrl)
+        LinkText(stringResource(R.string.visa_iata_link), source.iataUrl)
+        if (source !== visa) {
+            source.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, source.passport), it) }
+        }
+        if (showTravelAdvice(row.place.code, requirement.officialUrl, ownPassports)) {
+            TravelAdviceRow(row.place.code)
+        }
     }
 }
 
