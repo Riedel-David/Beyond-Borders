@@ -103,7 +103,6 @@
     <string name="settings_visa_last_checked">Dernière vérification : %1$s</string>
     <string name="settings_visa_last_checked_never">Dernière vérification : jamais</string>
     <string name="settings_visa_check_now">Vérifier maintenant</string>
-    <string name="settings_ok">OK</string>
     <string name="settings_cancel">Annuler</string>
 
     <string name="settings_import_title">Importer ce fichier ?</string>

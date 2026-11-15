@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui
 
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.annotation.DrawableRes
@@ -132,6 +133,10 @@ fun BeyondBordersRoot(
         }
     }
     val tab = Tab.entries[selected]
+    // Back from Passport or Settings goes to the map first and exits only from there.
+    // Registered here, below nothing: PassportScreen's own handler for the stats detail is
+    // composed deeper and so wins while it is open, and dialogs take back before either.
+    BackHandler(enabled = tab != Tab.MAP) { selected = Tab.MAP.ordinal }
 
     val context = LocalContext.current
     val statusesLoaded by placesViewModel.statusesLoaded.collectAsStateWithLifecycle()
@@ -198,9 +203,11 @@ fun BeyondBordersRoot(
             }
         },
     ) { padding ->
-        // rememberSaveableStateHolder keeps each tab's own composition alive under
-        // the one that's showing, rather than disposing it — so leaving Settings
-        // mid-import or mid-scroll and coming back finds it exactly as it was.
+        // rememberSaveableStateHolder does not keep a tab's composition alive: leaving a tab
+        // disposes it. What survives is only what was saved through rememberSaveable (and
+        // LazyListState / ScrollState, which are saveable). Plain `remember` state, an
+        // open dialog or an in-flight import preview held in `remember`, and the map's
+        // camera unless MapScreen saves it, are rebuilt from scratch on return.
         val tabState = rememberSaveableStateHolder()
         AnimatedContent(
             targetState = tab,

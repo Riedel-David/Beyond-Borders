@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import com.riedel.beyondborders.ui.NavRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -53,7 +54,7 @@ internal fun RepoLink(modifier: Modifier = Modifier) {
 @Composable
 internal fun ReportProblemLink() {
     val uriHandler = LocalUriHandler.current
-    InfoRow(
+    NavRow(
         title = stringResource(R.string.settings_report_problem),
         onClick = { runCatching { uriHandler.openUri("$REPO_URL/issues") } },
     )

@@ -101,7 +101,6 @@
     <string name="settings_visa_last_checked">Last checked: %1$s</string>
     <string name="settings_visa_last_checked_never">Last checked: never</string>
     <string name="settings_visa_check_now">Check now</string>
-    <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancel</string>
 
     <string name="settings_import_title">Import this file?</string>

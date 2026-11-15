@@ -103,7 +103,6 @@
     <string name="settings_visa_last_checked">Остання перевірка: %1$s</string>
     <string name="settings_visa_last_checked_never">Остання перевірка: ніколи</string>
     <string name="settings_visa_check_now">Перевірити зараз</string>
-    <string name="settings_ok">OK</string>
     <string name="settings_cancel">Скасувати</string>
 
     <string name="settings_import_title">Імпортувати цей файл?</string>

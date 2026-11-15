@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui.places
 
 import androidx.compose.foundation.background
+import com.riedel.beyondborders.ui.RadioListItem
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -210,25 +211,18 @@ internal fun VisitsDialog(
                 LazyColumn(Modifier.heightIn(max = 130.dp)) {
                     // Choices as (year?) so "No date" sits in the same list as the years.
                     items(listOf<Int?>(null) + visitYearChoices(currentYear)) { year ->
-                        Row(
-                            Modifier.fillMaxWidth()
-                                .clickable {
-                                    hasPick = true
-                                    pickedYear = year
-                                    // A month picked earlier may be in the future of the new year.
-                                    if (year == null || isFutureVisitMonth(year, pickedMonth, currentYear, currentMonth)) {
-                                        pickedMonth = null
-                                    }
+                        RadioListItem(
+                            label = year?.toString() ?: stringResource(R.string.visits_no_date),
+                            selected = hasPick && pickedYear == year,
+                            onClick = {
+                                hasPick = true
+                                pickedYear = year
+                                // A month picked earlier may be in the future of the new year.
+                                if (year == null || isFutureVisitMonth(year, pickedMonth, currentYear, currentMonth)) {
+                                    pickedMonth = null
                                 }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = hasPick && pickedYear == year, onClick = null)
-                            Text(
-                                year?.toString() ?: stringResource(R.string.visits_no_date),
-                                Modifier.padding(start = 12.dp),
-                            )
-                        }
+                            },
+                        )
                     }
                 }
                 Text(
