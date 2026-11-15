@@ -99,11 +99,12 @@ internal fun travelAdviceUrl(countryCode: String): String? =
     ADVICE_SLUGS[countryCode.uppercase()]?.let { ADVICE_BASE + it }
 
 /**
- * Whether a row gets the FCDO link: not for the traveller's own passport countries, and not
- * where the Auswärtiges Amt link ([officialUrl]) already points at official advice.
+ * Whether a row gets the FCDO link: not for the traveller's own passport countries. It is
+ * shown even where an Auswärtiges Amt link exists: with a German passport 250 of 252 rows
+ * carry one, so hiding this link there left it invisible to the app's main audience.
  */
-internal fun showTravelAdvice(countryCode: String, officialUrl: String?, ownPassports: Collection<String>): Boolean =
-    officialUrl == null && ownPassports.none { it.equals(countryCode, ignoreCase = true) }
+internal fun showTravelAdvice(countryCode: String, ownPassports: Collection<String>): Boolean =
+    ownPassports.none { it.equals(countryCode, ignoreCase = true) }
 
 /**
  * A link-out to current UK government (FCDO) travel advice. Opens the browser; the app stores nothing and
