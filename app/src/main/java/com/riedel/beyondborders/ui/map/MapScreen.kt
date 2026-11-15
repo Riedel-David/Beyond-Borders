@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.RectF
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
@@ -13,6 +14,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -89,6 +91,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -127,6 +131,7 @@ import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRequirement
+import com.riedel.beyondborders.ui.Motion
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.passport.QuickAddDialog
@@ -275,11 +280,26 @@ fun MapScreen(
     // rather than [PlacesViewModel.selectedCode], which the passport also reads.
     var regionInfo by remember { mutableStateOf<RegionTapInfo?>(null) }
 
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    fun collapseControls() {
+        controlsExpanded = false
+        searchOpen = false
+        searchQuery = ""
+        focusManager.clearFocus()
+        keyboard?.hide()
+    }
+    val cardSlidePx = with(LocalDensity.current) { 24.dp.roundToPx() }
+
     // Reads the ViewModel's StateFlow.value rather than the regionMode/stats
     // collected above: this runs from a MapLibre click callback, which can fire
     // from a closure captured several recompositions ago, and .value is always
     // the live answer regardless of which composition captured this closure.
     fun tap(code: String?) {
+        // Any map tap clears the overflow panel so the map stays unobstructed. Plain
+        // assignments, never a read of controlsExpanded: this runs from a MapLibre
+        // callback whose closure may be several recompositions old.
+        collapseControls()
         val liveMode = viewModel.regionMode.value
         if (liveMode != RegionMode.OFF) {
             regionInfo = code?.let { regionInfoFor(it, liveMode, viewModel.stats.value, viewModel::placeOf) }
@@ -289,14 +309,22 @@ fun MapScreen(
     }
 
     fun pickFromSearch(place: Place) {
+        viewModel.vibrate()
         // Through the same path as a map tap: while region mode is on, a plain
         // select() would set a place that the region UI hides (no card, no
         // outline, no share button), leaving a selection nobody can see or clear.
         tap(place.code)
         controller.flyTo(place.bounds)
-        searchOpen = false
-        searchQuery = ""
+        collapseControls()
     }
+
+    // Declared in order of priority: the last enabled handler wins, so the open panel
+    // closes first, then the selection or region card.
+    BackHandler(enabled = selectedCode != null || regionInfo != null) {
+        viewModel.select(null)
+        regionInfo = null
+    }
+    BackHandler(enabled = controlsExpanded) { collapseControls() }
 
     // Share work runs in a scope that outlives this screen: the snapshot callback
     // and the caption/PNG work finish after the user may have left the Map tab, and
@@ -524,7 +552,7 @@ fun MapScreen(
             }
             if (mapLegendKind(lens, visaLegendLabeled, regionMode, !counterCompact, stats.been, stats.wishlist) == MapLegendKind.NUDGE) {
                 SuggestionChip(
-                    onClick = { showQuickAdd = true },
+                    onClick = { viewModel.vibrate(); showQuickAdd = true },
                     // SuggestionChip already pads its touch target out to 48 dp.
                     label = { Text(stringResource(R.string.map_quick_add)) },
                 )
@@ -536,16 +564,13 @@ fun MapScreen(
                 .align(Alignment.TopEnd)
                 .padding(contentPadding)
                 .padding(12.dp)
-                // The stack grows by a pill's height each time one more control
-                // (search, visa, regions) is revealed on expand. It also changes width
-                // whenever a pill's label does ("Search"/"Close", "Regions"/"Regions:
-                // named"), and the stack hangs off the right edge: the default TopStart
-                // alignment anchored the content to the left of the animating box, so
-                // every right-aligned pill, the ⋮ included, slid sideways for 180 ms.
-                .widthIn(max = controlsMaxWidth)
-                .animateContentSize(animationSpec = tween(180), alignment = Alignment.TopEnd),
+                // The stack hangs off the right edge and its pills change width with their
+                // labels. No animateContentSize here: it animates width from 0 too, so
+                // every right-aligned pill, the ⋮ included, slid sideways. The panels
+                // below expand vertically only (Motion.expandEnter) inside an End-aligned
+                // column, so nothing moves horizontally.
+                .widthIn(max = controlsMaxWidth),
             horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             MapOverlayButton(
                 icon = if (controlsExpanded) Icons.Filled.Close else Icons.Filled.MoreVert,
@@ -554,20 +579,25 @@ fun MapScreen(
                 ),
                 onClick = {
                     viewModel.vibrate()
-                    controlsExpanded = !controlsExpanded
                     // Collapsing hides the search field along with everything else,
                     // so leaving it open underneath would reopen it silently the
                     // next time the stack expands.
-                    if (!controlsExpanded) searchOpen = false
+                    if (controlsExpanded) collapseControls() else controlsExpanded = true
                 },
             )
-            if (!controlsExpanded) return@Column
+            AnimatedVisibility(
+                visible = controlsExpanded,
+                enter = Motion.expandEnter,
+                exit = Motion.expandExit,
+            ) {
+              Column(horizontalAlignment = Alignment.End) {
             // One grouped container for the three map modes, each an icon plus an
             // always-visible label, with the active one highlighted. Search is the
             // passport's own search, on the map: it is not routed through the
             // [PlacesViewModel] query because the map flies the camera on a pick
             // rather than filtering a list.
             val selectedControls = selectedMapControls(searchOpen, lens, visa != null, regionMode)
+            Box(Modifier.padding(top = 8.dp)) {
             MapControlGroup {
                 MapControlItem(
                     icon = rememberVectorPainter(Icons.Filled.Search),
@@ -582,7 +612,11 @@ fun MapScreen(
                         icon = painterResource(R.drawable.ic_tab_passport),
                         label = stringResource(R.string.map_lens_visa),
                         selected = MapControl.VISA in selectedControls,
-                        onClick = { viewModel.vibrate(); viewModel.setVisaLens(!lens) },
+                        onClick = {
+                            viewModel.vibrate()
+                            viewModel.setVisaLens(!lens)
+                            collapseControls()
+                        },
                     )
                 }
                 // One item cycles all three states rather than three for one
@@ -600,13 +634,18 @@ fun MapScreen(
                     onClick = { viewModel.vibrate(); viewModel.setRegionMode(nextRegionMode(regionMode)) },
                 )
             }
-            if (searchOpen) {
+            }
+            AnimatedVisibility(
+                visible = searchOpen,
+                enter = Motion.expandEnter,
+                exit = Motion.expandExit,
+            ) {
                 Card(
                     // Same reason as the visa legend's cap: nothing between this
                     // Card and the screen-filling Box constrains its width, and
                     // SearchField's own fillMaxWidth() would otherwise stretch it
                     // to the full screen instead of staying a corner control.
-                    modifier = Modifier.widthIn(max = 280.dp),
+                    modifier = Modifier.padding(top = 8.dp).widthIn(max = 280.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     ),
@@ -652,6 +691,8 @@ fun MapScreen(
                     }
                 }
             }
+              }
+            }
         }
 
         // AnimatedVisibility keeps rendering its content through the exit fade, so
@@ -671,8 +712,8 @@ fun MapScreen(
 
         AnimatedVisibility(
             visible = regionActive && regionInfo != null,
-            enter = fadeIn(tween(120)),
-            exit = fadeOut(tween(140)),
+            enter = Motion.cardEnter(cardSlidePx),
+            exit = Motion.cardExit(cardSlidePx),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding)
@@ -685,8 +726,8 @@ fun MapScreen(
         }
         AnimatedVisibility(
             visible = !regionActive && selected != null,
-            enter = fadeIn(tween(120)),
-            exit = fadeOut(tween(140)),
+            enter = Motion.cardEnter(cardSlidePx),
+            exit = Motion.cardExit(cardSlidePx),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(contentPadding),
@@ -741,8 +782,9 @@ fun MapScreen(
         // 140 ms exit).
         AnimatedVisibility(
             visible = selected == null,
-            enter = fadeIn(tween(120, delayMillis = 140)),
-            exit = fadeOut(tween(80)),
+            enter = fadeIn(tween(120, delayMillis = 140)) +
+                slideInVertically(tween(Motion.DurationShort, delayMillis = 140, easing = Motion.Easing)) { cardSlidePx },
+            exit = Motion.cardExit(cardSlidePx),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(contentPadding)
