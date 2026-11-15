@@ -555,8 +555,8 @@ private fun VisaDetail(
     val requirement = row.requirement
     // Where the partner's answer limits the pair, their registry is the one the links point at.
     val source = rowSource(visa, partnerSources, partner)
-    // The user's own passport countries: FCDO advice for home is noise on those rows.
-    val ownPassports = partnerSources?.own?.map { it.passport }
+    // The user's own passport countries, and the partner's while partner mode is on: FCDO advice for home is noise on those rows.
+    val ownPassports = partnerSources?.all?.map { it.passport }
         ?: listOfNotNull(visa.passport, secondVisa?.passport)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         partner?.let { PartnerRows(it, Modifier.padding(bottom = 4.dp), showCaveat = false) }

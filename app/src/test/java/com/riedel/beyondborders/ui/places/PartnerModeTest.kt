@@ -269,6 +269,16 @@ class PartnerModeTest {
         assertEquals(false, showTravelAdvice("fr", null, listOf("DE", "FR")))
         assertEquals(false, showTravelAdvice("JP", "https://auswaertiges-amt.example", listOf("DE")))
         assertEquals(true, showTravelAdvice("JP", null, listOf("DE", "FR")))
+        // The partner's passport country is passed in alongside the user's in partner mode.
+        assertEquals(false, showTravelAdvice("UA", null, listOf("DE", "FR", "UA")))
+    }
+
+    @Test
+    fun `a partner who becomes one of your own passports is cleared and others are kept`() {
+        assertEquals(null, com.riedel.beyondborders.settings.partnerAfterOwnChange("FR", "FR"))
+        assertEquals("FR", com.riedel.beyondborders.settings.partnerAfterOwnChange("FR", "DE"))
+        assertEquals("FR", com.riedel.beyondborders.settings.partnerAfterOwnChange("FR", null))
+        assertEquals(null, com.riedel.beyondborders.settings.partnerAfterOwnChange(null, null))
     }
 
     private fun place(code: String) = Place(
