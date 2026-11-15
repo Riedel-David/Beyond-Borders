@@ -30,6 +30,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -99,30 +100,31 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
 internal fun VisitTimeline(visits: List<Visit>, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val undated = stringResource(R.string.visits_undated)
     val locale = currentLocale()
-    // Newest at the left: the card is clipped on the right, and the latest visit is
-    // the one worth seeing first.
-    val ordered = visitsChronological(visits).asReversed()
+    // Oldest at the left, newest at the right, opened scrolled to the newest: the latest
+    // visit is the one worth seeing first, and older ones fade out at the left edge.
+    val ordered = visitsChronological(visits)
     val scroll = rememberScrollState()
+    LaunchedEffect(ordered.size, scroll.maxValue) { scroll.scrollTo(scroll.maxValue) }
     val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     val dotColor = MaterialTheme.colorScheme.onSurface
     Row(
         modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            // Fades the right edge out while more remains, so a clipped cell reads as
+            // Fades the left edge out while older visits remain, so a clipped cell reads as
             // "scrolls" rather than as the end.
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
-                if (scroll.canScrollForward) {
+                if (scroll.canScrollBackward) {
                     val fade = 32.dp.toPx()
                     drawRect(
                         Brush.horizontalGradient(
-                            listOf(Color.Black, Color.Transparent),
-                            startX = size.width - fade,
-                            endX = size.width,
+                            listOf(Color.Transparent, Color.Black),
+                            startX = 0f,
+                            endX = fade,
                         ),
-                        topLeft = Offset(size.width - fade, 0f),
+                        topLeft = Offset.Zero,
                         size = androidx.compose.ui.geometry.Size(fade, size.height),
                         blendMode = BlendMode.DstIn,
                     )

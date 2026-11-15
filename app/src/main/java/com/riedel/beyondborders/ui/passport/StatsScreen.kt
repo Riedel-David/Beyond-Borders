@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.ExpandableHeader
 import com.riedel.beyondborders.ui.map.flagAssetPath
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -212,7 +213,8 @@ fun StatsScreen(
                 )
             }
 
-            ShowAllGroupingsRow(
+            ExpandableHeader(
+                title = stringResource(R.string.stats_show_all_groupings),
                 expanded = showAllGroupings,
                 onToggle = { showAllGroupings = !showAllGroupings },
                 modifier = Modifier.padding(top = 16.dp),
@@ -271,38 +273,6 @@ private fun LabeledStat(label: String, value: String, valueColor: Color, modifie
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(value, style = MaterialTheme.typography.bodyMedium, color = valueColor)
-    }
-}
-
-/** The row that reveals regions and named groupings. A chevron rather than words
- * that change, since "Show" vs. "Hide" is the same information the rotation
- * already gives, twice. */
-@Composable
-private fun ShowAllGroupingsRow(
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val rotation by animateFloatAsState(if (expanded) 90f else 0f)
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            stringResource(R.string.stats_show_all_groupings),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = stringResource(if (expanded) R.string.stats_collapse else R.string.stats_expand),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.rotate(rotation),
-        )
     }
 }
 

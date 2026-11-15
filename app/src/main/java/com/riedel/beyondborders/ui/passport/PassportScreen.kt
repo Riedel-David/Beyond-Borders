@@ -109,6 +109,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.ExpandChevron
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
 import com.riedel.beyondborders.ui.UiText
@@ -626,17 +627,7 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
         )
-        // Collapsed points right, expanded down. Rotated rather than swapped so the
-        // turn can animate.
-        val rotation by animateFloatAsState(if (collapsed) -90f else 0f, label = "chevron")
-        Icon(
-            imageVector = Icons.Filled.KeyboardArrowDown,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .size(20.dp)
-                .graphicsLayer { rotationZ = rotation },
-        )
+        ExpandChevron(!collapsed)
     }
 }
 

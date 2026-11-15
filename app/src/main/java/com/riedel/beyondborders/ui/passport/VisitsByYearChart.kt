@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -45,12 +46,22 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.rotate
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.unit.sp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.ExpandableHeader
 import com.riedel.beyondborders.ui.places.VisitStats
 import com.riedel.beyondborders.ui.places.YearPoint
 
-private val PLOT_HEIGHT = 160.dp
+private val PLOT_HEIGHT = 108.dp
 private val MIN_SLOT = 32.dp
 private val AXIS_GAP = 8.dp
 
@@ -67,12 +78,12 @@ private val AXIS_GAP = 8.dp
 internal fun VisitsByYearChart(stats: VisitStats, modifier: Modifier = Modifier) {
     val points = stats.yearPoints
     var showNumbers by remember { mutableStateOf(false) }
+    // Collapsed by default: the chart is a lot of screen for a figure most people look at now and then.
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Column(modifier) {
-        Text(
-            stringResource(R.string.stats_visits_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+        ExpandableHeader(stringResource(R.string.stats_visits_title), expanded, { expanded = !expanded })
+        AnimatedVisibility(visible = expanded) {
+        Column {
         if (points.isNotEmpty()) {
             val summary = stringResource(
                 R.string.stats_chart_summary, points.first().year, points.last().year, points.last().cumulative,
@@ -122,6 +133,8 @@ internal fun VisitsByYearChart(stats: VisitStats, modifier: Modifier = Modifier)
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+        }
+        }
     }
 }
 
@@ -145,10 +158,10 @@ private fun LegendEntry(color: Color, label: String, line: Boolean) {
 internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val labelStyle = TextStyle(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val labelStyle = TextStyle(fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     val barColor = MaterialTheme.colorScheme.primary
     val lineColor = MaterialTheme.colorScheme.tertiary
-    val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
     val axis = remember(points) { niceAxis(points.maxOf { maxOf(it.countries, it.cumulative) }) }
 
     // sp-sized labels grow with the font scale, so the reserved gutters are measured, not guessed.
@@ -187,10 +200,14 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
                     val slotPx = size.width / points.size
                     axis.ticks().forEach { v ->
                         val y = top + h * (1f - v.toFloat() / axis.top)
-                        drawLine(gridColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                        // Faint dashes for the guides, a solid hairline only at zero: lighter than a full grid.
+                        drawLine(
+                            gridColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx(),
+                            pathEffect = if (v == 0) null else PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())),
+                        )
                     }
-                    val barW = minOf(slotPx * 0.6f, 20.dp.toPx())
-                    val r = CornerRadius(minOf(3.dp.toPx(), barW / 2))
+                    val barW = minOf(slotPx * 0.45f, 12.dp.toPx())
+                    val r = CornerRadius(barW / 2)
                     points.forEachIndexed { i, p ->
                         if (p.countries > 0) {
                             val bh = h * p.countries / axis.top
@@ -198,7 +215,7 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
                             val path = Path().apply {
                                 addRoundRect(RoundRect(x, top + h - bh, x + barW, top + h, r, r, CornerRadius.Zero, CornerRadius.Zero))
                             }
-                            drawPath(path, barColor)
+                            drawPath(path, barColor.copy(alpha = 0.85f))
                         }
                     }
                     val line = Path()
@@ -206,8 +223,9 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
                         Offset(slotPx * i + slotPx / 2, top + h * (1f - p.cumulative.toFloat() / axis.top))
                     }
                     centres.forEachIndexed { i, o -> if (i == 0) line.moveTo(o.x, o.y) else line.lineTo(o.x, o.y) }
-                    drawPath(line, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-                    centres.forEach { drawCircle(lineColor, 3.dp.toPx(), it) }
+                    drawPath(line, lineColor, style = Stroke(1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    // Only the latest total gets a marker; a dot on every year was noise.
+                    centres.lastOrNull()?.let { drawCircle(lineColor, 3.5.dp.toPx(), it) }
 
                     // Labels at every k-th slot counted back from the latest year, so that one is always shown.
                     val step = labelStep(slotPx, xLabelWidthPx + 4.dp.toPx())
