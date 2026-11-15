@@ -11,6 +11,9 @@ import org.junit.Test
 
 class VisaUpdateTest {
 
+    private val TODAY = "2026-11-15"
+    private val noBundled: (String) -> String? = { null }
+
     private fun probe(): String = File("src/main/assets/visa.json").readText()
 
     private fun json(passport: String, asOf: String): ByteArray {
@@ -41,32 +44,32 @@ class VisaUpdateTest {
     @Test
     fun `a well-formed manifest parses into upper-case codes`() {
         val b = json("FR", "2026-11-11")
-        val m = parseManifest(manifestJson(mapOf("FR" to entryFor(b, "FR", "2026-11-11"))))!!
+        val m = parseManifest(manifestJson(mapOf("FR" to entryFor(b, "FR", "2026-11-11"))), TODAY)!!
         assertEquals(setOf("FR"), m.passports.keys)
         assertEquals(b.size, m.passports.getValue("FR").bytes)
     }
 
     @Test
     fun `an unknown manifestVersion is ignored whole`() {
-        assertNull(parseManifest(manifestJson(emptyMap(), manifestVersion = 2)))
+        assertNull(parseManifest(manifestJson(emptyMap(), manifestVersion = 2), TODAY))
     }
 
     @Test
     fun `an unknown dataFormat is ignored whole`() {
-        assertNull(parseManifest(manifestJson(emptyMap(), dataFormat = 2)))
+        assertNull(parseManifest(manifestJson(emptyMap(), dataFormat = 2), TODAY))
     }
 
     @Test
     fun `garbage is not a manifest`() {
-        assertNull(parseManifest("<html>"))
-        assertNull(parseManifest("""{"manifestVersion":1,"dataFormat":1}"""))
+        assertNull(parseManifest("<html>", TODAY))
+        assertNull(parseManifest("""{"manifestVersion":1,"dataFormat":1}""", TODAY))
     }
 
     @Test
     fun `an entry whose file name is not visa_code_json is skipped`() {
         val b = json("FR", "2026-11-11")
         val bad = entryFor(b, "FR", "2026-11-11").copy(file = "../x.json")
-        val m = parseManifest(manifestJson(mapOf("FR" to bad)))!!
+        val m = parseManifest(manifestJson(mapOf("FR" to bad)), TODAY)!!
         assertTrue(m.passports.isEmpty())
     }
 
@@ -81,33 +84,33 @@ class VisaUpdateTest {
 
     @Test
     fun `wanted passports in the manifest are fetched and others skipped`() {
-        val plan = planFetches(manifest, setOf("DE", "ZZ"), emptyMap())
+        val plan = planFetches(manifest, setOf("DE", "ZZ"), emptyMap(), noBundled, TODAY)
         assertEquals(listOf("DE"), plan.fetch)
         assertTrue(plan.delete.isEmpty())
     }
 
     @Test
     fun `a stored passport missing from the manifest is deleted`() {
-        val plan = planFetches(manifest, setOf("DE"), mapOf("US" to "2026-01-01"))
+        val plan = planFetches(manifest, setOf("DE"), mapOf("US" to "2026-01-01"), noBundled, TODAY)
         assertEquals(listOf("US"), plan.delete)
         assertFalse("US" in plan.fetch)
     }
 
     @Test
     fun `a stored passport is refreshed even when no longer wanted`() {
-        val plan = planFetches(manifest, emptySet(), mapOf("FR" to "2026-01-01"))
+        val plan = planFetches(manifest, emptySet(), mapOf("FR" to "2026-01-01"), noBundled, TODAY)
         assertEquals(listOf("FR"), plan.fetch)
     }
 
     @Test
     fun `a stored copy that is already current is not fetched again`() {
-        val plan = planFetches(manifest, setOf("FR"), mapOf("FR" to "2026-11-11"))
+        val plan = planFetches(manifest, setOf("FR"), mapOf("FR" to "2026-11-11"), noBundled, TODAY)
         assertTrue(plan.fetch.isEmpty())
     }
 
     @Test
     fun `an unparseable stored copy is fetched again`() {
-        val plan = planFetches(manifest, emptySet(), mapOf("FR" to null))
+        val plan = planFetches(manifest, emptySet(), mapOf("FR" to null), noBundled, TODAY)
         assertEquals(listOf("FR"), plan.fetch)
     }
 
@@ -116,44 +119,44 @@ class VisaUpdateTest {
     @Test
     fun `a good download is accepted`() {
         val b = json("FR", "2026-11-11")
-        assertNull(verifyDownload(b, entryFor(b, "FR", "2026-11-11"), "FR", "2026-01-01"))
+        assertNull(verifyDownload(b, entryFor(b, "FR", "2026-11-11"), "FR", "2026-01-01", TODAY))
     }
 
     @Test
     fun `a download over the size limit is rejected`() {
         val b = ByteArray(MAX_FILE_BYTES + 1) { ' '.code.toByte() }
-        assertEquals(Rejection.TOO_LARGE, verifyDownload(b, entryFor(b, "FR", "x"), "FR", null))
+        assertEquals(Rejection.TOO_LARGE, verifyDownload(b, entryFor(b, "FR", "x"), "FR", null, TODAY))
     }
 
     @Test
     fun `a download whose length differs from the manifest is rejected`() {
         val b = json("FR", "2026-11-11")
-        assertEquals(Rejection.WRONG_LENGTH, verifyDownload(b, entryFor(b, "FR", "2026-11-11").copy(bytes = b.size + 1), "FR", null))
+        assertEquals(Rejection.WRONG_LENGTH, verifyDownload(b, entryFor(b, "FR", "2026-11-11").copy(bytes = b.size + 1), "FR", null, TODAY))
     }
 
     @Test
     fun `a sha256 mismatch is rejected`() {
         val b = json("FR", "2026-11-11")
-        assertEquals(Rejection.WRONG_HASH, verifyDownload(b, entryFor(b, "FR", "2026-11-11").copy(sha256 = "0".repeat(64)), "FR", null))
+        assertEquals(Rejection.WRONG_HASH, verifyDownload(b, entryFor(b, "FR", "2026-11-11").copy(sha256 = "0".repeat(64)), "FR", null, TODAY))
     }
 
     @Test
     fun `a file that does not parse is rejected`() {
         val b = "not json".toByteArray()
-        assertEquals(Rejection.UNPARSEABLE, verifyDownload(b, entryFor(b, "FR", "2026-11-11"), "FR", null))
+        assertEquals(Rejection.UNPARSEABLE, verifyDownload(b, entryFor(b, "FR", "2026-11-11"), "FR", null, TODAY))
     }
 
     @Test
     fun `a file for a different passport is rejected`() {
         val b = json("US", "2026-11-11")
-        assertEquals(Rejection.WRONG_PASSPORT, verifyDownload(b, entryFor(b, "FR", "2026-11-11"), "FR", null))
+        assertEquals(Rejection.WRONG_PASSPORT, verifyDownload(b, entryFor(b, "FR", "2026-11-11"), "FR", null, TODAY))
     }
 
     @Test
     fun `a file older than the copy in use is rejected but an equal one is not`() {
         val b = json("FR", "2026-05-01")
-        assertEquals(Rejection.OLDER_THAN_IN_USE, verifyDownload(b, entryFor(b, "FR", "2026-05-01"), "FR", "2026-06-01"))
-        assertNull(verifyDownload(b, entryFor(b, "FR", "2026-05-01"), "FR", "2026-05-01"))
+        assertEquals(Rejection.OLDER_THAN_IN_USE, verifyDownload(b, entryFor(b, "FR", "2026-05-01"), "FR", "2026-06-01", TODAY))
+        assertNull(verifyDownload(b, entryFor(b, "FR", "2026-05-01"), "FR", "2026-05-01", TODAY))
     }
 
     // --- shouldUse / preferStored ---------------------------------------------
@@ -170,16 +173,16 @@ class VisaUpdateTest {
     @Test
     fun `preferStored picks a newer stored copy and otherwise the bundled one`() {
         val bundled = reg("FR", "2026-01-01")
-        assertEquals("2026-06-01", preferStored(bundled) { reg("FR", "2026-06-01") }.asOf)
-        assertEquals("2026-01-01", preferStored(bundled) { reg("FR", "2026-01-01") }.asOf)
-        assertEquals("2026-01-01", preferStored(bundled) { null }.asOf)
-        assertEquals("2026-01-01", preferStored(bundled) { reg("US", "2027-01-01") }.asOf)
+        assertEquals("2026-06-01", preferStored(bundled, { TODAY }) { reg("FR", "2026-06-01") }.asOf)
+        assertEquals("2026-01-01", preferStored(bundled, { TODAY }) { reg("FR", "2026-01-01") }.asOf)
+        assertEquals("2026-01-01", preferStored(bundled, { TODAY }) { null }.asOf)
+        assertEquals("2026-01-01", preferStored(bundled, { TODAY }) { reg("US", "2027-01-01") }.asOf)
     }
 
     @Test
     fun `preferStored falls back to bundled when reading the stored copy throws`() {
         val bundled = reg("FR", "2026-01-01")
-        assertEquals("2026-01-01", preferStored(bundled) { throw IOException("boom") }.asOf)
+        assertEquals("2026-01-01", preferStored(bundled, { TODAY }) { throw IOException("boom") }.asOf)
     }
 
     @Test
@@ -220,7 +223,7 @@ class VisaUpdateTest {
     @Test
     fun `an update stores a newer wanted passport and reports it`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, setOf("FR"), { "2026-01-01" })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, setOf("FR"), { "2026-01-01" }, { TODAY })
         assertEquals(listOf("FR"), r.applied)
         assertEquals("2026-11-11", r.appliedAsOf)
         assertTrue(r.manifestSeen)
@@ -230,7 +233,7 @@ class VisaUpdateTest {
     @Test
     fun `an update older than the bundled asset is not stored`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-01-01")), store, setOf("FR"), { "2026-06-01" })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-01-01")), store, setOf("FR"), { "2026-06-01" }, { TODAY })
         assertTrue(r.applied.isEmpty())
         assertTrue(store.codes().isEmpty())
     }
@@ -238,7 +241,7 @@ class VisaUpdateTest {
     @Test
     fun `a dropped passport is deleted only when the manifest was understood`() {
         val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, emptySet(), { null })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, emptySet(), { null }, { TODAY })
         assertEquals(listOf("US"), r.deleted)
         assertFalse("US" in store.codes())
     }
@@ -246,7 +249,7 @@ class VisaUpdateTest {
     @Test
     fun `a failed manifest fetch deletes nothing and asks for a retry`() {
         val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
-        val r = runUpdate(FakeFetcher(emptyMap()), store, setOf("US"), { null })
+        val r = runUpdate(FakeFetcher(emptyMap()), store, setOf("US"), { null }, { TODAY })
         assertTrue(r.ioFailure)
         assertFalse(r.manifestSeen)
         assertEquals(setOf("US"), store.codes())
@@ -256,7 +259,7 @@ class VisaUpdateTest {
     fun `an unrecognised manifest version deletes nothing and does not retry`() {
         val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
         val files = mapOf(MANIFEST_FILE to manifestJson(emptyMap(), manifestVersion = 9).toByteArray())
-        val r = runUpdate(FakeFetcher(files), store, setOf("US"), { null })
+        val r = runUpdate(FakeFetcher(files), store, setOf("US"), { null }, { TODAY })
         assertFalse(r.ioFailure)
         assertFalse(r.manifestSeen)
         assertEquals(setOf("US"), store.codes())
@@ -268,7 +271,7 @@ class VisaUpdateTest {
         files["visa_fr.json"] = json("FR", "2026-11-11").also { it[0] = ' '.code.toByte() }
         val old = json("FR", "2026-01-01")
         val store = FakeStore(mapOf("FR" to old))
-        val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { null })
+        val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { null }, { TODAY })
         assertTrue(r.applied.isEmpty())
         assertTrue(store.read("FR")!!.contentEquals(old))
     }
@@ -276,9 +279,91 @@ class VisaUpdateTest {
     @Test
     fun `a failed file fetch is reported as a retry but other passports still apply`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11"), failing = setOf("visa_fr.json")), store, setOf("FR", "US"), { null })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11"), failing = setOf("visa_fr.json")), store, setOf("FR", "US"), { null }, { TODAY })
         assertTrue(r.ioFailure)
         assertEquals(listOf("US"), r.applied)
+    }
+
+    // --- review fixes ------------------------------------------------------------
+
+    @Test
+    fun `a future-dated manifest entry is skipped but its stored copy is kept`() {
+        val b = json("FR", "2030-01-01")
+        val m = parseManifest(manifestJson(mapOf("FR" to entryFor(b, "FR", "2030-01-01"))), TODAY)!!
+        assertTrue(m.passports.isEmpty())
+        assertEquals(setOf("FR"), m.listed)
+        val plan = planFetches(m, setOf("FR"), mapOf("FR" to "2026-11-01"), noBundled, TODAY)
+        assertTrue(plan.fetch.isEmpty())
+        assertTrue(plan.delete.isEmpty())
+    }
+
+    @Test
+    fun `a future-dated file is rejected`() {
+        val b = json("FR", "2030-01-01")
+        assertEquals(Rejection.FUTURE_DATED, verifyDownload(b, entryFor(b, "FR", "2030-01-01"), "FR", null, TODAY))
+        val tomorrow = json("FR", "2026-11-16")
+        assertNull(verifyDownload(tomorrow, entryFor(tomorrow, "FR", "2026-11-16"), "FR", null, TODAY))
+    }
+
+    @Test
+    fun `a future-dated stored copy is not used`() {
+        val bundled = reg("FR", "2026-01-01")
+        assertEquals("2026-01-01", preferStored(bundled, { TODAY }) { reg("FR", "2030-01-01") }.asOf)
+    }
+
+    @Test
+    fun `a file whose own asOf differs from the manifest is rejected`() {
+        val b = json("FR", "2026-11-11")
+        assertEquals(Rejection.ASOF_MISMATCH, verifyDownload(b, entryFor(b, "FR", "2026-11-12"), "FR", null, TODAY))
+    }
+
+    @Test
+    fun `a bundle newer than the manifest triggers no download`() {
+        val plan = planFetches(manifest, setOf("FR"), emptyMap(), { "2026-11-12" }, TODAY)
+        assertTrue(plan.fetch.isEmpty())
+    }
+
+    @Test
+    fun `a stored copy not newer than the bundled one is deleted`() {
+        val plan = planFetches(manifest, emptySet(), mapOf("FR" to "2026-01-01"), { "2026-02-01" }, TODAY)
+        assertEquals(listOf("FR"), plan.delete)
+    }
+
+    @Test
+    fun `a malformed manifest entry keeps the stored copy`() {
+        val raw = """{"manifestVersion":1,"dataFormat":1,"passports":{"FR":{"file":"nope"}}}"""
+        val m = parseManifest(raw, TODAY)!!
+        val plan = planFetches(m, setOf("FR"), mapOf("FR" to "2026-11-01"), noBundled, TODAY)
+        assertTrue(plan.delete.isEmpty())
+        assertTrue(plan.fetch.isEmpty())
+    }
+
+    @Test
+    fun `a 404 on the manifest is not a retry and deletes nothing`() {
+        val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
+        val rejecting = object : VisaFetcher {
+            override fun fetch(file: String, maxBytes: Int): ByteArray = throw VisaFetchRejected("HTTP 404")
+        }
+        val r = runUpdate(rejecting, store, setOf("US"), { null }, { TODAY })
+        assertFalse(r.ioFailure)
+        assertFalse(r.manifestSeen)
+        assertEquals(setOf("US"), store.codes())
+    }
+
+    @Test
+    fun `concurrent writes through the file store leave a whole file and no temp files`() {
+        val dir = kotlin.io.path.createTempDirectory("visa").toFile()
+        try {
+            val s = FileVisaStore(dir)
+            val threads = (1..8).map { n -> Thread { repeat(20) { s.write("FR", ByteArray(1000) { n.toByte() }) } } }
+            threads.forEach { it.start() }; threads.forEach { it.join() }
+            val bytes = s.read("FR")!!
+            assertEquals(1000, bytes.size)
+            assertTrue(bytes.all { it == bytes[0] })
+            assertEquals(listOf("FR.json"), dir.list()!!.toList())
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     // --- FileVisaStore ---------------------------------------------------------

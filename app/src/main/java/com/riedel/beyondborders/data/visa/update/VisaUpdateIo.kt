@@ -33,22 +33,33 @@ import kotlinx.coroutines.withContext
  * reference data, so "Delete everything" leaves them alone.
  */
 class FileVisaStore(private val dir: File) : VisaStore {
-    override fun codes(): Set<String> =
+    // Two workers (periodic and Check now) can overlap; one lock per store, and the
+    // container hands out a single store.
+    private val lock = Any()
+
+    override fun codes(): Set<String> = synchronized(lock) {
         dir.listFiles()?.mapNotNull { f ->
             f.name.removeSuffix(".json").takeIf { f.name.endsWith(".json") && CODE_REGEX.matches(it) }
         }?.toSet() ?: emptySet()
-
-    override fun read(code: String): ByteArray? = File(dir, "$code.json").takeIf { it.isFile }?.readBytes()
-
-    override fun write(code: String, bytes: ByteArray) {
-        dir.mkdirs()
-        val tmp = File(dir, "$code.json.tmp")
-        tmp.writeBytes(bytes)
-        Files.move(tmp.toPath(), File(dir, "$code.json").toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
     }
 
+    override fun read(code: String): ByteArray? = synchronized(lock) {
+        File(dir, "$code.json").takeIf { it.isFile }?.readBytes()
+    }
+
+    override fun write(code: String, bytes: ByteArray) { synchronized(lock) {
+        dir.mkdirs()
+        val tmp = File.createTempFile("$code-", ".tmp", dir)
+        try {
+            tmp.writeBytes(bytes)
+            Files.move(tmp.toPath(), File(dir, "$code.json").toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            tmp.delete()
+        }
+    } }
+
     override fun delete(code: String) {
-        File(dir, "$code.json").delete()
+        synchronized(lock) { File(dir, "$code.json").delete() }
     }
 
     companion object {
@@ -66,7 +77,10 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
             conn.connectTimeout = NETWORK_TIMEOUT_MS
             conn.readTimeout = NETWORK_TIMEOUT_MS
             conn.useCaches = false
-            if (conn.responseCode != HttpURLConnection.HTTP_OK) throw IOException("HTTP ${conn.responseCode}")
+            val status = conn.responseCode
+            // 4xx will not fix itself on a retry; timeouts and 5xx might.
+            if (status in 400..499) throw VisaFetchRejected("HTTP $status")
+            if (status != HttpURLConnection.HTTP_OK) throw IOException("HTTP $status")
             if (!isHttps(conn.url.toString())) throw VisaFetchRejected("redirected off https")
             if (conn.contentLengthLong > maxBytes) throw VisaFetchRejected("too large")
             conn.inputStream.use { input ->
