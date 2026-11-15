@@ -15,7 +15,15 @@ name: Visa data refresh
 # still cut by hand with release.yml. visa-freshness.yml stays as the alarm for what this
 # job cannot decide for itself: a passport added or removed upstream and a schema change.
 #
-# Repo setting needed: Settings > Actions > General > "Allow GitHub Actions to create and
+# The same build is also PUBLISHED every run (the `publish` job): the app's updater fetches
+# manifest.json and visa_<code>.json from GitHub Pages, so installed apps get the new data
+# without waiting for a PR to be merged or a release to be cut. tools/visa/make_site.py
+# refuses to assemble the site unless every file checks out, and the build above has already
+# refused to write unless its own checks passed, so a bad run publishes nothing and the
+# previous deployment stays live.
+#
+# Repo settings needed: Settings > Pages > Source = "GitHub Actions", and
+# Settings > Actions > General > "Allow GitHub Actions to create and
 # approve pull requests". A PR opened with GITHUB_TOKEN does not trigger pull_request
 # workflows, so the checks are started with `gh workflow run ci.yml` (dispatch is allowed)
 # on the data branch, which attaches `test` and `lint` to its head commit.
@@ -120,3 +128,35 @@ jobs:
 
           # Start the required checks on the pushed head commit.
           gh workflow run ci.yml --ref "$BRANCH"
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Rebuild the visa assets
+        run: |
+          export LC_ALL=C
+          mkdir -p tools/visa/cache
+          curl -fsSL --retry 3 -o tools/visa/cache/aa-travelwarning.json https://www.auswaertiges-amt.de/opendata/travelwarning
+          python3 -I tools/visa/build_visa.py
+
+      - name: Assemble the site
+        run: python3 -I tools/visa/make_site.py app/src/main/assets "$RUNNER_TEMP/site"
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

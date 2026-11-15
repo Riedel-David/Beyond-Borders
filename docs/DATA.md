@@ -38,6 +38,16 @@ anything. The manual steps above remain the fallback (for example when the job i
 the territory CORRECTIONS need a re-review); the workflow needs "Allow GitHub Actions to
 create and approve pull requests" enabled under Settings > Actions > General.
 
+### Publication for the app's updater
+
+The same workflow has a `publish` job that rebuilds the assets every Monday and deploys them to
+GitHub Pages (Settings > Pages > Source = "GitHub Actions"): `manifest.json` plus one
+`visa_<code>.json` per passport (the default passport's `visa.json` is published as `visa_de.json`),
+assembled by `tools/visa/make_site.py`. It publishes whether or not a data PR is open or merged, so
+installed apps are current without a release. It refuses to publish unless every file parses, names
+its passport and has requirements, and at least 150 passports are present. The manifest's
+`dataFormat` must be bumped together with any change to the shape of a visa file.
+
 It refuses to write unless every one of the 252 places resolves to exactly one answer
 and every rule is still live — so the day the dataset starts covering a territory
 itself, the build says the override is dead instead of preserving a stale opinion
