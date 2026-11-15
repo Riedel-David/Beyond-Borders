@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="advice_link">Consultar las recomendaciones de viaje del Gobierno del Reino Unido (FCDO)</string>
-    <string name="advice_note">Abre un sitio web externo en tu navegador. La app en sí sigue funcionando sin conexión.</string>
+    <string name="advice_note">Abre un sitio web externo en tu navegador. La app no envía nada.</string>
     <string name="advice_no_browser">No se encontró ningún navegador para abrir el enlace.</string>
 </resources>
