@@ -118,7 +118,8 @@ class SettingsStore(context: Context) {
      * is true again from a blank slate. Only [deviceId] survives, in its own file —
      * it is an install id, not something the user entered. The three review keys also
      * survive, deliberately: the user has already answered the rating prompt, and wiping
-     * their data is not a reason to ask again. */
+     * their data is not a reason to ask again. So do the three visa-update keys: they
+     * describe reference data, not the user's data. */
     fun resetAll() {
         _themeMode.value = ThemeMode.SYSTEM
         _mapColors.value = MapColors.parse(visited = null, lived = null, wishlist = null)
@@ -135,7 +136,7 @@ class SettingsStore(context: Context) {
         // Not clear(): the review answer survives "Delete everything". The user has
         // already told us whether they want to be asked, and wiping the data is not a
         // reason to ask again.
-        prefs.edit { prefs.all.keys.filter { it !in REVIEW_KEYS }.forEach { remove(it) } }
+        prefs.edit { prefs.all.keys.filter { it !in KEPT_KEYS }.forEach { remove(it) } }
     }
 
     private val _reviewState = MutableStateFlow(
@@ -158,6 +159,35 @@ class SettingsStore(context: Context) {
             putLong(KEY_REVIEW_LAST_ASKED, state.lastAskedAtMs)
             putBoolean(KEY_REVIEW_DONE, state.done)
         }
+    }
+
+    private val _visaAutoUpdate = MutableStateFlow(prefs.getBoolean(KEY_VISA_AUTO_UPDATE, true))
+
+    /** Whether the weekly visa-data check is scheduled. Survives [resetAll]. */
+    val visaAutoUpdate: StateFlow<Boolean> = _visaAutoUpdate.asStateFlow()
+
+    fun setVisaAutoUpdate(enabled: Boolean) {
+        _visaAutoUpdate.value = enabled
+        prefs.edit { putBoolean(KEY_VISA_AUTO_UPDATE, enabled) }
+    }
+
+    private val _visaLastCheckAt = MutableStateFlow(
+        if (prefs.contains(KEY_VISA_LAST_CHECK_AT)) prefs.getLong(KEY_VISA_LAST_CHECK_AT, 0L) else null
+    )
+
+    /** Epoch millis of the last visa check that reached and understood the manifest; null = never. */
+    val visaLastCheckAt: StateFlow<Long?> = _visaLastCheckAt.asStateFlow()
+
+    fun setVisaLastCheckAt(millis: Long) {
+        _visaLastCheckAt.value = millis
+        prefs.edit { putLong(KEY_VISA_LAST_CHECK_AT, millis) }
+    }
+
+    /** The newest asOf the updater has written to disk; null = never applied. Informational. */
+    val visaLastAppliedAsOf: String? get() = prefs.getString(KEY_VISA_LAST_APPLIED_AS_OF, null)
+
+    fun setVisaLastAppliedAsOf(asOf: String) {
+        prefs.edit { putString(KEY_VISA_LAST_APPLIED_AS_OF, asOf) }
     }
 
     /**
@@ -322,6 +352,13 @@ class SettingsStore(context: Context) {
         const val KEY_REVIEW_LAST_ASKED = "review_last_asked"
         const val KEY_REVIEW_DONE = "review_done"
         val REVIEW_KEYS = setOf(KEY_REVIEW_ASKS, KEY_REVIEW_LAST_ASKED, KEY_REVIEW_DONE)
+        const val KEY_VISA_AUTO_UPDATE = "visa_auto_update"
+        const val KEY_VISA_LAST_CHECK_AT = "visa_last_check_at"
+        const val KEY_VISA_LAST_APPLIED_AS_OF = "visa_last_applied_as_of"
+        val VISA_KEYS = setOf(KEY_VISA_AUTO_UPDATE, KEY_VISA_LAST_CHECK_AT, KEY_VISA_LAST_APPLIED_AS_OF)
+
+        /** What [resetAll] leaves in place. */
+        val KEPT_KEYS = REVIEW_KEYS + VISA_KEYS
         const val KEY_HUE_VISITED = "map_hue_visited"
         const val KEY_HUE_LIVED = "map_hue_lived"
         const val KEY_HUE_WISHLIST = "map_hue_wishlist"

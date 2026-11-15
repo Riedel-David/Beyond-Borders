@@ -92,6 +92,12 @@
     <string name="settings_last_backup_never">Остання копія: ніколи</string>
     <string name="settings_restore_button">Відновити з резервної копії Android</string>
     <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення обʼєднує його з поточними даними, так само як імпорт файлу.</string>
+    <string name="settings_visa_title">Дані про візи</string>
+    <string name="settings_visa_detail">Завантажує невеликі файли з GitHub, особисті дані не надсилаються. Автоматична перевірка виконується лише через Wi-Fi або іншу мережу без обмежень трафіку. Нові дані застосовуються під час наступного запуску застосунку.</string>
+    <string name="settings_visa_auto">Оновлювати дані про візи автоматично</string>
+    <string name="settings_visa_last_checked">Остання перевірка: %1$s</string>
+    <string name="settings_visa_last_checked_never">Остання перевірка: ніколи</string>
+    <string name="settings_visa_check_now">Перевірити зараз</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Скасувати</string>
 

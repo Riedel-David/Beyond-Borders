@@ -12,6 +12,7 @@ import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.backup.BackupFormatException
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.CloudSnapshot
+import com.riedel.beyondborders.data.visa.update.VisaUpdateScheduling
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.visa.VisaRegistry
@@ -76,6 +77,7 @@ class SettingsViewModel(
     private val places: PlaceRepository,
     private val resolver: ContentResolver,
     private val snapshot: CloudSnapshot,
+    private val visaUpdates: VisaUpdateScheduling = VisaUpdateScheduling.None,
     private val today: () -> LocalDate = LocalDate::now,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
@@ -92,6 +94,8 @@ class SettingsViewModel(
     val nationality: StateFlow<String?> = settings.nationality
     val secondNationality: StateFlow<String?> = settings.secondNationality
     val lastBackupAt: StateFlow<Long?> = settings.lastBackupAt
+    val visaAutoUpdate: StateFlow<Boolean> = settings.visaAutoUpdate
+    val visaLastCheckAt: StateFlow<Long?> = settings.visaLastCheckAt
 
     // The detail of an unexpected failure goes to the log; the user sees the generic text.
     private fun loggedFailure(t: Throwable, @StringRes fallback: Int): UiText {
@@ -165,6 +169,13 @@ class SettingsViewModel(
     fun setDenominator(value: Denominator) = settings.setDenominator(value)
 
     fun setHapticsEnabled(enabled: Boolean) = settings.setHapticsEnabled(enabled)
+
+    fun setVisaAutoUpdate(enabled: Boolean) {
+        settings.setVisaAutoUpdate(enabled)
+        visaUpdates.sync(enabled)
+    }
+
+    fun checkVisaNow() = visaUpdates.checkNow()
 
     fun setPureBlack(enabled: Boolean) = settings.setPureBlack(enabled)
 
@@ -401,10 +412,11 @@ class SettingsViewModel(
             places: PlaceRepository,
             resolver: ContentResolver,
             snapshot: CloudSnapshot,
+            visaUpdates: VisaUpdateScheduling = VisaUpdateScheduling.None,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(settings, places, resolver, snapshot) as T
+                return SettingsViewModel(settings, places, resolver, snapshot, visaUpdates) as T
             }
         }
     }

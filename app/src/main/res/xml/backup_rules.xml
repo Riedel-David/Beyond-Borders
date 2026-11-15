@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?><!--
+   The downloaded visa files live in noBackupFilesDir/visa, which Auto Backup never
+   includes, so they need no exclusion here: a reinstall starts from the bundled assets.
+
    Auto Backup on API 26-30; data_extraction_rules.xml is the same decision for 31+.
 
    The database and the settings prefs are excluded on purpose, not left in by the

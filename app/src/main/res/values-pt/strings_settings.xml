@@ -92,6 +92,12 @@
     <string name="settings_last_backup_never">Último backup: nunca</string>
     <string name="settings_restore_button">Restaurar do backup do Android</string>
     <string name="settings_restore_detail">O backup do Android deixou neste celular uma cópia do seu histórico. Restaurar mescla esses dados, exatamente como importar um arquivo.</string>
+    <string name="settings_visa_title">Dados de visto</string>
+    <string name="settings_visa_detail">Baixa pequenos ficheiros do GitHub, sem enviar dados pessoais. As verificações automáticas só ocorrem em Wi-Fi ou outra rede sem limite de dados. Os dados novos aplicam-se da próxima vez que abrir a app.</string>
+    <string name="settings_visa_auto">Atualizar os dados de visto automaticamente</string>
+    <string name="settings_visa_last_checked">Última verificação: %1$s</string>
+    <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
+    <string name="settings_visa_check_now">Verificar agora</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancelar</string>
 

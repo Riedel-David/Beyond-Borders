@@ -35,6 +35,15 @@ class VisaRepository(
         synchronized(cache) { cache.getOrPut(passport) { loaded } }
     }
 
+    /**
+     * Forget every parsed registry, so the next [registry] call re-reads (and so picks up
+     * freshly downloaded data). Callers already holding a registry keep it; there is no
+     * live refresh.
+     */
+    fun invalidate() {
+        synchronized(cache) { cache.clear() }
+    }
+
     /** Every passport the picker can offer, sorted. */
     suspend fun availablePassports(): List<String> = withContext(Dispatchers.IO) { passportsLoader() }
 }

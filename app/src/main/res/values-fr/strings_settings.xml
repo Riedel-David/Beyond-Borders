@@ -92,6 +92,12 @@
     <string name="settings_last_backup_never">Dernière sauvegarde : jamais</string>
     <string name="settings_restore_button">Restaurer depuis la sauvegarde d\'Android</string>
     <string name="settings_restore_detail">La sauvegarde d\'Android a laissé sur ce téléphone un instantané de ton historique. La restauration le fusionne avec les données actuelles, exactement comme l\'import d\'un fichier.</string>
+    <string name="settings_visa_title">Données de visa</string>
+    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Les vérifications automatiques ne se font qu\'en Wi-Fi ou sur un autre réseau non limité. Les nouvelles données s\'appliquent au prochain lancement de l\'app.</string>
+    <string name="settings_visa_auto">Mettre à jour les données de visa automatiquement</string>
+    <string name="settings_visa_last_checked">Dernière vérification : %1$s</string>
+    <string name="settings_visa_last_checked_never">Dernière vérification : jamais</string>
+    <string name="settings_visa_check_now">Vérifier maintenant</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Annuler</string>
 

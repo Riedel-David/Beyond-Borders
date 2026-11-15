@@ -1,0 +1,155 @@
+package com.riedel.beyondborders.data.visa.update
+
+import android.content.Context
+import androidx.work.BackoffPolicy
+import androidx.work.CoroutineWorker
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import com.riedel.beyondborders.BeyondBordersApp
+import com.riedel.beyondborders.data.visa.VisaRegistry
+import java.io.File
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/**
+ * Downloaded visa files, one `<CODE>.json` each under `noBackupFilesDir/visa`.
+ *
+ * noBackupFilesDir, not filesDir: Auto Backup would otherwise carry these onto a fresh
+ * install, where they would outrank a newer bundled asset. The directory is outside both
+ * backup rule files' scope by definition, so no exclusion is needed there. These are
+ * reference data, so "Delete everything" leaves them alone.
+ */
+class FileVisaStore(private val dir: File) : VisaStore {
+    override fun codes(): Set<String> =
+        dir.listFiles()?.mapNotNull { f ->
+            f.name.removeSuffix(".json").takeIf { f.name.endsWith(".json") && CODE_REGEX.matches(it) }
+        }?.toSet() ?: emptySet()
+
+    override fun read(code: String): ByteArray? = File(dir, "$code.json").takeIf { it.isFile }?.readBytes()
+
+    override fun write(code: String, bytes: ByteArray) {
+        dir.mkdirs()
+        val tmp = File(dir, "$code.json.tmp")
+        tmp.writeBytes(bytes)
+        Files.move(tmp.toPath(), File(dir, "$code.json").toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    override fun delete(code: String) {
+        File(dir, "$code.json").delete()
+    }
+
+    companion object {
+        fun forContext(context: Context) = FileVisaStore(File(context.noBackupFilesDir, "visa"))
+    }
+}
+
+/** Plain GET, no headers beyond the platform defaults, no query string, no cookies kept. */
+class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetcher {
+    override fun fetch(file: String, maxBytes: Int): ByteArray {
+        val url = baseUrl + file
+        if (!isHttps(url)) throw VisaFetchRejected("not https")
+        val conn = URL(url).openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = NETWORK_TIMEOUT_MS
+            conn.readTimeout = NETWORK_TIMEOUT_MS
+            conn.useCaches = false
+            if (conn.responseCode != HttpURLConnection.HTTP_OK) throw IOException("HTTP ${conn.responseCode}")
+            if (!isHttps(conn.url.toString())) throw VisaFetchRejected("redirected off https")
+            if (conn.contentLengthLong > maxBytes) throw VisaFetchRejected("too large")
+            conn.inputStream.use { input ->
+                val out = java.io.ByteArrayOutputStream()
+                val buf = ByteArray(8 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    if (out.size() > maxBytes) throw VisaFetchRejected("too large")
+                }
+                return out.toByteArray()
+            }
+        } finally {
+            conn.disconnect()
+        }
+    }
+}
+
+class VisaUpdateWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            val container = (applicationContext as BeyondBordersApp).container
+            val settings = container.settings
+            val wanted = setOfNotNull(settings.nationality.value, settings.secondNationality.value)
+            val result = runUpdate(
+                fetcher = HttpVisaFetcher(),
+                store = container.visaStore,
+                wanted = wanted,
+                bundledAsOf = { code ->
+                    runCatching { VisaRegistry.load(applicationContext.assets, code).asOf }.getOrNull()
+                },
+            )
+            if (result.changed) container.visa.invalidate()
+            result.appliedAsOf?.let(settings::setVisaLastAppliedAsOf)
+            if (result.manifestSeen) settings.setVisaLastCheckAt(System.currentTimeMillis())
+            if (result.ioFailure) Result.retry() else Result.success()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Anything unexpected leaves the app as it was; a loop of failures helps nobody.
+            Result.success()
+        }
+    }
+}
+
+/** What the Settings screen drives; the no-op default keeps ViewModel tests free of WorkManager. */
+interface VisaUpdateScheduling {
+    fun sync(enabled: Boolean)
+    fun checkNow()
+
+    object None : VisaUpdateScheduling {
+        override fun sync(enabled: Boolean) = Unit
+        override fun checkNow() = Unit
+    }
+}
+
+class WorkManagerVisaScheduling(context: Context) : VisaUpdateScheduling {
+    private val appContext = context.applicationContext
+
+    override fun sync(enabled: Boolean) {
+        val wm = WorkManager.getInstance(appContext)
+        if (!enabled) {
+            wm.cancelUniqueWork(PERIODIC_NAME)
+            return
+        }
+        val request = PeriodicWorkRequestBuilder<VisaUpdateWorker>(7, TimeUnit.DAYS)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.UNMETERED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
+            .build()
+        wm.enqueueUniquePeriodicWork(PERIODIC_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    override fun checkNow() {
+        val request = OneTimeWorkRequestBuilder<VisaUpdateWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
+            .build()
+        WorkManager.getInstance(appContext).enqueueUniqueWork(ONCE_NAME, ExistingWorkPolicy.REPLACE, request)
+    }
+
+    private companion object {
+        const val PERIODIC_NAME = "visa-update-periodic"
+        const val ONCE_NAME = "visa-update-now"
+    }
+}

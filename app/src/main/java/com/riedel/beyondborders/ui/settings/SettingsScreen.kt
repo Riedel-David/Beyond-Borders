@@ -118,6 +118,7 @@ fun SettingsScreen(
             // activity across a rotation, and holding the activity's would leak it.
             resolver = context.applicationContext.contentResolver,
             snapshot = container.cloudSnapshot,
+            visaUpdates = container.visaUpdates,
         ),
     )
 
@@ -131,6 +132,8 @@ fun SettingsScreen(
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
+    val visaAutoUpdate by viewModel.visaAutoUpdate.collectAsStateWithLifecycle()
+    val visaLastCheckAt by viewModel.visaLastCheckAt.collectAsStateWithLifecycle()
     val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
     val importPreview by viewModel.importPreview.collectAsStateWithLifecycle()
@@ -413,6 +416,37 @@ fun SettingsScreen(
             stringResource(R.string.settings_background_detail),
         ) {
             BaseRow(mapBase, viewModel::setMapBase)
+        }
+
+        Section(stringResource(R.string.settings_visa_title), stringResource(R.string.settings_visa_detail)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.settings_visa_auto),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(checked = visaAutoUpdate, onCheckedChange = viewModel::setVisaAutoUpdate)
+            }
+            val visaLocale = LocalConfiguration.current.locales[0]
+            val visaCheckedDate = formatLastBackup(visaLastCheckAt, ZoneId.systemDefault(), visaLocale)
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (visaCheckedDate == null) stringResource(R.string.settings_visa_last_checked_never)
+                    else stringResource(R.string.settings_visa_last_checked, visaCheckedDate),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = viewModel::checkVisaNow) { Text(stringResource(R.string.settings_visa_check_now)) }
+            }
         }
 
         Section(stringResource(R.string.settings_data_title), null) {

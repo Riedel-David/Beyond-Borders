@@ -17,7 +17,8 @@ class BeyondBordersApp : Application() {
         // first frame. Resolving it here instead runs it on an IO thread, in parallel
         // with the rest of startup, so the composables that ask for it find it done.
         CoroutineScope(Dispatchers.IO).launch {
-            container.settings
+            // Idempotent (KEEP), so every launch may call it; off cancels a queued run.
+            container.visaUpdates.sync(container.settings.visaAutoUpdate.value)
             // Opening the database is disk work of the same kind, and doing it here
             // rather than on the first query means a version this build cannot migrate
             // is a screen offering a way out instead of a crash — see DatabaseRecovery.
