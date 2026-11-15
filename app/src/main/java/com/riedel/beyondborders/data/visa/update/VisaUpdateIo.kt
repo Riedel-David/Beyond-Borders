@@ -111,7 +111,8 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
  */
 suspend fun performVisaUpdate(container: AppContainer, assets: AssetManager): UpdateResult = withContext(Dispatchers.IO) {
     val settings = container.settings
-    val wanted = setOfNotNull(settings.nationality.value, settings.secondNationality.value)
+    // The partner's passport too: a pair answer is only as fresh as the older of its two files.
+    val wanted = setOfNotNull(settings.nationality.value, settings.secondNationality.value, settings.partnerNationality.value)
     val result = runUpdate(
         fetcher = HttpVisaFetcher(),
         store = container.visaStore,

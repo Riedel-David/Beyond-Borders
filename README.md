@@ -44,7 +44,7 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
   [the official source](#data-and-licences) before you travel.
 - **Partner mode** — pick a travel partner's passport and the Visa tab and the map's Visa
   lens show the stricter of your two passports, and who sets the limit.
-- **Visa data updater** — a weekly check on an unmetered network such as Wi-Fi for newer visa files for your own passports,
+- **Visa data updater** — a weekly check on an unmetered network such as Wi-Fi for newer visa files for the passports you have set (a partner passport included),
   over HTTPS, verified before use; the bundled data is the fallback. The weekly check can be switched off in Settings; *Check now* still works.
 - **Rating prompt** — once or twice the app asks for a Google Play rating, and Settings has a
   *Rate on Google Play* row.

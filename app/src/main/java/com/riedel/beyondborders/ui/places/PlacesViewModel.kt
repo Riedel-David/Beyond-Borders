@@ -572,7 +572,8 @@ class PlacesViewModel(
             }
         }
         viewModelScope.launch {
-            combine(settings.partnerNationality, settings.nationality, settings.secondNationality) { partner, own, second ->
+            // dataVersion: a finished visa update reloads the partner's registry too.
+            combine(settings.partnerNationality, settings.nationality, settings.secondNationality, visaRepo.dataVersion) { partner, own, second, _ ->
                 effectivePartner(partner, own, second)
             }.collect { partner ->
                 _partnerVisa.value = partner?.let { load(it) }
