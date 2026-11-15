@@ -8,7 +8,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all %1$d places. Territories like Greenland or Puerto Rico count on their own, separate from the country they belong to.</string>
     <string name="welcome_intro_bare">Mark the places you\'ve been, lived in, or want to go.</string>
-    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server, no network. (Android\'s own device backup may include it, if you have that switched on.)</string>
+    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server. The app only downloads public visa data updates and sends nothing about you. (Android\'s own device backup may include it, if you have that switched on.)</string>
     <string name="welcome_passport_hint">Visa requirements are for one passport at a time. Pick yours — you can change it later in Settings.</string>
     <string name="welcome_get_started">Get started</string>
 

@@ -20,7 +20,7 @@ import com.riedel.beyondborders.ui.places.ReviewChoice
 
 /**
  * Our own dialog rather than Google's in-app review library: the app carries no Google
- * dependency and no INTERNET permission, and this keeps both true. Dismissing it by
+ * dependency, and this keeps that true (its only network use is the visa-data updater). Dismissing it by
  * back or tapping outside only hides it for this start; just Later records an ask.
  */
 @Composable

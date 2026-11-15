@@ -77,7 +77,7 @@ Google account. After a reinstall, Settings shows **Restore from Android's backu
 opens the same preview an imported file gets, and nothing is applied until you confirm.
 Theme, colours, passports and widget configuration are deliberately left out and start
 fresh, as does the per-install id the merge uses to tell this device's writes from
-another's. The app never uploads anything itself and asks for no network permission; the
+another's. The app never uploads anything itself (its only network use is downloading visa data); the
 copy is made by the system, and Android's backup settings are where to switch it off.
 
 **Delete everything** (Settings) clears your places, both passports and the display

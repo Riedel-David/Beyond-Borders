@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller, sur une carte de %1$d lieux. Des territoires comme le Groenland ou Porto Rico comptent à part, séparément du pays dont ils dépendent.</string>
     <string name="welcome_intro_bare">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller.</string>
-    <string name="welcome_privacy">Rien de ce que tu marques ne nous est envoyé. Pas de compte, pas de serveur, pas de réseau. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
+    <string name="welcome_privacy">Rien de ce que tu marques ne nous est envoyé. Pas de compte, pas de serveur. L\'app télécharge seulement des mises à jour publiques des données de visa et n\'envoie rien sur toi. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
     <string name="welcome_passport_hint">Les conditions de visa s\'affichent pour un passeport à la fois. Choisis le tien ; tu pourras le changer plus tard dans les Paramètres.</string>
     <string name="welcome_get_started">Commencer</string>
 

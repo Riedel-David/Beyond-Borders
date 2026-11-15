@@ -1,7 +1,7 @@
 <img src="docs/screenshots/social-preview.png" alt="Beyond Borders" />
 
 An Android app for tracking where you have been and where your passport gets you
-without a visa. Offline, no account, no network permission.
+without a visa. Works offline, no account; visa data refreshes itself weekly (switch off in Settings).
 
 **Needs Android 11+ on an arm64 phone** (no x86 emulators). Install steps are [below](#install).
 
@@ -28,7 +28,7 @@ without a visa. Offline, no account, no network permission.
 I tried a number of travel trackers before writing this one. Many were full of ads, and
 the rest did not do what I wanted. The ones that came close all selected more than you
 ask for — tap Denmark and you get Greenland, tap France and you get French Guiana.
-Beyond Borders has no ads, no account and no network permission, and is built on a dataset
+Beyond Borders has no ads and no account, and is built on a dataset
 where those are separate places and on a data model with no parent-child link at all,
 so a cascade is not a bug that was fixed, it is a thing the code cannot express.
 
@@ -55,8 +55,8 @@ More detail in [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Privacy
 
-Everything stays on your phone. The app has no network permission, no account, no
-basemap, no tile server and no API key; the geometry is bundled in the APK. Details in
+Everything stays on your phone. The app has no account, no
+basemap, no tile server and no API key; the geometry is bundled in the APK. Its only network use is a weekly download of public visa data from GitHub Pages, on Wi-Fi, with nothing about you sent; Settings → Visa data switches it off. Details in
 the [privacy policy](docs/PRIVACY.md).
 
 ## Install
@@ -75,7 +75,7 @@ from the last several years.
 3. To check the download, compare `sha256sum BeyondBorders.apk` with the
    contents of `BeyondBorders.apk.sha256` next to it.
 
-The app has no network permission, so it cannot check for updates itself. Watch the
+The app refreshes its visa data itself but cannot update itself: watch the
 Releases page, or point [Obtainium](https://github.com/ImranR98/Obtainium) at this
 repository to be notified of new versions (Obtainium is untested with this app's release
 files, so treat that as a suggestion).
