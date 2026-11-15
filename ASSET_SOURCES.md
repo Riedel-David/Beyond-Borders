@@ -1,7 +1,7 @@
 # Bundled asset provenance
 
 The app is offline-first: every reference-data asset under `app/src/main/assets/`
-is bundled at build time rather than downloaded, so there is no source or checksum
+is bundled at build time (the visa files can later be replaced by newer ones from the app's updater, see docs/DATA.md; the bundled copy stays the fallback), so there is no source or checksum
 recorded anywhere a rebuild could check against. This file is that record. SHA-256
 and byte size were computed directly from the files currently in the repo
 (`shasum -a 256`); "source" is what the generator scripts in `tools/` say they were

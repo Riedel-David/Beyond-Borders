@@ -13,6 +13,11 @@ import com.riedel.beyondborders.data.place.PlaceRegistry
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRepository
+import com.riedel.beyondborders.data.visa.update.FileVisaStore
+import com.riedel.beyondborders.data.visa.update.VisaStore
+import com.riedel.beyondborders.data.visa.update.VisaUpdateScheduling
+import com.riedel.beyondborders.data.visa.update.WorkManagerVisaScheduling
+import com.riedel.beyondborders.data.visa.update.preferStored
 import com.riedel.beyondborders.settings.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -87,9 +92,20 @@ class AppContainer(context: Context) {
         )
     }
 
+    /** Downloaded visa files; see [FileVisaStore] for why they sit in noBackupFilesDir. */
+    val visaStore: VisaStore by lazy { FileVisaStore.forContext(appContext) }
+
+    val visaUpdates: VisaUpdateScheduling by lazy { WorkManagerVisaScheduling(appContext) }
+
     val visa: VisaRepository by lazy {
         VisaRepository(
-            registryLoader = { passport -> VisaRegistry.load(appContext.assets, passport) },
+            registryLoader = { passport ->
+                // The bundled asset is the baseline and the fallback; a downloaded copy
+                // only wins when it parses and is strictly newer.
+                preferStored(VisaRegistry.load(appContext.assets, passport)) {
+                    visaStore.read(passport)?.let { VisaRegistry.parse(it.toString(Charsets.UTF_8), "$passport (downloaded)") }
+                }
+            },
             passportsLoader = { VisaRegistry.availablePassports(appContext.assets) },
         )
     }

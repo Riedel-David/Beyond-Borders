@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Marque os lugares onde você já esteve ou morou e aonde quer ir — em um mapa com %1$d lugares. Territórios como a Groenlândia ou Porto Rico contam à parte, separados do país a que pertencem.</string>
     <string name="welcome_intro_bare">Marque os lugares onde você já esteve ou morou e aonde quer ir.</string>
-    <string name="welcome_privacy">Nada do que você marca é enviado para nós. Sem conta, sem servidor, sem rede. (O backup do próprio Android ainda pode incluir esses dados, se estiver ativado.)</string>
+    <string name="welcome_privacy">Nada do que você marca é enviado para nós. Sem conta, sem servidor. O app só baixa atualizações públicas dos dados de visto e não envia nada sobre você. (O backup do próprio Android ainda pode incluir esses dados, se estiver ativado.)</string>
     <string name="welcome_passport_hint">Os requisitos de visto valem para um passaporte por vez. Escolha o seu — você pode mudar depois nos Configurações.</string>
     <string name="welcome_get_started">Começar</string>
 
@@ -92,6 +92,17 @@
     <string name="settings_last_backup_never">Último backup: nunca</string>
     <string name="settings_restore_button">Restaurar do backup do Android</string>
     <string name="settings_restore_detail">O backup do Android deixou neste celular uma cópia do seu histórico. Restaurar mescla esses dados, exatamente como importar um arquivo.</string>
+    <string name="settings_visa_title">Dados de visto</string>
+    <string name="settings_visa_detail">Baixa pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal, que só ocorre em Wi-Fi ou outra rede sem limite de dados. Verificar agora funciona nos dois casos. Os dados novos são usados de imediato.</string>
+    <string name="settings_visa_checking">A verificar…</string>
+    <string name="settings_visa_result_current">Os dados de visto já estão atualizados.</string>
+    <string name="settings_visa_result_updated">Dados de visto atualizados e já em uso.</string>
+    <string name="settings_visa_result_offline">Não foi possível contactar o servidor. Verifique a ligação ou tente mais tarde.</string>
+    <string name="settings_visa_result_unavailable">Atualização indisponível de momento.</string>
+    <string name="settings_visa_auto">Atualizar os dados de visto automaticamente</string>
+    <string name="settings_visa_last_checked">Última verificação: %1$s</string>
+    <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
+    <string name="settings_visa_check_now">Verificar agora</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancelar</string>
 

@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Marca los lugares en los que has estado o has vivido y a los que quieres ir, en un mapa con los %1$d lugares. Territorios como Groenlandia o Puerto Rico cuentan por separado, aparte del país al que pertenecen.</string>
     <string name="welcome_intro_bare">Marca los lugares en los que has estado o has vivido y a los que quieres ir.</string>
-    <string name="welcome_privacy">Nada de lo que marques se nos envía. Sin cuenta, sin servidor, sin red. (La copia de seguridad de Android puede incluir los datos igualmente si está activada.)</string>
+    <string name="welcome_privacy">Nada de lo que marques se nos envía. Sin cuenta, sin servidor. La app solo descarga actualizaciones públicas de datos de visados y no envía nada sobre ti. (La copia de seguridad de Android puede incluir los datos igualmente si está activada.)</string>
     <string name="welcome_passport_hint">Las normas de visado dependen del pasaporte. Elige el tuyo; podrás cambiarlo después en Ajustes.</string>
     <string name="welcome_get_started">Empezar</string>
 
@@ -92,6 +92,17 @@
     <string name="settings_last_backup_never">Última copia: nunca</string>
     <string name="settings_restore_button">Restaurar desde la copia de Android</string>
     <string name="settings_restore_detail">La copia de seguridad de Android dejó una instantánea de tu historial en este teléfono. Al restaurarla se fusiona con los datos actuales, igual que al importar un archivo.</string>
+    <string name="settings_visa_title">Datos de visado</string>
+    <string name="settings_visa_detail">Descarga archivos pequeños de GitHub; no se envía ningún dato personal. El interruptor solo controla la comprobación automática semanal, que se hace con Wi-Fi u otra red sin límite de datos. Comprobar ahora funciona en ambos casos. Los datos nuevos se usan al instante.</string>
+    <string name="settings_visa_checking">Comprobando…</string>
+    <string name="settings_visa_result_current">Los datos de visado ya están al día.</string>
+    <string name="settings_visa_result_updated">Datos de visado actualizados y en uso.</string>
+    <string name="settings_visa_result_offline">No se pudo conectar con el servidor. Revisa tu conexión o inténtalo más tarde.</string>
+    <string name="settings_visa_result_unavailable">Actualización no disponible por ahora.</string>
+    <string name="settings_visa_auto">Actualizar los datos de visado automáticamente</string>
+    <string name="settings_visa_last_checked">Última comprobación: %1$s</string>
+    <string name="settings_visa_last_checked_never">Última comprobación: nunca</string>
+    <string name="settings_visa_check_now">Comprobar ahora</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancelar</string>
 

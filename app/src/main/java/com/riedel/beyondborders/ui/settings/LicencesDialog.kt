@@ -36,8 +36,8 @@ private val LICENCE_LINES = listOf(
 
 private const val REPO_URL = "https://github.com/Riedel-David/Beyond-Borders"
 
-// Hands the URL to the browser. The app itself declares no INTERNET permission and
-// needs none for this: the browser does the network. Guarded like the visa screen's
+// Hands the URL to the browser. The app needs no network access of its own for
+// this: the browser does the network. Guarded like the visa screen's
 // links, because a device with no browser would otherwise crash on tap.
 @Composable
 internal fun RepoLink(modifier: Modifier = Modifier) {

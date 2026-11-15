@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** How the passport list is ordered. */
@@ -540,7 +541,9 @@ class PlacesViewModel(
             // both loads the initial registry and reloads it on every nationality
             // switch from Settings — one path, not an init load plus a separate
             // reactor for later changes.
-            settings.nationality.collect { nationality ->
+            // Combined with dataVersion so a finished visa update reloads the registry in
+            // the running app. The value is ignored; only its change matters.
+            combine(settings.nationality, visaRepo.dataVersion) { nationality, _ -> nationality }.collect { nationality ->
                 // No passport chosen — a steady state after "Skip for now" on the
                 // welcome screen, not only a transient one. Nothing to load, and no
                 // fallback to apply; loading DEFAULT_PASSPORT here would recreate the
@@ -561,7 +564,7 @@ class PlacesViewModel(
             }
         }
         viewModelScope.launch {
-            settings.secondNationality.collect { secondNationality ->
+            combine(settings.secondNationality, visaRepo.dataVersion) { second, _ -> second }.collect { secondNationality ->
                 // A broken second passport degrades to single-passport behavior
                 // rather than breaking the working primary. Null when no second
                 // passport is configured, or when its asset cannot be loaded.
@@ -569,7 +572,8 @@ class PlacesViewModel(
             }
         }
         viewModelScope.launch {
-            combine(settings.partnerNationality, settings.nationality, settings.secondNationality) { partner, own, second ->
+            // dataVersion: a finished visa update reloads the partner's registry too.
+            combine(settings.partnerNationality, settings.nationality, settings.secondNationality, visaRepo.dataVersion) { partner, own, second, _ ->
                 effectivePartner(partner, own, second)
             }.collect { partner ->
                 _partnerVisa.value = partner?.let { load(it) }
@@ -589,6 +593,16 @@ class PlacesViewModel(
 
     fun setPartnerMode(value: Boolean) {
         if (_partnerMode.value != value) _partnerMode.value = value
+    }
+
+    init {
+        // New data can drop a category (or a whole chip), and a chip that is no longer
+        // offered would leave the list filtered to nothing with no way to see why.
+        viewModelScope.launch {
+            combine(_visa, _secondVisa) { primary, second -> primary to second }.collect { (primary, second) ->
+                if (primary != null) _visaFilter.update { visaFilterStillOffered(it, visaFilters(primary, second)) }
+            }
+        }
     }
 
     fun setQuery(value: String) { _query.value = value }
@@ -1000,6 +1014,10 @@ internal fun visaFilters(visa: VisaRegistry?, secondVisa: VisaRegistry? = null):
         }
     }
 }
+
+/** [current] if the chip row still offers it, otherwise back to [VisaFilter.All]. */
+internal fun visaFilterStillOffered(current: VisaFilter, offered: List<VisaFilter>): VisaFilter =
+    if (current in offered) current else VisaFilter.All
 
 /**
  * The visa list, filtered and ordered.

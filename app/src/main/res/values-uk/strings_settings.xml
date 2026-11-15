@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Тут %1$d місць. Території на кшталт Гренландії чи Пуерто-Рико враховуються окремо, не разом із країною, до якої вони належать.</string>
     <string name="welcome_intro_bare">Познач, де вже вдалося побувати, де довелося жити і куди мрієш поїхати.</string>
-    <string name="welcome_privacy">Ми не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису, сервера чи мережі. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
+    <string name="welcome_privacy">Ми не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису чи сервера. Застосунок лише завантажує публічні оновлення даних про візи й нічого не надсилає про тебе. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
     <string name="welcome_passport_hint">Візові вимоги показано для одного паспорта за раз. Обери свій — згодом його можна змінити в налаштуваннях.</string>
     <string name="welcome_get_started">Почати</string>
 
@@ -92,6 +92,17 @@
     <string name="settings_last_backup_never">Остання копія: ніколи</string>
     <string name="settings_restore_button">Відновити з резервної копії Android</string>
     <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення обʼєднує його з поточними даними, так само як імпорт файлу.</string>
+    <string name="settings_visa_title">Дані про візи</string>
+    <string name="settings_visa_detail">Завантажує невеликі файли з GitHub, особисті дані не надсилаються. Перемикач керує лише щотижневою автоматичною перевіркою, яка виконується через Wi-Fi або іншу мережу без обмежень трафіку. Кнопка «Перевірити зараз» працює в обох випадках. Нові дані застосовуються одразу.</string>
+    <string name="settings_visa_checking">Перевірка…</string>
+    <string name="settings_visa_result_current">Дані про візи вже актуальні.</string>
+    <string name="settings_visa_result_updated">Дані про візи оновлено, і вони вже використовуються.</string>
+    <string name="settings_visa_result_offline">Не вдалося зв\'язатися із сервером. Перевірте з\'єднання або повторіть пізніше.</string>
+    <string name="settings_visa_result_unavailable">Оновлення зараз недоступне.</string>
+    <string name="settings_visa_auto">Оновлювати дані про візи автоматично</string>
+    <string name="settings_visa_last_checked">Остання перевірка: %1$s</string>
+    <string name="settings_visa_last_checked_never">Остання перевірка: ніколи</string>
+    <string name="settings_visa_check_now">Перевірити зараз</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Скасувати</string>
 

@@ -16,6 +16,9 @@
         <exclude domain="database" path="beyondborders.db-wal"/>
         <exclude domain="database" path="beyondborders.db-shm"/>
         <exclude domain="sharedpref" path="beyondborders.settings.xml"/>
+        <exclude domain="database" path="androidx.work.workdb"/>
+        <exclude domain="database" path="androidx.work.workdb-wal"/>
+        <exclude domain="database" path="androidx.work.workdb-shm"/>
         <exclude domain="sharedpref" path="widget_prefs.xml"/>
         <exclude domain="sharedpref" path="beyondborders.device.xml"/>
     </cloud-backup>
@@ -24,6 +27,9 @@
         <exclude domain="database" path="beyondborders.db-wal"/>
         <exclude domain="database" path="beyondborders.db-shm"/>
         <exclude domain="sharedpref" path="beyondborders.settings.xml"/>
+        <exclude domain="database" path="androidx.work.workdb"/>
+        <exclude domain="database" path="androidx.work.workdb-wal"/>
+        <exclude domain="database" path="androidx.work.workdb-shm"/>
         <exclude domain="sharedpref" path="widget_prefs.xml"/>
         <exclude domain="sharedpref" path="beyondborders.device.xml"/>
     </device-transfer>

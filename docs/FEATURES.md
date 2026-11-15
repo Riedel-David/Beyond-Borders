@@ -77,7 +77,7 @@ Google account. After a reinstall, Settings shows **Restore from Android's backu
 opens the same preview an imported file gets, and nothing is applied until you confirm.
 Theme, colours, passports and widget configuration are deliberately left out and start
 fresh, as does the per-install id the merge uses to tell this device's writes from
-another's. The app never uploads anything itself and asks for no network permission; the
+another's. The app never uploads anything itself (its only network use is downloading visa data); the
 copy is made by the system, and Android's backup settings are where to switch it off.
 
 **Delete everything** (Settings) clears your places, both passports and the display
@@ -195,3 +195,26 @@ countries to tick off in one go; places you have already marked stay in the list
 search box widens it to every sovereign state, except Northern Cyprus and Somaliland, which are
 marked from the map or the Passport list. Lived places are locked there so a stray tap cannot
 downgrade them.
+
+## Partner mode
+
+Settings → *Travel partner passport* adds a second person's passport, and the Visa tab and
+the map's Visa lens can then show where you both can go. For each place the stricter answer
+wins: a definite permit or refusal outranks an unknown (check requirements), which outranks
+any easier definite answer, and within one category the shorter stated stay wins (a stated
+limit beats an unstated one). The row says who sets the limit: you, your partner, or
+neither. Low confidence on either side carries onto the result, and a place either person
+has no answer for shows as no data. If you hold two passports, the easier of yours is used
+first, then compared with your partner's.
+
+It applies to the Visa tab and the map Visa lens only, not to the stats or share cards. Your
+own passports are left out of the picker, since one of them would be no partner. Per passport
+only: residence permits and EU/Schengen family-member rules are not taken into account.
+
+## Visa data updates
+
+Downloaded visa data is used straight away, without closing the app. *Check now* in
+Settings works on any connection, whether or not the automatic check is on, and says
+whether the data was already current, was updated, or could not be fetched. The weekly
+automatic check runs on unmetered networks only, and the Settings → *Visa data* switch
+turns that weekly check off; it does not stop *Check now*.

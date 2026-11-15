@@ -8,7 +8,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all %1$d places. Territories like Greenland or Puerto Rico count on their own, separate from the country they belong to.</string>
     <string name="welcome_intro_bare">Mark the places you\'ve been, lived in, or want to go.</string>
-    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server, no network. (Android\'s own device backup may include it, if you have that switched on.)</string>
+    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server. The app only downloads public visa data updates and sends nothing about you. (Android\'s own device backup may include it, if you have that switched on.)</string>
     <string name="welcome_passport_hint">Visa requirements are for one passport at a time. Pick yours — you can change it later in Settings.</string>
     <string name="welcome_get_started">Get started</string>
 
@@ -90,6 +90,17 @@
     <string name="settings_last_backup_never">Last backup: never</string>
     <string name="settings_restore_button">Restore from Android\'s backup</string>
     <string name="settings_restore_detail">Android\'s backup left a snapshot of your history on this phone. Restoring merges it in, exactly like importing a file.</string>
+    <string name="settings_visa_title">Visa data</string>
+    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. The switch controls only the weekly automatic check, which runs on Wi-Fi or another unmetered network. Check now works either way. New data is used straight away.</string>
+    <string name="settings_visa_checking">Checking…</string>
+    <string name="settings_visa_result_current">Visa data is already up to date.</string>
+    <string name="settings_visa_result_updated">Visa data updated and now in use.</string>
+    <string name="settings_visa_result_offline">Couldn\'t reach the server. Check your connection or try again later.</string>
+    <string name="settings_visa_result_unavailable">Update unavailable right now.</string>
+    <string name="settings_visa_auto">Update visa data automatically</string>
+    <string name="settings_visa_last_checked">Last checked: %1$s</string>
+    <string name="settings_visa_last_checked_never">Last checked: never</string>
+    <string name="settings_visa_check_now">Check now</string>
     <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancel</string>
 
