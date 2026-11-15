@@ -208,7 +208,7 @@ internal fun VisitsDialog(
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                 )
-                LazyColumn(Modifier.heightIn(max = 130.dp)) {
+                LazyColumn(Modifier.heightIn(max = 200.dp)) {
                     // Choices as (year?) so "No date" sits in the same list as the years.
                     items(listOf<Int?>(null) + visitYearChoices(currentYear)) { year ->
                         RadioListItem(

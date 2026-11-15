@@ -22,6 +22,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
 
@@ -36,11 +38,13 @@ fun ExpandChevron(expanded: Boolean, modifier: Modifier = Modifier) {
         animationSpec = tween(Motion.DurationMedium, easing = Motion.Easing),
         label = "chevron",
     )
+    // The icon mirrors in RTL (points left), so the turn towards "down" flips sign too.
+    val sign = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     Icon(
         Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.rotate(rotation),
+        modifier = modifier.rotate(rotation * sign),
     )
 }
 

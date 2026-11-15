@@ -16,6 +16,10 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
@@ -162,6 +166,8 @@ fun RadioListItem(
         modifier = modifier
             .heightIn(min = 48.dp)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        // Transparent so rows take the surface they sit on (dialogs are not the screen surface).
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
 }
 
@@ -218,17 +224,19 @@ fun FeedbackText(
     message: String,
     isError: Boolean,
     modifier: Modifier = Modifier,
+    topPadding: Dp = 12.dp,
+    style: TextStyle = MaterialTheme.typography.bodyMedium,
     onDismiss: (() -> Unit)? = null,
 ) {
     Column(
         modifier
             .fillMaxWidth()
-            .padding(top = 12.dp)
+            .padding(top = topPadding)
             .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Text(
             message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = style,
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
         )
         if (onDismiss != null) {

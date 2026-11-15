@@ -570,8 +570,10 @@ class PlacesViewModel(
         viewModelScope.launch {
             viewVisas.collect { _visaFilter.value = revalidatedFilter(_visaFilter.value, it) }
         }
-        // Without a registry the tab row is not drawn, so a mode left on VISA (passport
-        // removed in Settings) would strand the user on the "unavailable" page.
+        // Without a registry the tab row is not drawn, so a mode left on VISA would strand
+        // the user on the "unavailable" page. Only reachable when a reload (a finished visa
+        // update) finds neither the passport's asset nor the default readable; the
+        // nationality itself is never cleared once set.
         viewModelScope.launch {
             viewVisas.collect { _mode.update { mode -> modeOrTravel(mode, it.visa) } }
         }

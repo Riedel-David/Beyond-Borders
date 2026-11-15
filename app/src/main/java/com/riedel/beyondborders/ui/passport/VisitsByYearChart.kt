@@ -163,9 +163,12 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
     val axis = remember(points) { niceAxis(points.maxOf { maxOf(it.countries, it.cumulative) }) }
 
     // sp-sized labels grow with the font scale, so the reserved gutters are measured, not guessed.
-    val yLabelWidthPx = measurer.measure(axis.top.toString(), labelStyle).size.width
-    val yLabelHeightPx = measurer.measure("0", labelStyle).size.height
-    val xLabelWidthPx = measurer.measure("0000", labelStyle).size.width
+    val yLabelWidthPx = remember(measurer, labelStyle, axis) { measurer.measure(axis.top.toString(), labelStyle).size.width }
+    val yLabelHeightPx = remember(measurer, labelStyle) { measurer.measure("0", labelStyle).size.height }
+    val xLabelWidthPx = remember(measurer, labelStyle) { measurer.measure("0000", labelStyle).size.width }
+    // Tick and year labels are measured once per input change, not on every draw.
+    val tickLabels = remember(measurer, labelStyle, axis) { axis.ticks().map { it to measurer.measure(it.toString(), labelStyle) } }
+    val yearLabels = remember(measurer, labelStyle, points) { points.map { measurer.measure(it.year.toString(), labelStyle) } }
     val axisWidth = with(density) { yLabelWidthPx.toDp() } + AXIS_GAP
     val xLabelBand = with(density) { yLabelHeightPx.toDp() } + 6.dp
     // Half a label of headroom so the top gridline's label is never clipped.
@@ -183,9 +186,8 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
             Canvas(Modifier.width(axisWidth).height(totalHeight)) {
                 val top = topPad.toPx()
                 val h = PLOT_HEIGHT.toPx()
-                axis.ticks().forEach { v ->
+                tickLabels.forEach { (v, text) ->
                     val y = top + h * (1f - v.toFloat() / axis.top)
-                    val text = measurer.measure(v.toString(), labelStyle)
                     drawText(text, topLeft = Offset(size.width - AXIS_GAP.toPx() - text.size.width, y - text.size.height / 2f))
                 }
             }
@@ -229,7 +231,7 @@ internal fun YearChart(points: List<YearPoint>, modifier: Modifier = Modifier) {
                     val step = labelStep(slotPx, xLabelWidthPx + 4.dp.toPx())
                     points.forEachIndexed { i, p ->
                         if ((points.size - 1 - i) % step == 0) {
-                            val text = measurer.measure(p.year.toString(), labelStyle)
+                            val text = yearLabels[i]
                             val x = (slotPx * i + slotPx / 2 - text.size.width / 2f).coerceIn(0f, maxOf(0f, size.width - text.size.width))
                             drawText(text, topLeft = Offset(x, top + h + 6.dp.toPx()))
                         }

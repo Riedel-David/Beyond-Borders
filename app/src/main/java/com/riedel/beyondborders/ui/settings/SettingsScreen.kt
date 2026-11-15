@@ -481,7 +481,8 @@ fun SettingsScreen(
                         }
                     ),
                     isError = failed,
-                    modifier = Modifier.padding(top = 0.dp),
+                    topPadding = 4.dp,
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
