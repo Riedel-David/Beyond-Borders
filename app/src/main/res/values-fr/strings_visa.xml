@@ -56,6 +56,8 @@
     <string name="visa_empty_query">Aucune destination ne correspond à « %1$s ».</string>
     <string name="visa_empty_filter">Aucune destination pour le filtre « %1$s ».</string>
     <string name="visa_empty_nothing">Aucun résultat.</string>
+    <string name="visa_empty_wishlist">Ajoutez des lieux à vos envies.</string>
+    <string name="visa_empty_wishlist_filter">Aucune envie ne correspond au filtre « %1$s ».</string>
     <string name="visa_unavailable_title">Aucune donnée de visa</string>
     <string name="visa_unavailable_body">La liste de visas intégrée n\'a pas pu être lue, ce mode n\'a donc rien à afficher. Ta carte de voyages n\'est pas touchée.</string>
 

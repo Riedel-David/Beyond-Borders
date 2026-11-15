@@ -32,10 +32,8 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -82,10 +80,6 @@ enum class StatusFilter(val text: UiText) {
     LIVED(UiText.Res(R.string.places_filter_lived)),
     WISHLIST(UiText.Res(R.string.places_filter_want)),
     NONE(UiText.Res(R.string.places_filter_none)),
-
-    /** Not a status: Want-to places the selected passport enters visa-free. Offered by its
-     * own chip, only when it can match something (see [offerWishlistVisaFree]). */
-    WISHLIST_VISA_FREE(UiText.Res(R.string.places_filter_wishlist_visa_free)),
 }
 
 /**
@@ -117,12 +111,6 @@ sealed interface VisaFilter {
 
     data object Easy : VisaFilter {
         override val text = UiText.Res(R.string.places_visa_filter_easy)
-    }
-
-    /** Wishlist places the visa asset says need no embassy — the join this app can
-     * do offline that nothing else can, because it already owns both datasets. */
-    data object WishlistEasy : VisaFilter {
-        override val text = UiText.Res(R.string.places_visa_filter_wishlist_easy)
     }
 
     /** Visa-free with a stay of 90 days or more — long enough to actually live somewhere. */
@@ -359,6 +347,11 @@ class PlacesViewModel(
     private val _visaFilter = MutableStateFlow<VisaFilter>(VisaFilter.All)
     val visaFilter: StateFlow<VisaFilter> = _visaFilter
 
+    /** "My wishlist" toggle on the visa list. Kept beside [visaFilter] rather than inside it
+     * so it composes with every category chip; the chip row never offers or drops it. */
+    private val _wishlistOnly = MutableStateFlow(false)
+    val wishlistOnly: StateFlow<Boolean> = _wishlistOnly
+
     /** Whether the map paints visa requirements instead of your own history. */
     private val _visaLens = MutableStateFlow(false)
     val visaLens: StateFlow<Boolean> = _visaLens
@@ -421,23 +414,9 @@ class PlacesViewModel(
     }
 
     /** The rows the passport list should render, already filtered and ordered. */
-    @OptIn(ExperimentalCoroutinesApi::class)
     val rows: StateFlow<List<PlaceRow>> =
-        // The registries only join the combine while the visa-free chip is selected, so
-        // everyone else keeps the plain path and a registry reload recomputes nothing.
-        _statusFilter.flatMapLatest { filter ->
-            if (filter == StatusFilter.WISHLIST_VISA_FREE) {
-                combine(
-                    allPlaces, statuses, _query, _grouping,
-                    ownVisas,
-                ) { places, st, q, grouping, (visa, secondVisa) ->
-                    buildRows(places, st, q, filter, grouping, visa, secondVisa)
-                }
-            } else {
-                combine(allPlaces, statuses, _query, _grouping) { places, st, q, grouping ->
-                    buildRows(places, st, q, filter, grouping)
-                }
-            }
+        combine(allPlaces, statuses, _query, _grouping, _statusFilter) { places, st, q, grouping, filter ->
+            buildRows(places, st, q, filter, grouping)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /**
@@ -473,17 +452,19 @@ class PlacesViewModel(
             allPlaces,
             viewVisas,
             statuses,
-            _query,
-            _visaFilter
-        ) { places, (visa, secondVisa), st, q, filter ->
-            buildVisaRows(places, visa, secondVisa, st, q, filter)
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+            combine(_query, _visaFilter, _wishlistOnly) { q, filter, wish -> Triple(q, filter, wish) },
+        ) { places, (visa, secondVisa), st, (q, filter, wish) ->
+            buildVisaRows(places, visa, secondVisa, st, q, filter, wish)
+        }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
     val wishlistEasyText: StateFlow<UiText?> =
-        combine(allPlaces, statuses, _visa, settings.denominator) { places, st, visa, denom ->
-            computeWishlistEasyText(places, st, visa, denom)
+        // Own passports only, combined like the visa rows: partner mode is a map/list
+        // lens, not something the stats card should change its count for.
+        combine(allPlaces, statuses, ownVisas, settings.denominator) { places, st, own, denom ->
+            computeWishlistEasyText(places, st, own.visa, denom, own.second)
         }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -589,6 +570,13 @@ class PlacesViewModel(
         viewModelScope.launch {
             viewVisas.collect { _visaFilter.value = revalidatedFilter(_visaFilter.value, it) }
         }
+        // Without a registry the tab row is not drawn, so a mode left on VISA would strand
+        // the user on the "unavailable" page. Only reachable when a reload (a finished visa
+        // update) finds neither the passport's asset nor the default readable; the
+        // nationality itself is never cleared once set.
+        viewModelScope.launch {
+            viewVisas.collect { _mode.update { mode -> modeOrTravel(mode, it.visa) } }
+        }
     }
 
     fun setPartnerMode(value: Boolean) {
@@ -611,6 +599,7 @@ class PlacesViewModel(
     fun select(code: String?) { _selectedCode.value = code }
     fun setMode(value: PassportMode) { _mode.value = value }
     fun setVisaFilter(value: VisaFilter) { _visaFilter.value = value }
+    fun setWishlistOnly(value: Boolean) { _wishlistOnly.value = value }
 
     fun setVisaLens(value: Boolean) {
         _visaLens.value = value
@@ -750,12 +739,15 @@ internal fun computeWishlistEasyText(
     statuses: Map<String, PlaceStatus>,
     visa: VisaRegistry?,
     denominator: Denominator = Denominator.ALL,
+    secondVisa: VisaRegistry? = null,
 ): UiText? {
     if (visa == null) return null
     val countedCodes = places.filter(denominator::includes).map { it.code }.toSet()
     val wishlistCodes = statuses.filter { it.value == PlaceStatus.WISHLIST && it.key in countedCodes }.keys
     if (wishlistCodes.isEmpty()) return null
-    val easy = wishlistCodes.count { code -> visa[code]?.isEasy == true }
+    val easy = wishlistCodes.count { code ->
+        combineRequirements(visa[code], secondVisa?.get(code))?.winner?.isEasy == true
+    }
     if (easy == 0) return null
     val wishlist = wishlistCodes.size
     return UiText.Plural(R.plurals.places_wishlist_easy, wishlist, easy, wishlist)
@@ -1006,7 +998,6 @@ internal fun visaFilters(visa: VisaRegistry?, secondVisa: VisaRegistry? = null):
     return buildList {
         add(VisaFilter.All)
         add(VisaFilter.Easy)
-        add(VisaFilter.WishlistEasy)
         add(VisaFilter.LongStay)
         VisaCategory.entries.forEach { category ->
             if (category == VisaCategory.HOME) return@forEach
@@ -1038,6 +1029,7 @@ internal fun buildVisaRows(
     statuses: Map<String, PlaceStatus>,
     query: String,
     filter: VisaFilter,
+    wishlistOnly: Boolean = false,
 ): List<VisaRow> {
     if (visa == null) return emptyList()
     val needle = query.trim().foldForSearch()
@@ -1052,11 +1044,12 @@ internal fun buildVisaRows(
                 VisaRow(place, combined.winner, statuses[place.code] ?: PlaceStatus.NONE)
             }
         }
+        // Composes with the chip: "My wishlist" + "No embassy" is the easy wishlist places.
+        .filter { !wishlistOnly || it.status == PlaceStatus.WISHLIST }
         .filter {
             when (filter) {
                 VisaFilter.All -> true
                 VisaFilter.Easy -> it.requirement.isEasy
-                VisaFilter.WishlistEasy -> it.status == PlaceStatus.WISHLIST && it.requirement.isEasy
                 VisaFilter.LongStay ->
                     it.requirement.category == VisaCategory.VISA_FREE && (it.requirement.days ?: 0) >= 90
                 is VisaFilter.Category -> it.requirement.category == filter.category
@@ -1072,28 +1065,12 @@ internal fun buildVisaRows(
         .toList()
 }
 
-/**
- * Whether the selected passport(s) enter [code] visa-free, by the same lookup and the
- * same two-passport rule the Visa tab uses. No registry means no answer, so false.
- */
-internal fun isVisaFreeFor(code: String, visa: VisaRegistry?, secondVisa: VisaRegistry?): Boolean =
-    combineRequirements(visa?.get(code), secondVisa?.get(code))?.winner?.isVisaFree == true
-
-/**
- * Whether the "Wishlist, visa-free for me" chip is worth showing: it needs a passport
- * (no nationality chosen means no registry) and at least one Want-to place.
- */
-internal fun offerWishlistVisaFree(visa: VisaRegistry?, statuses: Map<String, PlaceStatus>): Boolean =
-    visa != null && statuses.values.any { it == PlaceStatus.WISHLIST }
-
 internal fun buildRows(
     places: List<Place>,
     statuses: Map<String, PlaceStatus>,
     query: String,
     filter: StatusFilter,
     grouping: Grouping,
-    visa: VisaRegistry? = null,
-    secondVisa: VisaRegistry? = null,
 ): List<PlaceRow> {
     val needle = query.trim().foldForSearch()
     val matching = places.asSequence()
@@ -1106,8 +1083,6 @@ internal fun buildRows(
                 StatusFilter.LIVED -> it.status == PlaceStatus.LIVED
                 StatusFilter.WISHLIST -> it.status == PlaceStatus.WISHLIST
                 StatusFilter.NONE -> it.status == PlaceStatus.NONE
-                StatusFilter.WISHLIST_VISA_FREE ->
-                    it.status == PlaceStatus.WISHLIST && isVisaFreeFor(it.place.code, visa, secondVisa)
             }
         }
 
@@ -1187,6 +1162,10 @@ internal data class PartnerSources(val you: VisaRegistry, val second: VisaRegist
 /** The registry a row's links and credit come from: the partner's where their answer limits the pair. */
 internal fun rowSource(visa: VisaRegistry, sources: PartnerSources?, comparison: PartnerComparison?): VisaRegistry =
     if (sources != null && comparison?.blocker == PartnerBlocker.PARTNER) sources.partner else visa
+
+/** [mode], or [PassportMode.TRAVEL] when there is no registry for the Visa tab to show. */
+internal fun modeOrTravel(mode: PassportMode, visa: VisaRegistry?): PassportMode =
+    if (visa == null) PassportMode.TRAVEL else mode
 
 /** The chip to keep after the registries behind [views] changed: the selected one if still offered, else All. */
 internal fun revalidatedFilter(selected: VisaFilter, views: VisaViews): VisaFilter =
@@ -1455,6 +1434,10 @@ data class VisitStats(
     val byYear: List<Pair<Int, Int>>,
     val first: Int?,
     val mostRecent: Int?,
+    /** The chart's data; see [computeCountriesByYear]. */
+    val yearPoints: List<YearPoint> = emptyList(),
+    /** Been places without a dated visit; see [countUndatedBeenPlaces]. */
+    val undatedPlaces: Int = 0,
 ) {
     val hasVisits: Boolean get() = byYear.isNotEmpty()
 
@@ -1475,8 +1458,57 @@ internal fun computeVisitStats(
         byYear = perYear.map { it.key to it.value },
         first = if (perYear.isEmpty()) null else perYear.firstKey(),
         mostRecent = if (perYear.isEmpty()) null else perYear.lastKey(),
+        yearPoints = computeCountriesByYear(visits, statuses),
+        undatedPlaces = countUndatedBeenPlaces(visits, statuses),
     )
 }
+
+/**
+ * One year of the visits chart.
+ *
+ * @property countries distinct places visited that year.
+ * @property newCountries places whose first dated visit falls in that year.
+ * @property cumulative running sum of [newCountries] up to and including this year.
+ */
+data class YearPoint(val year: Int, val countries: Int, val newCountries: Int, val cumulative: Int)
+
+internal const val MAX_CHART_YEARS = 100
+
+/**
+ * Per-year places for the chart, ascending, gaps between the first and last dated year
+ * filled with zero visits and the running total carried forward. Only places currently
+ * Been count (see [visibleVisits]); undated visits appear nowhere. Capped to the most
+ * recent [MAX_CHART_YEARS] years, with the cumulative still including everything earlier.
+ */
+internal fun computeCountriesByYear(
+    visits: Map<String, List<Visit>>,
+    statuses: Map<String, PlaceStatus>,
+): List<YearPoint> {
+    val yearsByPlace = visibleVisits(visits, statuses).values
+        .map { list -> list.mapNotNull { it.year }.toSet() }
+        .filter { it.isNotEmpty() }
+    if (yearsByPlace.isEmpty()) return emptyList()
+    val countries = HashMap<Int, Int>()
+    val firsts = HashMap<Int, Int>()
+    for (years in yearsByPlace) {
+        for (y in years) countries.merge(y, 1, Int::plus)
+        firsts.merge(years.min(), 1, Int::plus)
+    }
+    val last = countries.keys.max()
+    val start = maxOf(countries.keys.min(), last - (MAX_CHART_YEARS - 1))
+    var running = firsts.entries.filter { it.key < start }.sumOf { it.value }
+    return (start..last).map { y ->
+        val fresh = firsts[y] ?: 0
+        running += fresh
+        YearPoint(y, countries[y] ?: 0, fresh, running)
+    }
+}
+
+/** Been/Lived places with no dated visit: the chart's "N places have no year" footnote. */
+internal fun countUndatedBeenPlaces(
+    visits: Map<String, List<Visit>>,
+    statuses: Map<String, PlaceStatus>,
+): Int = statuses.count { (code, status) -> status.isBeen && visits[code].orEmpty().none { it.year != null } }
 
 internal const val REVIEW_MIN_BEEN = 5
 internal const val REVIEW_MIN_INSTALL_DAYS = 7

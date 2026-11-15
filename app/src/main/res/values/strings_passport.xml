@@ -36,7 +36,7 @@
     <string name="passport_card_wishlist">%1$d on the wishlist</string>
 
     <!-- Stats screen -->
-    <string name="stats_title">Stats</string>
+    <string name="stats_title">Statistics</string>
     <string name="stats_back">Back</string>
     <string name="stats_continents">Continents</string>
     <string name="stats_continents_info_label">Show help for continent bars</string>
@@ -200,4 +200,5 @@
     <string name="passport_start_title">Start by marking a few places</string>
     <string name="passport_start_body">Tick the countries you\'ve been to in one go, or tap any place on the map.</string>
     <string name="passport_pick_title">Pick your passport to see visa requirements</string>
+    <string name="passport_card_stats_link">Statistics and achievements</string>
 </resources>

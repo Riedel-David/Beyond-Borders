@@ -7,6 +7,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -109,6 +112,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.Motion
+import com.riedel.beyondborders.ui.ExpandChevron
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
 import com.riedel.beyondborders.ui.UiText
@@ -125,7 +130,6 @@ import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.StatusFilter
-import com.riedel.beyondborders.ui.places.offerWishlistVisaFree
 import com.riedel.beyondborders.ui.places.TravelStats
 import com.riedel.beyondborders.ui.places.sectionHeader
 import com.riedel.beyondborders.ui.places.visaFilters
@@ -176,6 +180,7 @@ fun PassportScreen(
     val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
     val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
+    val wishlistOnly by viewModel.wishlistOnly.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
     val wishlistEasyText by viewModel.wishlistEasyText.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
@@ -217,11 +222,27 @@ fun PassportScreen(
     // detail does not throw the list's scroll position away with the composition slot.
     val listState = rememberLazyListState()
 
+    // A different mode or filter is a different list, so the old offset points at nothing
+    // meaningful. The first run is skipped so a return to this tab (or from the stats detail)
+    // keeps its position; the flag is per composition, which is exactly that boundary.
+    var scrollResetArmed by remember { mutableStateOf(false) }
+    LaunchedEffect(mode, statusFilter, visaFilter, wishlistOnly) {
+        if (scrollResetArmed) listState.scrollToItem(0) else scrollResetArmed = true
+    }
+
     if (showStatsDetail) {
         // Not a real back-stack entry — just this boolean — so without this the
         // system back gesture has nothing here to intercept and falls through to
         // exiting the app instead of closing the detail screen.
         BackHandler { showStatsDetail = false }
+        // Fades in on entry. The way back stays a cut: the list below is only composed once
+        // this early return is gone, so there is nothing to cross-fade it with.
+        val enterState = remember { MutableTransitionState(false).apply { targetState = true } }
+        AnimatedVisibility(
+            visibleState = enterState,
+            enter = fadeIn(tween(Motion.DurationShort, easing = Motion.Easing)),
+            exit = ExitTransition.None,
+        ) {
         StatsScreen(
             stats = stats,
             places = places,
@@ -232,6 +253,7 @@ fun PassportScreen(
             onBack = { showStatsDetail = false },
             modifier = modifier,
         )
+        }
         return
     }
 
@@ -303,6 +325,9 @@ fun PassportScreen(
                 rows = visaRows,
                 filter = visaFilter,
                 filters = filters,
+                wishlistOnly = wishlistOnly,
+                wishlistEmpty = statuses.values.none { it == PlaceStatus.WISHLIST },
+                onWishlistOnly = viewModel::setWishlistOnly,
                 query = query,
                 // The same selection the map's card uses. Sharing it is what makes a
                 // row you opened here the country still selected when you switch to
@@ -382,25 +407,11 @@ fun PassportScreen(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    StatusFilter.entries.filter { it != StatusFilter.WISHLIST_VISA_FREE }.forEach { filter ->
+                    StatusFilter.entries.forEach { filter ->
                         FilterChip(
                             selected = filter == statusFilter,
                             onClick = { viewModel.setStatusFilter(filter) },
                             label = { Text(filter.text.asString()) },
-                        )
-                    }
-                    // Stays while selected, so a filter cannot become invisible (and
-                    // unclearable) when the last Want-to place is unticked.
-                    if (offerWishlistVisaFree(visa, statuses) || statusFilter == StatusFilter.WISHLIST_VISA_FREE) {
-                        FilterChip(
-                            selected = statusFilter == StatusFilter.WISHLIST_VISA_FREE,
-                            onClick = {
-                                viewModel.setStatusFilter(
-                                    if (statusFilter == StatusFilter.WISHLIST_VISA_FREE) StatusFilter.ALL
-                                    else StatusFilter.WISHLIST_VISA_FREE
-                                )
-                            },
-                            label = { Text(StatusFilter.WISHLIST_VISA_FREE.text.asString()) },
                         )
                     }
                 }
@@ -458,7 +469,7 @@ fun PassportScreen(
                         viewModel.vibrate()
                         viewModel.setStatus(row.place.code, target)
                     },
-                    modifier = Modifier.animateItem(),
+                    modifier = with(Motion) { animateItemMotion() },
                 )
             }
         }
@@ -548,7 +559,9 @@ internal fun SearchField(
                     focusManager.clearFocus()
                     keyboard?.hide()
                 }),
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
             )
         }
         if (query.isNotEmpty()) {
@@ -560,7 +573,18 @@ internal fun SearchField(
         // are both provided. Opens a dropdown menu with the three grouping options.
         if (grouping != null && onGrouping != null) {
             Box {
-                IconButton(onClick = { dropdownExpanded = true }) {
+                val groupingName = stringResource(
+                    when (grouping) {
+                        Grouping.CONTINENT -> R.string.passport_group_continent
+                        Grouping.REGION -> R.string.passport_group_region
+                        Grouping.ALPHABETICAL -> R.string.passport_group_alphabetical
+                    }
+                )
+                IconButton(
+                    onClick = { dropdownExpanded = true },
+                    // "Group list, Continent": the button's name alone does not say what the list is grouped by now.
+                    modifier = Modifier.semantics { stateDescription = groupingName },
+                ) {
                     Icon(SortIcon, contentDescription = stringResource(R.string.passport_group_list))
                 }
                 DropdownMenu(
@@ -616,17 +640,7 @@ private fun SectionHeader(text: String, collapsed: Boolean, onClick: () -> Unit,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
         )
-        // Collapsed points right, expanded down. Rotated rather than swapped so the
-        // turn can animate.
-        val rotation by animateFloatAsState(if (collapsed) -90f else 0f, label = "chevron")
-        Icon(
-            imageVector = Icons.Filled.KeyboardArrowDown,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .size(20.dp)
-                .graphicsLayer { rotationZ = rotation },
-        )
+        ExpandChevron(!collapsed)
     }
 }
 
@@ -729,8 +743,8 @@ private fun AzRail(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = fadeIn(tween(Motion.DurationShort, easing = Motion.Easing)),
+        exit = fadeOut(tween(Motion.DurationShort, easing = Motion.Easing)),
         modifier = modifier,
     ) {
     Box(
@@ -1081,6 +1095,25 @@ private fun StatsCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            // A labelled way in to the Statistics screen, so the card does not read as
+            // the passport's own summary. Not a button of its own: the whole card is the
+            // click target and this row only names where it leads (48 dp tall to match).
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.passport_card_stats_link),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         }

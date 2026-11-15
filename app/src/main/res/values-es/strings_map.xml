@@ -87,13 +87,12 @@
     <string name="places_filter_been">Visitados</string>
     <string name="places_filter_lived">Vividos</string>
     <string name="places_filter_want">Pendientes</string>
-    <string name="places_filter_wishlist_visa_free">Lista de deseos, sin visado para mí</string>
     <string name="places_filter_none">Aún no</string>
     <string name="places_mode_travel">Dónde he estado</string>
     <string name="places_mode_visa">Adónde puedo ir</string>
     <string name="places_visa_filter_all">Todos</string>
     <string name="places_visa_filter_easy">Sin cita</string>
-    <string name="places_visa_filter_wishlist_easy">Pendientes fáciles</string>
+    <string name="places_visa_filter_wishlist">Mi lista de deseos</string>
     <string name="places_visa_filter_long_stay">90+ días</string>
     <string name="places_section_uninhabited">Deshabitados</string>
     <plurals name="places_nudge">

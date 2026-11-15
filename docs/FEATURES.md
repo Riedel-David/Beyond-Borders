@@ -183,8 +183,11 @@ an "Undated" dot for visits added without a year; tapping it opens the same dial
 place Been does not create a visit by itself, and clearing its status hides its visits rather
 than deleting them, so marking it again brings them back.
 
-Stats gets a "Visits by year" section with a bar per year and a "First visit / Most recent"
-line. Only dated visits are counted; the section is hidden until there is one. Dates are part of
+Statistics (the screen behind the Passport summary card) gets a "Visits by year" chart: a bar
+per year for the places visited that year, and a line for the running total of places visited for
+the first time. Years without a visit are drawn as empty bars, a "First visit / Most recent" line
+follows, and places with no dated visit are counted in a footnote. Only dated visits are counted
+and only places currently marked Been; the section is hidden until there is one. Dates are part of
 Export and Import (an optional `visits` list): importing merges visits by their id, the most
 recently edited copy of the same visit wins, and visits from two phones are otherwise all kept.
 

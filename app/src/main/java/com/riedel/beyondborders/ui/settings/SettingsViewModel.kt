@@ -182,6 +182,13 @@ class SettingsViewModel(
     fun setVisaAutoUpdate(enabled: Boolean) {
         settings.setVisaAutoUpdate(enabled)
         visaUpdates.sync(enabled)
+        // A stale "Up to date" beside a switch that was just flipped reads as a reply to it.
+        clearVisaResult()
+    }
+
+    /** Drops a finished result; a check still running is left alone. */
+    fun clearVisaResult() {
+        if (_visaCheck.value is VisaCheckState.Done) _visaCheck.value = VisaCheckState.Idle
     }
 
     private val _visaCheck = MutableStateFlow<VisaCheckState>(VisaCheckState.Idle)

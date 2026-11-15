@@ -368,7 +368,9 @@ internal object PlacesMapStyle {
         if (codes.isEmpty()) return noPlaces()
         // Expression.literal takes a real Object[]; Kotlin's Array<String> is not
         // an Array<Any>, so the array is built element by element.
-        val haystack: Array<Any> = Array(codes.size) { index -> codes.elementAt(index) }
+        // An iterator: elementAt(i) on a Set walks from the start each time.
+        val iterator = codes.iterator()
+        val haystack: Array<Any> = Array(codes.size) { iterator.next() }
         return Expression.`in`(Expression.get("code"), Expression.literal(haystack))
     }
 

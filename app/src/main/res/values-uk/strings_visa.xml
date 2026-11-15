@@ -57,6 +57,8 @@
     <string name="visa_empty_query">Жоден напрямок не відповідає запиту «%1$s».</string>
     <string name="visa_empty_filter">Жоден напрямок не відповідає фільтру «%1$s».</string>
     <string name="visa_empty_nothing">Нічого не знайдено.</string>
+    <string name="visa_empty_wishlist">Додайте місця до списку бажань.</string>
+    <string name="visa_empty_wishlist_filter">Жодне місце зі списку бажань не відповідає фільтру «%1$s».</string>
     <string name="visa_unavailable_title">Немає візових даних</string>
     <string name="visa_unavailable_body">Не вдалося прочитати вбудований список віз, тому в цьому режимі немає що показати. Карта подорожей не постраждала.</string>
 

@@ -1,6 +1,9 @@
 package com.riedel.beyondborders.ui.visa
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.TextButton
+import com.riedel.beyondborders.ui.RadioListItem
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -89,11 +92,13 @@ internal fun PassportPickerDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            // The same shape and tone as AlertDialog, so this hand-built shell matches the others.
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier.widthIn(max = MAX_DIALOG_WIDTH_DP.dp).fillMaxWidth().fillMaxHeight(0.85f),
         ) {
             Column(Modifier.padding(16.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(title, style = MaterialTheme.typography.headlineSmall)
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -102,26 +107,19 @@ internal fun PassportPickerDialog(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
                 )
                 HorizontalDivider()
-                LazyColumn {
+                LazyColumn(Modifier.weight(1f)) {
                     items(filtered, key = { it }) { code ->
                         val isSelected = code == selected
-                        ListItem(
-                            headlineContent = { Text(names[code] ?: code) },
-                            supportingContent = { Text(code) },
-                            leadingContent = {
-                                // Non-interactive: the row below is the single tap
-                                // target and carries the radio role, so a second
-                                // clickable here would give TalkBack two overlapping
-                                // targets for one choice.
-                                RadioButton(selected = isSelected, onClick = null)
-                            },
-                            modifier = Modifier.selectable(
-                                selected = isSelected,
-                                role = Role.RadioButton,
-                                onClick = { onSelect(code) },
-                            ),
+                        RadioListItem(
+                            label = names[code] ?: code,
+                            supporting = code,
+                            selected = isSelected,
+                            onClick = { onSelect(code) },
                         )
                     }
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text(stringResource(R.string.settings_cancel))
                 }
             }
         }

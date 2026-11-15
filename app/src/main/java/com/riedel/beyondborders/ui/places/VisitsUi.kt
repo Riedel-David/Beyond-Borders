@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui.places
 
 import androidx.compose.foundation.background
+import com.riedel.beyondborders.ui.RadioListItem
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +39,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -64,7 +72,7 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
     val undated = stringResource(R.string.visits_undated)
     val locale = currentLocale()
     Row(
-        modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onClick).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -77,7 +85,7 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
             if (visits.isEmpty()) stringResource(R.string.visits_none_yet) else visitYearsText(visits, undated, locale),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.visits_add))
@@ -93,14 +101,37 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
 internal fun VisitTimeline(visits: List<Visit>, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val undated = stringResource(R.string.visits_undated)
     val locale = currentLocale()
+    // Oldest at the left, newest at the right, opened scrolled to the newest: the latest
+    // visit is the one worth seeing first, and older ones fade out at the left edge.
     val ordered = visitsChronological(visits)
+    val scroll = rememberScrollState()
+    LaunchedEffect(ordered.size, scroll.maxValue) { scroll.scrollTo(scroll.maxValue) }
     val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     val dotColor = MaterialTheme.colorScheme.onSurface
     Row(
         modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .horizontalScroll(rememberScrollState()),
+            // Fades the left edge out while older visits remain, so a clipped cell reads as
+            // "scrolls" rather than as the end.
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                if (scroll.canScrollBackward) {
+                    val fade = 32.dp.toPx()
+                    drawRect(
+                        Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color.Black),
+                            startX = 0f,
+                            endX = fade,
+                        ),
+                        topLeft = Offset.Zero,
+                        size = androidx.compose.ui.geometry.Size(fade, size.height),
+                        blendMode = BlendMode.DstIn,
+                    )
+                }
+            }
+            .horizontalScroll(scroll),
     ) {
         ordered.forEachIndexed { i, visit ->
             Column(Modifier.width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -177,28 +208,21 @@ internal fun VisitsDialog(
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                 )
-                LazyColumn(Modifier.heightIn(max = 130.dp)) {
+                LazyColumn(Modifier.heightIn(max = 200.dp)) {
                     // Choices as (year?) so "No date" sits in the same list as the years.
                     items(listOf<Int?>(null) + visitYearChoices(currentYear)) { year ->
-                        Row(
-                            Modifier.fillMaxWidth()
-                                .clickable {
-                                    hasPick = true
-                                    pickedYear = year
-                                    // A month picked earlier may be in the future of the new year.
-                                    if (year == null || isFutureVisitMonth(year, pickedMonth, currentYear, currentMonth)) {
-                                        pickedMonth = null
-                                    }
+                        RadioListItem(
+                            label = year?.toString() ?: stringResource(R.string.visits_no_date),
+                            selected = hasPick && pickedYear == year,
+                            onClick = {
+                                hasPick = true
+                                pickedYear = year
+                                // A month picked earlier may be in the future of the new year.
+                                if (year == null || isFutureVisitMonth(year, pickedMonth, currentYear, currentMonth)) {
+                                    pickedMonth = null
                                 }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = hasPick && pickedYear == year, onClick = null)
-                            Text(
-                                year?.toString() ?: stringResource(R.string.visits_no_date),
-                                Modifier.padding(start = 12.dp),
-                            )
-                        }
+                            },
+                        )
                     }
                 }
                 Text(

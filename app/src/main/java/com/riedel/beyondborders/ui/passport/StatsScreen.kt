@@ -1,6 +1,5 @@
 package com.riedel.beyondborders.ui.passport
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -58,6 +57,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.ExpandableHeader
+import com.riedel.beyondborders.ui.ExpandableSection
 import com.riedel.beyondborders.ui.map.flagAssetPath
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -212,31 +213,26 @@ fun StatsScreen(
                 )
             }
 
-            ShowAllGroupingsRow(
+            ExpandableHeader(
+                title = stringResource(R.string.stats_show_all_groupings),
                 expanded = showAllGroupings,
                 onToggle = { showAllGroupings = !showAllGroupings },
                 modifier = Modifier.padding(top = 16.dp),
             )
-            // Only the size changes here, not the content underneath it — the two
-            // grids are always the same composables, just present or absent — so
-            // animateContentSize is the right tool. A crossfade would be wrong for
-            // a content swap, but nothing here swaps.
-            Column(Modifier.animateContentSize()) {
-                if (showAllGroupings) {
-                    CompletionGrid(
-                        stringResource(R.string.stats_regions),
-                        stats.regions.map { Bucket(it.region, it.been, it.total, it.codes) },
-                        onHold = { detail = it },
-                    )
-                    CompletionGrid(
-                        stringResource(R.string.stats_named_groupings),
-                        stats.informalRegions.map { Bucket(it.name, it.been, it.total, it.codes) },
-                        onHold = { detail = it },
-                    )
-                }
+            ExpandableSection(showAllGroupings) {
+                CompletionGrid(
+                    stringResource(R.string.stats_regions),
+                    stats.regions.map { Bucket(it.region, it.been, it.total, it.codes) },
+                    onHold = { detail = it },
+                )
+                CompletionGrid(
+                    stringResource(R.string.stats_named_groupings),
+                    stats.informalRegions.map { Bucket(it.name, it.been, it.total, it.codes) },
+                    onHold = { detail = it },
+                )
             }
 
-            if (visitStats.hasVisits) VisitsByYear(visitStats, Modifier.padding(top = 16.dp))
+            if (visitStats.hasVisits) VisitsByYearChart(visitStats, Modifier.padding(top = 16.dp))
 
             AchievementsSection(
                 achievements,
@@ -271,38 +267,6 @@ private fun LabeledStat(label: String, value: String, valueColor: Color, modifie
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(value, style = MaterialTheme.typography.bodyMedium, color = valueColor)
-    }
-}
-
-/** The row that reveals regions and named groupings. A chevron rather than words
- * that change, since "Show" vs. "Hide" is the same information the rotation
- * already gives, twice. */
-@Composable
-private fun ShowAllGroupingsRow(
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val rotation by animateFloatAsState(if (expanded) 90f else 0f)
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            stringResource(R.string.stats_show_all_groupings),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = stringResource(if (expanded) R.string.stats_collapse else R.string.stats_expand),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.rotate(rotation),
-        )
     }
 }
 
@@ -438,51 +402,4 @@ private fun BucketDetailDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.stats_dialog_close)) } },
     )
-}
-
-/**
- * Visits per year as horizontal bars scaled to the largest bucket. Plain Compose boxes: widths come from fractions of the track, so there
- * is no measuring and no Canvas.
- */
-@Composable
-private fun VisitsByYear(stats: VisitStats, modifier: Modifier = Modifier) {
-    val rows = stats.byYear.map { it.first.toString() to it.second }
-    val max = rows.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
-    Column(modifier) {
-        Text(
-            stringResource(R.string.stats_visits_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            rows.forEach { (label, count) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, Modifier.width(72.dp), style = MaterialTheme.typography.bodySmall)
-                    Box(Modifier.weight(1f).height(12.dp)) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth(count.toFloat() / max)
-                                .height(12.dp)
-                                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
-                        )
-                    }
-                    Text(
-                        count.toString(),
-                        Modifier.width(32.dp).padding(start = 8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-        }
-        val first = stats.first
-        val recent = stats.mostRecent
-        if (first != null && recent != null) {
-            Text(
-                stringResource(R.string.stats_visits_first_recent, first, recent),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-    }
 }

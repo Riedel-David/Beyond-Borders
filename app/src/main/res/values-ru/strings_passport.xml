@@ -241,4 +241,5 @@
     <string name="passport_start_title">Начни с нескольких отметок</string>
     <string name="passport_start_body">Отметь сразу все страны, где ты был(а), или нажми на любое место на карте.</string>
     <string name="passport_pick_title">Выбери паспорт, чтобы увидеть визовые требования</string>
+    <string name="passport_card_stats_link">Статистика и достижения</string>
 </resources>

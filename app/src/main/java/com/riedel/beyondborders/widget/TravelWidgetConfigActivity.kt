@@ -1,6 +1,8 @@
 package com.riedel.beyondborders.widget
 
 import android.app.Activity
+import com.riedel.beyondborders.ui.SwitchRow
+import com.riedel.beyondborders.ui.ChoiceRow
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
@@ -178,62 +180,47 @@ private fun ConfigScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Text(stringResource(R.string.widget_cfg_metric_title), style = MaterialTheme.typography.titleMedium)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                WidgetMetric.entries.forEachIndexed { index, option ->
-                    SegmentedButton(
-                        selected = metric == option,
-                        onClick = { metric = option },
-                        shape = SegmentedButtonDefaults.itemShape(index, WidgetMetric.entries.size),
-                    ) {
-                        Text(
-                            stringResource(
-                                when (option) {
-                                    WidgetMetric.COUNTRIES -> R.string.widget_cfg_metric_countries
-                                    WidgetMetric.PERCENT -> R.string.widget_cfg_metric_percent
-                                    WidgetMetric.CONTINENTS -> R.string.widget_cfg_metric_continents
-                                }
-                            )
-                        )
-                    }
-                }
-            }
+            ChoiceRow(
+                options = WidgetMetric.entries,
+                selected = metric,
+                label = { option ->
+                    stringResource(
+                        when (option) {
+                            WidgetMetric.COUNTRIES -> R.string.widget_cfg_metric_countries
+                            WidgetMetric.PERCENT -> R.string.widget_cfg_metric_percent
+                            WidgetMetric.CONTINENTS -> R.string.widget_cfg_metric_continents
+                        }
+                    )
+                },
+                onSelect = { metric = it },
+            )
 
             Text(stringResource(R.string.widget_cfg_target_title), style = MaterialTheme.typography.titleMedium)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                WidgetTarget.entries.forEachIndexed { index, option ->
-                    SegmentedButton(
-                        selected = target == option,
-                        onClick = { chosenTarget = option },
-                        shape = SegmentedButtonDefaults.itemShape(index, WidgetTarget.entries.size),
-                    ) {
-                        Text(
-                            stringResource(
-                                when (option) {
-                                    WidgetTarget.MAP -> R.string.widget_cfg_target_map
-                                    WidgetTarget.PASSPORT -> R.string.widget_cfg_target_passport
-                                    WidgetTarget.STATS -> R.string.widget_cfg_target_stats
-                                }
-                            )
-                        )
-                    }
-                }
-            }
+            ChoiceRow(
+                options = WidgetTarget.entries,
+                selected = target,
+                label = { option ->
+                    stringResource(
+                        when (option) {
+                            WidgetTarget.MAP -> R.string.widget_cfg_target_map
+                            WidgetTarget.PASSPORT -> R.string.widget_cfg_target_passport
+                            WidgetTarget.STATS -> R.string.widget_cfg_target_stats
+                        }
+                    )
+                },
+                onSelect = { chosenTarget = it },
+            )
 
             Column {
                 Text(stringResource(R.string.widget_cfg_background_title), style = MaterialTheme.typography.titleMedium)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        stringResource(
-                            if (filledBackground) R.string.widget_cfg_background_filled
-                            else R.string.widget_cfg_background_transparent
-                        )
-                    )
-                    Switch(checked = filledBackground, onCheckedChange = { filledBackground = it })
-                }
+                SwitchRow(
+                    label = stringResource(
+                        if (filledBackground) R.string.widget_cfg_background_filled
+                        else R.string.widget_cfg_background_transparent
+                    ),
+                    checked = filledBackground,
+                    onChange = { filledBackground = it },
+                )
             }
 
             // Preview only: the launcher still picks the real tier from the placed widget's

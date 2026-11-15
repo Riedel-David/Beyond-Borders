@@ -1,6 +1,14 @@
 package com.riedel.beyondborders.ui.settings
 
 import android.icu.text.ListFormatter
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.LaunchedEffect
+import com.riedel.beyondborders.ui.SwitchRow
+import com.riedel.beyondborders.ui.NavRow
+import com.riedel.beyondborders.ui.InfoDialog
+import com.riedel.beyondborders.ui.FeedbackText
+import com.riedel.beyondborders.ui.ChoiceRow
+import com.riedel.beyondborders.ui.ChoiceDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -184,35 +192,12 @@ fun SettingsScreen(
 
             if (LocalIsDarkTheme.current) {
                 Spacer(Modifier.height(16.dp))
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .toggleable(
-                            value = pureBlack,
-                            role = Role.Switch,
-                            onValueChange = { viewModel.setPureBlack(it) },
-                        )
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            stringResource(R.string.settings_pure_black),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            stringResource(R.string.settings_pure_black_detail),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = pureBlack,
-                        onCheckedChange = null,
-                    )
-                }
+                SwitchRow(
+                    label = stringResource(R.string.settings_pure_black),
+                    detail = stringResource(R.string.settings_pure_black_detail),
+                    checked = pureBlack,
+                    onChange = viewModel::setPureBlack,
+                )
             }
         }
 
@@ -221,9 +206,9 @@ fun SettingsScreen(
             stringResource(R.string.settings_passport_detail),
         ) {
             var showNationalityPicker by remember { mutableStateOf(false) }
-            ValueRow(
+            NavRow(
                 title = stringResource(R.string.settings_passport_title),
-                currentValue = nationality?.let { passportNames[it] ?: it } ?: stringResource(R.string.settings_passport_unset),
+                value = nationality?.let { passportNames[it] ?: it } ?: stringResource(R.string.settings_passport_unset),
                 onClick = { showNationalityPicker = true },
             )
             if (showNationalityPicker) {
@@ -243,9 +228,9 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             if (secondNationality == null) {
                 var showSecondPassportPicker by remember { mutableStateOf(false) }
-                ValueRow(
+                NavRow(
                     title = stringResource(R.string.settings_second_passport),
-                    currentValue = stringResource(R.string.settings_add_second_passport),
+                    value = stringResource(R.string.settings_add_second_passport),
                     onClick = { showSecondPassportPicker = true },
                 )
                 if (showSecondPassportPicker) {
@@ -272,9 +257,9 @@ fun SettingsScreen(
                 secondNationality?.let { secondPassport ->
                     var showSecondPassportPicker by remember { mutableStateOf(false) }
                     Spacer(Modifier.height(4.dp))
-                    ValueRow(
+                    NavRow(
                         title = stringResource(R.string.settings_second_passport),
-                        currentValue = passportNames[secondPassport] ?: secondPassport,
+                        value = passportNames[secondPassport] ?: secondPassport,
                         onClick = { showSecondPassportPicker = true },
                     )
                     if (showSecondPassportPicker) {
@@ -301,9 +286,9 @@ fun SettingsScreen(
             // above (that one makes the answers better, this one compares with someone else's).
             Spacer(Modifier.height(12.dp))
             var showPartnerPicker by remember { mutableStateOf(false) }
-            ValueRow(
+            NavRow(
                 title = stringResource(R.string.settings_partner_passport),
-                currentValue = partnerNationality?.let { passportNames[it] ?: it }
+                value = partnerNationality?.let { passportNames[it] ?: it }
                     ?: stringResource(R.string.settings_add_partner_passport),
                 onClick = { showPartnerPicker = true },
             )
@@ -336,14 +321,11 @@ fun SettingsScreen(
         }
 
         Section(stringResource(R.string.settings_haptics_title), null) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(stringResource(R.string.settings_haptics_toggle), style = MaterialTheme.typography.bodyMedium)
-                Switch(checked = hapticsEnabled, onCheckedChange = viewModel::setHapticsEnabled)
-            }
+            SwitchRow(
+                label = stringResource(R.string.settings_haptics_toggle),
+                checked = hapticsEnabled,
+                onChange = viewModel::setHapticsEnabled,
+            )
         }
 
         Section(
@@ -380,52 +362,40 @@ fun SettingsScreen(
                 AppLanguage.RUSSIAN -> "Русский"
             }
             var showLanguageMenu by remember { mutableStateOf(false) }
-            ValueRow(
+            NavRow(
                 title = stringResource(R.string.settings_language_title),
-                currentValue = languageLabel,
+                value = languageLabel,
                 onClick = { showLanguageMenu = true },
             )
             if (showLanguageMenu) {
-                // Simple dialog with options: endonyms so each language names itself.
-                AlertDialog(
-                    onDismissRequest = { showLanguageMenu = false },
-                    title = { Text(stringResource(R.string.settings_language_title)) },
-                    text = {
-                        Column {
-                            AppLanguage.entries.forEach { option ->
-                                val optionLabel = when (option) {
-                                    AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
-                                    AppLanguage.ENGLISH -> "English"
-                                    AppLanguage.GERMAN -> "Deutsch"
-                                    AppLanguage.SPANISH -> "Español"
-                                    AppLanguage.FRENCH -> "Français"
-                                    AppLanguage.PORTUGUESE -> "Português"
-                                    AppLanguage.UKRAINIAN -> "Українська"
-                                    AppLanguage.RUSSIAN -> "Русский"
-                                }
-                                Row(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            showLanguageMenu = false
-                                            if (option != language) {
-                                                AppCompatDelegate.setApplicationLocales(
-                                                    if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
-                                                    else LocaleListCompat.forLanguageTags(option.tag),
-                                                )
-                                                TravelWidgetProvider.requestUpdate(context.applicationContext)
-                                            }
-                                        }
-                                        .heightIn(min = 48.dp)
-                                        .padding(vertical = 12.dp, horizontal = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(optionLabel, style = MaterialTheme.typography.bodyLarge)
-                                }
-                            }
+                // Endonyms so each language names itself.
+                ChoiceDialog(
+                    title = stringResource(R.string.settings_language_title),
+                    options = AppLanguage.entries,
+                    selected = language,
+                    label = { option ->
+                        when (option) {
+                            AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
+                            AppLanguage.ENGLISH -> "English"
+                            AppLanguage.GERMAN -> "Deutsch"
+                            AppLanguage.SPANISH -> "Español"
+                            AppLanguage.FRENCH -> "Français"
+                            AppLanguage.PORTUGUESE -> "Português"
+                            AppLanguage.UKRAINIAN -> "Українська"
+                            AppLanguage.RUSSIAN -> "Русский"
                         }
                     },
-                    confirmButton = {},
+                    onSelect = { option ->
+                        showLanguageMenu = false
+                        if (option != language) {
+                            AppCompatDelegate.setApplicationLocales(
+                                if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
+                                else LocaleListCompat.forLanguageTags(option.tag),
+                            )
+                            TravelWidgetProvider.requestUpdate(context.applicationContext)
+                        }
+                    },
+                    onDismiss = { showLanguageMenu = false },
                 )
             }
         }
@@ -462,18 +432,11 @@ fun SettingsScreen(
         }
 
         Section(stringResource(R.string.settings_visa_title), stringResource(R.string.settings_visa_detail)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.settings_visa_auto),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(checked = visaAutoUpdate, onCheckedChange = viewModel::setVisaAutoUpdate)
-            }
+            SwitchRow(
+                label = stringResource(R.string.settings_visa_auto),
+                checked = visaAutoUpdate,
+                onChange = viewModel::setVisaAutoUpdate,
+            )
             val visaLocale = LocalConfiguration.current.locales[0]
             val visaCheckedDate = formatLastBackup(visaLastCheckAt, ZoneId.systemDefault(), visaLocale)
             Row(
@@ -499,11 +462,17 @@ fun SettingsScreen(
                     }
                 }
             }
-            // A live region, so a screen reader announces the result when it appears.
             (visaCheck as? VisaCheckState.Done)?.let { done ->
+                // A good result fades after a few seconds; a failure stays until the next try.
+                LaunchedEffect(done) {
+                    if (shouldAutoClearVisaResult(done.outcome)) {
+                        delay(VISA_RESULT_VISIBLE_MS)
+                        viewModel.clearVisaResult()
+                    }
+                }
                 val failed = done.outcome is VisaCheckOutcome.Offline || done.outcome is VisaCheckOutcome.Unavailable
-                Text(
-                    stringResource(
+                FeedbackText(
+                    message = stringResource(
                         when (done.outcome) {
                             is VisaCheckOutcome.UpToDate -> R.string.settings_visa_result_current
                             is VisaCheckOutcome.Updated -> R.string.settings_visa_result_updated
@@ -511,11 +480,9 @@ fun SettingsScreen(
                             is VisaCheckOutcome.Unavailable -> R.string.settings_visa_result_unavailable
                         }
                     ),
+                    isError = failed,
+                    topPadding = 4.dp,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
         }
@@ -570,8 +537,8 @@ fun SettingsScreen(
                 TransferState.Busy -> LinearProgressIndicator(
                     Modifier.fillMaxWidth().padding(top = 12.dp)
                 )
-                is TransferState.Done -> TransferResult(state.message.asString(), isError = false, viewModel::dismissTransfer)
-                is TransferState.Failed -> TransferResult(state.message.asString(), isError = true, viewModel::dismissTransfer)
+                is TransferState.Done -> FeedbackText(state.message.asString(), isError = false, onDismiss = viewModel::dismissTransfer)
+                is TransferState.Failed -> FeedbackText(state.message.asString(), isError = true, onDismiss = viewModel::dismissTransfer)
             }
 
             // Picking a file only plans; nothing is written until this is confirmed.
@@ -620,8 +587,8 @@ fun SettingsScreen(
                 TransferState.Busy -> LinearProgressIndicator(
                     Modifier.fillMaxWidth().padding(top = 12.dp)
                 )
-                is TransferState.Done -> TransferResult(state.message.asString(), isError = false, viewModel::dismissReset)
-                is TransferState.Failed -> TransferResult(state.message.asString(), isError = true, viewModel::dismissReset)
+                is TransferState.Done -> FeedbackText(state.message.asString(), isError = false, onDismiss = viewModel::dismissReset)
+                is TransferState.Failed -> FeedbackText(state.message.asString(), isError = true, onDismiss = viewModel::dismissReset)
             }
 
             if (showConfirm) {
@@ -661,22 +628,22 @@ fun SettingsScreen(
             var showMapInfo by remember { mutableStateOf(false) }
             var showBackupInfo by remember { mutableStateOf(false) }
             var showLicences by remember { mutableStateOf(false) }
-            InfoRow(
+            NavRow(
                 title = stringResource(R.string.settings_about_data_title),
                 onClick = { showDataInfo = true },
             )
             HorizontalDivider()
-            InfoRow(
+            NavRow(
                 title = stringResource(R.string.settings_about_map_title),
                 onClick = { showMapInfo = true },
             )
             HorizontalDivider()
-            InfoRow(
+            NavRow(
                 title = stringResource(R.string.settings_licences_button),
                 onClick = { showLicences = true },
             )
             HorizontalDivider()
-            InfoRow(
+            NavRow(
                 title = stringResource(R.string.settings_about_backup_title),
                 onClick = { showBackupInfo = true },
             )
@@ -684,44 +651,29 @@ fun SettingsScreen(
             ReportProblemLink()
             HorizontalDivider()
             val playContext = LocalContext.current
-            InfoRow(
+            NavRow(
                 title = stringResource(R.string.settings_rate_play),
                 onClick = { openPlayStorePage(playContext) },
             )
             if (showDataInfo) {
-                AlertDialog(
-                    onDismissRequest = { showDataInfo = false },
-                    title = { Text(stringResource(R.string.settings_about_data_title)) },
-                    text = { Text(stringResource(R.string.settings_about_disclaimer)) },
-                    confirmButton = {
-                        TextButton(onClick = { showDataInfo = false }) {
-                            Text(stringResource(R.string.settings_ok))
-                        }
-                    },
+                InfoDialog(
+                    title = stringResource(R.string.settings_about_data_title),
+                    body = stringResource(R.string.settings_about_disclaimer),
+                    onDismiss = { showDataInfo = false },
                 )
             }
             if (showMapInfo) {
-                AlertDialog(
-                    onDismissRequest = { showMapInfo = false },
-                    title = { Text(stringResource(R.string.settings_about_map_title)) },
-                    text = { Text(stringResource(R.string.settings_about_map)) },
-                    confirmButton = {
-                        TextButton(onClick = { showMapInfo = false }) {
-                            Text(stringResource(R.string.settings_ok))
-                        }
-                    },
+                InfoDialog(
+                    title = stringResource(R.string.settings_about_map_title),
+                    body = stringResource(R.string.settings_about_map),
+                    onDismiss = { showMapInfo = false },
                 )
             }
             if (showBackupInfo) {
-                AlertDialog(
-                    onDismissRequest = { showBackupInfo = false },
-                    title = { Text(stringResource(R.string.settings_about_backup_title)) },
-                    text = { Text(stringResource(R.string.settings_about_backup)) },
-                    confirmButton = {
-                        TextButton(onClick = { showBackupInfo = false }) {
-                            Text(stringResource(R.string.settings_ok))
-                        }
-                    },
+                InfoDialog(
+                    title = stringResource(R.string.settings_about_backup_title),
+                    body = stringResource(R.string.settings_about_backup),
+                    onDismiss = { showBackupInfo = false },
                 )
             }
             if (showLicences) LicencesDialog(onDismiss = { showLicences = false })
@@ -797,30 +749,6 @@ private fun <T> DropdownRow(
                     },
                 )
             }
-        }
-    }
-}
-
-/**
- * A three-way exclusive choice. Segmented buttons rather than a dropdown or radio
- * list: with three short options every choice and the current answer are visible
- * without a tap.
- */
-@Composable
-private fun <T> ChoiceRow(
-    options: List<T>,
-    selected: T,
-    label: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
-) {
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        options.forEachIndexed { index, option ->
-            SegmentedButton(
-                selected = option == selected,
-                onClick = { onSelect(option) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                label = { Text(label(option)) },
-            )
         }
     }
 }
@@ -1030,22 +958,6 @@ private fun PreviewCountRow(label: String, value: Int) {
     }
 }
 
-@Composable
-private fun TransferResult(message: String, isError: Boolean, onDismiss: () -> Unit) {
-    Column(Modifier.padding(top = 12.dp)) {
-        Text(
-            message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isError) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-        )
-        TextButton(onClick = onDismiss, modifier = Modifier.padding(top = 4.dp)) { Text(stringResource(R.string.settings_ok)) }
-    }
-}
-
 /**
  * Which places the added/updated counts actually mean, since a count alone does
  * not say *which* rows would be overwritten — the one thing worth knowing before
@@ -1091,62 +1003,11 @@ private fun caveatSentence(issues: List<UiText>): String {
     return stringResource(R.string.settings_preview_caveat, joined)
 }
 
-/**
- * A clickable row that looks like a button, used in the About section to open info dialogs.
- */
-@Composable
-internal fun InfoRow(title: String, onClick: () -> Unit) {
-    // A plain list row with a chevron rather than an outlined button: five stacked
-    // buttons in About read as a wall. Dividers come from the caller.
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
-            .heightIn(min = 48.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
+/** How long a reassuring visa-check result stays up before it clears itself. */
+internal const val VISA_RESULT_VISIBLE_MS = 5_000L
 
 /**
- * A list-style row with title and current value as supporting text. Clickable
- * with ≥48 dp height, opening a picker/dialog/menu. Replaces outlined buttons and
- * exposed dropdowns for settings with many options (language, passport).
+ * Only "Up to date" fades: it is the answer nobody needs to keep reading. A failure or an
+ * update stays until the next check, because the user may not have been looking.
  */
-@Composable
-private fun ValueRow(
-    title: String,
-    currentValue: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = currentValue,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
+internal fun shouldAutoClearVisaResult(outcome: VisaCheckOutcome): Boolean = outcome is VisaCheckOutcome.UpToDate

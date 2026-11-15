@@ -103,7 +103,6 @@
     <string name="settings_visa_last_checked">Última verificação: %1$s</string>
     <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
     <string name="settings_visa_check_now">Verificar agora</string>
-    <string name="settings_ok">OK</string>
     <string name="settings_cancel">Cancelar</string>
 
     <string name="settings_import_title">Importar este arquivo?</string>
@@ -240,5 +239,5 @@
     <string name="settings_partner_passport">Passaporte do(a) parceiro(a) de viagem</string>
     <string name="settings_add_partner_passport">Adicionar passaporte do(a) parceiro(a)</string>
     <string name="settings_remove_partner_passport">Remover passaporte do(a) parceiro(a)</string>
-    <string name="settings_partner_hint">Assim o mapa e a lista de vistos mostram para onde vocês dois podem viajar com facilidade. Cada passaporte é considerado em separado: o app não conhece autorizações de residência nem as regras da UE/Schengen para familiares.</string>
+    <string name="settings_partner_hint">Assim o mapa e a lista de vistos mostram para onde vocês dois podem viajar com facilidade. Só é possível informar um passaporte de acompanhante: escolha o menos restritivo para a viagem; um segundo passaporte não é combinado. O app não conhece autorizações de residência nem as regras da UE/Schengen para familiares.</string>
 </resources>

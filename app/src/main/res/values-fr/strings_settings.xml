@@ -103,7 +103,6 @@
     <string name="settings_visa_last_checked">Dernière vérification : %1$s</string>
     <string name="settings_visa_last_checked_never">Dernière vérification : jamais</string>
     <string name="settings_visa_check_now">Vérifier maintenant</string>
-    <string name="settings_ok">OK</string>
     <string name="settings_cancel">Annuler</string>
 
     <string name="settings_import_title">Importer ce fichier ?</string>
@@ -240,5 +239,5 @@
     <string name="settings_partner_passport">Passeport du ou de la partenaire de voyage</string>
     <string name="settings_add_partner_passport">Ajouter le passeport du partenaire</string>
     <string name="settings_remove_partner_passport">Retirer le passeport du partenaire</string>
-    <string name="settings_partner_hint">La carte et la liste des visas montrent alors où vous pouvez tous les deux voyager facilement. Chaque passeport est pris séparément : les titres de séjour et les règles UE/Schengen pour les membres de famille ne sont pas connus de l\'appli.</string>
+    <string name="settings_partner_hint">La carte et la liste des visas montrent alors où vous pouvez tous les deux voyager facilement. Un seul passeport de voyageur accompagnant peut être saisi : choisissez le moins restrictif pour le voyage ; un second passeport n\'est pas combiné. Les titres de séjour et les règles UE/Schengen pour les membres de famille ne sont pas connus de l\'appli.</string>
 </resources>

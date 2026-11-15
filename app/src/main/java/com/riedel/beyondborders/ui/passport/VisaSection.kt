@@ -51,6 +51,7 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaOrigin
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.band
+import com.riedel.beyondborders.ui.Motion
 import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
@@ -88,6 +89,9 @@ internal fun LazyListScope.visaSection(
     rows: List<VisaRow>,
     filter: VisaFilter,
     filters: List<VisaFilter>,
+    wishlistOnly: Boolean,
+    wishlistEmpty: Boolean,
+    onWishlistOnly: (Boolean) -> Unit,
     query: String,
     selectedCode: String?,
     onQuery: (String) -> Unit,
@@ -163,6 +167,15 @@ internal fun LazyListScope.visaSection(
                     onClick = { onFilter(option) },
                     label = { Text(option.text.asString()) },
                 )
+                // Right after "No embassy"/"All", before the narrowing chips: it is a toggle
+                // that composes with whichever chip is selected, not a chip of the same set.
+                if (option == VisaFilter.Easy) {
+                    FilterChip(
+                        selected = wishlistOnly,
+                        onClick = { onWishlistOnly(!wishlistOnly) },
+                        label = { Text(stringResource(R.string.places_visa_filter_wishlist)) },
+                    )
+                }
             }
         }
     }
@@ -174,15 +187,16 @@ internal fun LazyListScope.visaSection(
             // from a genuine zero here, unlike the travel list's async [places].
             Column(Modifier.padding(24.dp)) {
                 Text(
-                    visaEmptyMessage(query, filter).asString(),
+                    visaEmptyMessage(query, filter, wishlistOnly, wishlistEmpty).asString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (canClearVisaFilter(query, filter)) {
+                if (canClearVisaFilter(query, filter, wishlistOnly)) {
                     TextButton(
                         onClick = {
                             onQuery("")
                             onFilter(VisaFilter.All)
+                            onWishlistOnly(false)
                         },
                         contentPadding = PaddingValues(vertical = 4.dp),
                     ) {
@@ -218,7 +232,7 @@ internal fun LazyListScope.visaSection(
                 secondVisa = secondVisa,
                 partnerSources = partnerSources,
                 combinedRequirementOf = combinedRequirementOf,
-                modifier = Modifier.animateItem(),
+                modifier = with(Motion) { animateItemMotion() },
             )
         }
     }
@@ -689,16 +703,23 @@ private fun VisaUnavailable() {
  * earlier). So the only two causes left are a query and a filter, and either
  * is worth naming — "Nothing matches" alone does not say what to undo.
  */
-internal fun visaEmptyMessage(query: String, filter: VisaFilter): UiText =
+internal fun visaEmptyMessage(
+    query: String,
+    filter: VisaFilter,
+    wishlistOnly: Boolean = false,
+    wishlistEmpty: Boolean = false,
+): UiText =
     when {
         query.isNotBlank() -> UiText.Res(R.string.visa_empty_query, query)
+        wishlistOnly && wishlistEmpty -> UiText.Res(R.string.visa_empty_wishlist)
+        wishlistOnly && filter != VisaFilter.All -> UiText.Res(R.string.visa_empty_wishlist_filter, filter.text)
         filter != VisaFilter.All -> UiText.Res(R.string.visa_empty_filter, filter.text)
         else -> UiText.Res(R.string.visa_empty_nothing)
     }
 
 /** A "Clear" affordance only makes sense once there is something to clear. */
-internal fun canClearVisaFilter(query: String, filter: VisaFilter): Boolean =
-    query.isNotBlank() || filter != VisaFilter.All
+internal fun canClearVisaFilter(query: String, filter: VisaFilter, wishlistOnly: Boolean = false): Boolean =
+    query.isNotBlank() || filter != VisaFilter.All || wishlistOnly
 
 /**
  * One entry per item [visaSection]'s `rows.forEach` loop emits, in the same order,

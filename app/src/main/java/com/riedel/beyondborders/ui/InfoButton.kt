@@ -44,6 +44,7 @@ fun InfoButton(
     }
 
     if (showDialog) {
+        // The body is composable content, so this cannot use InfoDialog's plain-text body.
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text(dialogTitle) },

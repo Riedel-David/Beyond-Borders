@@ -103,7 +103,6 @@
     <string name="settings_visa_last_checked">Zuletzt geprüft: %1$s</string>
     <string name="settings_visa_last_checked_never">Zuletzt geprüft: nie</string>
     <string name="settings_visa_check_now">Jetzt prüfen</string>
-    <string name="settings_ok">OK</string>
     <string name="settings_cancel">Abbrechen</string>
 
     <string name="settings_import_title">Diese Datei importieren?</string>
@@ -229,5 +228,5 @@
     <string name="settings_partner_passport">Reisepass der Reisebegleitung</string>
     <string name="settings_add_partner_passport">Reisepass der Begleitung hinzufügen</string>
     <string name="settings_remove_partner_passport">Reisepass der Begleitung entfernen</string>
-    <string name="settings_partner_hint">Damit zeigen Karte und Visa-Liste, wohin ihr beide leicht reisen könnt. Jeder Reisepass wird für sich betrachtet: Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums kennt die App nicht.</string>
+    <string name="settings_partner_hint">Damit zeigen Karte und Visa-Liste, wohin ihr beide leicht reisen könnt. Es lässt sich nur ein Partner-Reisepass eintragen, nimm den, der für die Reise am wenigsten restriktiv ist; ein zweiter Pass wird nicht dazugerechnet. Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums kennt die App nicht.</string>
 </resources>

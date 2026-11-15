@@ -10,8 +10,9 @@ import androidx.compose.ui.unit.dp
  * extraSmall (6dp): small chips, selection indicators
  * small (10dp): filter chips, compact cards
  * medium (16dp): standard cards, text fields
- * large (24dp): dialogs, bottom sheets, larger cards
- * extraLarge (32dp): full-screen overlays, major surfaces
+ * large (24dp): bottom sheets, larger cards
+ * extraLarge (32dp): dialogs (AlertDialog's container uses it, as does the hand-built
+ *   passport picker shell), full-screen overlays, major surfaces
  */
 val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),

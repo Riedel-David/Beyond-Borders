@@ -99,7 +99,8 @@ class VisaLogicTest {
         filter: VisaFilter = VisaFilter.All,
         query: String = "",
         statuses: Map<String, PlaceStatus> = emptyMap(),
-    ) = buildVisaRows(places, visa, null, statuses, query, filter).map { it.place.code }
+        wishlistOnly: Boolean = false,
+    ) = buildVisaRows(places, visa, null, statuses, query, filter, wishlistOnly).map { it.place.code }
 
     // --- the list --------------------------------------------------------------
 
@@ -212,15 +213,64 @@ class VisaLogicTest {
 
     /** GL is visa-free (easy) and on the wishlist; IN is on the wishlist but only an e-visa. */
     @Test
-    fun `the wishlist-easy filter needs both a wish and an easy answer`() {
+    fun `my wishlist alone keeps only wishlist places whatever their requirement`() {
+        val wish = mapOf("GL" to PlaceStatus.WISHLIST, "IN" to PlaceStatus.WISHLIST, "US" to PlaceStatus.VISITED)
+        assertEquals(listOf("GL", "IN"), rows(statuses = wish, wishlistOnly = true))
+    }
+
+    @Test
+    fun `my wishlist composes with the no embassy filter using the one definition of easy`() {
+        val wish = mapOf("GL" to PlaceStatus.WISHLIST, "IN" to PlaceStatus.WISHLIST)
+        assertEquals(listOf("GL"), rows(VisaFilter.Easy, statuses = wish, wishlistOnly = true))
         assertEquals(
-            listOf("GL"),
-            rows(VisaFilter.WishlistEasy, statuses = mapOf("GL" to PlaceStatus.WISHLIST)),
+            rows(VisaFilter.Easy).filter { it in wish.keys },
+            rows(VisaFilter.Easy, statuses = wish, wishlistOnly = true),
         )
         assertEquals(
-            emptyList<String>(),
-            rows(VisaFilter.WishlistEasy, statuses = mapOf("IN" to PlaceStatus.WISHLIST)),
+            listOf("IN"),
+            rows(VisaFilter.Category(VisaCategory.E_VISA), statuses = wish, wishlistOnly = true),
         )
+    }
+
+    @Test
+    fun `my wishlist with an empty wishlist yields nothing`() {
+        assertEquals(emptyList<String>(), rows(wishlistOnly = true))
+    }
+
+    @Test
+    fun `the chip row no longer offers a combined wishlist chip`() {
+        assertEquals(
+            listOf(VisaFilter.All, VisaFilter.Easy, VisaFilter.LongStay),
+            visaFilters(visa).takeWhile { it !is VisaFilter.Category },
+        )
+    }
+
+    @Test
+    fun `the stats line counts a place only the second passport makes easy`() {
+        val primary = reg("DE", "FR" to "VISA_REQUIRED", "ES" to "VISA_FREE")
+        val second = reg("GB", "FR" to "VISA_FREE")
+        val ps = listOf(place("FR", "France"), place("ES", "Spain"))
+        val st = mapOf("FR" to PlaceStatus.WISHLIST, "ES" to PlaceStatus.WISHLIST)
+        assertEquals(
+            UiText.Plural(R.plurals.places_wishlist_easy, 2, 2, 2),
+            computeWishlistEasyText(ps, st, primary, secondVisa = second),
+        )
+        assertEquals(
+            UiText.Plural(R.plurals.places_wishlist_easy, 2, 1, 2),
+            computeWishlistEasyText(ps, st, primary),
+        )
+        // Same count as the My wishlist + No embassy list shows with both passports.
+        assertEquals(
+            2,
+            buildVisaRows(ps, primary, second, st, "", VisaFilter.Easy, wishlistOnly = true).size,
+        )
+    }
+
+    @Test
+    fun `a persisted visa mode falls back to travel when the registry is gone`() {
+        assertEquals(PassportMode.TRAVEL, modeOrTravel(PassportMode.VISA, null))
+        assertEquals(PassportMode.VISA, modeOrTravel(PassportMode.VISA, visa))
+        assertEquals(PassportMode.TRAVEL, modeOrTravel(PassportMode.TRAVEL, visa))
     }
 
     /** IN is visa-free-adjacent but only an e-visa with 30 days: not long-stay, not visa-free. */
