@@ -129,6 +129,7 @@ fun SettingsScreen(
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsStateWithLifecycle()
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
+    val partnerNationality by viewModel.partnerNationality.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
     val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
     val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
@@ -285,6 +286,42 @@ fun SettingsScreen(
                     TextButton(onClick = { viewModel.setSecondNationality(null) }) {
                         Text(stringResource(R.string.settings_remove_second_passport))
                     }
+                }
+            }
+            // The travel partner's passport: a different question from the second passport
+            // above (that one makes the answers better, this one compares with someone else's).
+            Spacer(Modifier.height(12.dp))
+            var showPartnerPicker by remember { mutableStateOf(false) }
+            ValueRow(
+                title = stringResource(R.string.settings_partner_passport),
+                currentValue = partnerNationality?.let { passportNames[it] ?: it }
+                    ?: stringResource(R.string.settings_add_partner_passport),
+                onClick = { showPartnerPicker = true },
+            )
+            if (showPartnerPicker) {
+                PassportPickerDialog(
+                    names = passportNames,
+                    englishNames = englishNames,
+                    selected = partnerNationality,
+                    onSelect = {
+                        viewModel.setPartnerNationality(it)
+                        showPartnerPicker = false
+                    },
+                    onDismiss = { showPartnerPicker = false },
+                    title = stringResource(R.string.settings_partner_passport),
+                    // Your own passports are not a travel partner's.
+                    exclude = setOfNotNull(nationality, secondNationality),
+                )
+            }
+            Text(
+                stringResource(R.string.settings_partner_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            partnerNationality?.let {
+                TextButton(onClick = { viewModel.setPartnerNationality(null) }) {
+                    Text(stringResource(R.string.settings_remove_partner_passport))
                 }
             }
         }

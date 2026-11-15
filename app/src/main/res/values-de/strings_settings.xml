@@ -214,4 +214,9 @@
     <string name="review_later">Später</string>
     <string name="review_never">Nicht mehr fragen</string>
     <string name="settings_rate_play">Bei Google Play bewerten</string>
+
+    <string name="settings_partner_passport">Reisepass der Reisebegleitung</string>
+    <string name="settings_add_partner_passport">Reisepass der Begleitung hinzufügen</string>
+    <string name="settings_remove_partner_passport">Reisepass der Begleitung entfernen</string>
+    <string name="settings_partner_hint">Damit zeigen Karte und Visa-Liste, wohin ihr beide leicht reisen könnt. Jeder Reisepass wird für sich betrachtet: Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums kennt die App nicht.</string>
 </resources>

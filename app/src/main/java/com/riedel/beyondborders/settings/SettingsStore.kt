@@ -91,6 +91,7 @@ class SettingsStore(context: Context) {
     fun setNationality(value: String) {
         _nationality.value = value
         prefs.edit { putString(KEY_NATIONALITY, value) }
+        dropPartnerIfOwn(value)
     }
 
     private val _secondNationality = MutableStateFlow(prefs.getString(KEY_SECOND_NATIONALITY, null))
@@ -98,11 +99,35 @@ class SettingsStore(context: Context) {
 
     fun setSecondNationality(value: String?) {
         _secondNationality.value = value
+        dropPartnerIfOwn(value)
         prefs.edit {
             if (value != null) {
                 putString(KEY_SECOND_NATIONALITY, value)
             } else {
                 remove(KEY_SECOND_NATIONALITY)
+            }
+        }
+    }
+
+    /** A partner who now shares the user's passport is no partner; clear it here so Settings
+     * never shows one the rest of the app silently ignores. */
+    private fun dropPartnerIfOwn(own: String?) {
+        val kept = partnerAfterOwnChange(_partnerNationality.value, own)
+        if (kept != _partnerNationality.value) setPartnerNationality(kept)
+    }
+
+    /** The travel partner's passport, kept apart from [secondNationality]: that one is the
+     * user's own dual nationality (best of two), this one is someone else's (worst of two). */
+    private val _partnerNationality = MutableStateFlow(prefs.getString(KEY_PARTNER_NATIONALITY, null))
+    val partnerNationality: StateFlow<String?> = _partnerNationality.asStateFlow()
+
+    fun setPartnerNationality(value: String?) {
+        _partnerNationality.value = value
+        prefs.edit {
+            if (value != null) {
+                putString(KEY_PARTNER_NATIONALITY, value)
+            } else {
+                remove(KEY_PARTNER_NATIONALITY)
             }
         }
     }
@@ -129,6 +154,7 @@ class SettingsStore(context: Context) {
         _hasSeenWelcome.value = false
         _nationality.value = null
         _secondNationality.value = null
+        _partnerNationality.value = null
         _collapsedHeaders.value = emptySet()
         _seenAchievements.value = null
         _lastBackupAt.value = null
@@ -314,6 +340,7 @@ class SettingsStore(context: Context) {
         const val KEY_HAS_SEEN_WELCOME = "has_seen_welcome"
         const val KEY_NATIONALITY = "nationality"
         const val KEY_SECOND_NATIONALITY = "second_nationality"
+        const val KEY_PARTNER_NATIONALITY = "partner_nationality"
         const val KEY_COLLAPSED_HEADERS = "collapsed_headers"
         const val KEY_SEEN_ACHIEVEMENTS = "seen_achievements"
         const val KEY_LAST_BACKUP_AT = "last_backup_at"
@@ -327,3 +354,7 @@ class SettingsStore(context: Context) {
         const val KEY_HUE_WISHLIST = "map_hue_wishlist"
     }
 }
+
+/** The stored partner after the user's own passport became [own]: dropped when they are the same. */
+internal fun partnerAfterOwnChange(partner: String?, own: String?): String? =
+    if (partner != null && partner == own) null else partner

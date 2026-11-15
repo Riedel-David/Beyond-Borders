@@ -18,6 +18,7 @@ import com.riedel.beyondborders.data.place.sortInitial
 import com.riedel.beyondborders.data.place.localizePlaces
 import com.riedel.beyondborders.data.visa.VisaBand
 import com.riedel.beyondborders.data.visa.VisaCategory
+import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.VisaRequirement
@@ -259,7 +260,6 @@ class PlacesViewModel(
      * because a travel map that still works beats a crash on a bad asset.
      */
     private val _visa = MutableStateFlow<VisaRegistry?>(null)
-    val visa: StateFlow<VisaRegistry?> = _visa
 
     /**
      * The second passport's registry, null when no second passport is configured
@@ -267,7 +267,56 @@ class PlacesViewModel(
      * degrades to single-passport behavior rather than taking the screen down.
      */
     private val _secondVisa = MutableStateFlow<VisaRegistry?>(null)
-    val secondVisa: StateFlow<VisaRegistry?> = _secondVisa
+
+    /** The travel partner's registry; null when no partner passport is set or it cannot load. */
+    private val _partnerVisa = MutableStateFlow<VisaRegistry?>(null)
+
+    /** Partner mode is session-level, like [visaLens]: it answers a question about this
+     * trip, not a preference, and a stale "on" at the next cold start would make the map
+     * quietly show somebody else's constraints. */
+    private val _partnerMode = MutableStateFlow(false)
+    val partnerMode: StateFlow<Boolean> = _partnerMode
+
+    /** Whether partner mode can be offered: a partner passport with a loaded registry, and
+     * the user's own. Nothing to toggle otherwise. */
+    val partnerAvailable: StateFlow<Boolean> =
+        combine(_visa, _partnerVisa) { visa, partner -> visa != null && partner != null }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** The partner's passport code while their registry is loaded; the map control shows its flag. */
+    val partnerPassport: StateFlow<String?> =
+        _partnerVisa.map { it?.passport }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * What every visa surface reads. Normally the user's own registries; in partner mode a
+     * single registry of the worse answer per place, built by [partnerRegistry], with no
+     * second one. Routing the list, the bands, the counts and the filters through this one
+     * pair is what keeps them agreeing, the failure PLAN.md records for dual passports.
+     */
+    private val viewVisas: StateFlow<VisaViews> =
+        combine(_visa, _secondVisa, _partnerVisa, _partnerMode) { visa, second, partner, mode ->
+            val (v, s) = visaViews(visa, second, partner, mode)
+            VisaViews(
+                v, s,
+                partner.takeIf { mode && visa != null },
+                if (mode && visa != null && partner != null) PartnerSources(visa, second, partner) else null,
+            )
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, VisaViews(null, null, null))
+
+    /** The user's own passports, never the pair: for surfaces partner mode must not reach. */
+    private val ownVisas: StateFlow<VisaViews> =
+        combine(_visa, _secondVisa) { visa, second -> VisaViews(visa, second, null) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, VisaViews(null, null, null))
+
+    val visa: StateFlow<VisaRegistry?> =
+        viewVisas.map { it.visa }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val secondVisa: StateFlow<VisaRegistry?> =
+        viewVisas.map { it.second }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The real registries behind the pair while partner mode is on, for credit and per-row
+     * links: [visa] then carries only the user's metadata. Null otherwise. */
+    internal val partnerSources: StateFlow<PartnerSources?> =
+        viewVisas.map { it.sources }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
@@ -379,7 +428,7 @@ class PlacesViewModel(
             if (filter == StatusFilter.WISHLIST_VISA_FREE) {
                 combine(
                     allPlaces, statuses, _query, _grouping,
-                    combine(_visa, _secondVisa) { primary, second -> primary to second },
+                    ownVisas,
                 ) { places, st, q, grouping, (visa, secondVisa) ->
                     buildRows(places, st, q, filter, grouping, visa, secondVisa)
                 }
@@ -396,7 +445,7 @@ class PlacesViewModel(
      * the map does not re-bucket 252 places on every frame.
      */
     val visaBands: StateFlow<Map<VisaBand, Set<String>>> =
-        combine(_visa, _secondVisa, _visaLens) { visa, secondVisa, lens ->
+        combine(viewVisas, _visaLens) { (visa, secondVisa), lens ->
             bandCodes(visa, secondVisa, lens)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
@@ -406,7 +455,7 @@ class PlacesViewModel(
      * passport has an answer, so the covered side of that is a union, not an
      * intersection. Reading it the other way round paints most of the map grey. */
     val visaNoData: StateFlow<Set<String>> =
-        combine(allPlaces, _visa, _secondVisa, _visaLens) { places, visa, secondVisa, lens ->
+        combine(allPlaces, viewVisas, _visaLens) { places, (visa, secondVisa), lens ->
             noDataCodes(places, visa, secondVisa, lens)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
@@ -421,7 +470,7 @@ class PlacesViewModel(
     val visaRows: StateFlow<List<VisaRow>> =
         combine(
             allPlaces,
-            combine(_visa, _secondVisa) { primary, second -> primary to second },
+            viewVisas,
             statuses,
             _query,
             _visaFilter
@@ -519,6 +568,27 @@ class PlacesViewModel(
                 _secondVisa.value = secondNationality?.let { load(it) }
             }
         }
+        viewModelScope.launch {
+            combine(settings.partnerNationality, settings.nationality, settings.secondNationality) { partner, own, second ->
+                effectivePartner(partner, own, second)
+            }.collect { partner ->
+                _partnerVisa.value = partner?.let { load(it) }
+                // Removing the partner (or losing their asset) must not leave the mode on
+                // with nothing behind it: the toggle disappears, so nothing could turn it off.
+                if (_partnerVisa.value == null) setPartnerMode(false)
+            }
+        }
+        // The categories on offer change whenever any registry behind the view does (the
+        // mode flipping, a passport switched in Settings, a partner added), and a selected
+        // chip the new list lacks would leave an empty list with nothing to explain it.
+        // One collector on the view, so the pair registry is built once per change.
+        viewModelScope.launch {
+            viewVisas.collect { _visaFilter.value = revalidatedFilter(_visaFilter.value, it) }
+        }
+    }
+
+    fun setPartnerMode(value: Boolean) {
+        if (_partnerMode.value != value) _partnerMode.value = value
     }
 
     fun setQuery(value: String) { _query.value = value }
@@ -566,8 +636,14 @@ class PlacesViewModel(
      * single answer when only one does, and null when neither does. Ties go to the
      * primary passport.
      */
-    fun combinedRequirementOf(code: String): CombinedRequirement? =
-        combineRequirements(_visa.value?.get(code), _secondVisa.value?.get(code))
+    fun combinedRequirementOf(code: String): CombinedRequirement? {
+        val own = combineRequirements(_visa.value?.get(code), _secondVisa.value?.get(code))
+        // The partner registry comes from the same snapshot the rows are built from, not
+        // from the mode flag: a row and its decoration can then only disagree for the
+        // moment the downstream list lags the snapshot, never by reading two sources.
+        val partner = viewVisas.value.partner ?: return own
+        return combineForPartners(own?.winner, partner[code], if (own?.secondWon == true) _secondVisa.value?.passport else null)
+    }
 
     /**
      * Set one place's status. One place: no cascade, ever. If the user asks for
@@ -1065,6 +1141,53 @@ internal fun sectionHeader(place: Place, grouping: Grouping): String = when (gro
 data class CombinedRequirement(
     val winner: VisaRequirement,
     val fromPrimary: Boolean,
+    /** Set only by partner mode: both people's answers and who limits the pair. */
+    val partner: PartnerComparison? = null,
+) {
+    /**
+     * Whether a dual-passport comparison was won by the second passport, the only case
+     * that needs attributing to it. Always false in partner mode, where [fromPrimary]
+     * only says whose answer limits the pair and there is no second passport to credit.
+     */
+    val secondWon: Boolean get() = partner == null && !fromPrimary
+}
+
+/** What the visa surfaces read: the registries to show, and the partner's when partner mode is in force. */
+internal data class VisaViews(
+    val visa: VisaRegistry?,
+    val second: VisaRegistry?,
+    val partner: VisaRegistry?,
+    val sources: PartnerSources? = null,
+)
+
+/** The three real registries behind a partner-mode view, which all need crediting. */
+internal data class PartnerSources(val you: VisaRegistry, val second: VisaRegistry?, val partner: VisaRegistry) {
+    val all: List<VisaRegistry> get() = listOfNotNull(you, second, partner)
+    val own: List<VisaRegistry> get() = listOfNotNull(you, second)
+}
+
+/** The registry a row's links and credit come from: the partner's where their answer limits the pair. */
+internal fun rowSource(visa: VisaRegistry, sources: PartnerSources?, comparison: PartnerComparison?): VisaRegistry =
+    if (sources != null && comparison?.blocker == PartnerBlocker.PARTNER) sources.partner else visa
+
+/** The chip to keep after the registries behind [views] changed: the selected one if still offered, else All. */
+internal fun revalidatedFilter(selected: VisaFilter, views: VisaViews): VisaFilter =
+    filterOrAll(selected, visaFilters(views.visa, views.second))
+
+/** The selected chip if the new list still offers it, otherwise back to All. */
+internal fun filterOrAll(selected: VisaFilter, offered: List<VisaFilter>): VisaFilter =
+    if (selected in offered) selected else VisaFilter.All
+
+/** Which of the two travellers' passports sets the pair's answer. */
+enum class PartnerBlocker { YOU, PARTNER, NEITHER }
+
+/** Both answers behind a partner-mode result, so the sheet can show "You" and "Partner". */
+data class PartnerComparison(
+    val you: VisaRequirement,
+    val partner: VisaRequirement,
+    val blocker: PartnerBlocker,
+    /** The user's passport that gave their side, when it is their second one ("via FR"). */
+    val youVia: String? = null,
 )
 
 /**
@@ -1104,6 +1227,88 @@ internal fun combineRequirements(
     }
     return CombinedRequirement(winner, fromPrimary = winner === primary)
 }
+
+/**
+ * Combine the user's answer and the travel partner's for one place: the pair is only as
+ * easy as the harder of the two, the opposite of [combineRequirements].
+ *
+ * "Harder" is the higher [VisaCategory.ordinal], which already puts a definite permit or
+ * refusal above an unknown ([VisaCategory.CHECK]), and CHECK above every easier answer: a
+ * definite "no" must not be hidden behind "unknown", while CHECK still stops the pair
+ * claiming a certainty the data lacks. When the categories tie, the stricter stay is
+ * shown, as the stay the pair can count on; a stated limit is stricter than none, and only
+ * two unstated or two equal limits are a tie, which goes to [you]. The winning requirement
+ * is returned whole so its note and source belong to the passport that sets the answer,
+ * except that LOW confidence on either side is carried onto the result. [youVia] names
+ * the user's second passport when it gave their side, for the "via" wording.
+ *
+ * Null when either side has no answer: one person's unknown cannot make a place "easy
+ * for both", and the map draws that as no data.
+ */
+internal fun combineForPartners(
+    you: VisaRequirement?,
+    partner: VisaRequirement?,
+    youVia: String? = null,
+): CombinedRequirement? {
+    if (you == null || partner == null) return null
+    // Precedence is the category order itself: a definite permit or refusal outranks an
+    // unknown (CHECK), which outranks any easier definite answer. Within a category the
+    // stricter stay decides.
+    val blocker = when {
+        you.category.ordinal != partner.category.ordinal ->
+            if (you.category.ordinal > partner.category.ordinal) PartnerBlocker.YOU else PartnerBlocker.PARTNER
+        else -> stricterStay(you.days, partner.days)
+    }
+    var winner = if (blocker == PartnerBlocker.PARTNER) partner else you
+    // A shaky answer on either side must not be laundered by the other side's solid one.
+    if ((you.confidence == VisaConfidence.LOW || partner.confidence == VisaConfidence.LOW) &&
+        winner.confidence != VisaConfidence.LOW
+    ) winner = winner.copy(confidence = VisaConfidence.LOW)
+    return CombinedRequirement(
+        winner,
+        fromPrimary = blocker != PartnerBlocker.PARTNER,
+        PartnerComparison(you, partner, blocker, youVia),
+    )
+}
+
+/** The partner passport to use: none if it is one of the user's own, which is no partner at all. */
+internal fun effectivePartner(partner: String?, own: String?, second: String?): String? =
+    partner?.takeIf { it != own && it != second }
+
+/** Who the shorter stay belongs to: a stated limit beats an unstated one, equal (or both unstated) is neither. */
+private fun stricterStay(you: Int?, partner: Int?): PartnerBlocker = when {
+    you == partner -> PartnerBlocker.NEITHER
+    you == null -> PartnerBlocker.PARTNER
+    partner == null -> PartnerBlocker.YOU
+    you < partner -> PartnerBlocker.YOU
+    else -> PartnerBlocker.PARTNER
+}
+
+/**
+ * One registry holding, per place, the pair's answer from [combineForPartners]. The user's
+ * side is their own best-of ([combineRequirements] over [visa] and [second]) computed
+ * first, so a dual national is judged on the passport that serves them best. Places either
+ * side has no answer for are absent, which the map reads as no data. Dated by the oldest
+ * of the datasets involved, the only honest date for a mixture.
+ */
+internal fun partnerRegistry(visa: VisaRegistry, second: VisaRegistry?, partner: VisaRegistry): VisaRegistry {
+    val codes = visa.requirements.map { it.code } + (second?.requirements?.map { it.code } ?: emptyList())
+    val answers = codes.toSet().mapNotNull { code ->
+        combineForPartners(combineRequirements(visa[code], second?.get(code))?.winner, partner[code])?.winner
+    }
+    val asOf = listOfNotNull(visa.asOf, second?.asOf, partner.asOf).min()
+    return visa.withRequirements(answers, asOf)
+}
+
+/** The registries the visa surfaces should read: the user's own, or in partner mode the pair's. */
+internal fun visaViews(
+    visa: VisaRegistry?,
+    second: VisaRegistry?,
+    partner: VisaRegistry?,
+    partnerMode: Boolean,
+): Pair<VisaRegistry?, VisaRegistry?> =
+    if (partnerMode && visa != null && partner != null) partnerRegistry(visa, second, partner) to null
+    else visa to second
 
 /** A code's display name: the localized one wins, the English one covers the moment before
  * the localized list loads, the code itself is the last resort. */

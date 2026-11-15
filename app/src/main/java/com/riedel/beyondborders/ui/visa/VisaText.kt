@@ -72,6 +72,10 @@ fun asOfNoticeText(primary: VisaRegistry, second: VisaRegistry): UiText {
     )
 }
 
+/** Partner mode's disclaimer: the registry is a mixture, so it names no single passport. */
+fun partnerAsOfNoticeText(visa: VisaRegistry): UiText =
+    UiText.Res(R.string.visa_as_of_notice_partner, visa.asOf)
+
 /**
  * How the Auswärtiges Amt link should be labelled.
  *

@@ -73,4 +73,14 @@
     <!-- Passport picker -->
     <string name="picker_choose_passport">Reisepass wählen</string>
     <string name="picker_search">Suche</string>
+
+    <string name="visa_partner_you">Du: %1$s</string>
+    <string name="visa_partner_partner">Begleitung: %1$s</string>
+    <string name="visa_partner_blocker_you">Dein Reisepass setzt hier die Grenze</string>
+    <string name="visa_partner_blocker_partner">Der Reisepass deiner Begleitung setzt hier die Grenze</string>
+    <string name="visa_partner_blocker_none">Für euch beide gleich</string>
+    <string name="visa_partner_caveat">Nur pro Reisepass: Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums sind nicht berücksichtigt.</string>
+    <string name="visa_partner_toggle">Partnermodus: wohin wir beide können</string>
+    <string name="visa_summary_partner">Gemeinsame Antwort für beide Reisepässe</string>
+    <string name="visa_as_of_notice_partner">Gemeinsame Antwort für beide Reisepässe, Stand %1$s – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
 </resources>

@@ -74,4 +74,14 @@
     <!-- Passport picker -->
     <string name="picker_choose_passport">Elegir pasaporte</string>
     <string name="picker_search">Buscar</string>
+
+    <string name="visa_partner_you">Tú: %1$s</string>
+    <string name="visa_partner_partner">Pareja: %1$s</string>
+    <string name="visa_partner_blocker_you">Tu pasaporte marca el límite aquí</string>
+    <string name="visa_partner_blocker_partner">El pasaporte de tu pareja marca el límite aquí</string>
+    <string name="visa_partner_blocker_none">Igual para los dos</string>
+    <string name="visa_partner_caveat">Solo por pasaporte: no se tienen en cuenta los permisos de residencia ni las normas de la UE/Schengen para familiares.</string>
+    <string name="visa_partner_toggle">Modo pareja: adónde podemos ir los dos</string>
+    <string name="visa_summary_partner">Respuesta conjunta para ambos pasaportes</string>
+    <string name="visa_as_of_notice_partner">Respuesta conjunta para ambos pasaportes, a fecha de %1$s: verifícala en la fuente oficial del gobierno antes de reservar</string>
 </resources>
