@@ -1,6 +1,5 @@
 package com.riedel.beyondborders.ui.passport
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -59,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.ExpandableHeader
+import com.riedel.beyondborders.ui.ExpandableSection
 import com.riedel.beyondborders.ui.map.flagAssetPath
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -219,23 +219,17 @@ fun StatsScreen(
                 onToggle = { showAllGroupings = !showAllGroupings },
                 modifier = Modifier.padding(top = 16.dp),
             )
-            // Only the size changes here, not the content underneath it — the two
-            // grids are always the same composables, just present or absent — so
-            // animateContentSize is the right tool. A crossfade would be wrong for
-            // a content swap, but nothing here swaps.
-            Column(Modifier.animateContentSize()) {
-                if (showAllGroupings) {
-                    CompletionGrid(
-                        stringResource(R.string.stats_regions),
-                        stats.regions.map { Bucket(it.region, it.been, it.total, it.codes) },
-                        onHold = { detail = it },
-                    )
-                    CompletionGrid(
-                        stringResource(R.string.stats_named_groupings),
-                        stats.informalRegions.map { Bucket(it.name, it.been, it.total, it.codes) },
-                        onHold = { detail = it },
-                    )
-                }
+            ExpandableSection(showAllGroupings) {
+                CompletionGrid(
+                    stringResource(R.string.stats_regions),
+                    stats.regions.map { Bucket(it.region, it.been, it.total, it.codes) },
+                    onHold = { detail = it },
+                )
+                CompletionGrid(
+                    stringResource(R.string.stats_named_groupings),
+                    stats.informalRegions.map { Bucket(it.name, it.been, it.total, it.codes) },
+                    onHold = { detail = it },
+                )
             }
 
             if (visitStats.hasVisits) VisitsByYearChart(visitStats, Modifier.padding(top = 16.dp))

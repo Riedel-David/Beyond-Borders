@@ -1,6 +1,7 @@
 package com.riedel.beyondborders.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -30,7 +31,11 @@ import com.riedel.beyondborders.R
  */
 @Composable
 fun ExpandChevron(expanded: Boolean, modifier: Modifier = Modifier) {
-    val rotation by animateFloatAsState(if (expanded) 90f else 0f, label = "chevron")
+    val rotation by animateFloatAsState(
+        if (expanded) 90f else 0f,
+        animationSpec = tween(Motion.DurationMedium, easing = Motion.Easing),
+        label = "chevron",
+    )
     Icon(
         Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = null,

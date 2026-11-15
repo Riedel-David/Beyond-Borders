@@ -54,10 +54,10 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.unit.sp
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.ExpandableHeader
+import com.riedel.beyondborders.ui.ExpandableSection
 import com.riedel.beyondborders.ui.places.VisitStats
 import com.riedel.beyondborders.ui.places.YearPoint
 
@@ -82,58 +82,56 @@ internal fun VisitsByYearChart(stats: VisitStats, modifier: Modifier = Modifier)
     var expanded by rememberSaveable { mutableStateOf(false) }
     Column(modifier) {
         ExpandableHeader(stringResource(R.string.stats_visits_title), expanded, { expanded = !expanded })
-        AnimatedVisibility(visible = expanded) {
-        Column {
-        if (points.isNotEmpty()) {
-            val summary = stringResource(
-                R.string.stats_chart_summary, points.first().year, points.last().year, points.last().cumulative,
-            )
-            Column(Modifier.clearAndSetSemantics { contentDescription = summary }) {
-                YearChart(points, Modifier.padding(top = 12.dp))
-                FlowRow(
-                    Modifier.padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    LegendEntry(MaterialTheme.colorScheme.primary, stringResource(R.string.stats_chart_countries), line = false)
-                    LegendEntry(MaterialTheme.colorScheme.tertiary, stringResource(R.string.stats_chart_cumulative), line = true)
+        ExpandableSection(expanded) {
+            if (points.isNotEmpty()) {
+                val summary = stringResource(
+                    R.string.stats_chart_summary, points.first().year, points.last().year, points.last().cumulative,
+                )
+                Column(Modifier.clearAndSetSemantics { contentDescription = summary }) {
+                    YearChart(points, Modifier.padding(top = 12.dp))
+                    FlowRow(
+                        Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        LegendEntry(MaterialTheme.colorScheme.primary, stringResource(R.string.stats_chart_countries), line = false)
+                        LegendEntry(MaterialTheme.colorScheme.tertiary, stringResource(R.string.stats_chart_cumulative), line = true)
+                    }
                 }
-            }
-            TextButton(onClick = { showNumbers = !showNumbers }) {
-                Text(stringResource(if (showNumbers) R.string.stats_chart_details_hide else R.string.stats_chart_details_show))
-            }
-            if (showNumbers) {
-                Column {
-                    // Newest first: the recent years are what one wants to read.
-                    points.asReversed().forEach { p ->
-                        Text(
-                            stringResource(R.string.stats_chart_year_detail, p.year, p.countries, p.newCountries, p.cumulative),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(vertical = 2.dp),
-                        )
+                TextButton(onClick = { showNumbers = !showNumbers }) {
+                    Text(stringResource(if (showNumbers) R.string.stats_chart_details_hide else R.string.stats_chart_details_show))
+                }
+                ExpandableSection(showNumbers) {
+                    Column {
+                        // Newest first: the recent years are what one wants to read.
+                        points.asReversed().forEach { p ->
+                            Text(
+                                stringResource(R.string.stats_chart_year_detail, p.year, p.countries, p.newCountries, p.cumulative),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(vertical = 2.dp),
+                            )
+                        }
                     }
                 }
             }
-        }
-        val first = stats.first
-        val recent = stats.mostRecent
-        if (first != null && recent != null) {
-            Text(
-                stringResource(R.string.stats_visits_first_recent, first, recent),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-        if (stats.undatedPlaces > 0) {
-            Text(
-                pluralStringResource(R.plurals.stats_chart_no_year, stats.undatedPlaces, stats.undatedPlaces),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-        }
+            val first = stats.first
+            val recent = stats.mostRecent
+            if (first != null && recent != null) {
+                Text(
+                    stringResource(R.string.stats_visits_first_recent, first, recent),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            if (stats.undatedPlaces > 0) {
+                Text(
+                    pluralStringResource(R.plurals.stats_chart_no_year, stats.undatedPlaces, stats.undatedPlaces),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
     }
 }

@@ -7,6 +7,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -109,6 +112,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.Motion
 import com.riedel.beyondborders.ui.ExpandChevron
 import com.riedel.beyondborders.data.visa.VisaCategory
 import com.riedel.beyondborders.ui.visa.PassportPickerButton
@@ -231,6 +235,14 @@ fun PassportScreen(
         // system back gesture has nothing here to intercept and falls through to
         // exiting the app instead of closing the detail screen.
         BackHandler { showStatsDetail = false }
+        // Fades in on entry. The way back stays a cut: the list below is only composed once
+        // this early return is gone, so there is nothing to cross-fade it with.
+        val enterState = remember { MutableTransitionState(false).apply { targetState = true } }
+        AnimatedVisibility(
+            visibleState = enterState,
+            enter = fadeIn(tween(Motion.DurationShort, easing = Motion.Easing)),
+            exit = ExitTransition.None,
+        ) {
         StatsScreen(
             stats = stats,
             places = places,
@@ -241,6 +253,7 @@ fun PassportScreen(
             onBack = { showStatsDetail = false },
             modifier = modifier,
         )
+        }
         return
     }
 
@@ -456,7 +469,7 @@ fun PassportScreen(
                         viewModel.vibrate()
                         viewModel.setStatus(row.place.code, target)
                     },
-                    modifier = Modifier.animateItem(),
+                    modifier = with(Motion) { animateItemMotion() },
                 )
             }
         }
@@ -730,8 +743,8 @@ private fun AzRail(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = fadeIn(tween(Motion.DurationShort, easing = Motion.Easing)),
+        exit = fadeOut(tween(Motion.DurationShort, easing = Motion.Easing)),
         modifier = modifier,
     ) {
     Box(

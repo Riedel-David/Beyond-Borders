@@ -1,7 +1,6 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.ExpandableHeader
+import com.riedel.beyondborders.ui.ExpandableSection
 import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.asString
 import kotlinx.coroutines.CancellationException
@@ -137,8 +137,11 @@ internal fun AchievementsSection(
             // Earned badges stay visible under a collapsed header; opening it adds the
             // locked ones after them.
             val earned = all.filter { it.unlocked }
-            Column(Modifier.animateContentSize()) {
-                BadgeRows(if (expanded) earned + all.filter { !it.unlocked } else earned, onOpen)
+            val locked = all.filter { !it.unlocked }
+            if (earned.isNotEmpty()) BadgeRows(earned, onOpen)
+            ExpandableSection(expanded) {
+                Spacer(Modifier.height(if (earned.isEmpty()) 0.dp else 12.dp))
+                BadgeRows(locked, onOpen)
             }
         } else {
             Text(
