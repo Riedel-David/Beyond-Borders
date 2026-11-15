@@ -12,6 +12,7 @@ import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.backup.BackupFormatException
 import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.CloudSnapshot
+import com.riedel.beyondborders.data.visa.update.VisaCheckOutcome
 import com.riedel.beyondborders.data.visa.update.VisaUpdateScheduling
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
@@ -50,6 +51,13 @@ sealed interface TransferState {
     data object Busy : TransferState
     data class Done(val message: UiText) : TransferState
     data class Failed(val message: UiText) : TransferState
+}
+
+/** What the Check now row shows: nothing, a spinner, or what the last check came to. */
+sealed interface VisaCheckState {
+    data object Idle : VisaCheckState
+    data object Running : VisaCheckState
+    data class Done(val outcome: VisaCheckOutcome) : VisaCheckState
 }
 
 /**
@@ -175,7 +183,19 @@ class SettingsViewModel(
         visaUpdates.sync(enabled)
     }
 
-    fun checkVisaNow() = visaUpdates.checkNow()
+    private val _visaCheck = MutableStateFlow<VisaCheckState>(VisaCheckState.Idle)
+    val visaCheck: StateFlow<VisaCheckState> = _visaCheck.asStateFlow()
+
+    /** Independent of the automatic-update switch. A tap while one is running is ignored. */
+    fun checkVisaNow() {
+        // viewModelScope is on the main thread, so this read-then-write cannot interleave.
+        if (_visaCheck.value == VisaCheckState.Running) return
+        _visaCheck.value = VisaCheckState.Running
+        viewModelScope.launch {
+            val outcome = withContext(Dispatchers.IO) { visaUpdates.checkNow() }
+            _visaCheck.value = VisaCheckState.Done(outcome)
+        }
+    }
 
     fun setPureBlack(enabled: Boolean) = settings.setPureBlack(enabled)
 

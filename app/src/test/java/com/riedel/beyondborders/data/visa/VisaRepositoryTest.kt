@@ -35,4 +35,12 @@ class VisaRepositoryTest {
         repo.registry("DE")
         assertEquals(2, loads.get())
     }
+
+    @Test
+    fun `every invalidate moves dataVersion to a new value`() {
+        val repo = VisaRepository(registryLoader = { error("unused") }, passportsLoader = { emptyList() })
+        val seen = mutableListOf(repo.dataVersion.value)
+        repeat(3) { repo.invalidate(); seen += repo.dataVersion.value }
+        assertEquals(seen.distinct(), seen)
+    }
 }

@@ -93,8 +93,12 @@
     <string name="settings_restore_button">Восстановить из резервной копии Android</string>
     <string name="settings_restore_detail">Резервное копирование Android оставило на этом телефоне снимок твоей истории. Восстановление объединяет его с текущими данными — так же, как импорт файла.</string>
     <string name="settings_visa_title">Данные о визах</string>
-    <string name="settings_visa_detail">Загружает небольшие файлы с GitHub, личные данные не отправляются. Автоматическая проверка выполняется только по Wi-Fi или в другой сети без ограничений трафика. Новые данные применяются после полного закрытия и повторного открытия приложения.</string>
-    <string name="settings_visa_checking">Проверка данных о визах…</string>
+    <string name="settings_visa_detail">Загружает небольшие файлы с GitHub, личные данные не отправляются. Переключатель управляет только еженедельной автоматической проверкой, которая выполняется по Wi-Fi или в другой сети без ограничений трафика. Кнопка «Проверить сейчас» работает в любом случае. Новые данные применяются сразу.</string>
+    <string name="settings_visa_checking">Проверка…</string>
+    <string name="settings_visa_result_current">Данные о визах уже актуальны.</string>
+    <string name="settings_visa_result_updated">Данные о визах обновлены и уже используются.</string>
+    <string name="settings_visa_result_offline">Не удалось связаться с сервером. Проверьте подключение или повторите позже.</string>
+    <string name="settings_visa_result_unavailable">Обновление сейчас недоступно.</string>
     <string name="settings_visa_auto">Обновлять данные о визах автоматически</string>
     <string name="settings_visa_last_checked">Последняя проверка: %1$s</string>
     <string name="settings_visa_last_checked_never">Последняя проверка: никогда</string>

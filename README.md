@@ -1,7 +1,7 @@
 <img src="docs/screenshots/social-preview.png" alt="Beyond Borders" />
 
 An Android app for tracking where you have been and where your passport gets you
-without a visa. Works offline, no account; visa data refreshes itself weekly (switch off in Settings).
+without a visa. Works offline, no account; visa data refreshes itself weekly (the automatic check can be switched off in Settings).
 
 **Needs Android 11+ on an arm64 phone** (no x86 emulators). Install steps are [below](#install).
 
@@ -45,7 +45,7 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
 - **Partner mode** — pick a travel partner's passport and the Visa tab and the map's Visa
   lens show the stricter of your two passports, and who sets the limit.
 - **Visa data updater** — a weekly check on an unmetered network such as Wi-Fi for newer visa files for your own passports,
-  over HTTPS, verified before use; the bundled data is the fallback. Off in Settings.
+  over HTTPS, verified before use; the bundled data is the fallback. The weekly check can be switched off in Settings; *Check now* still works.
 - **Rating prompt** — once or twice the app asks for a Google Play rating, and Settings has a
   *Rate on Google Play* row.
 - **Share** — your travels as an image in one of three styles: the map with a caption bar,
@@ -63,7 +63,7 @@ More detail in [docs/FEATURES.md](docs/FEATURES.md).
 ## Privacy
 
 Everything stays on your phone. The app has no account, no
-basemap, no tile server and no API key; the geometry is bundled in the APK. Its only network use is a weekly download of public visa data from GitHub Pages, on an unmetered network, with nothing about you sent; Settings → Visa data switches it off. Details in
+basemap, no tile server and no API key; the geometry is bundled in the APK. Its only network use is a weekly download of public visa data from GitHub Pages, on an unmetered network, with nothing about you sent; Settings → Visa data switches the weekly check off, and *Check now* contacts GitHub Pages only when tapped. Details in
 the [privacy policy](docs/PRIVACY.md).
 
 ## Install

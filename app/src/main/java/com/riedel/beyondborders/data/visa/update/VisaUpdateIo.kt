@@ -1,16 +1,16 @@
 package com.riedel.beyondborders.data.visa.update
 
 import android.content.Context
+import android.content.res.AssetManager
 import androidx.work.BackoffPolicy
 import androidx.work.CoroutineWorker
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import java.io.File
@@ -104,44 +104,48 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
     }
 }
 
-/** Marks the user-initiated request, which is never retried. */
-const val ONCE_TAG = "visa-update-once"
+/**
+ * One whole check, shared by the weekly worker and the Check now button so the two cannot
+ * drift apart: fetch, verify, apply, tell the repository to drop its parsed copies (which
+ * also refreshes the running app) and record the check. Throws only what [runUpdate] throws.
+ */
+suspend fun performVisaUpdate(container: AppContainer, assets: AssetManager): UpdateResult = withContext(Dispatchers.IO) {
+    val settings = container.settings
+    val wanted = setOfNotNull(settings.nationality.value, settings.secondNationality.value)
+    val result = runUpdate(
+        fetcher = HttpVisaFetcher(),
+        store = container.visaStore,
+        wanted = wanted,
+        bundledAsOf = { code -> runCatching { VisaRegistry.load(assets, code).asOf }.getOrNull() },
+    )
+    if (result.changed) container.visa.invalidate()
+    if (result.manifestSeen) settings.setVisaLastCheckAt(System.currentTimeMillis())
+    result
+}
 
 class VisaUpdateWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        try {
-            val container = (applicationContext as BeyondBordersApp).container
-            val settings = container.settings
-            val wanted = setOfNotNull(settings.nationality.value, settings.secondNationality.value)
-            val result = runUpdate(
-                fetcher = HttpVisaFetcher(),
-                store = container.visaStore,
-                wanted = wanted,
-                bundledAsOf = { code ->
-                    runCatching { VisaRegistry.load(applicationContext.assets, code).asOf }.getOrNull()
-                },
-            )
-            if (result.changed) container.visa.invalidate()
-            if (result.manifestSeen) settings.setVisaLastCheckAt(System.currentTimeMillis())
-            // A one-time check is the user's tap: no surprise retry an hour later.
-            if (result.ioFailure && ONCE_TAG !in tags) Result.retry() else Result.success()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            // Anything unexpected leaves the app as it was; a loop of failures helps nobody.
-            Result.success()
-        }
+    override suspend fun doWork(): Result = try {
+        val container = (applicationContext as BeyondBordersApp).container
+        val result = performVisaUpdate(container, applicationContext.assets)
+        if (result.ioFailure) Result.retry() else Result.success()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        // Anything unexpected leaves the app as it was; a loop of failures helps nobody.
+        Result.success()
     }
 }
 
 /** What the Settings screen drives; the no-op default keeps ViewModel tests free of WorkManager. */
 interface VisaUpdateScheduling {
     fun sync(enabled: Boolean)
-    fun checkNow()
+
+    /** Runs a check now, in the caller's coroutine, and says what came of it. Never throws. */
+    suspend fun checkNow(): VisaCheckOutcome
 
     object None : VisaUpdateScheduling {
         override fun sync(enabled: Boolean) = Unit
-        override fun checkNow() = Unit
+        override suspend fun checkNow(): VisaCheckOutcome = VisaCheckOutcome.UpToDate
     }
 }
 
@@ -151,9 +155,8 @@ class WorkManagerVisaScheduling(context: Context) : VisaUpdateScheduling {
     override fun sync(enabled: Boolean) {
         val wm = WorkManager.getInstance(appContext)
         if (!enabled) {
-            // Off means no network requests, including a Check now still queued.
+            // The switch governs only the weekly job; Check now does not go through WorkManager.
             wm.cancelUniqueWork(PERIODIC_NAME)
-            wm.cancelUniqueWork(ONCE_NAME)
             return
         }
         val request = PeriodicWorkRequestBuilder<VisaUpdateWorker>(7, TimeUnit.DAYS)
@@ -163,17 +166,16 @@ class WorkManagerVisaScheduling(context: Context) : VisaUpdateScheduling {
         wm.enqueueUniquePeriodicWork(PERIODIC_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
-    override fun checkNow() {
-        val request = OneTimeWorkRequestBuilder<VisaUpdateWorker>()
-            .addTag(ONCE_TAG)
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
-            .build()
-        WorkManager.getInstance(appContext).enqueueUniqueWork(ONCE_NAME, ExistingWorkPolicy.KEEP, request)
+    override suspend fun checkNow(): VisaCheckOutcome = try {
+        val container = (appContext as BeyondBordersApp).container
+        outcomeOf(performVisaUpdate(container, appContext.assets))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        VisaCheckOutcome.Unavailable
     }
 
     private companion object {
         const val PERIODIC_NAME = "visa-update-periodic"
-        const val ONCE_NAME = "visa-update-now"
     }
 }

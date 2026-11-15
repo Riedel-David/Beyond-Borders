@@ -119,6 +119,24 @@ internal fun runUpdate(
 
 // --- pure functions, unit-testable without Android ---------------------------
 
+/** What a manual check tells the user. */
+sealed interface VisaCheckOutcome {
+    data object UpToDate : VisaCheckOutcome
+    data class Updated(val count: Int) : VisaCheckOutcome
+    /** The server could not be reached, or the run was cut short by a network error. */
+    data object Offline : VisaCheckOutcome
+    /** The server answered, but with something this build cannot use or does not understand. */
+    data object Unavailable : VisaCheckOutcome
+}
+
+internal fun outcomeOf(result: UpdateResult): VisaCheckOutcome = when {
+    // No usable manifest: a network error is "offline", anything else was rejected.
+    !result.manifestSeen -> if (result.ioFailure) VisaCheckOutcome.Offline else VisaCheckOutcome.Unavailable
+    result.applied.isNotEmpty() -> VisaCheckOutcome.Updated(result.applied.size)
+    result.ioFailure -> VisaCheckOutcome.Offline
+    else -> VisaCheckOutcome.UpToDate
+}
+
 /**
  * Null for anything the build should ignore: malformed JSON, a different manifestVersion
  * or dataFormat. A bad entry is skipped on its own rather than failing the lot. The file

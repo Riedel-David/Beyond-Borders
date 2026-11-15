@@ -202,6 +202,8 @@ only: residence permits and EU/Schengen family-member rules are not taken into a
 
 ## Visa data updates
 
-Downloaded visa data takes effect after the app has been fully closed and reopened. *Check
-now* in Settings works on any connection; the weekly automatic check runs on unmetered
-networks only, and Settings → *Visa data* switches all network use off.
+Downloaded visa data is used straight away, without closing the app. *Check now* in
+Settings works on any connection, whether or not the automatic check is on, and says
+whether the data was already current, was updated, or could not be fetched. The weekly
+automatic check runs on unmetered networks only, and the Settings → *Visa data* switch
+turns that weekly check off; it does not stop *Check now*.

@@ -91,8 +91,12 @@
     <string name="settings_restore_button">Restore from Android\'s backup</string>
     <string name="settings_restore_detail">Android\'s backup left a snapshot of your history on this phone. Restoring merges it in, exactly like importing a file.</string>
     <string name="settings_visa_title">Visa data</string>
-    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. Automatic checks run only on Wi-Fi or another unmetered network. New data applies once the app is fully closed and reopened.</string>
-    <string name="settings_visa_checking">Checking for visa data…</string>
+    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. The switch controls only the weekly automatic check, which runs on Wi-Fi or another unmetered network. Check now works either way. New data is used straight away.</string>
+    <string name="settings_visa_checking">Checking…</string>
+    <string name="settings_visa_result_current">Visa data is already up to date.</string>
+    <string name="settings_visa_result_updated">Visa data updated and now in use.</string>
+    <string name="settings_visa_result_offline">Couldn\'t reach the server. Check your connection or try again later.</string>
+    <string name="settings_visa_result_unavailable">Update unavailable right now.</string>
     <string name="settings_visa_auto">Update visa data automatically</string>
     <string name="settings_visa_last_checked">Last checked: %1$s</string>
     <string name="settings_visa_last_checked_never">Last checked: never</string>

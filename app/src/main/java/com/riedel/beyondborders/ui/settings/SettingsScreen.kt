@@ -1,7 +1,6 @@
 package com.riedel.beyondborders.ui.settings
 
 import android.icu.text.ListFormatter
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -22,6 +21,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,7 +67,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import com.riedel.beyondborders.data.visa.update.VisaCheckOutcome
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
@@ -132,6 +136,7 @@ fun SettingsScreen(
     val nationality by viewModel.nationality.collectAsStateWithLifecycle()
     val secondNationality by viewModel.secondNationality.collectAsStateWithLifecycle()
     val transfer by viewModel.transfer.collectAsStateWithLifecycle()
+    val visaCheck by viewModel.visaCheck.collectAsStateWithLifecycle()
     val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
     val visaAutoUpdate by viewModel.visaAutoUpdate.collectAsStateWithLifecycle()
     val visaLastCheckAt by viewModel.visaLastCheckAt.collectAsStateWithLifecycle()
@@ -446,11 +451,35 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                // Off means off: no request of any kind, including a manual one.
-                TextButton(enabled = visaAutoUpdate, onClick = {
-                    Toast.makeText(context, R.string.settings_visa_checking, Toast.LENGTH_SHORT).show()
-                    viewModel.checkVisaNow()
-                }) { Text(stringResource(R.string.settings_visa_check_now)) }
+                // The switch above governs only the weekly job; a tap here always checks.
+                TextButton(enabled = visaCheck !is VisaCheckState.Running, onClick = viewModel::checkVisaNow) {
+                    if (visaCheck is VisaCheckState.Running) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.settings_visa_checking))
+                    } else {
+                        Text(stringResource(R.string.settings_visa_check_now))
+                    }
+                }
+            }
+            // A live region, so a screen reader announces the result when it appears.
+            (visaCheck as? VisaCheckState.Done)?.let { done ->
+                val failed = done.outcome is VisaCheckOutcome.Offline || done.outcome is VisaCheckOutcome.Unavailable
+                Text(
+                    stringResource(
+                        when (done.outcome) {
+                            is VisaCheckOutcome.UpToDate -> R.string.settings_visa_result_current
+                            is VisaCheckOutcome.Updated -> R.string.settings_visa_result_updated
+                            is VisaCheckOutcome.Offline -> R.string.settings_visa_result_offline
+                            is VisaCheckOutcome.Unavailable -> R.string.settings_visa_result_unavailable
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                )
             }
         }
 
