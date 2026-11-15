@@ -12,8 +12,9 @@ dataFormat is the shape of one visa file as VisaRegistry.parse reads it. Bump it
 the app, together with any change to that shape: an app that does not know the number ignores
 the whole update instead of choking on it. manifestVersion is the shape of this manifest.
 
-Refuses (exit 1, writes nothing) unless every file parses, names the passport its file name
-says, and carries a non-empty requirements list, so a broken build can never be published.
+Refuses (exit 1, writes nothing) unless the out dir is empty and every file parses, names the
+passport its file name says, and has the dataset block, ISO asOf and per-row code/category/source
+that VisaRegistry.parse reads, so a broken build can never be published.
 """
 import argparse
 import hashlib
@@ -38,10 +39,22 @@ def collect(assets: Path) -> dict:
             raise ValueError(f"unexpected file name {path.name}")
         expected = m.group(1).upper() if m.group(1) else DEFAULT_PASSPORT
         doc = json.loads(raw)
+        if not isinstance(doc, dict):
+            raise ValueError(f"{path.name} is not a JSON object")
         if doc.get("passport") != expected:
             raise ValueError(f"{path.name} says passport {doc.get('passport')!r}, expected {expected}")
         if not doc.get("requirements"):
             raise ValueError(f"{path.name} has no requirements")
+        # What VisaRegistry.parse reads unconditionally; a file lacking any of it would throw
+        # in the app for that passport.
+        ds = doc.get("dataset")
+        if not isinstance(ds, dict) or not all(isinstance(ds.get(k), str) for k in ("name", "url", "licence")):
+            raise ValueError(f"{path.name} has no usable dataset block")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(doc.get("asOf", ""))):
+            raise ValueError(f"{path.name} has no ISO asOf date")
+        for r in doc["requirements"]:
+            if not (isinstance(r, dict) and all(isinstance(r.get(k), str) for k in ("code", "category", "source"))):
+                raise ValueError(f"{path.name} has a requirement without code, category and source")
         if expected in out:
             raise ValueError(f"two files for passport {expected}")
         out[expected] = (raw, doc.get("asOf", ""))
@@ -73,6 +86,9 @@ def main() -> int:
     ap.add_argument("out", type=Path)
     ap.add_argument("--generated-at", default=datetime.now(timezone.utc).isoformat(timespec="seconds"))
     args = ap.parse_args()
+    if args.out.exists() and any(args.out.iterdir()):
+        print(f"refusing to publish: {args.out} is not empty", file=sys.stderr)
+        return 1
     try:
         files = collect(args.assets)
     except (ValueError, json.JSONDecodeError) as e:

@@ -13,8 +13,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 import make_site  # noqa: E402
 
 
-def write(d: Path, name: str, passport: str, reqs=("x",)):
-    (d / name).write_text(json.dumps({"passport": passport, "asOf": "2026-11-11", "requirements": list(reqs)}))
+ROW = {"code": "FR", "category": "VISA_FREE", "source": "DATASET"}
+DS = {"name": "n", "url": "u", "licence": "l"}
+
+
+def write(d: Path, name: str, passport: str, reqs=(ROW,), **over):
+    doc = {"passport": passport, "asOf": "2026-11-11", "dataset": DS, "requirements": list(reqs)}
+    doc.update(over)
+    (d / name).write_text(json.dumps(doc))
 
 
 def full_set(d: Path, n=make_site.MIN_PASSPORTS):
@@ -53,6 +59,30 @@ class MakeSite(unittest.TestCase):
     def test_an_empty_requirements_list_is_refused(self):
         full_set(self.assets)
         write(self.assets, "visa_fr.json", "FR", reqs=())
+        with self.assertRaises(ValueError):
+            make_site.collect(self.assets)
+
+    def test_a_file_without_a_dataset_block_is_refused(self):
+        full_set(self.assets)
+        write(self.assets, "visa_fr.json", "FR", dataset=None)
+        with self.assertRaises(ValueError):
+            make_site.collect(self.assets)
+
+    def test_a_row_missing_its_source_is_refused(self):
+        full_set(self.assets)
+        write(self.assets, "visa_fr.json", "FR", reqs=({"code": "DE", "category": "VISA_FREE"},))
+        with self.assertRaises(ValueError):
+            make_site.collect(self.assets)
+
+    def test_a_missing_as_of_is_refused(self):
+        full_set(self.assets)
+        write(self.assets, "visa_fr.json", "FR", asOf="")
+        with self.assertRaises(ValueError):
+            make_site.collect(self.assets)
+
+    def test_a_non_object_file_is_refused(self):
+        full_set(self.assets)
+        (self.assets / "visa_fr.json").write_text("[]")
         with self.assertRaises(ValueError):
             make_site.collect(self.assets)
 
