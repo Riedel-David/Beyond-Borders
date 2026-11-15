@@ -221,4 +221,5 @@
     <string name="passport_start_title">Commence par marquer quelques lieux</string>
     <string name="passport_start_body">Coche d\'un coup les pays où tu es allé, ou touche un lieu sur la carte.</string>
     <string name="passport_pick_title">Choisis ton passeport pour voir les conditions de visa</string>
+    <string name="passport_card_stats_link">Statistiques et succès</string>
 </resources>

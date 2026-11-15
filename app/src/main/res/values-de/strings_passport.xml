@@ -201,4 +201,5 @@
     <string name="passport_start_title">Mit ein paar Orten anfangen</string>
     <string name="passport_start_body">Besuchte Länder auf einmal abhaken oder einen Ort auf der Karte antippen.</string>
     <string name="passport_pick_title">Reisepass wählen, um Visabestimmungen zu sehen</string>
+    <string name="passport_card_stats_link">Statistik und Abzeichen</string>
 </resources>

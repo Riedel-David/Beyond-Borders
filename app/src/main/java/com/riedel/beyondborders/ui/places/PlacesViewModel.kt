@@ -1432,6 +1432,10 @@ data class VisitStats(
     val byYear: List<Pair<Int, Int>>,
     val first: Int?,
     val mostRecent: Int?,
+    /** The chart's data; see [computeCountriesByYear]. */
+    val yearPoints: List<YearPoint> = emptyList(),
+    /** Been places without a dated visit; see [countUndatedBeenPlaces]. */
+    val undatedPlaces: Int = 0,
 ) {
     val hasVisits: Boolean get() = byYear.isNotEmpty()
 
@@ -1452,8 +1456,57 @@ internal fun computeVisitStats(
         byYear = perYear.map { it.key to it.value },
         first = if (perYear.isEmpty()) null else perYear.firstKey(),
         mostRecent = if (perYear.isEmpty()) null else perYear.lastKey(),
+        yearPoints = computeCountriesByYear(visits, statuses),
+        undatedPlaces = countUndatedBeenPlaces(visits, statuses),
     )
 }
+
+/**
+ * One year of the visits chart.
+ *
+ * @property countries distinct places visited that year.
+ * @property newCountries places whose first dated visit falls in that year.
+ * @property cumulative running sum of [newCountries] up to and including this year.
+ */
+data class YearPoint(val year: Int, val countries: Int, val newCountries: Int, val cumulative: Int)
+
+internal const val MAX_CHART_YEARS = 100
+
+/**
+ * Per-year places for the chart, ascending, gaps between the first and last dated year
+ * filled with zero visits and the running total carried forward. Only places currently
+ * Been count (see [visibleVisits]); undated visits appear nowhere. Capped to the most
+ * recent [MAX_CHART_YEARS] years, with the cumulative still including everything earlier.
+ */
+internal fun computeCountriesByYear(
+    visits: Map<String, List<Visit>>,
+    statuses: Map<String, PlaceStatus>,
+): List<YearPoint> {
+    val yearsByPlace = visibleVisits(visits, statuses).values
+        .map { list -> list.mapNotNull { it.year }.toSet() }
+        .filter { it.isNotEmpty() }
+    if (yearsByPlace.isEmpty()) return emptyList()
+    val countries = HashMap<Int, Int>()
+    val firsts = HashMap<Int, Int>()
+    for (years in yearsByPlace) {
+        for (y in years) countries.merge(y, 1, Int::plus)
+        firsts.merge(years.min(), 1, Int::plus)
+    }
+    val last = countries.keys.max()
+    val start = maxOf(countries.keys.min(), last - (MAX_CHART_YEARS - 1))
+    var running = firsts.entries.filter { it.key < start }.sumOf { it.value }
+    return (start..last).map { y ->
+        val fresh = firsts[y] ?: 0
+        running += fresh
+        YearPoint(y, countries[y] ?: 0, fresh, running)
+    }
+}
+
+/** Been/Lived places with no dated visit: the chart's "N places have no year" footnote. */
+internal fun countUndatedBeenPlaces(
+    visits: Map<String, List<Visit>>,
+    statuses: Map<String, PlaceStatus>,
+): Int = statuses.count { (code, status) -> status.isBeen && visits[code].orEmpty().none { it.year != null } }
 
 internal const val REVIEW_MIN_BEEN = 5
 internal const val REVIEW_MIN_INSTALL_DAYS = 7

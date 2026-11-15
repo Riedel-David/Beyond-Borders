@@ -65,7 +65,7 @@
     <string name="share_style_bar_blurb">Logo and stats along the bottom</string>
     <string name="share_style_stamp_label">Corner badge</string>
     <string name="share_style_stamp_blurb">Compact top-left badge</string>
-    <string name="share_style_stats_label">Stats card</string>
+    <string name="share_style_stats_label">Statistics card</string>
     <string name="share_style_stats_blurb">Just the numbers, no map</string>
     <string name="share_of_the_world_caps">OF THE WORLD</string>
     <string name="share_of_the_world">of the world</string>
@@ -114,7 +114,7 @@
     <string name="widget_cfg_target_title">Tapping the widget opens</string>
     <string name="widget_cfg_target_map">Map</string>
     <string name="widget_cfg_target_passport">Passport</string>
-    <string name="widget_cfg_target_stats">Stats</string>
+    <string name="widget_cfg_target_stats">Statistics</string>
     <string name="widget_cfg_background_title">Card background</string>
     <string name="widget_cfg_background_filled">Filled</string>
     <string name="widget_cfg_background_transparent">Transparent</string>

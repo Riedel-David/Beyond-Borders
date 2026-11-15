@@ -17,7 +17,7 @@ without a visa. Works offline, no account; visa data refreshes itself weekly (th
     <td align="center"><img src="docs/screenshots/visa-lens.jpg" width="216" alt="Visa lens"><br><sub>Visa lens</sub></td>
     <td align="center"><img src="docs/screenshots/passport-list.jpg" width="216" alt="Passport list"><br><sub>Passport list</sub></td>
     <td align="center"><img src="docs/screenshots/where-i-can-go.jpg" width="216" alt="Where I can go"><br><sub>Where I can go</sub></td>
-    <td align="center"><img src="docs/screenshots/stats.jpg" width="216" alt="Stats"><br><sub>Stats</sub></td>
+    <td align="center"><img src="docs/screenshots/stats.jpg" width="216" alt="Statistics"><br><sub>Statistics</sub></td>
   </tr>
 </table>
 

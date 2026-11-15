@@ -16,4 +16,16 @@
     <string name="settings_preview_visits">Визиты</string>
     <string name="visits_whole_year">Весь год</string>
     <string name="visits_pick_month">Месяц (необязательно)</string>
+    <string name="stats_chart_countries">Места за год</string>
+    <string name="stats_chart_cumulative">Всего к этому году</string>
+    <string name="stats_chart_summary">Посещённые места по годам, с %1$d по %2$d. Всего %3$d мест к %2$d году.</string>
+    <string name="stats_chart_year_detail">%1$d: мест %2$d, новых %3$d, всего %4$d</string>
+    <string name="stats_chart_details_show">Показать цифры по годам</string>
+    <string name="stats_chart_details_hide">Скрыть цифры по годам</string>
+    <plurals name="stats_chart_no_year">
+        <item quantity="one">У %1$d места нет года, оно не показано.</item>
+        <item quantity="few">У %1$d мест нет года, они не показаны.</item>
+        <item quantity="many">У %1$d мест нет года, они не показаны.</item>
+        <item quantity="other">У %1$d места нет года, они не показаны.</item>
+    </plurals>
 </resources>

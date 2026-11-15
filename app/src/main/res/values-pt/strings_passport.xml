@@ -221,4 +221,5 @@
     <string name="passport_start_title">Comece marcando alguns lugares</string>
     <string name="passport_start_body">Marque de uma vez os países onde você já esteve, ou toque em qualquer lugar do mapa.</string>
     <string name="passport_pick_title">Escolha seu passaporte para ver os requisitos de visto</string>
+    <string name="passport_card_stats_link">Estatísticas e conquistas</string>
 </resources>

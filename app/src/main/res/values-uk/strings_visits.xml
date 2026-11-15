@@ -16,4 +16,16 @@
     <string name="settings_preview_visits">Візити</string>
     <string name="visits_whole_year">Весь рік</string>
     <string name="visits_pick_month">Місяць (необов’язково)</string>
+    <string name="stats_chart_countries">Місця за рік</string>
+    <string name="stats_chart_cumulative">Усього на той рік</string>
+    <string name="stats_chart_summary">Відвідані місця за роками, з %1$d по %2$d. Усього %3$d місць до %2$d року.</string>
+    <string name="stats_chart_year_detail">%1$d: місць %2$d, нових %3$d, усього %4$d</string>
+    <string name="stats_chart_details_show">Показати цифри за роками</string>
+    <string name="stats_chart_details_hide">Сховати цифри за роками</string>
+    <plurals name="stats_chart_no_year">
+        <item quantity="one">У %1$d місця немає року, його не показано.</item>
+        <item quantity="few">У %1$d місць немає року, їх не показано.</item>
+        <item quantity="many">У %1$d місць немає року, їх не показано.</item>
+        <item quantity="other">У %1$d місця немає року, їх не показано.</item>
+    </plurals>
 </resources>

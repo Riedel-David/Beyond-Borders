@@ -15,4 +15,14 @@
     <string name="settings_preview_visits">Visits</string>
     <string name="visits_whole_year">Whole year</string>
     <string name="visits_pick_month">Month (optional)</string>
+    <string name="stats_chart_countries">Places that year</string>
+    <string name="stats_chart_cumulative">Total so far</string>
+    <string name="stats_chart_summary">Places visited per year, %1$d to %2$d. %3$d places in total by %2$d.</string>
+    <string name="stats_chart_year_detail">%1$d: %2$d places, %3$d new, %4$d in total</string>
+    <string name="stats_chart_details_show">Show numbers per year</string>
+    <string name="stats_chart_details_hide">Hide numbers per year</string>
+    <plurals name="stats_chart_no_year">
+        <item quantity="one">%1$d place has no year and is not shown.</item>
+        <item quantity="other">%1$d places have no year and are not shown.</item>
+    </plurals>
 </resources>

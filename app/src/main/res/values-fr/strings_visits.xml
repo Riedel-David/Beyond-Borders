@@ -16,4 +16,15 @@
     <string name="settings_preview_visits">Visites</string>
     <string name="visits_whole_year">Toute l’année</string>
     <string name="visits_pick_month">Mois (facultatif)</string>
+    <string name="stats_chart_countries">Lieux cette année-là</string>
+    <string name="stats_chart_cumulative">Total cumulé</string>
+    <string name="stats_chart_summary">Lieux visités par année, de %1$d à %2$d. %3$d lieux au total en %2$d.</string>
+    <string name="stats_chart_year_detail">%1$d : %2$d lieux, %3$d nouveaux, %4$d au total</string>
+    <string name="stats_chart_details_show">Afficher les chiffres par année</string>
+    <string name="stats_chart_details_hide">Masquer les chiffres par année</string>
+    <plurals name="stats_chart_no_year">
+        <item quantity="one">%1$d lieu n\'a pas d\'année et n\'est pas affiché.</item>
+        <item quantity="many">%1$d de lieux n\'ont pas d\'année et ne sont pas affichés.</item>
+        <item quantity="other">%1$d lieux n\'ont pas d\'année et ne sont pas affichés.</item>
+    </plurals>
 </resources>

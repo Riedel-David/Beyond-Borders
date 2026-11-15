@@ -1094,6 +1094,25 @@ private fun StatsCard(
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
+            // A labelled way in to the Statistics screen, so the card does not read as
+            // the passport's own summary. Not a button of its own: the whole card is the
+            // click target and this row only names where it leads (48 dp tall to match).
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.passport_card_stats_link),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }

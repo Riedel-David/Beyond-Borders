@@ -16,4 +16,14 @@
     <string name="settings_preview_visits">Besuche</string>
     <string name="visits_whole_year">Ganzes Jahr</string>
     <string name="visits_pick_month">Monat (optional)</string>
+    <string name="stats_chart_countries">Orte in dem Jahr</string>
+    <string name="stats_chart_cumulative">Insgesamt bisher</string>
+    <string name="stats_chart_summary">Besuchte Orte pro Jahr, %1$d bis %2$d. Insgesamt %3$d Orte bis %2$d.</string>
+    <string name="stats_chart_year_detail">%1$d: %2$d Orte, %3$d neu, %4$d insgesamt</string>
+    <string name="stats_chart_details_show">Zahlen pro Jahr zeigen</string>
+    <string name="stats_chart_details_hide">Zahlen pro Jahr ausblenden</string>
+    <plurals name="stats_chart_no_year">
+        <item quantity="one">%1$d Ort hat kein Jahr und wird nicht gezeigt.</item>
+        <item quantity="other">%1$d Orte haben kein Jahr und werden nicht gezeigt.</item>
+    </plurals>
 </resources>
