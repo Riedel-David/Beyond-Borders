@@ -3,6 +3,7 @@ package com.riedel.beyondborders.ui.places
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -98,15 +99,16 @@ internal fun travelAdviceUrl(countryCode: String): String? =
     ADVICE_SLUGS[countryCode.uppercase()]?.let { ADVICE_BASE + it }
 
 /**
- * Whether a row gets the FCDO link: not for the traveller's own passport countries, and not
- * where the Auswärtiges Amt link ([officialUrl]) already points at official advice.
+ * Whether a row gets the FCDO link: not for the traveller's own passport countries. It is
+ * shown even where an Auswärtiges Amt link exists: with a German passport 250 of 252 rows
+ * carry one, so hiding this link there left it invisible to the app's main audience.
  */
-internal fun showTravelAdvice(countryCode: String, officialUrl: String?, ownPassports: Collection<String>): Boolean =
-    officialUrl == null && ownPassports.none { it.equals(countryCode, ignoreCase = true) }
+internal fun showTravelAdvice(countryCode: String, ownPassports: Collection<String>): Boolean =
+    ownPassports.none { it.equals(countryCode, ignoreCase = true) }
 
 /**
- * A link-out to current UK government (FCDO) travel advice. Opens the browser; the app stores nothing and has
- * no INTERNET permission of its own. Renders nothing when there is no page for the place.
+ * A link-out to current UK government (FCDO) travel advice. Opens the browser; the app stores nothing and
+ * sends nothing itself. Renders nothing when there is no page for the place.
  */
 @Composable
 fun TravelAdviceRow(countryCode: String, modifier: Modifier = Modifier) {
@@ -114,7 +116,9 @@ fun TravelAdviceRow(countryCode: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var failed by remember { mutableStateOf(false) }
     Column(modifier.fillMaxWidth()) {
-        TextButton(onClick = {
+        // Same padding and type size as the other source links in the Visa section, which
+        // use labelMedium; the button default (labelLarge) made this one visibly bigger.
+        TextButton(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp), onClick = {
             val intent = Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             // No browser installed is a real state on a locked-down device; say so
             // instead of crashing.
@@ -125,7 +129,7 @@ fun TravelAdviceRow(countryCode: String, modifier: Modifier = Modifier) {
                 true
             }
         }) {
-            Text(stringResource(R.string.advice_link))
+            Text(stringResource(R.string.advice_link), style = MaterialTheme.typography.labelMedium)
         }
         Text(
             stringResource(if (failed) R.string.advice_no_browser else R.string.advice_note),

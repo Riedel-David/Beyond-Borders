@@ -627,7 +627,7 @@ private fun VisaDetail(
         if (source !== visa) {
             source.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, source.passport), it) }
         }
-        if (showTravelAdvice(row.place.code, requirement.officialUrl, ownPassports)) {
+        if (showTravelAdvice(row.place.code, ownPassports)) {
             TravelAdviceRow(row.place.code)
         }
     }

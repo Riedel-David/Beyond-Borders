@@ -264,13 +264,13 @@ class PartnerModeTest {
     }
 
     @Test
-    fun `travel advice is hidden for the own passports and where the official link shows`() {
-        assertEquals(false, showTravelAdvice("DE", null, listOf("DE")))
-        assertEquals(false, showTravelAdvice("fr", null, listOf("DE", "FR")))
-        assertEquals(false, showTravelAdvice("JP", "https://auswaertiges-amt.example", listOf("DE")))
-        assertEquals(true, showTravelAdvice("JP", null, listOf("DE", "FR")))
+    fun `travel advice is hidden for the own passports only, not where an official link shows`() {
+        assertEquals(false, showTravelAdvice("DE", listOf("DE")))
+        assertEquals(false, showTravelAdvice("fr", listOf("DE", "FR")))
+        assertEquals(true, showTravelAdvice("JP", listOf("DE")))
+        assertEquals(true, showTravelAdvice("JP", listOf("DE", "FR")))
         // The partner's passport country is passed in alongside the user's in partner mode.
-        assertEquals(false, showTravelAdvice("UA", null, listOf("DE", "FR", "UA")))
+        assertEquals(false, showTravelAdvice("UA", listOf("DE", "FR", "UA")))
     }
 
     @Test
