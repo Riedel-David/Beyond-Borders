@@ -37,6 +37,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -64,7 +70,7 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
     val undated = stringResource(R.string.visits_undated)
     val locale = currentLocale()
     Row(
-        modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onClick).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -77,7 +83,7 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
             if (visits.isEmpty()) stringResource(R.string.visits_none_yet) else visitYearsText(visits, undated, locale),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.visits_add))
@@ -93,14 +99,36 @@ internal fun VisitsRow(visits: List<Visit>, onClick: () -> Unit, modifier: Modif
 internal fun VisitTimeline(visits: List<Visit>, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val undated = stringResource(R.string.visits_undated)
     val locale = currentLocale()
-    val ordered = visitsChronological(visits)
+    // Newest at the left: the card is clipped on the right, and the latest visit is
+    // the one worth seeing first.
+    val ordered = visitsChronological(visits).asReversed()
+    val scroll = rememberScrollState()
     val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     val dotColor = MaterialTheme.colorScheme.onSurface
     Row(
         modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .horizontalScroll(rememberScrollState()),
+            // Fades the right edge out while more remains, so a clipped cell reads as
+            // "scrolls" rather than as the end.
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                if (scroll.canScrollForward) {
+                    val fade = 32.dp.toPx()
+                    drawRect(
+                        Brush.horizontalGradient(
+                            listOf(Color.Black, Color.Transparent),
+                            startX = size.width - fade,
+                            endX = size.width,
+                        ),
+                        topLeft = Offset(size.width - fade, 0f),
+                        size = androidx.compose.ui.geometry.Size(fade, size.height),
+                        blendMode = BlendMode.DstIn,
+                    )
+                }
+            }
+            .horizontalScroll(scroll),
     ) {
         ordered.forEachIndexed { i, visit ->
             Column(Modifier.width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {

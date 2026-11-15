@@ -143,6 +143,8 @@ import com.riedel.beyondborders.ui.places.VisitsRow
 import com.riedel.beyondborders.ui.places.combinedBandCounts
 import com.riedel.beyondborders.ui.places.geoNameText
 import com.riedel.beyondborders.ui.places.nextRegionMode
+import com.riedel.beyondborders.ui.theme.AppShapes
+import com.riedel.beyondborders.ui.theme.AppTypography
 import com.riedel.beyondborders.ui.theme.BeyondBordersDark
 import com.riedel.beyondborders.ui.theme.LocalMapPalette
 import com.riedel.beyondborders.ui.theme.MapPalette
@@ -287,7 +289,10 @@ fun MapScreen(
     }
 
     fun pickFromSearch(place: Place) {
-        viewModel.select(place.code)
+        // Through the same path as a map tap: while region mode is on, a plain
+        // select() would set a place that the region UI hides (no card, no
+        // outline, no share button), leaving a selection nobody can see or clear.
+        tap(place.code)
         controller.flyTo(place.bounds)
         searchOpen = false
         searchQuery = ""
@@ -349,6 +354,12 @@ fun MapScreen(
     LaunchedEffect(regionMode) {
         regionInfo = null
         if (regionActive) viewModel.select(null)
+    }
+    // LaunchedEffect(regionMode) only fires on a change, so a place picked in the
+    // Passport tab and then viewed here with region mode already on would stay
+    // selected, invisible. Cleared whenever both are true.
+    LaunchedEffect(selectedCode, regionActive) {
+        if (regionActive && selectedCode != null) viewModel.select(null)
     }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
@@ -874,6 +885,7 @@ private class PlacesMapController {
     private var appliedVisited: Set<String> = emptySet()
     private var appliedLived: Set<String> = emptySet()
     private var appliedWishlist: Set<String> = emptySet()
+    private var lastEffective: Map<String, PlaceStatus>? = null
     private var appliedMarkedForLabels: Set<String> = emptySet()
     private var appliedBands: Map<VisaBand, Set<String>> = emptyMap()
     private var appliedNoData: Set<String> = emptySet()
@@ -916,6 +928,7 @@ private class PlacesMapController {
         appliedVisited = emptySet()
         appliedLived = emptySet()
         appliedWishlist = emptySet()
+        lastEffective = null
         appliedMarkedForLabels = emptySet()
         appliedBands = emptyMap()
         appliedNoData = emptySet()
@@ -945,6 +958,10 @@ private class PlacesMapController {
     fun applyStatuses(statuses: Map<String, PlaceStatus>, lens: Boolean, regionActive: Boolean) {
         val style = style ?: return
         val effective = if (lens || regionActive) emptyMap() else statuses
+        // update{} runs every recomposition; skip the three filterValues passes
+        // when nothing they read has changed.
+        if (effective === lastEffective || effective == lastEffective) return
+        lastEffective = effective
         val visited = effective.filterValues { it == PlaceStatus.VISITED }.keys
         val lived = effective.filterValues { it == PlaceStatus.LIVED }.keys
         val wishlist = effective.filterValues { it == PlaceStatus.WISHLIST }.keys
@@ -1072,7 +1089,7 @@ private class PlacesMapController {
      */
     fun placeCodeAt(point: PointF, slopPx: Float): String? {
         val map = map ?: return null
-        val exact = map.queryRenderedFeatures(point, PlacesMapStyle.LAYER_FILL, PlacesMapStyle.LAYER_LABELS)
+        val exact = map.queryRenderedFeatures(point, PlacesMapStyle.LAYER_FILL, PlacesMapStyle.LAYER_LABELS, PlacesMapStyle.LAYER_LABELS_ON_MARKED)
         val hit = exact.firstOrNull()
             ?: map.queryRenderedFeatures(
                 RectF(
@@ -1083,6 +1100,7 @@ private class PlacesMapController {
                 ),
                 PlacesMapStyle.LAYER_FILL,
                 PlacesMapStyle.LAYER_LABELS,
+                PlacesMapStyle.LAYER_LABELS_ON_MARKED,
             ).firstOrNull()
         return hit?.getStringProperty("code")
     }
@@ -1686,6 +1704,7 @@ private fun RegionInfoCard(info: RegionTapInfo, modifier: Modifier = Modifier) {
  * screen cannot spare — space over the map — to duplicate a gesture the card
  * itself is proof of.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SelectedPlaceCard(
     place: Place,
@@ -1703,12 +1722,15 @@ private fun SelectedPlaceCard(
     modifier: Modifier = Modifier,
 ) {
     val flag = rememberPlaceFlag(place.code)
+    // Derived from the configuration, not measured: a gate on a measured height
+    // can only open after the thing it gates has been composed.
+    val maxCardHeight = (LocalConfiguration.current.screenHeightDp * 0.6f).dp
     // The colours are always darkened for light text, so the content is themed dark
     // (the app's own dark scheme, which the contrast maths is sized for) whatever the
     // app theme is: chips and secondary text would otherwise be near-invisible over a
     // flag in light mode. LocalContentColor is reset because the outer theme's dark ink
     // would otherwise reach texts that name no colour.
-    MaterialTheme(colorScheme = BeyondBordersDark) {
+    MaterialTheme(colorScheme = BeyondBordersDark, typography = AppTypography, shapes = AppShapes) {
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
     val colors = flag?.colors.orEmpty().map { Color(it) }
     Box(
@@ -1721,11 +1743,12 @@ private fun SelectedPlaceCard(
             .then(
                 if (colors.size >= 2) Modifier.background(Brush.linearGradient(colors))
                 else Modifier.background(colors.firstOrNull() ?: BANNER_FALLBACK_COLOR)
-            )
-            .semantics { liveRegion = LiveRegionMode.Polite },
+            ),
     ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.heightIn(max = maxCardHeight).padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // The live region is the header only: announcing the whole card re-read
+            // every chip and visit on each status change.
+            Row(Modifier.semantics { liveRegion = LiveRegionMode.Polite }, verticalAlignment = Alignment.CenterVertically) {
                 // No flag (or still decoding): no slot at all. With one, the slot is a
                 // fixed width so the text does not shift between a wide and a square flag.
                 flag?.let {
@@ -1777,6 +1800,7 @@ private fun SelectedPlaceCard(
                 )
                 }
             }
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             if (requirement != null) {
                 Text(
                     requirementSummaryText(requirement, attributeTo).asString(),
@@ -1823,10 +1847,10 @@ private fun SelectedPlaceCard(
                 )
             }
             if (showStatusToggle) {
-                Row(
+                FlowRow(
                     Modifier.padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     // Short labels, matching the passport rows. Three chips reading
                     // "Been here / Lived here / Want to go" overflow a 360 dp phone
@@ -1861,6 +1885,7 @@ private fun SelectedPlaceCard(
                 if (status.isBeen && visits.isNotEmpty()) {
                     VisitTimeline(visits, onClick = onVisits, modifier = Modifier.padding(top = 4.dp))
                 }
+            }
             }
         }
     }
