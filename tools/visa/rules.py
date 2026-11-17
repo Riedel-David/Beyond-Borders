@@ -106,19 +106,6 @@ IGNORED_DESTINATIONS = {
           "(Western Sahara itself is EH)",
 }
 
-# Wikipedia files some places under a section name instead of a whole-country row,
-# so upstream has `area` set and no `area == null` record. For these four the area
-# *is* the place (it is the only record for that destination and its text is the
-# place's own name), and the previous dataset answered them, so dropping them would
-# be a regression. Deliberately NOT extended to Falklands, Pitcairn, BVI etc.: those
-# are hand-curated for DE and left silent for the generic tier on purpose.
-AREA_IS_WHOLE_PLACE = {
-    "TW": ("Taiwan", "Taiwan (Republic of China)"),
-    "PS": ("Palestine", "State of Palestine", "Palestinian Territory"),
-    "MO": ("Macau",),
-    "CW": ("Curacao",),
-}
-
 # Whole sovereign states filed under an area instead of `area == null`. Wikipedia's
 # tables say "Australia and territories" or "United Kingdom and Crown dependencies",
 # and upstream keeps the suffix as `area`, so a passport can have NO null record for
@@ -129,8 +116,8 @@ AREA_IS_WHOLE_PLACE = {
 #     Clipperton, 'Akrotiri and Dhekelia', Antarctic claims, ...): NOT the state.
 #   * a territory with its own registry place (Greenland, Faroe Islands, Åland,
 #     Bonaire, French Polynesia, Guam, ...): that place's row, not its sovereign's.
-#   * a name for a place (Taiwan, Palestine, Macau, Curacao, China's own area):
-#     AREA_IS_WHOLE_PLACE above.
+#   * a name for a place (Taiwan, Palestine, Macau, Curacao, China's own area): upstream
+#     now files these as ordinary whole-country records (`area` null), so no rule.
 #   * typographic variants of the above (parentheses, '&nbsp;', ', ' lists): ignored.
 # Used only when there is exactly one such record and no null record.
 WHOLE_SOVEREIGN_AREAS = ("and territories", "and Crown dependencies")

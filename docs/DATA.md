@@ -72,6 +72,13 @@ sovereign place has no dataset row for a passport unless it is a named gap
 (`SOVEREIGN_GAP_*`); and a passport with fewer than `MIN_DATASET_ROWS` (150) dataset
 answers is not shipped at all (Northern Cyprus, whose article gives one).
 
+A fallback rule that no passport needs any more (an unused `GENERIC_RULE` place,
+`IGNORED_DESTINATIONS`, `GAP_FILLS` or ETA rule) is only a `WARNING:` line, repeated in the
+job summary of the scheduled refresh: it changes no output, so upstream catching up must not
+turn the weekly job red. Stale `SOVEREIGN_GAP_*` entries still fail the build, because the
+coverage test trusts them. A failed scheduled refresh opens (or comments on) a "Visa data
+refresh failed" issue.
+
 ### Publication for the app's updater
 
 The same workflow has a `publish` job that rebuilds the assets every Monday and deploys them to

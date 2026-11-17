@@ -8,6 +8,7 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -46,9 +47,21 @@ class FullBuild(unittest.TestCase):
             mock.patch.object(build_visa, "REVISIONS_FILE", self.docs / "rev.txt"),
             mock.patch.object(build_visa, "GAP_FILE", self.docs / "gap.txt"),
         ]
+        # A real GITHUB_STEP_SUMMARY (CI) must not receive these tests' warnings.
+        env = mock.patch.dict("os.environ")
+        env.start()
+        self.addCleanup(env.stop)
+        os.environ.pop("GITHUB_STEP_SUMMARY", None)
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
+
+    def run_main_loud(self):
+        """run_main without swallowing stdout, so a test can read the warnings."""
+        argv = ["build_visa.py", "--source", str(build_visa.DEFAULT_SOURCE)]
+        with mock.patch.object(sys, "argv", argv), \
+                mock.patch.object(build_visa, "fetch", lambda d: None):
+            return build_visa.main()
 
     def run_main(self, *extra, **patches):
         argv = ["build_visa.py", "--source", str(build_visa.DEFAULT_SOURCE), *extra]
@@ -68,6 +81,32 @@ class FullBuild(unittest.TestCase):
             self.run_main(check_rules_live=lambda usage: ["forced failure"])
         self.assertEqual(before, snapshot(self.assets, self.docs))
         self.assertTrue((self.assets / "visa_xn.json").exists())
+
+    def test_an_unused_warning_class_rule_warns_and_the_build_still_writes(self):
+        (self.assets / "visa_xn.json").write_text("{}")
+        with mock.patch.dict(build_visa.rules.IGNORED_DESTINATIONS, {"ZZ": "unused"}):
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(0, self.run_main_loud())
+        self.assertIn("WARNING: IGNORED_DESTINATIONS[ZZ]", out.getvalue())
+        self.assertFalse((self.assets / "visa_xn.json").exists())
+        self.assertTrue((self.assets / "visa.json").exists())
+
+    def test_warnings_are_appended_to_the_github_step_summary(self):
+        summary = self.tmp / "summary.md"
+        with mock.patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(summary)}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            build_visa.report_warnings(["something unused"])
+        self.assertIn("- something unused", summary.read_text())
+
+    def test_a_stale_sovereign_gap_entry_is_still_fatal_and_writes_nothing(self):
+        before = snapshot(self.assets, self.docs)
+        pair = ("DE", "ZZ")
+        with mock.patch.object(build_visa.rules, "SOVEREIGN_GAP_PAIRS",
+                               set(build_visa.rules.SOVEREIGN_GAP_PAIRS) | {pair}):
+            with self.assertRaises(SystemExit):
+                self.run_main()
+        self.assertEqual(before, snapshot(self.assets, self.docs))
 
     def test_a_too_thin_passports_stale_asset_is_deleted_by_a_good_build(self):
         (self.assets / "visa_xn.json").write_text("{}")

@@ -59,8 +59,8 @@ committed assets were built from is therefore recorded instead:
 
 `python3 tools/visa/build_visa.py --source DIR` builds offline from a directory holding
 `index.json` and `passports/` (a checkout's `data/`, or the cached download). Only the
-whole-country record (`area` null) of each passport is read, plus four places Wikipedia
-files under an area name (see `AREA_IS_WHOLE_PLACE` in `tools/visa/rules.py`).
+whole-country record (`area` null) of each passport is read (a state filed only as "<state> and
+territories" is read as the state, see `WHOLE_SOVEREIGN_AREAS` in `tools/visa/rules.py`).
 A passport whose article yields fewer than 150 answers (today only Northern Cyprus) is not
 shipped and is named in the revisions file. `visa.json` is the DE (default) passport; each `visa_<iso2>.json` is the same build for
 that passport code. The DE build additionally folds in the German Foreign Office's
