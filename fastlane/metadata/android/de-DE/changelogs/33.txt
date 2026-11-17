@@ -1,0 +1,5 @@
+- Visa-Daten aktualisieren sich wöchentlich im WLAN selbst (in den Einstellungen abschaltbar).
+- Reisepass der Reisebegleitung: sieh, wohin ihr beide reisen könnt.
+- Links zu Reisehinweisen auf den Ortskarten.
+- Neuer Statistik-Bildschirm mit Diagramm der Besuche pro Jahr.
+- Wunschlisten-Schalter in der Passliste; ruhigere, einheitlichere Animationen.

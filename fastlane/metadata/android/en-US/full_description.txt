@@ -1,0 +1,54 @@
+Beyond Borders is a travel tracker and visited countries map with a built-in passport visa checker. It works offline: no account, no ads, no tracking, no analytics. Its only network use is an optional weekly download of updated visa data from GitHub Pages over HTTPS, on Wi-Fi only; you can switch it off in Settings, and no account or identifier is sent.
+
+It exists because of one annoyance. Most travel trackers select more than you ask for: tap Denmark and you get Greenland, tap France and you get French Guiana. In Beyond Borders those are separate places, and the app has no parent-child link between places at all, so it cannot cascade a selection by accident.
+
+TRAVEL MAP
+• Country tracker for 252 places on a world map, tap to select
+• Mark each as Been, Lived or Want, so it doubles as a bucket list
+• Add as many visits as you like to a place, each with a year and an optional month, shown as a timeline on the place card
+• Quick add: tick off the 15 most visited countries in one go
+• Region-completion heatmap shows where you have the most left to see
+• Works in airplane mode: the map is bundled, with no tile server or API key
+
+VISA LENS
+• See where your passport goes, from almost 200 passports (or skip choosing one and just track your travels)
+• Colour the map by entry requirement: visa-free, travel authorisation, visa on arrival, e-visa, visa required, check requirements
+• Countries your own government advises against travelling to are labelled as such instead of showing a visa answer
+• Hold two passports and the easier of the two answers wins
+• Add a travel partner's passport and see where you can both go: the stricter answer wins, and the row says who sets the limit
+• Place cards link to the UK government's foreign travel advice and, where available, the German Federal Foreign Office warning; both open in your browser
+• Visa data is a bundled snapshot, optionally refreshed weekly, not legal advice, and it can be out of date. Always confirm entry rules with the official government source before you travel.
+
+NOT A GOVERNMENT APP
+Beyond Borders is an independent app. It is not affiliated with, endorsed by or representing any government or government agency, and it does not issue or process visas.
+
+SOURCES OF VISA AND TRAVEL INFORMATION
+• Visa requirements: Visa-requirements dataset (derived from Wikipedia, CC BY-SA 4.0), https://github.com/Riedel-David/Visa-requirements
+• Travel advice links: UK government foreign travel advice (GOV.UK), opened in your browser
+• Travel warnings: German Federal Foreign Office (Auswaertiges Amt), https://www.auswaertiges-amt.de/de/reiseundsicherheit/reise-und-sicherheitshinweise
+• For binding entry rules, use the official source of the country you are visiting: its foreign ministry, immigration authority or embassy.
+
+PASSPORT LIST AND STATS
+• Searchable list with filters, a wishlist toggle and an A-Z rail
+• Per-continent progress, your least-covered continent and the next milestone
+• Statistics screen with a collapsible visits-by-year chart
+• Badges, including landlocked countries and island nations, three levels each
+
+SHARE
+• Export your map as an image, captioned with your numbers, in one of three styles
+• Sharing only happens when you choose to, through the Android share sheet
+
+HOME-SCREEN WIDGET
+• Pick the headline metric and card background for each widget
+
+YOUR DATA STAYS YOURS
+• Everything is stored on your device
+• Export and import your history, visit dates included, as JSON
+• One-tap "Delete everything" reset
+• If Android's Auto Backup is on, a snapshot of your data is included in your device backup and offered back after a reinstall. Switch it off in Android settings if you prefer.
+
+LANGUAGES AND LOOK
+• English, Deutsch, Español, Français, Português, Русский, Українська
+• Light, dark and pure black themes
+
+Beyond Borders is free and open source software, licensed GPL-3.0. Source and issue tracker: https://github.com/Riedel-David/Beyond-Borders

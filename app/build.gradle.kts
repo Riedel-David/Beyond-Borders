@@ -61,6 +61,13 @@ android {
         }
     }
 
+    // Both F-Droid and IzzyOnDroid flag the Google-signed dependency-info block
+    // AGP adds to the APK; it is only useful to Play.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     buildTypes {
         release {
             // R8: shrinking, obfuscation and optimisation, and (in this DSL) resource
