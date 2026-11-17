@@ -230,7 +230,7 @@
     <string name="welcome_skip">Passer pour l\'instant</string>
     <string name="settings_passport_unset">Non défini</string>
     <string name="review_title">Tu aimes Beyond Borders ?</string>
-    <string name="review_body">Si elle t’est utile, une note sur Google Play aide d’autres voyageurs à la trouver. Cela ne prend que quelques secondes.</string>
+    <string name="review_body">Tu as marqué %1$d lieux comme visités. Beyond Borders est gratuite, sans publicité ni suivi : une note sur Google Play aide d’autres voyageurs à la trouver. Le bouton ouvre la page Play : touche-y les étoiles.</string>
     <string name="review_rate">Noter</string>
     <string name="review_later">Plus tard</string>
     <string name="review_never">Ne plus demander</string>

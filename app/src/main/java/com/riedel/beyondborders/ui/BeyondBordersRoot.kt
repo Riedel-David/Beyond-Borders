@@ -140,10 +140,10 @@ fun BeyondBordersRoot(
 
     val context = LocalContext.current
     val statusesLoaded by placesViewModel.statusesLoaded.collectAsStateWithLifecycle()
-    val selectedCode by placesViewModel.selectedCode.collectAsStateWithLifecycle()
     val showReviewPrompt by placesViewModel.showReviewPrompt.collectAsStateWithLifecycle()
-    // Keyed on the load flag only: the ViewModel itself makes the decision once per cold
-    // start, so a later change of selection or tab cannot re-open it.
+    val reviewBeenCount by placesViewModel.reviewBeenCount.collectAsStateWithLifecycle()
+    // Keyed on the load flag only: this just starts the ViewModel watching for a good
+    // moment (a place marked Been, then quiet), and it shows the dialog at most once a start.
     LaunchedEffect(statusesLoaded) {
         // Only for Play Store installs: a GitHub APK or F-Droid build has no Play listing to
         // rate in practice. Debug builds are exempt so the dialog can be looked at.
@@ -154,11 +154,12 @@ fun BeyondBordersRoot(
             val installedAt = runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0).firstInstallTime
             }.getOrDefault(System.currentTimeMillis())
-            placesViewModel.evaluateReviewPrompt(installedAt, System.currentTimeMillis(), sheetOpen = selectedCode != null)
+            placesViewModel.watchForReviewMoment(installedAt)
         }
     }
     if (showReviewPrompt) {
         ReviewPromptDialog(
+            beenCount = reviewBeenCount,
             onChoice = { choice ->
                 if (choice == ReviewChoice.RATE && !openPlayStorePage(context)) {
                     // Nothing opened, so the user has not rated: hide it, record nothing.

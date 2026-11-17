@@ -62,4 +62,15 @@ class ReviewPromptTest {
 
     @Test fun `later on the second ask counts as never`() =
         assertEquals(ReviewState(2, now, true), reviewStateAfter(ReviewState(1, now - 40 * day, false), ReviewChoice.LATER, now))
+
+    @Test fun `marking one more place is a rise`() = assertTrue(isSingleMarkRise(4, 5))
+
+    @Test fun `the first emission is only a baseline`() = assertFalse(isSingleMarkRise(-1, 7))
+
+    @Test fun `a jump of several places from an import is not a mark`() = assertFalse(isSingleMarkRise(3, 40))
+
+    @Test fun `a drop or no change is not a mark`() {
+        assertFalse(isSingleMarkRise(6, 5))
+        assertFalse(isSingleMarkRise(5, 5))
+    }
 }

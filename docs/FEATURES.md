@@ -88,7 +88,11 @@ before that can bring the places back; Android's backup settings can delete that
 ## Rating prompt
 
 Installs from the Play Store (and debug builds) get one small dialog asking for a
-rating, once you have marked five places Been or Lived and the app is a week old.
+rating, once you have marked five places Been or Lived and the app is a week old. It
+appears after you mark a place Been or Lived (one at a time; an import or restore does not
+count), but only once the app has been quiet
+for 12 seconds (no further mark, no place sheet open), so it does not interrupt someone
+adding several countries in a row. It quotes your count and says what Rate does.
 **Rate** opens the Play page, **Later** asks again after 30 days, **Don't ask again**
 ends it; it never asks more than twice. Dismissing it by back or tapping outside is
 not an answer, but it waits 30 days too. The app uses no Google library for this, so it
