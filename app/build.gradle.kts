@@ -61,11 +61,11 @@ android {
         }
     }
 
-    // Both F-Droid and IzzyOnDroid flag the Google-signed dependency-info block
-    // AGP adds to the APK; it is only useful to Play.
+    // Both F-Droid and IzzyOnDroid flag the Google-signed dependency-info block AGP adds
+    // to the APK. The bundle keeps it: Play reads it for its SDK checks, and the stores
+    // above never see the bundle.
     dependenciesInfo {
         includeInApk = false
-        includeInBundle = false
     }
 
     buildTypes {

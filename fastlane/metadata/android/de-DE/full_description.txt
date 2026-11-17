@@ -1,4 +1,4 @@
-Beyond Borders ist ein Reisetracker und eine Karte besuchter Länder mit eingebautem Visa-Checker für deinen Reisepass. Sie funktioniert offline: kein Konto, keine Werbung, kein Tracking, keine Analyse. Einzige Netzwerknutzung: ein optionaler wöchentlicher Download neuer Visa-Daten von GitHub Pages (HTTPS, im WLAN), abschaltbar in den Einstellungen; es wird keine Kennung gesendet.
+Beyond Borders ist ein Reisetracker und eine Karte besuchter Länder mit eingebautem Visa-Checker für deinen Reisepass. Sie funktioniert offline: kein Konto, keine Werbung, kein Tracking. Einzige Netzwerknutzung: ein optionaler wöchentlicher Download neuer Visa-Daten von GitHub Pages (HTTPS, in unbegrenzten Netzen oder per „Jetzt prüfen“), abschaltbar in den Einstellungen; es wird keine Kennung gesendet.
 
 Es gibt sie wegen eines Ärgernisses: Die meisten Reisetracker wählen mehr aus, als du antippst. Tippst du auf Dänemark, bekommst du Grönland dazu. Hier sind das getrennte Orte, die App kennt keine Eltern-Kind-Beziehung und kann eine Auswahl nicht versehentlich weitergeben.
 
@@ -8,13 +8,13 @@ REISEKARTE
 • Beliebig viele Besuche pro Ort, mit Jahr und optionalem Monat, als Zeitleiste auf der Ortskarte
 • Schnell eintragen: Hake die 15 meistbesuchten Länder auf einmal ab
 • Die Regionen-Heatmap zeigt, wo du noch am meisten vor dir hast
-• Funktioniert im Flugmodus: Die Karte ist eingebaut, ohne Kartenserver und API-Schlüssel
+• Funktioniert im Flugmodus: Die Karte ist eingebaut, ohne Kartenserver
 
 VISA-LENS
 • Sieh, wohin dein Reisepass dich bringt, aus fast 200 Reisepässen (oder überspringe die Auswahl)
 • Die Karte nach Einreisebestimmung einfärben: visumfrei, Reisegenehmigung, Visum bei Ankunft, eVisum, Visum erforderlich, Bestimmungen prüfen
 • Länder, von denen deine eigene Regierung abrät, werden als solche gekennzeichnet, statt eine Visa-Antwort zu zeigen
-• Mit zwei eigenen Reisepässen gilt jeweils die einfachere der beiden Antworten
+• Mit zwei Reisepässen gilt jeweils die einfachere Antwort
 • Füge den Reisepass einer Reisebegleitung hinzu und sieh, wohin ihr beide reisen könnt: Es gilt die strengere Antwort
 • Ortskarten verlinken auf Reisehinweise der britischen Regierung und, wo vorhanden, auf die Warnung des Auswärtigen Amts (öffnen im Browser)
 • Die Visa-Daten sind eine Momentaufnahme, optional wöchentlich aktualisiert, keine Rechtsberatung und können veraltet sein. Prüfe die Einreisebestimmungen vor der Reise bei der offiziellen Stelle des Landes.
@@ -26,7 +26,7 @@ QUELLEN FÜR VISA- UND REISEINFORMATIONEN
 • Visabestimmungen: Visa-requirements-Datensatz (abgeleitet von Wikipedia, CC BY-SA 4.0), https://github.com/Riedel-David/Visa-requirements
 • Links zu Reisehinweisen: Regierung des Vereinigten Königreichs (GOV.UK), im Browser geöffnet
 • Reisewarnungen: Auswärtiges Amt, https://www.auswaertiges-amt.de/de/reiseundsicherheit/reise-und-sicherheitshinweise
-• Verbindliche Einreisebestimmungen: offizielle Stelle des Reiselandes (Außenministerium, Behörde, Botschaft).
+• Verbindliche Einreisebestimmungen: offizielle Stelle des Reiselandes (Außenministerium, Botschaft).
 
 REISEPASSLISTE UND STATISTIK
 • Durchsuchbare Liste mit Filtern, Wunschlisten-Schalter und A-Z-Leiste
