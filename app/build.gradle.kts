@@ -61,6 +61,13 @@ android {
         }
     }
 
+    // Both F-Droid and IzzyOnDroid flag the Google-signed dependency-info block AGP adds
+    // to the APK. The bundle keeps it: Play reads it for its SDK checks, and the stores
+    // above never see the bundle.
+    dependenciesInfo {
+        includeInApk = false
+    }
+
     buildTypes {
         release {
             // R8: shrinking, obfuscation and optimisation, and (in this DSL) resource

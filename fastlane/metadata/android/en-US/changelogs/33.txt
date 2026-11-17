@@ -1,0 +1,5 @@
+- Visa data now refreshes itself weekly on Wi-Fi (switch it off in Settings).
+- Travel partner passport: see where you can both go.
+- Travel advice links on place cards.
+- New Statistics screen with a visits-by-year chart.
+- Wishlist toggle in the passport list; calmer, more consistent animations.
