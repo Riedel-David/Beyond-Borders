@@ -24,11 +24,11 @@ import com.riedel.beyondborders.ui.places.ReviewChoice
  * back or tapping outside only hides it for this start; just Later records an ask.
  */
 @Composable
-internal fun ReviewPromptDialog(onChoice: (ReviewChoice) -> Unit, onDismiss: () -> Unit) {
+internal fun ReviewPromptDialog(beenCount: Int, onChoice: (ReviewChoice) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.review_title)) },
-        text = { Text(stringResource(R.string.review_body)) },
+        text = { Text(stringResource(R.string.review_body, beenCount)) },
         // One full-width column in the button slot rather than three buttons in its end-aligned
         // row, which would squeeze the labels (longer ones in German or Russian) together.
         // One filled primary action, the two opt-outs as quiet text buttons beneath it.

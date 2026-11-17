@@ -32,9 +32,13 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -470,27 +474,73 @@ class PlacesViewModel(
 
     private val _showReviewPrompt = MutableStateFlow(false)
 
-    /** True while the "rate us" dialog should be up. Set at most once per ViewModel, i.e.
+    /** True while the "rate us" dialog should be up. Shown at most once per ViewModel, i.e.
      * once per cold start, so a dismissed prompt cannot come back on a tab switch. */
     val showReviewPrompt: StateFlow<Boolean> = _showReviewPrompt
 
-    private var reviewEvaluated = false
+    private val _reviewBeenCount = MutableStateFlow(0)
+
+    /** The Been/Lived count the dialog quotes back to the user; set when it is raised. */
+    val reviewBeenCount: StateFlow<Int> = _reviewBeenCount
+
+    private val reviewScreenCalm = MutableStateFlow(false)
+    private val reviewHolds = MutableStateFlow(0)
+
+    /** Root reports whether the app is in the foreground on a screen where a dialog would
+     * not cut across what the user is doing (not Settings). */
+    fun setReviewScreenCalm(calm: Boolean) {
+        reviewScreenCalm.value = calm
+    }
+
+    /** Overlays that mark places without a place sheet (Quick add) hold the prompt back
+     * while they are up; every [holdReview] is paired with a [releaseReview]. */
+    fun holdReview() = reviewHolds.update { it + 1 }
+
+    fun releaseReview() = reviewHolds.update { it - 1 }
+
+    private val reviewQuiet: StateFlow<Boolean> =
+        combine(selectedCode, reviewHolds, reviewScreenCalm) { code, holds, calm -> code == null && holds == 0 && calm }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private var reviewWatching = false
+    private var reviewShown = false
 
     /**
-     * Call once the main UI is showing and the statuses have loaded. Only the first call
-     * per ViewModel decides; [sheetOpen] makes that call a no-op for this start rather
-     * than interrupting an action.
+     * Call once the statuses have loaded, from an install the rating prompt is allowed on.
+     * The dialog is raised after the user marks a place Been or Lived, not on launch, and
+     * only once the app has been quiet for [REVIEW_QUIET_MS]: no further mark, no place
+     * sheet or Quick add open, in the foreground and not on Settings. Someone adding countries in a row would just tap it away, so every new
+     * mark restarts the wait and a sheet that opens during it restarts it too.
      */
-    fun evaluateReviewPrompt(installedAtMs: Long, nowMs: Long, sheetOpen: Boolean) {
-        if (reviewEvaluated) return
-        reviewEvaluated = true
-        if (sheetOpen) return
-        // One read of the repository flow rather than `statuses.value`: that is a separate
-        // collector from the one behind `statusesLoaded` and can still be empty when the
-        // latter flips, which would judge a real user as having no places.
+    fun watchForReviewMoment(installedAtMs: Long) {
+        if (reviewWatching) return
+        reviewWatching = true
         viewModelScope.launch {
-            val beenCount = repo.statuses.first().values.count { it.isBeen }
-            _showReviewPrompt.value = reviewPromptEligible(beenCount, installedAtMs, nowMs, settings.reviewState.value)
+            // The first emission is the baseline; only a later rise by exactly one counts as
+            // "just marked". Other changes are filtered out before collectLatest so that a
+            // drop does not cancel a wait already running, and an import, restore or bulk add
+            // (a jump of several) is not mistaken for the user marking a place.
+            var previous = -1
+            repo.statuses.map { st -> st.values.count { it.isBeen } }.distinctUntilChanged().mapNotNull { count ->
+                val markedOne = isSingleMarkRise(previous, count)
+                previous = count
+                if (markedOne) count else null
+            }.collectLatest {
+                if (reviewShown) return@collectLatest
+                delay(REVIEW_QUIET_MS)
+                while (true) {
+                    reviewQuiet.first { it }
+                    delay(REVIEW_QUIET_MS)
+                    if (reviewQuiet.value) break
+                }
+                // Re-read: the count may have dropped again while we waited.
+                val count = repo.statuses.first().values.count { it.isBeen }
+                if (reviewPromptEligible(count, installedAtMs, System.currentTimeMillis(), settings.reviewState.value)) {
+                    reviewShown = true
+                    _reviewBeenCount.value = count
+                    _showReviewPrompt.value = true
+                }
+            }
         }
     }
 
@@ -1514,7 +1564,11 @@ internal const val REVIEW_MIN_BEEN = 5
 internal const val REVIEW_MIN_INSTALL_DAYS = 7
 internal const val REVIEW_MAX_ASKS = 2
 internal const val REVIEW_RETRY_DAYS = 30
+internal const val REVIEW_QUIET_MS = 12_000L
 private const val DAY_MS = 24L * 60 * 60 * 1000
+
+/** The Been count went up by exactly one since the previous emission (-1 = none seen yet). */
+internal fun isSingleMarkRise(previous: Int, count: Int): Boolean = previous >= 0 && count == previous + 1
 
 enum class ReviewChoice { RATE, LATER, NEVER }
 

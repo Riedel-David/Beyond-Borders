@@ -241,7 +241,7 @@
     <string name="welcome_skip">Пропустить</string>
     <string name="settings_passport_unset">Не выбран</string>
     <string name="review_title">Нравится Beyond Borders?</string>
-    <string name="review_body">Если приложение было полезно, оценка в Google Play поможет другим путешественникам его найти. Это займёт несколько секунд.</string>
+    <string name="review_body">Отмечено мест: %1$d. Beyond Borders бесплатна, без рекламы и слежки, поэтому оценка в Google Play помогает другим путешественникам её найти. Кнопка открывает страницу в Play: нажмите там на звёзды.</string>
     <string name="review_rate">Оценить</string>
     <string name="review_later">Позже</string>
     <string name="review_never">Больше не спрашивать</string>
