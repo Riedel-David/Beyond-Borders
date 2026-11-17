@@ -91,7 +91,7 @@ Installs from the Play Store (and debug builds) get one small dialog asking for 
 rating, once you have marked five places Been or Lived and the app is a week old. It
 appears after you mark a place Been or Lived (one at a time; an import or restore does not
 count), but only once the app has been quiet
-for 12 seconds (no further mark, no place sheet open), so it does not interrupt someone
+for 12 seconds (no further mark, no place sheet or Quick add open, app in front, not on Settings), so it does not interrupt someone
 adding several countries in a row. It quotes your count and says what Rate does.
 **Rate** opens the Play page, **Later** asks again after 30 days, **Don't ask again**
 ends it; it never asks more than twice. Dismissing it by back or tapping outside is

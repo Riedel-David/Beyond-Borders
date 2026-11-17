@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +72,12 @@ import com.riedel.beyondborders.ui.places.Grouping
 fun QuickAddDialog(viewModel: PlacesViewModel, onDismiss: () -> Unit) {
     val places by viewModel.places.collectAsStateWithLifecycle()
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    // Ticking places here sets no selection, so say so explicitly: the rating prompt must
+    // not land on top of someone adding countries in a row.
+    DisposableEffect(viewModel) {
+        viewModel.holdReview()
+        onDispose { viewModel.releaseReview() }
+    }
     var query by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]

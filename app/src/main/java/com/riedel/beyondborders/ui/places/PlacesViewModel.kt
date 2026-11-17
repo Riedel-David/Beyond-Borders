@@ -483,14 +483,33 @@ class PlacesViewModel(
     /** The Been/Lived count the dialog quotes back to the user; set when it is raised. */
     val reviewBeenCount: StateFlow<Int> = _reviewBeenCount
 
+    private val reviewScreenCalm = MutableStateFlow(false)
+    private val reviewHolds = MutableStateFlow(0)
+
+    /** Root reports whether the app is in the foreground on a screen where a dialog would
+     * not cut across what the user is doing (not Settings). */
+    fun setReviewScreenCalm(calm: Boolean) {
+        reviewScreenCalm.value = calm
+    }
+
+    /** Overlays that mark places without a place sheet (Quick add) hold the prompt back
+     * while they are up; every [holdReview] is paired with a [releaseReview]. */
+    fun holdReview() = reviewHolds.update { it + 1 }
+
+    fun releaseReview() = reviewHolds.update { it - 1 }
+
+    private val reviewQuiet: StateFlow<Boolean> =
+        combine(selectedCode, reviewHolds, reviewScreenCalm) { code, holds, calm -> code == null && holds == 0 && calm }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private var reviewWatching = false
     private var reviewShown = false
 
     /**
      * Call once the statuses have loaded, from an install the rating prompt is allowed on.
      * The dialog is raised after the user marks a place Been or Lived, not on launch, and
-     * only once the app has been quiet for [REVIEW_QUIET_MS]: no further mark, and no place
-     * sheet open. Someone adding countries in a row would just tap it away, so every new
+     * only once the app has been quiet for [REVIEW_QUIET_MS]: no further mark, no place
+     * sheet or Quick add open, in the foreground and not on Settings. Someone adding countries in a row would just tap it away, so every new
      * mark restarts the wait and a sheet that opens during it restarts it too.
      */
     fun watchForReviewMoment(installedAtMs: Long) {
@@ -510,9 +529,9 @@ class PlacesViewModel(
                 if (reviewShown) return@collectLatest
                 delay(REVIEW_QUIET_MS)
                 while (true) {
-                    selectedCode.first { it == null }
+                    reviewQuiet.first { it }
                     delay(REVIEW_QUIET_MS)
-                    if (selectedCode.value == null) break
+                    if (reviewQuiet.value) break
                 }
                 // Re-read: the count may have dropped again while we waited.
                 val count = repo.statuses.first().values.count { it.isBeen }

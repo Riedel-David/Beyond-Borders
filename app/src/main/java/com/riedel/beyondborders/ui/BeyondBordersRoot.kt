@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.riedel.beyondborders.AppContainer
@@ -141,6 +144,11 @@ fun BeyondBordersRoot(
     val context = LocalContext.current
     val statusesLoaded by placesViewModel.statusesLoaded.collectAsStateWithLifecycle()
     val showReviewPrompt by placesViewModel.showReviewPrompt.collectAsStateWithLifecycle()
+    // Quiet time only counts while the app is in front and not on Settings.
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    LaunchedEffect(lifecycleState, tab) {
+        placesViewModel.setReviewScreenCalm(lifecycleState.isAtLeast(Lifecycle.State.RESUMED) && tab != Tab.SETTINGS)
+    }
     val reviewBeenCount by placesViewModel.reviewBeenCount.collectAsStateWithLifecycle()
     // Keyed on the load flag only: this just starts the ViewModel watching for a good
     // moment (a place marked Been, then quiet), and it shows the dialog at most once a start.
