@@ -32,6 +32,7 @@ import argparse
 import hashlib
 import http.client
 import json
+import os
 import re
 import shutil
 import sys
@@ -212,11 +213,15 @@ class Row:
 
 @dataclass
 class Usage:
-    """Which fallback rules fired across the whole run (see check_rules_live)."""
+    """Which fallback rules fired across the whole run.
+
+    Read after the run by check_rules_live (fatal: a stale entry could hide wrong or
+    missing data) and rules_unused_warnings (hygiene only: an unused rule changes no
+    output). A maintainer adding a rule puts its check in whichever fits.
+    """
 
     generic: set = field(default_factory=set)
     ignored: set = field(default_factory=set)
-    area: set = field(default_factory=set)
     eta_rules: set = field(default_factory=set)
     whole_sovereign: set = field(default_factory=set)
     gap_fills: set = field(default_factory=set)
@@ -323,8 +328,7 @@ def row_from_record(rec: dict, usage: Usage) -> Row:
 def load_row(doc: dict, places: set[str], usage: Usage) -> dict[str, Row]:
     """A passport's destination -> Row, from its `area == null` records.
 
-    Destinations outside our registry must be named in IGNORED_DESTINATIONS; the
-    AREA_IS_WHOLE_PLACE places are read from their one area record, and a state
+    Destinations outside our registry must be named in IGNORED_DESTINATIONS; a state
     filed only as "<state> and territories" (rules.WHOLE_SOVEREIGN_AREAS) from that.
     """
     passport = doc["passport"]
@@ -348,11 +352,6 @@ def load_row(doc: dict, places: set[str], usage: Usage) -> dict[str, Row]:
             raise SystemExit(f"{passport}: two whole-country records for {dest}")
         if nulls:
             whole[dest] = row_from_record(nulls[0], usage)
-        elif (dest in rules.AREA_IS_WHOLE_PLACE and len(
-                named := [r for r in recs
-                          if r["area"] in rules.AREA_IS_WHOLE_PLACE[dest]]) == 1):
-            whole[dest] = row_from_record(named[0], usage)
-            usage.area.add(dest)
         else:
             # "Australia and territories": the whole state filed under an area.
             marked = [r for r in recs if r["area"] in rules.WHOLE_SOVEREIGN_AREAS]
@@ -733,40 +732,61 @@ def build(passport: str, ds: Dataset, advice: Path | None, usage: Usage) -> str:
 
 
 def check_rules_live(usage: Usage) -> list[str]:
-    """After a full build: every fallback rule fired for at least one passport.
+    """Fatal after a full build: a stale rule that could hide wrong or missing data.
 
-    The per-passport shadow checks cannot cover the generic tier, whose entries are
-    skipped wherever a passport has a row; this is the same guarantee over the
-    whole run. A rule nobody needs any more is deleted, not kept as decoration.
+    The sovereign-gap tables feed the allowlist the coverage test trusts; a stale
+    entry there would excuse a row that should exist, so it stops the build. The
+    merely unused fallbacks are rules_unused_warnings(): they cannot change output.
     """
     problems = []
-    g = rules.GENERIC_RULE
-    defined = set(g["eu_membership"]["places"]) | set(g["uk_eta"]["places"])
-    defined |= set(g["universal"]) | set(g["uninhabited"])
-    for group in g["reference"]:
-        defined |= set(group["places"])
-    for code in sorted(defined - usage.generic):
-        problems.append(f"GENERIC_RULE place {code} applied to no passport — every "
-                        f"passport has a dataset row; delete the rule")
-    for code in sorted(set(rules.IGNORED_DESTINATIONS) - usage.ignored):
-        problems.append(f"IGNORED_DESTINATIONS[{code}] never occurs in the dataset; "
-                        f"delete it")
-    wanted = {"alternative"} | {"esta:" + c for c in rules.ESTA_DESTINATIONS}
-    for rule in sorted(wanted - usage.eta_rules):
-        problems.append(f"ETA rule {rule!r} (rules.ETA_RULES) matched no record; "
-                        f"upstream has caught up, delete it")
-    wanted_fills = {(p, c) for p, fills in rules.GAP_FILLS.items() for c in fills}
-    for pair in sorted(wanted_fills - usage.gap_fills):
-        problems.append(f"GAP_FILLS{pair} was never needed; upstream has the row now")
     for pair in sorted(set(rules.SOVEREIGN_GAP_PAIRS) - usage.sov_gaps):
         problems.append(f"SOVEREIGN_GAP_PAIRS{pair} is not a gap any more; delete it")
     gap_places = {c for _, c in usage.sov_gaps}
     for code in sorted(set(rules.SOVEREIGN_GAP_DESTINATIONS) - gap_places):
         problems.append(f"SOVEREIGN_GAP_DESTINATIONS[{code}] is answered for every "
                         f"passport now; delete it")
-    for code in sorted(set(rules.AREA_IS_WHOLE_PLACE) - usage.area):
-        problems.append(f"AREA_IS_WHOLE_PLACE[{code}] never fired; delete it")
     return problems
+
+
+def rules_unused_warnings(usage: Usage) -> list[str]:
+    """Hygiene only: a fallback rule no passport needed any more.
+
+    The per-passport shadow checks cannot cover the generic tier, whose entries are
+    skipped wherever a passport has a row; this is the same look over the whole run.
+    An unused fallback changes no output, so it is reported, not fatal: a scheduled
+    refresh must not go red because upstream caught up with a rule.
+    """
+    warnings = []
+    g = rules.GENERIC_RULE
+    defined = set(g["eu_membership"]["places"]) | set(g["uk_eta"]["places"])
+    defined |= set(g["universal"]) | set(g["uninhabited"])
+    for group in g["reference"]:
+        defined |= set(group["places"])
+    for code in sorted(defined - usage.generic):
+        warnings.append(f"GENERIC_RULE place {code} applied to no passport — every "
+                        f"passport has a dataset row; delete the rule")
+    for code in sorted(set(rules.IGNORED_DESTINATIONS) - usage.ignored):
+        warnings.append(f"IGNORED_DESTINATIONS[{code}] never occurs in the dataset; "
+                        f"delete it")
+    wanted = {"alternative"} | {"esta:" + c for c in rules.ESTA_DESTINATIONS}
+    for rule in sorted(wanted - usage.eta_rules):
+        warnings.append(f"ETA rule {rule!r} (rules.ETA_RULES) matched no record; "
+                        f"upstream has caught up, delete it")
+    wanted_fills = {(p, c) for p, fills in rules.GAP_FILLS.items() for c in fills}
+    for pair in sorted(wanted_fills - usage.gap_fills):
+        warnings.append(f"GAP_FILLS{pair} was never needed; upstream has the row now")
+    return warnings
+
+
+def report_warnings(warnings: list[str]) -> None:
+    """Print each warning and append them to the Actions job summary when there is one."""
+    for w in warnings:
+        print(f"WARNING: {w}")
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if warnings and summary:
+        with open(summary, "a", encoding="utf-8") as f:
+            f.write("### Visa build warnings (unused rules in tools/visa/rules.py)\n")
+            f.writelines(f"- {w}\n" for w in warnings)
 
 
 def check_esta(usage: Usage) -> list[str]:
@@ -922,7 +942,11 @@ def main() -> int:
             thin.append(code)
             print(f"SKIPPED {e}")
         print()
+    # Fatal problems stop the build; warnings (rules_unused_warnings) never do, but
+    # are printed first so they show even when the build fails for another reason.
     problems = check_rules_live(usage)
+    warnings = rules_unused_warnings(usage)
+    report_warnings(warnings)
     shipped = {("DE" if p.name == "visa.json" else p.stem[5:].upper())
                for p in ASSETS.glob("visa*.json")}
     # Too-thin passports are deliberately not built; their stale asset is deleted
@@ -943,7 +967,8 @@ def main() -> int:
     write_gap_allowlist()
     print(f"sovereign (passport, place) pairs with no dataset row: "
           f"{len(usage.sov_gaps)}")
-    print(f"{REVISIONS_FILE.relative_to(REPO)} written; all rules live")
+    print(f"{REVISIONS_FILE.relative_to(REPO)} written; "
+          + (f"{len(warnings)} warning(s)" if warnings else "all rules live"))
     return 0
 
 

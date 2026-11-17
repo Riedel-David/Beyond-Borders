@@ -164,3 +164,33 @@ jobs:
 
       - id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # One notification for either job. Scheduled runs only: a manual dispatch is watched
+  # by whoever started it, and an issue nobody closes is worse than none. visa-freshness.yml
+  # (Mondays, after this) separately catches a stale published site. The token is
+  # widened here only, not for the jobs that build and deploy.
+  notify:
+    needs: [refresh, publish]
+    if: ${{ always() && github.event_name == 'schedule' && (needs.refresh.result == 'failure' || needs.publish.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REFRESH: ${{ needs.refresh.result }}
+          PUBLISH: ${{ needs.publish.result }}
+        run: |
+          TITLE="Visa data refresh failed"
+          FAILED=""
+          [ "$REFRESH" = failure ] && FAILED="refresh"
+          [ "$PUBLISH" = failure ] && FAILED="${FAILED:+$FAILED and }publish"
+          BODY="The $FAILED job failed: $RUN_URL"
+          N="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$TITLE\" in:title" --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number' | head -n 1)"
+          if [ -z "$N" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY Steps: docs/DATA.md."
+          else
+            gh issue comment "$N" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          fi
