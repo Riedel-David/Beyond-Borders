@@ -567,9 +567,17 @@ internal enum class AppLanguage(val tag: String) {
     GERMAN("de"),
     SPANISH("es"),
     FRENCH("fr"),
-    PORTUGUESE("pt"), // Brazilian wording; one values-pt for every Portuguese locale
+    PORTUGUESE("pt"), // values-pt is Brazilian, values-pt-rPT European; see localeTag
     UKRAINIAN("uk"),
     RUSSIAN("ru");
+
+    /**
+     * The tag handed to Android. A bare "pt" always resolves to the Brazilian values-pt,
+     * so a phone set to Portugal asks for "pt-PT" and gets values-pt-rPT; everyone else,
+     * and every other language, keeps the plain tag.
+     */
+    fun localeTag(systemRegion: String): String =
+        if (this == PORTUGUESE && systemRegion == "PT") "pt-PT" else tag
 
     companion object {
         /**

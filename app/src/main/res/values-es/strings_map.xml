@@ -14,12 +14,12 @@
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Visitado</string>
     <string name="map_legend_short_lived">Vivido</string>
-    <string name="map_legend_short_wanted">Pendiente</string>
+    <string name="map_legend_short_wanted">Quiero ir</string>
     <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Toca un país y elige Visitado, Vivido o Quiero ir</string>
     <string name="map_legend_visited">%1$d visitados</string>
-    <string name="map_legend_lived">%1$d donde viví</string>
-    <string name="map_legend_wishlisted">%1$d pendientes</string>
+    <string name="map_legend_lived">Vividos: %1$d</string>
+    <string name="map_legend_wishlisted">Deseados: %1$d</string>
     <string name="map_legend_no_data">%1$d sin datos</string>
     <!-- A band label supplied by the visa data, with its count: "12 Sin visado". -->
     <string name="map_legend_count_labeled">%1$d %2$s</string>
@@ -60,7 +60,7 @@
     <string name="map_no_data_this">Sin datos para este pasaporte: consulta las fuentes oficiales antes de viajar.</string>
     <string name="map_chip_been">Visitado</string>
     <string name="map_chip_lived">Vivido</string>
-    <string name="map_chip_want">Pendiente</string>
+    <string name="map_chip_want">Quiero ir</string>
 
     <!-- Share cards (drawn onto a canvas) -->
     <string name="share_style_bar_label">Barra inferior</string>
@@ -80,18 +80,18 @@
     <string name="share_tile_places_been">VISITADOS</string>
     <string name="share_tile_continents">CONTINENTES</string>
     <string name="share_tile_lived">VIVÍ EN</string>
-    <string name="share_tile_wishlist">PENDIENTES</string>
+    <string name="share_tile_wishlist">DESEADOS</string>
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
     <string name="places_filter_all">Todos</string>
     <string name="places_filter_been">Visitados</string>
     <string name="places_filter_lived">Vividos</string>
-    <string name="places_filter_want">Pendientes</string>
+    <string name="places_filter_want">Quiero ir</string>
     <string name="places_filter_none">Aún no</string>
     <string name="places_mode_travel">Dónde he estado</string>
     <string name="places_mode_visa">Adónde puedo ir</string>
     <string name="places_visa_filter_all">Todos</string>
-    <string name="places_visa_filter_easy">Sin cita</string>
+    <string name="places_visa_filter_easy">Sin cita en embajada</string>
     <string name="places_visa_filter_wishlist">Mi lista de deseos</string>
     <string name="places_visa_filter_long_stay">90+ días</string>
     <string name="places_section_uninhabited">Deshabitados</string>
@@ -102,9 +102,9 @@
     </plurals>
     <string name="places_least_covered">%1$s: %2$d de %3$d</string>
     <plurals name="places_wishlist_easy">
-        <item quantity="one">Sin cita en la embajada: %1$d de tu %2$d lugar pendiente</item>
-        <item quantity="many">Sin cita en la embajada: %1$d de tus %2$d lugares pendientes</item>
-        <item quantity="other">Sin cita en la embajada: %1$d de tus %2$d lugares pendientes</item>
+        <item quantity="one">Sin cita en la embajada: %1$d de tu %2$d lugar deseado</item>
+        <item quantity="many">Sin cita en la embajada: %1$d de tus %2$d lugares deseados</item>
+        <item quantity="other">Sin cita en la embajada: %1$d de tus %2$d lugares deseados</item>
     </plurals>
     <string name="places_coverage">%1$d%% de la superficie terrestre, %2$d%% de la población mundial</string>
 
@@ -124,12 +124,12 @@
     <string name="widget_cfg_background_filled">Con relleno</string>
     <string name="widget_cfg_background_transparent">Transparente</string>
     <string name="widget_cfg_preview_title">Tamaño de la vista previa</string>
-    <string name="widget_cfg_add">Añadir widget</string>
-    <string name="map_quick_add">Añadir rápido</string>
+    <string name="widget_cfg_add">Agregar widget</string>
+    <string name="map_quick_add">Agregar rápido</string>
 
-    <string name="map_partner_mode">Modo pareja</string>
+    <string name="map_partner_mode">Modo acompañante</string>
     <string name="map_partner_state_on">Activado</string>
     <string name="map_partner_state_off">Desactivado</string>
-    <string name="map_legend_partner">Adónde podéis ir los dos</string>
+    <string name="map_legend_partner">Adónde pueden ir los dos</string>
     <string name="map_no_data_partner">No hay respuesta para al menos uno de los dos pasaportes: consulta las fuentes oficiales antes de viajar.</string>
 </resources>

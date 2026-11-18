@@ -103,7 +103,7 @@ only, survives *Delete everything* and is not part of the JSON export.
 ## Language
 
 Settings → **Language** switches the app between English, German, Spanish, French,
-Portuguese (Brazilian wording), Ukrainian and Russian, or follows the
+Portuguese (Brazilian, and European on a phone set to Portugal), Ukrainian and Russian, or follows the
 phone. The choice is Android's per-app locale, so it also appears under the system's
 App languages and the app keeps no setting of its own. Every string has a translation in each
 of them, a test fails if a key or a placeholder exists in only one language, and

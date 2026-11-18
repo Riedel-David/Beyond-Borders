@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-made Ukrainian draft: needs a proofread by a native speaker. -->
 <resources>
-    <string name="visits_row_label">Візити</string>
+    <string name="visits_row_label">Поїздки</string>
     <string name="visits_add">Додати</string>
     <string name="visits_undated">Без дати</string>
-    <string name="visits_dialog_title">Візити: %1$s</string>
-    <string name="visits_pick_year">Додати візит за</string>
+    <string name="visits_dialog_title">Поїздки: %1$s</string>
+    <string name="visits_pick_year">Додати поїздку за</string>
     <string name="visits_no_date">Без дати</string>
-    <string name="visits_delete">Видалити візит</string>
+    <string name="visits_delete">Видалити поїздку</string>
     <string name="visits_done">Готово</string>
-    <string name="visits_none_yet">Ще немає візитів</string>
+    <string name="visits_none_yet">Ще немає поїздок</string>
     <string name="stats_visits_title">Місця за роками</string>
-    <string name="stats_visits_first_recent">Перший візит: %1$d · Останній: %2$d</string>
-    <string name="backup_imported_visits">Візити: %1$d нових, %2$d оновлено.</string>
-    <string name="settings_preview_visits">Візити</string>
+    <string name="stats_visits_first_recent">Перша поїздка: %1$d · Остання: %2$d</string>
+    <string name="backup_imported_visits">Поїздки: %1$d нових, %2$d оновлено.</string>
+    <string name="settings_preview_visits">Поїздки</string>
     <string name="visits_whole_year">Весь рік</string>
-    <string name="visits_pick_month">Місяць (необов’язково)</string>
+    <string name="visits_pick_month">Місяць (необовʼязково)</string>
     <string name="stats_chart_countries">Місця за рік</string>
-    <string name="stats_chart_cumulative">Усього на той рік</string>
+    <string name="stats_chart_cumulative">Разом на кінець року</string>
     <string name="stats_chart_summary">Відвідані місця за роками, з %1$d по %2$d. Усього %3$d місць до %2$d року.</string>
     <string name="stats_chart_year_detail">%1$d: місць %2$d, нових %3$d, усього %4$d</string>
     <string name="stats_chart_details_show">Показати цифри за роками</string>

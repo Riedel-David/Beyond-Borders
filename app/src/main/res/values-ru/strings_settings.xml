@@ -8,8 +8,8 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Отмечай места, где ты был(а), жил(а) или хочешь побывать, — на карте из %1$d мест. Территории вроде Гренландии или Пуэрто-Рико считаются отдельно, не вместе со страной, которой они принадлежат.</string>
-    <string name="welcome_intro_bare">Отмечай места, где ты был(а), жил(а) или хочешь побывать.</string>
+    <string name="welcome_intro">Отмечай посещённые места, места проживания и те, куда хочешь попасть, — на карте из %1$d мест. Территории вроде Гренландии или Пуэрто-Рико считаются отдельно, не вместе со страной, которой они принадлежат.</string>
+    <string name="welcome_intro_bare">Отмечай посещённые места, места проживания и те, куда хочешь попасть.</string>
     <string name="welcome_privacy">Ничего из того, что ты отмечаешь, нам не отправляется. Ни аккаунта, ни сервера. Приложение лишь скачивает публичные обновления данных о визах и ничего не отправляет о тебе. (Резервное копирование Android всё же может сохранять эти данные, если оно у тебя включено.)</string>
     <string name="welcome_passport_hint">Визовые требования показываются для одного паспорта за раз. Выбери свой — позже его можно сменить в настройках.</string>
     <string name="welcome_get_started">Начать</string>
@@ -23,10 +23,10 @@
     <string name="recovery_saved">Сохранено.</string>
     <string name="recovery_save_failed">Не удалось сохранить: %1$s</string>
     <string name="recovery_open_failed">Не удалось открыть выбранный файл.</string>
-    <string name="recovery_wipe_failed">Не удалось удалить данные. Не рассчитывай, что что-то изменилось; попробуй ещё раз или очисти хранилище приложения в настройках Android.</string>
+    <string name="recovery_wipe_failed">Не удалось удалить данные. Данные могут остаться в неполном состоянии; попробуй ещё раз или очисти хранилище приложения в настройках Android.</string>
     <string name="recovery_delete_start_fresh">Удалить данные и начать заново</string>
-    <string name="recovery_confirm_title">Удалить всё, что ты отметил(а)?</string>
-    <string name="recovery_confirm_saved">Ты сохранил(а) копию, так что данные можно будет прочитать позже. Все отмеченные места исчезнут из самого приложения.</string>
+    <string name="recovery_confirm_title">Удалить всё отмеченное?</string>
+    <string name="recovery_confirm_saved">Копия сохранена, так что данные можно будет прочитать позже. Все отмеченные места исчезнут из самого приложения.</string>
     <string name="recovery_confirm_unsaved">Копия не сохранена. Все когда-либо отмеченные места будут потеряны навсегда, отменить это нельзя.</string>
     <string name="recovery_delete">Удалить</string>
     <string name="recovery_keep">Оставить</string>
@@ -57,8 +57,8 @@
 
     <string name="settings_colours_title">Цвета карты</string>
     <string name="settings_colours_detail">Если выбрать уже занятый цвет, два цвета поменяются местами.</string>
-    <string name="settings_status_been">Был(а)</string>
-    <string name="settings_status_lived">Жил(а)</string>
+    <string name="settings_status_been">Посещено</string>
+    <string name="settings_status_lived">Проживание</string>
     <string name="settings_status_want">Хочу</string>
     <string name="settings_colours_reset">Вернуть цвета по умолчанию</string>
     <!-- Accessibility name of a colour swatch: status, then colour -->
@@ -97,7 +97,7 @@
     <string name="settings_visa_checking">Проверка…</string>
     <string name="settings_visa_result_current">Данные о визах уже актуальны.</string>
     <string name="settings_visa_result_updated">Данные о визах обновлены и уже используются.</string>
-    <string name="settings_visa_result_offline">Не удалось связаться с сервером. Проверьте подключение или повторите позже.</string>
+    <string name="settings_visa_result_offline">Не удалось связаться с сервером. Проверь подключение или повтори позже.</string>
     <string name="settings_visa_result_unavailable">Обновление сейчас недоступно.</string>
     <string name="settings_visa_auto">Обновлять данные о визах автоматически</string>
     <string name="settings_visa_last_checked">Последняя проверка: %1$s</string>
@@ -241,14 +241,14 @@
     <string name="welcome_skip">Пропустить</string>
     <string name="settings_passport_unset">Не выбран</string>
     <string name="review_title">Нравится Beyond Borders?</string>
-    <string name="review_body">Отмечено мест: %1$d. Beyond Borders бесплатна, без рекламы и слежки, поэтому оценка в Google Play помогает другим путешественникам её найти. Кнопка открывает страницу в Play: нажмите там на звёзды.</string>
+    <string name="review_body">Отмечено мест: %1$d. Beyond Borders — бесплатное приложение без рекламы и слежки, поэтому оценка в Google Play помогает другим путешественникам его найти. Кнопка открывает страницу в Play: нажми там на звёзды.</string>
     <string name="review_rate">Оценить</string>
     <string name="review_later">Позже</string>
     <string name="review_never">Больше не спрашивать</string>
     <string name="settings_rate_play">Оценить в Google Play</string>
 
-    <string name="settings_partner_passport">Паспорт спутника или спутницы</string>
-    <string name="settings_add_partner_passport">Добавить паспорт спутника</string>
-    <string name="settings_remove_partner_passport">Убрать паспорт спутника</string>
-    <string name="settings_partner_hint">Карта и список виз покажут, куда вы оба можете легко поехать. Можно указать только один паспорт спутника: выберите наименее ограничивающий для поездки; второй паспорт не объединяется с ним. Вид на жительство и правила ЕС/Шенгена для членов семьи приложению неизвестны.</string>
+    <string name="settings_partner_passport">Паспорт партнёра</string>
+    <string name="settings_add_partner_passport">Добавить паспорт партнёра</string>
+    <string name="settings_remove_partner_passport">Убрать паспорт партнёра</string>
+    <string name="settings_partner_hint">Карта и список виз покажут, куда вы оба можете легко поехать. Можно указать только один паспорт партнёра: выбери наименее ограничивающий для поездки; второй паспорт не объединяется с ним. Вид на жительство и правила ЕС/Шенгена для членов семьи приложению неизвестны.</string>
 </resources>

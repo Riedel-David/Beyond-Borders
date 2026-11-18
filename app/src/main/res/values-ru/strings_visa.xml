@@ -4,7 +4,7 @@
     <!-- Requirement categories (list headers, summaries, filters) -->
     <string name="visa_category_home">Родная страна</string>
     <string name="visa_category_visa_free">Без визы</string>
-    <string name="visa_category_eta">Эл. разрешение на въезд</string>
+    <string name="visa_category_eta">Электронное разрешение</string>
     <string name="visa_category_visa_on_arrival">Виза по прибытии</string>
     <string name="visa_category_e_visa">Электронная виза</string>
     <string name="visa_category_visa_required">Нужна виза</string>
@@ -24,7 +24,7 @@
     <!-- Confidence of curated entries -->
     <string name="visa_confidence_high">Надёжные данные</string>
     <string name="visa_confidence_medium">Скорее всего верно, детали могут отличаться</string>
-    <string name="visa_confidence_low">Не уверены — проверь перед бронированием</string>
+    <string name="visa_confidence_low">Данные неточны — проверь перед бронированием</string>
 
     <plurals name="visa_days">
         <item quantity="one">%d день</item>
@@ -37,7 +37,7 @@
     <string name="visa_summary_with_days">%1$s · %2$s</string>
     <!-- %2$s is the masculine nominative adjective, used after "паспорт" -->
     <string name="visa_summary_with_passport">%1$s (%2$s паспорт)</string>
-    <string name="visa_row_been">%1$s · был(а)</string>
+    <string name="visa_row_been">%1$s · посещено</string>
     <string name="visa_row_wishlist">%1$s · в списке желаний</string>
     <string name="visa_row_check">уточнить</string>
 
@@ -57,7 +57,7 @@
     <string name="visa_empty_query">Нет направлений по запросу «%1$s».</string>
     <string name="visa_empty_filter">Нет направлений для фильтра «%1$s».</string>
     <string name="visa_empty_nothing">Ничего не найдено.</string>
-    <string name="visa_empty_wishlist">Добавьте места в список желаний.</string>
+    <string name="visa_empty_wishlist">Добавь места в список желаний.</string>
     <string name="visa_empty_wishlist_filter">Ни одно место из списка желаний не подходит под фильтр «%1$s».</string>
     <string name="visa_unavailable_title">Нет визовых данных</string>
     <string name="visa_unavailable_body">Встроенный список виз не удалось прочитать, поэтому в этом режиме нечего показать. На твою карту поездок это не влияет.</string>
@@ -79,12 +79,12 @@
     <string name="picker_search">Поиск</string>
 
     <string name="visa_partner_you">Ты: %1$s</string>
-    <string name="visa_partner_partner">Спутник: %1$s</string>
+    <string name="visa_partner_partner">Партнёр: %1$s</string>
     <string name="visa_partner_blocker_you">Здесь ограничение задаёт твой паспорт</string>
-    <string name="visa_partner_blocker_partner">Здесь ограничение задаёт паспорт спутника</string>
+    <string name="visa_partner_blocker_partner">Здесь ограничение задаёт паспорт партнёра</string>
     <string name="visa_partner_blocker_none">Для вас обоих одинаково</string>
     <string name="visa_partner_caveat">Только по паспортам: вид на жительство и правила ЕС/Шенгена для членов семьи не учитываются.</string>
-    <string name="visa_partner_toggle">Режим пары: куда можем оба</string>
+    <string name="visa_partner_toggle">Режим партнёра: куда можем оба</string>
     <string name="visa_summary_partner">Общий ответ для обоих паспортов</string>
     <string name="visa_as_of_notice_partner">Общий ответ для обоих паспортов, данные на %1$s — перед бронированием сверься с официальным государственным источником</string>
 </resources>

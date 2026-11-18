@@ -4,17 +4,17 @@
     <!-- Passport list -->
     <string name="passport_search_places">Buscar lugares</string>
     <string name="passport_group_list">Agrupar lista</string>
-    <string name="passport_group_continent">Continentes</string>
-    <string name="passport_group_region">Regiones</string>
+    <string name="passport_group_continent">Por continente</string>
+    <string name="passport_group_region">Por región</string>
     <string name="passport_group_alphabetical">A-Z</string>
     <string name="passport_state_collapsed">Contraído</string>
     <string name="passport_state_expanded">Expandido</string>
     <string name="passport_chip_been">Visitado</string>
     <string name="passport_chip_lived">Vivido</string>
-    <string name="passport_chip_want">Pendiente</string>
+    <string name="passport_chip_want">Quiero ir</string>
     <string name="passport_mark_been">Marcar %1$s como visitado</string>
     <string name="passport_mark_lived">Marcar que he vivido en %1$s</string>
-    <string name="passport_mark_want">Marcar %1$s como pendiente</string>
+    <string name="passport_mark_want">Marcar %1$s como «Quiero ir»</string>
     <string name="passport_clear">Borrar</string>
     <string name="passport_clear_status">Borrar el estado de %1$s</string>
     <string name="passport_status_chip_desc">%1$s, estado: %2$s</string>
@@ -35,8 +35,8 @@
         <item quantity="many">%1$d de %2$d continentes</item>
         <item quantity="other">%1$d de %2$d continentes</item>
     </plurals>
-    <string name="passport_card_lived">%1$d donde viví</string>
-    <string name="passport_card_wishlist">%1$d pendientes</string>
+    <string name="passport_card_lived">Vividos: %1$d</string>
+    <string name="passport_card_wishlist">Deseados: %1$d</string>
 
     <!-- Stats screen -->
     <string name="stats_title">Estadísticas</string>
@@ -120,7 +120,7 @@
     <string name="badge_group_giants">Gigantes</string>
     <string name="badge_group_special">Especial</string>
     <string name="badge_group_lived">Vividos</string>
-    <string name="badge_group_wishlist">Pendientes</string>
+    <string name="badge_group_wishlist">Deseados</string>
 
     <!-- Badge titles and descriptions -->
     <string name="badge_count_1_title">Primer sello</string>
@@ -205,16 +205,16 @@
     <string name="badge_antarctica_desc">Pisa la Antártida.</string>
     <string name="badge_hemispheres_title">Cuatro hemisferios</string>
     <string name="badge_hemispheres_desc">Visita el norte, el sur, el este y el oeste (según el punto central de cada lugar).</string>
-    <string name="badge_lived_1_title">Vida en el extranjero</string>
-    <string name="badge_lived_3_title">Vida en %1$d lugares</string>
+    <string name="badge_lived_1_title">Vivido en el extranjero</string>
+    <string name="badge_lived_3_title">Vivido en %1$d lugares</string>
     <plurals name="badge_lived_desc">
         <item quantity="one">Marca %1$d lugar como vivido.</item>
         <item quantity="many">Marca %1$d lugares como vividos.</item>
         <item quantity="other">Marca %1$d lugares como vividos.</item>
     </plurals>
     <string name="badge_wishlist_10_title">Soñador</string>
-    <string name="badge_wishlist_10_desc">Añade %1$d lugares a tus pendientes.</string>
-    <string name="quick_add_title">Añadir rápido</string>
+    <string name="badge_wishlist_10_desc">Agrega %1$d lugares a tu lista de deseos.</string>
+    <string name="quick_add_title">Agregar rápido</string>
     <string name="quick_add_search">Buscar todos los países</string>
     <string name="quick_add_close">Cerrar</string>
     <string name="quick_add_been_desc">He estado en %1$s</string>

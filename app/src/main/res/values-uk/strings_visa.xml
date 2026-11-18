@@ -5,7 +5,7 @@
     <string name="visa_category_home">Батьківщина</string>
     <string name="visa_category_visa_free">Без візи</string>
     <string name="visa_category_eta">Дозвіл на поїздку</string>
-    <string name="visa_category_visa_on_arrival">Віза по прибутті</string>
+    <string name="visa_category_visa_on_arrival">Віза при прибутті</string>
     <string name="visa_category_e_visa">е-віза</string>
     <string name="visa_category_visa_required">Потрібна віза</string>
     <string name="visa_category_check">Перевірити вимоги</string>
@@ -15,7 +15,7 @@
     <!-- Map bands -->
     <string name="visa_band_visa_free">Без візи</string>
     <string name="visa_band_eta">ETA</string>
-    <string name="visa_band_visa_on_arrival">По прибутті</string>
+    <string name="visa_band_visa_on_arrival">При прибутті</string>
     <string name="visa_band_visa_required">Спершу віза</string>
     <string name="visa_band_check">Уточнити</string>
     <string name="visa_band_closed">Закрито</string>
@@ -38,7 +38,7 @@
     <string name="visa_summary_with_passport">%1$s (%2$s паспорт)</string>
     <string name="visa_row_been">%1$s · відвідано</string>
     <string name="visa_row_wishlist">%1$s · у списку бажань</string>
-    <string name="visa_row_check">перевір</string>
+    <string name="visa_row_check">перевірити</string>
 
     <!-- Masculine singular nominative, used after "паспорт:" -->
     <string name="visa_adjective_de">німецький</string>
@@ -57,10 +57,10 @@
     <string name="visa_empty_query">Жоден напрямок не відповідає запиту «%1$s».</string>
     <string name="visa_empty_filter">Жоден напрямок не відповідає фільтру «%1$s».</string>
     <string name="visa_empty_nothing">Нічого не знайдено.</string>
-    <string name="visa_empty_wishlist">Додайте місця до списку бажань.</string>
+    <string name="visa_empty_wishlist">Додай місця до списку бажань.</string>
     <string name="visa_empty_wishlist_filter">Жодне місце зі списку бажань не відповідає фільтру «%1$s».</string>
     <string name="visa_unavailable_title">Немає візових даних</string>
-    <string name="visa_unavailable_body">Не вдалося прочитати вбудований список віз, тому в цьому режимі немає що показати. Карта подорожей не постраждала.</string>
+    <string name="visa_unavailable_body">Не вдалося прочитати вбудований список віз, тому в цьому режимі немає що показати. Це не впливає на карту подорожей.</string>
 
     <!-- Summary card -->
     <string name="visa_summary_visa_free_of">"  без візи (усього %1$d)"</string>
@@ -84,7 +84,7 @@
     <string name="visa_partner_blocker_partner">Тут обмеження задає паспорт партнера</string>
     <string name="visa_partner_blocker_none">Для вас обох однаково</string>
     <string name="visa_partner_caveat">Лише за паспортами: посвідки на проживання та правила ЄС/Шенгену для членів родини не враховуються.</string>
-    <string name="visa_partner_toggle">Режим пари: куди можемо обоє</string>
+    <string name="visa_partner_toggle">Режим партнера: куди можемо обоє</string>
     <string name="visa_summary_partner">Спільна відповідь для обох паспортів</string>
     <string name="visa_as_of_notice_partner">Спільна відповідь для обох паспортів, дані станом на %1$s — перевір в офіційному урядовому джерелі перед бронюванням</string>
 </resources>

@@ -387,10 +387,10 @@ fun SettingsScreen(
                     },
                     onSelect = { option ->
                         showLanguageMenu = false
-                        if (option != language) {
+                        if (option != language || option == AppLanguage.PORTUGUESE) {
                             AppCompatDelegate.setApplicationLocales(
                                 if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
-                                else LocaleListCompat.forLanguageTags(option.tag),
+                                else LocaleListCompat.forLanguageTags(option.localeTag(android.content.res.Resources.getSystem().configuration.locales[0].country)),
                             )
                             TravelWidgetProvider.requestUpdate(context.applicationContext)
                         }

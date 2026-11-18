@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Machine-made Russian draft: needs a proofread by a native speaker. -->
 <resources>
-    <string name="visits_row_label">Визиты</string>
+    <string name="visits_row_label">Поездки</string>
     <string name="visits_add">Добавить</string>
     <string name="visits_undated">Без даты</string>
-    <string name="visits_dialog_title">Визиты: %1$s</string>
-    <string name="visits_pick_year">Добавить визит за</string>
+    <string name="visits_dialog_title">Поездки: %1$s</string>
+    <string name="visits_pick_year">Добавить поездку за</string>
     <string name="visits_no_date">Без даты</string>
-    <string name="visits_delete">Удалить визит</string>
+    <string name="visits_delete">Удалить поездку</string>
     <string name="visits_done">Готово</string>
-    <string name="visits_none_yet">Пока нет визитов</string>
+    <string name="visits_none_yet">Пока нет поездок</string>
     <string name="stats_visits_title">Места по годам</string>
-    <string name="stats_visits_first_recent">Первый визит: %1$d · Последний: %2$d</string>
-    <string name="backup_imported_visits">Визиты: %1$d новых, %2$d обновлено.</string>
-    <string name="settings_preview_visits">Визиты</string>
+    <string name="stats_visits_first_recent">Первая поездка: %1$d · Последняя: %2$d</string>
+    <string name="backup_imported_visits">Поездки: %1$d новых, %2$d обновлено.</string>
+    <string name="settings_preview_visits">Поездки</string>
     <string name="visits_whole_year">Весь год</string>
     <string name="visits_pick_month">Месяц (необязательно)</string>
     <string name="stats_chart_countries">Места за год</string>
-    <string name="stats_chart_cumulative">Всего к этому году</string>
+    <string name="stats_chart_cumulative">Всего к концу года</string>
     <string name="stats_chart_summary">Посещённые места по годам, с %1$d по %2$d. Всего %3$d мест к %2$d году.</string>
     <string name="stats_chart_year_detail">%1$d: мест %2$d, новых %3$d, всего %4$d</string>
     <string name="stats_chart_details_show">Показать цифры по годам</string>

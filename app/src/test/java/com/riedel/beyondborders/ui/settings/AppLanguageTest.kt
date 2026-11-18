@@ -22,4 +22,12 @@ class AppLanguageTest {
         assertEquals(AppLanguage.UKRAINIAN, AppLanguage.fromTags("uk"))
         assertEquals(AppLanguage.RUSSIAN, AppLanguage.fromTags("ru-RU"))
     }
+
+    @Test
+    fun `Portuguese asks for pt-PT on a phone set to Portugal and plain pt elsewhere`() {
+        assertEquals("pt-PT", AppLanguage.PORTUGUESE.localeTag("PT"))
+        assertEquals("pt", AppLanguage.PORTUGUESE.localeTag("BR"))
+        assertEquals("pt", AppLanguage.PORTUGUESE.localeTag(""))
+        assertEquals("de", AppLanguage.GERMAN.localeTag("PT"))
+    }
 }

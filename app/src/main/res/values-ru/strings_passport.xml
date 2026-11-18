@@ -9,11 +9,11 @@
     <string name="passport_group_alphabetical">А–Я</string>
     <string name="passport_state_collapsed">Свёрнуто</string>
     <string name="passport_state_expanded">Развёрнуто</string>
-    <string name="passport_chip_been">Был(а)</string>
-    <string name="passport_chip_lived">Жил(а)</string>
+    <string name="passport_chip_been">Посещено</string>
+    <string name="passport_chip_lived">Проживание</string>
     <string name="passport_chip_want">Хочу</string>
     <string name="passport_mark_been">Отметить «%1$s» как посещённое</string>
-    <string name="passport_mark_lived">Отметить «%1$s» как место, где ты жил(а)</string>
+    <string name="passport_mark_lived">Отметить «%1$s» как место проживания</string>
     <string name="passport_mark_want">Отметить «%1$s» как желаемое</string>
     <string name="passport_clear">Сбросить</string>
     <string name="passport_clear_status">Сбросить статус: %1$s</string>
@@ -24,7 +24,7 @@
     <string name="passport_no_match_query">Нет мест по запросу «%1$s».</string>
     <string name="passport_no_match_filter">Нет мест для фильтра «%1$s».</string>
     <string name="passport_nothing_matches">Ничего не найдено.</string>
-    <string name="passport_card_action">Континенты, регионы и группы</string>
+    <string name="passport_card_action">Открыть континенты, регионы и группы</string>
     <plurals name="passport_card_total">
         <item quantity="one">из %1$d места · %2$d%%</item>
         <item quantity="few">из %1$d мест · %2$d%%</item>
@@ -37,7 +37,7 @@
         <item quantity="many">%1$d из %2$d континентов</item>
         <item quantity="other">%1$d из %2$d континента</item>
     </plurals>
-    <string name="passport_card_lived">Жил(а): %1$d</string>
+    <string name="passport_card_lived">Проживание: %1$d</string>
     <string name="passport_card_wishlist">В списке желаний: %1$d</string>
 
     <!-- Stats screen -->
@@ -54,7 +54,7 @@
     <string name="stats_collapse">Свернуть</string>
     <string name="stats_expand">Развернуть</string>
     <string name="stats_bar_details">Показать подробности: %1$s</string>
-    <string name="stats_dialog_been">Был(а) (%1$d)</string>
+    <string name="stats_dialog_been">Посещено (%1$d)</string>
     <string name="stats_dialog_missing">Осталось (%1$d)</string>
     <string name="stats_dialog_close">Закрыть</string>
 
@@ -124,7 +124,7 @@
     <string name="badge_group_islands">Островные государства</string>
     <string name="badge_group_giants">Гиганты</string>
     <string name="badge_group_special">Особые</string>
-    <string name="badge_group_lived">Жил(а)</string>
+    <string name="badge_group_lived">Проживание</string>
     <string name="badge_group_wishlist">Список желаний</string>
 
     <!-- Badge titles and descriptions -->
@@ -225,21 +225,21 @@
     <string name="badge_hemispheres_title">Четыре полушария</string>
     <string name="badge_hemispheres_desc">Побывай на севере, юге, востоке и западе (по центральной точке каждого места).</string>
     <string name="badge_lived_1_title">Жизнь за границей</string>
-    <string name="badge_lived_3_title">Жил(а) в %1$d местах</string>
+    <string name="badge_lived_3_title">Проживание в %1$d местах</string>
     <plurals name="badge_lived_desc">
-        <item quantity="one">Отметь %1$d место как «Жил(а)».</item>
-        <item quantity="few">Отметь %1$d места как «Жил(а)».</item>
-        <item quantity="many">Отметь %1$d мест как «Жил(а)».</item>
-        <item quantity="other">Отметь %1$d места как «Жил(а)».</item>
+        <item quantity="one">Отметь %1$d место как «Проживание».</item>
+        <item quantity="few">Отметь %1$d места как «Проживание».</item>
+        <item quantity="many">Отметь %1$d мест как «Проживание».</item>
+        <item quantity="other">Отметь %1$d места как «Проживание».</item>
     </plurals>
     <string name="badge_wishlist_10_title">Мечтатель</string>
     <string name="badge_wishlist_10_desc">Добавь %1$d мест в список желаний.</string>
     <string name="quick_add_title">Быстрое добавление</string>
     <string name="quick_add_search">Поиск по всем странам</string>
     <string name="quick_add_close">Закрыть</string>
-    <string name="quick_add_been_desc">Был(а) в: %1$s</string>
+    <string name="quick_add_been_desc">Посещено: %1$s</string>
     <string name="passport_start_title">Начни с нескольких отметок</string>
-    <string name="passport_start_body">Отметь сразу все страны, где ты был(а), или нажми на любое место на карте.</string>
+    <string name="passport_start_body">Отметь сразу все посещённые страны или нажми на любое место на карте.</string>
     <string name="passport_pick_title">Выбери паспорт, чтобы увидеть визовые требования</string>
     <string name="passport_card_stats_link">Статистика и достижения</string>
 </resources>
