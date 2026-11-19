@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.places
 
+import kotlin.math.ln
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -8,6 +9,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.core.Haptics
 import com.riedel.beyondborders.data.place.INFORMAL_REGIONS
+import com.riedel.beyondborders.data.place.Bounds
 import com.riedel.beyondborders.data.place.Place
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.place.PlaceStatus
@@ -215,6 +217,13 @@ class PlacesViewModel(
      */
     var mapCamera: MapCamera? = null
 
+    /**
+     * The passport the camera was last centred for, or null if it never was this process.
+     * Like [mapCamera] a plain var: it only gates a one-shot, so tab switches (which rebuild
+     * the map) do not re-centre, while a passport change in Settings does.
+     */
+    var homeCameraFor: String? = null
+
     private val rawPlaces = MutableStateFlow<List<Place>>(emptyList())
 
     /**
@@ -279,6 +288,10 @@ class PlacesViewModel(
     /** The partner's passport code while their registry is loaded; the map control shows its flag. */
     val partnerPassport: StateFlow<String?> =
         _partnerVisa.map { it?.passport }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The user's own passport code, null until chosen and loaded; the map centres on its country. */
+    val homePassport: StateFlow<String?> =
+        _visa.map { it?.passport }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /**
      * What every visa surface reads. Normally the user's own registries; in partner mode a
@@ -1594,4 +1607,38 @@ internal fun reviewStateAfter(state: ReviewState, choice: ReviewChoice, nowMs: L
         lastAskedAtMs = nowMs,
         done = choice != ReviewChoice.LATER || asks >= REVIEW_MAX_ASKS,
     )
+}
+
+/**
+ * The "slightly zoomed" camera on a home country. MapLibre zoom 0 shows the world 512 dp wide, so
+ * the zoom at which the box spans about 55% of a 400 dp phone is log2(220 * 360 / (512 * span)).
+ * Latitude counts 1.5 times because Mercator stretches it. Clamped so a small country is not a
+ * tight fit and a huge one (Russia) falls back to nearly the world view. A box with west > east
+ * crosses the antimeridian, so its longitude span wraps instead of going negative.
+ */
+internal fun homeCamera(bounds: Bounds): MapCamera {
+    val rawLon = bounds.east - bounds.west
+    val lonSpan = if (rawLon < 0) rawLon + 360.0 else rawLon
+    val latSpan = bounds.north - bounds.south
+    var lon = bounds.west + lonSpan / 2
+    if (lon > 180.0) lon -= 360.0
+    val lat = (bounds.north + bounds.south) / 2
+    val span = maxOf(lonSpan, latSpan * 1.5)
+    val zoom = if (span <= 0.0) HOME_ZOOM_MAX else ln(220.0 * 360.0 / (512.0 * span)) / ln(2.0)
+    return MapCamera(lat, lon, zoom.coerceIn(HOME_ZOOM_MIN, HOME_ZOOM_MAX))
+}
+
+private const val HOME_ZOOM_MIN = 1.0
+private const val HOME_ZOOM_MAX = 4.0
+
+/**
+ * Whether the map should glide to the home country now. Yes when the passport differs from the
+ * one last centred for (a change in Settings), or on the first run if the user has not moved the
+ * map yet. "Not moved" is a saved camera that is absent or still near the world view (zoom below
+ * 1), not an exact match for the starting camera: MapLibre may report that one a hair off.
+ */
+internal fun shouldCentreOnHome(centredFor: String?, code: String, saved: MapCamera?): Boolean = when {
+    centredFor == code -> false
+    centredFor != null -> true
+    else -> saved == null || saved.zoom < HOME_ZOOM_MIN
 }
