@@ -1611,7 +1611,7 @@ internal fun reviewStateAfter(state: ReviewState, choice: ReviewChoice, nowMs: L
 
 /**
  * The "slightly zoomed" camera on a home country. MapLibre zoom 0 shows the world 512 dp wide, so
- * the zoom at which the box spans about 55% of a 400 dp phone is log2(220 * 360 / (512 * span)).
+ * the zoom at which the box spans about a quarter of a 400 dp phone is log2(100 * 360 / (512 * span)).
  * Latitude counts 1.5 times because Mercator stretches it. Clamped so a small country is not a
  * tight fit and a huge one (Russia) falls back to nearly the world view. A box with west > east
  * crosses the antimeridian, so its longitude span wraps instead of going negative.
@@ -1624,12 +1624,12 @@ internal fun homeCamera(bounds: Bounds): MapCamera {
     if (lon > 180.0) lon -= 360.0
     val lat = (bounds.north + bounds.south) / 2
     val span = maxOf(lonSpan, latSpan * 1.5)
-    val zoom = if (span <= 0.0) HOME_ZOOM_MAX else ln(220.0 * 360.0 / (512.0 * span)) / ln(2.0)
+    val zoom = if (span <= 0.0) HOME_ZOOM_MAX else ln(100.0 * 360.0 / (512.0 * span)) / ln(2.0)
     return MapCamera(lat, lon, zoom.coerceIn(HOME_ZOOM_MIN, HOME_ZOOM_MAX))
 }
 
 private const val HOME_ZOOM_MIN = 1.0
-private const val HOME_ZOOM_MAX = 4.0
+private const val HOME_ZOOM_MAX = 3.0
 
 /**
  * Whether the map should glide to the home country now. Yes when the passport differs from the

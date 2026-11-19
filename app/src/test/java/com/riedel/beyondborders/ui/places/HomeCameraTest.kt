@@ -10,7 +10,7 @@ class HomeCameraTest {
 
     @Test
     fun `Germany gets a slight zoom around its box`() {
-        assertEquals(3.7, homeCamera(germany).zoom, 0.3)
+        assertEquals(2.6, homeCamera(germany).zoom, 0.3)
     }
 
     @Test
@@ -22,7 +22,7 @@ class HomeCameraTest {
 
     @Test
     fun `Netherlands is clamped to the maximum zoom`() {
-        assertEquals(4.0, homeCamera(Bounds(3.3, 50.75, 7.2, 53.55)).zoom, 0.0)
+        assertEquals(3.0, homeCamera(Bounds(3.3, 50.75, 7.2, 53.55)).zoom, 0.0)
     }
 
     @Test
@@ -34,14 +34,14 @@ class HomeCameraTest {
     fun `a box across the antimeridian wraps its longitude span`() {
         val c = homeCamera(Bounds(170.0, -20.0, -170.0, -10.0))
         assertEquals(180.0, Math.abs(c.longitude), 0.001)
-        assertTrue(c.zoom >= 1.0 && c.zoom <= 4.0)
+        assertTrue(c.zoom >= 1.0 && c.zoom <= 3.0)
     }
 
     @Test
     fun `a zero span does not produce Infinity or NaN`() {
         val c = homeCamera(Bounds(10.0, 50.0, 10.0, 50.0))
         assertTrue(c.zoom.isFinite())
-        assertEquals(4.0, c.zoom, 0.0)
+        assertEquals(3.0, c.zoom, 0.0)
     }
 
     @Test
