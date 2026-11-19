@@ -134,10 +134,14 @@ internal fun StatsHero(
         ) {
             val fraction = if (badgesTotal == 0) 0f else badgesUnlocked.toFloat() / badgesTotal
             Ring(SmallRingDiameter, SmallRingStrokeWidth, fraction, track, progress)
+            // fill = false: the ring keeps its room and the row stays as narrow as its text, so
+            // a long translation wraps inside a centred row instead of hugging the left edge.
             Text(
                 badgesLine,
                 style = MaterialTheme.typography.bodyMedium,
                 color = onContainer,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }

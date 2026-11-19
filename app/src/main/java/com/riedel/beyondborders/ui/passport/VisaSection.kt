@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -124,11 +125,17 @@ internal fun LazyListScope.visaSection(
                 Row(
                     Modifier
                         .fillMaxWidth()
+                        .heightIn(min = 48.dp)
                         .toggleable(value = partnerMode, role = Role.Switch, onValueChange = onPartnerMode),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.visa_partner_toggle), style = MaterialTheme.typography.bodyLarge)
+                    // Weight, so a long label wraps instead of pushing the switch off the right edge.
+                    Text(
+                        stringResource(R.string.visa_partner_toggle),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    )
                     Switch(checked = partnerMode, onCheckedChange = null)
                 }
                 if (partnerMode) {
