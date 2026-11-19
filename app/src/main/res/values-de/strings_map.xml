@@ -99,7 +99,7 @@
     </plurals>
     <string name="places_least_covered">%1$s – %2$d von %3$d</string>
     <plurals name="places_wishlist_easy">
-        <item quantity="one">Für %1$d von %2$d Orten auf deiner Wunschliste brauchst du keinen Botschaftstermin</item>
+        <item quantity="one">Für %1$d von %2$d Ort auf deiner Wunschliste brauchst du keinen Botschaftstermin</item>
         <item quantity="other">Für %1$d von %2$d Orten auf deiner Wunschliste brauchst du keinen Botschaftstermin</item>
     </plurals>
     <string name="places_coverage">%1$d%% der Landfläche, %2$d%% der Bevölkerung der Welt</string>

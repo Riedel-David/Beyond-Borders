@@ -146,7 +146,7 @@
         <item quantity="other">Visite au moins un lieu sur %1$d continents.</item>
     </plurals>
     <string name="badge_continent_complete_title">%1$s au complet</string>
-    <string name="badge_continent_complete_desc">Tous les lieux peuplés visités : %1$s.</string>
+    <string name="badge_continent_complete_desc">Visite tous les lieux peuplés : %1$s.</string>
     <string name="badge_region_desc">Tous les lieux peuplés visités : %1$s (%2$d au total).</string>
     <string name="badge_group_desc">Visite tous les lieux peuplés du groupe « %1$s » : %2$s.</string>
     <plurals name="badge_dependencies_title">

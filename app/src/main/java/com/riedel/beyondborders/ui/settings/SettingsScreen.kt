@@ -390,7 +390,12 @@ fun SettingsScreen(
                         if (option != language || option == AppLanguage.PORTUGUESE) {
                             AppCompatDelegate.setApplicationLocales(
                                 if (option == AppLanguage.SYSTEM) LocaleListCompat.getEmptyLocaleList()
-                                else LocaleListCompat.forLanguageTags(option.localeTag(android.content.res.Resources.getSystem().configuration.locales[0].country)),
+                                else LocaleListCompat.forLanguageTags(option.localeTag(
+                                    AppLanguage.portugueseRegion(
+                                        android.content.res.Resources.getSystem().configuration.locales
+                                            .let { l -> (0 until l.size()).map { l[it].language to l[it].country } },
+                                    ),
+                                )),
                             )
                             TravelWidgetProvider.requestUpdate(context.applicationContext)
                         }

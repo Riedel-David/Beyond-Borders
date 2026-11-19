@@ -581,6 +581,17 @@ internal enum class AppLanguage(val tag: String) {
 
     companion object {
         /**
+         * The region to hand [localeTag]: the region of the *first Portuguese* system locale, so a
+         * phone ordered "English, Português (Portugal)" gets European Portuguese while "pt-BR,
+         * ..., pt-PT" stays Brazilian. With no Portuguese locale at all, the first locale's own
+         * region, as before (a phone set to Portugal asks for pt-PT). Each locale is a
+         * (language, country) pair; kept pure so it needs no Resources on the host JVM.
+         */
+        fun portugueseRegion(systemLocales: List<Pair<String, String>>): String =
+            (systemLocales.firstOrNull { (lang, _) -> lang == "pt" } ?: systemLocales.firstOrNull())
+                ?.second.orEmpty()
+
+        /**
          * Maps the language tags of the current application locales ("" when unset,
          * possibly "de-DE") onto an option. A language the picker does not offer, such
          * as one chosen in the system's own screen, reads as [SYSTEM].
