@@ -10,7 +10,7 @@
     <string name="passport_state_collapsed">Згорнуто</string>
     <string name="passport_state_expanded">Розгорнуто</string>
     <string name="passport_chip_been">Відвідано</string>
-    <string name="passport_chip_lived">Прожито</string>
+    <string name="passport_chip_lived">Проживання</string>
     <string name="passport_chip_want">Хочу</string>
     <string name="passport_mark_been">Позначити «%1$s» як відвідане</string>
     <string name="passport_mark_lived">Позначити «%1$s» як місце проживання</string>
@@ -37,7 +37,7 @@
         <item quantity="many">%1$d із %2$d континентів</item>
         <item quantity="other">%1$d із %2$d континенту</item>
     </plurals>
-    <string name="passport_card_lived">Прожито: %1$d</string>
+    <string name="passport_card_lived">Проживання: %1$d</string>
     <string name="passport_card_wishlist">У списку бажань: %1$d</string>
 
     <!-- Stats screen -->
@@ -124,7 +124,7 @@
     <string name="badge_group_islands">Острівні держави</string>
     <string name="badge_group_giants">Гіганти</string>
     <string name="badge_group_special">Особливі</string>
-    <string name="badge_group_lived">Прожито</string>
+    <string name="badge_group_lived">Проживання</string>
     <string name="badge_group_wishlist">Список бажань</string>
 
     <!-- Badge titles and descriptions -->
@@ -155,7 +155,7 @@
         <item quantity="other">Побувай на %1$d континенту.</item>
     </plurals>
     <string name="badge_continent_complete_title">Уся %1$s</string>
-    <string name="badge_continent_complete_desc">%1$s: побувай в усіх населених місцях.</string>
+    <string name="badge_continent_complete_desc">Побувай в усіх населених місцях: %1$s.</string>
     <string name="badge_region_desc">Побувай в усіх населених місцях регіону «%1$s» (усього %2$d).</string>
     <string name="badge_group_desc">Побувай в усіх населених місцях групи «%1$s»: %2$s.</string>
     <plurals name="badge_dependencies_title">
@@ -239,7 +239,7 @@
     <string name="quick_add_close">Закрити</string>
     <string name="quick_add_been_desc">Відвідано: %1$s</string>
     <string name="passport_start_title">Почни з кількох позначок</string>
-    <string name="passport_start_body">Познач одразу всі країни, де ти був(ла), або торкнись будь-якого місця на карті.</string>
+    <string name="passport_start_body">Познач одразу всі відвідані країни або торкнись будь-якого місця на карті.</string>
     <string name="passport_pick_title">Обери паспорт, щоб побачити візові вимоги</string>
     <string name="passport_card_stats_link">Статистика й досягнення</string>
 </resources>

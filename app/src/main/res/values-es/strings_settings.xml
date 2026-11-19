@@ -26,7 +26,7 @@
     <string name="recovery_wipe_failed">No se pudieron borrar los datos y no se puede garantizar su estado; inténtalo de nuevo o borra el almacenamiento de la app en los ajustes de Android.</string>
     <string name="recovery_delete_start_fresh">Borrar los datos y empezar de cero</string>
     <string name="recovery_confirm_title">¿Borrar todo lo que has marcado?</string>
-    <string name="recovery_confirm_saved">Se guardó una copia que podrás importar más tarde. Todos los lugares marcados desaparecerán de la propia app.</string>
+    <string name="recovery_confirm_saved">Guardaste una copia que podrás importar más tarde. Todos los lugares marcados desaparecerán de la propia app.</string>
     <string name="recovery_confirm_unsaved">No se guardó ninguna copia. Todos los lugares marcados se perderán definitivamente, sin opción de deshacer.</string>
     <string name="recovery_delete">Borrar</string>
     <string name="recovery_keep">Conservar</string>
@@ -48,7 +48,7 @@
     <string name="settings_passport_title">Pasaporte</string>
     <string name="settings_passport_detail">Los datos de visado del mapa y de la pestaña Pasaporte corresponden a este pasaporte.</string>
     <string name="settings_second_passport">Segundo pasaporte</string>
-    <string name="settings_add_second_passport">Añadir un segundo pasaporte</string>
+    <string name="settings_add_second_passport">Agregar un segundo pasaporte</string>
     <string name="settings_dual_hint">Con doble nacionalidad, se aplica en cada caso el pasaporte con la entrada más sencilla</string>
     <string name="settings_remove_second_passport">Quitar el segundo pasaporte</string>
 
@@ -59,7 +59,7 @@
     <string name="settings_colours_detail">Si eliges un color que ya está en uso, ambos se intercambian.</string>
     <string name="settings_status_been">Visitado</string>
     <string name="settings_status_lived">Vivido</string>
-    <string name="settings_status_want">Pendiente</string>
+    <string name="settings_status_want">Quiero ir</string>
     <string name="settings_colours_reset">Restablecer colores predeterminados</string>
     <!-- Accessibility name of a colour swatch: status, then colour -->
     <string name="settings_swatch_description">%1$s: %2$s</string>
@@ -106,7 +106,7 @@
     <string name="settings_cancel">Cancelar</string>
 
     <string name="settings_import_title">¿Importar este archivo?</string>
-    <string name="settings_preview_added">Añadidos</string>
+    <string name="settings_preview_added">Agregados</string>
     <string name="settings_preview_updated">Actualizados</string>
     <string name="settings_preview_skipped">Omitidos (ya al día)</string>
     <string name="settings_preview_sample">p. ej. %1$s.</string>
@@ -189,7 +189,7 @@
         <item quantity="other">%d lugares actualizados importados.</item>
     </plurals>
     <!-- Both kinds at once, so there are always at least two places -->
-    <string name="backup_imported_both">Importados: nuevos, %1$d; actualizados, %2$d.</string>
+    <string name="backup_imported_both">Importados: %1$d nuevos y %2$d actualizados.</string>
     <string name="backup_already_current">Ya al día: %1$d.</string>
     <plurals name="backup_skipped_codes">
         <item quantity="one">%1$d código desconocido omitido: %2$s.</item>
@@ -236,8 +236,8 @@
     <string name="review_never">No volver a preguntar</string>
     <string name="settings_rate_play">Valorar en Google Play</string>
 
-    <string name="settings_partner_passport">Pasaporte de tu pareja de viaje</string>
-    <string name="settings_add_partner_passport">Añadir pasaporte de la pareja</string>
-    <string name="settings_remove_partner_passport">Quitar pasaporte de la pareja</string>
-    <string name="settings_partner_hint">Así el mapa y la lista de visados muestran adónde podéis viajar fácilmente los dos. Solo se puede indicar un pasaporte de acompañante: elige el menos restrictivo para el viaje; un segundo pasaporte no se combina. La app no conoce los permisos de residencia ni las normas de la UE/Schengen para familiares.</string>
+    <string name="settings_partner_passport">Pasaporte de tu acompañante</string>
+    <string name="settings_add_partner_passport">Agregar pasaporte del acompañante</string>
+    <string name="settings_remove_partner_passport">Quitar pasaporte del acompañante</string>
+    <string name="settings_partner_hint">Así el mapa y la lista de visados muestran adónde pueden viajar fácilmente los dos. Solo se puede indicar un pasaporte de acompañante de viaje: elige el menos restrictivo para el viaje; un segundo pasaporte no se combina. La app no conoce los permisos de residencia ni las normas de la UE/Schengen para familiares.</string>
 </resources>

@@ -8,7 +8,7 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Тут %1$d місць. Території на кшталт Гренландії чи Пуерто-Рико враховуються окремо, не разом із країною, до якої вони належать.</string>
+    <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Місць на карті: %1$d. Території на кшталт Гренландії чи Пуерто-Рико враховуються окремо, не разом із країною, до якої вони належать.</string>
     <string name="welcome_intro_bare">Познач, де вже вдалося побувати, де довелося жити і куди мрієш поїхати.</string>
     <string name="welcome_privacy">Ми не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису чи сервера. Застосунок лише завантажує публічні оновлення даних про візи й нічого не надсилає про тебе. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
     <string name="welcome_passport_hint">Візові вимоги показано для одного паспорта за раз. Обери свій — згодом його можна змінити в налаштуваннях.</string>
@@ -58,7 +58,7 @@
     <string name="settings_colours_title">Кольори карти</string>
     <string name="settings_colours_detail">Якщо вибрати колір, що вже використовується, два кольори поміняються місцями.</string>
     <string name="settings_status_been">Відвідано</string>
-    <string name="settings_status_lived">Прожито</string>
+    <string name="settings_status_lived">Проживання</string>
     <string name="settings_status_want">Хочу</string>
     <string name="settings_colours_reset">Скинути кольори до типових</string>
     <!-- Accessibility name of a colour swatch: status, then colour -->
@@ -80,7 +80,7 @@
 
     <string name="settings_background_title">Тло карти</string>
     <string name="settings_background_detail">Океан і непозначена суша.</string>
-    <string name="settings_base_default">Типове</string>
+    <string name="settings_base_default">Стандартне</string>
     <string name="settings_base_slate">Сланцеве</string>
     <string name="settings_base_sand">Піщане</string>
 
@@ -97,7 +97,7 @@
     <string name="settings_visa_checking">Перевірка…</string>
     <string name="settings_visa_result_current">Дані про візи вже актуальні.</string>
     <string name="settings_visa_result_updated">Дані про візи оновлено, і вони вже використовуються.</string>
-    <string name="settings_visa_result_offline">Не вдалося зв\'язатися із сервером. Перевірте з\'єднання або повторіть пізніше.</string>
+    <string name="settings_visa_result_offline">Не вдалося звʼязатися із сервером. Перевір зʼєднання або повтори пізніше.</string>
     <string name="settings_visa_result_unavailable">Оновлення зараз недоступне.</string>
     <string name="settings_visa_auto">Оновлювати дані про візи автоматично</string>
     <string name="settings_visa_last_checked">Остання перевірка: %1$s</string>
@@ -241,14 +241,14 @@
     <string name="welcome_skip">Пропустити</string>
     <string name="settings_passport_unset">Не вибрано</string>
     <string name="review_title">Подобається Beyond Borders?</string>
-    <string name="review_body">Позначено місць: %1$d. Beyond Borders безкоштовний, без реклами та стеження, тому оцінка в Google Play допомагає іншим мандрівникам його знайти. Кнопка відкриває сторінку в Play: торкніться там зірочок.</string>
+    <string name="review_body">Позначено місць: %1$d. Beyond Borders безкоштовний, без реклами та стеження, тому оцінка в Google Play допомагає іншим мандрівникам його знайти. Кнопка відкриває сторінку в Play: торкнись там зірочок.</string>
     <string name="review_rate">Оцінити</string>
     <string name="review_later">Пізніше</string>
     <string name="review_never">Більше не питати</string>
     <string name="settings_rate_play">Оцінити в Google Play</string>
 
-    <string name="settings_partner_passport">Паспорт супутника або супутниці</string>
+    <string name="settings_partner_passport">Паспорт партнера</string>
     <string name="settings_add_partner_passport">Додати паспорт партнера</string>
     <string name="settings_remove_partner_passport">Прибрати паспорт партнера</string>
-    <string name="settings_partner_hint">Карта й список віз покажуть, куди ви обоє можете легко поїхати. Можна вказати лише один паспорт супутника: оберіть найменш обмежувальний для поїздки; другий паспорт не поєднується з ним. Посвідки на проживання та правила ЄС/Шенгену для членів родини застосунку невідомі.</string>
+    <string name="settings_partner_hint">Карта й список віз покажуть, куди ви обоє можете легко поїхати. Можна вказати лише один паспорт партнера: обери найменш обмежувальний для поїздки; другий паспорт не поєднується з ним. Посвідки на проживання та правила ЄС/Шенгену для членів родини застосунку невідомі.</string>
 </resources>

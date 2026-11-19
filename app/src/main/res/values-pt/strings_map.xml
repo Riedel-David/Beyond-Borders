@@ -18,8 +18,8 @@
     <string name="map_legend_chip">%1$s %2$d</string>
     <string name="map_legend_nudge">Toque em um país e escolha Visitei, Morei ou Quero ir</string>
     <string name="map_legend_visited">%1$d visitados</string>
-    <string name="map_legend_lived">%1$d onde morei</string>
-    <string name="map_legend_wishlisted">%1$d na lista de desejos</string>
+    <string name="map_legend_lived">Morei em %1$d</string>
+    <string name="map_legend_wishlisted">%1$d desejados</string>
     <string name="map_legend_no_data">%1$d sem dados</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
     <string name="map_legend_count_labeled">%1$d %2$s</string>
@@ -38,8 +38,8 @@
     </plurals>
 
     <!-- Map: region legend and card -->
-    <string name="map_region_legend_official">Cada cor é uma região; mais intensa = mais visitada</string>
-    <string name="map_region_legend_informal">Cada cor é um grupo; mais intensa = mais visitado</string>
+    <string name="map_region_legend_official">Cada cor é uma região; quanto mais intensa, mais visitada</string>
+    <string name="map_region_legend_informal">Cada cor é um grupo; quanto mais intensa, mais visitado</string>
     <string name="map_region_done_official">%1$d de %2$d regiões concluídas</string>
     <string name="map_region_done_informal">%1$d de %2$d grupos concluídos</string>
     <string name="map_region_card_done">%1$d / %2$d visitados</string>
@@ -91,20 +91,20 @@
     <string name="places_mode_travel">Onde já estive</string>
     <string name="places_mode_visa">Aonde posso ir</string>
     <string name="places_visa_filter_all">Todos</string>
-    <string name="places_visa_filter_easy">Entrada fácil</string>
-    <string name="places_visa_filter_wishlist">Minha lista de desejos</string>
+    <string name="places_visa_filter_easy">Sem embaixada</string>
+    <string name="places_visa_filter_wishlist">Desejos</string>
     <string name="places_visa_filter_long_stay">90+ dias</string>
     <string name="places_section_uninhabited">Desabitados</string>
     <plurals name="places_nudge">
-        <item quantity="one">Falta %1$d lugar para concluir a %2$s</item>
-        <item quantity="many">Faltam %1$d lugares para concluir a %2$s</item>
-        <item quantity="other">Faltam %1$d lugares para concluir a %2$s</item>
+        <item quantity="one">Falta %1$d lugar para concluir: %2$s</item>
+        <item quantity="many">Faltam %1$d lugares para concluir: %2$s</item>
+        <item quantity="other">Faltam %1$d lugares para concluir: %2$s</item>
     </plurals>
     <string name="places_least_covered">%1$s: %2$d de %3$d</string>
     <plurals name="places_wishlist_easy">
-        <item quantity="one">%1$d de %2$d lugar desejado dispensa embaixada</item>
-        <item quantity="many">%1$d de %2$d lugares desejados dispensa embaixada</item>
-        <item quantity="other">%1$d de %2$d lugares desejados dispensam embaixada</item>
+        <item quantity="one">Sem embaixada: %1$d de %2$d na lista de desejos</item>
+        <item quantity="many">Sem embaixada: %1$d de %2$d na lista de desejos</item>
+        <item quantity="other">Sem embaixada: %1$d de %2$d na lista de desejos</item>
     </plurals>
     <string name="places_coverage">%1$d%% da área terrestre do mundo, %2$d%% da população</string>
 
@@ -125,11 +125,11 @@
     <string name="widget_cfg_background_transparent">Transparente</string>
     <string name="widget_cfg_preview_title">Tamanho da prévia</string>
     <string name="widget_cfg_add">Adicionar widget</string>
-    <string name="map_quick_add">Adição rápida</string>
+    <string name="map_quick_add">Adicionar rápido</string>
 
-    <string name="map_partner_mode">Modo parceiro</string>
+    <string name="map_partner_mode">Modo acompanhante</string>
     <string name="map_partner_state_on">Ativado</string>
     <string name="map_partner_state_off">Desativado</string>
-    <string name="map_legend_partner">Para onde vocês dois podem ir</string>
+    <string name="map_legend_partner">Para onde os dois podem ir</string>
     <string name="map_no_data_partner">Não há resposta para pelo menos um dos dois passaportes — consulte as fontes oficiais antes de viajar.</string>
 </resources>

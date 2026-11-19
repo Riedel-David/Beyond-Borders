@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advice_link">Ver os avisos de viagem do governo do Reino Unido (FCDO)</string>
+    <string name="advice_note">Abre um site externo no navegador. A app não envia nada.</string>
+    <string name="advice_no_browser">Nenhum navegador encontrado para abrir a ligação.</string>
+</resources>

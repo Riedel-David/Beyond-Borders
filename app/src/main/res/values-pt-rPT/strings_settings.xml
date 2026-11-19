@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made European Portuguese (pt-PT) draft: needs a proofread by a native speaker. -->
+<resources>
+    <!-- Root: bottom navigation tabs -->
+    <string name="root_tab_map">Mapa</string>
+    <string name="root_tab_passport">Passaporte</string>
+    <string name="root_tab_settings">Definições</string>
+
+    <!-- Welcome -->
+    <string name="welcome_title">Beyond Borders</string>
+    <string name="welcome_intro">Marca os lugares onde já estiveste ou moraste e aonde queres ir — num mapa com %1$d lugares. Territórios como a Groenlândia ou Porto Rico contam à parte, separados do país a que pertencem.</string>
+    <string name="welcome_intro_bare">Marca os lugares onde já estiveste ou moraste e aonde queres ir.</string>
+    <string name="welcome_privacy">Nada do que marcas nos é enviado. Sem conta, sem servidor. A app só descarrega atualizações públicas dos dados de visto e não envia nada sobre ti. (A cópia de segurança do próprio Android ainda pode incluir estes dados, se estiver ativada.)</string>
+    <string name="welcome_passport_hint">Os requisitos de visto valem para um passaporte por vez. Escolhe o teu — podes mudar mais tarde nas Definições.</string>
+    <string name="welcome_get_started">Começar</string>
+
+    <!-- Database recovery -->
+    <string name="recovery_title">Não foi possível abrir os teus dados de viagem</string>
+    <string name="recovery_explanation">Esta versão do Beyond Borders não sabe ler os dados que já estão no teu telemóvel. Isto costuma acontecer quando uma versão mais antiga da app é instalada por cima dos dados de uma mais recente.</string>
+    <string name="recovery_reassurance">Nada foi apagado e a app não apaga nada sozinha. Instalar de novo a versão mais recente deve abrir tudo normalmente. Se não resultar, guarda primeiro uma cópia dos dados — poderá ser lida mais tarde, e é a única cópia que existe neste telemóvel.</string>
+    <string name="recovery_save_copy">Guardar uma cópia</string>
+    <string name="recovery_no_database">Não há ficheiro de base de dados para copiar.</string>
+    <string name="recovery_saved">Guardado.</string>
+    <string name="recovery_save_failed">Não foi possível guardar: %1$s</string>
+    <string name="recovery_open_failed">Não foi possível abrir o ficheiro escolhido.</string>
+    <string name="recovery_wipe_failed">Não foi possível apagar os dados. Os dados podem ter ficado num estado incompleto; tenta de novo ou limpa o armazenamento da app nas definições do Android.</string>
+    <string name="recovery_delete_start_fresh">Apagar os dados e começar do zero</string>
+    <string name="recovery_confirm_title">Apagar tudo o que marcaste?</string>
+    <string name="recovery_confirm_saved">Guardaste uma cópia, por isso os dados poderão ser lidos mais tarde. Todos os lugares que marcaste desaparecerão da própria app.</string>
+    <string name="recovery_confirm_unsaved">Não guardaste uma cópia. Todos os lugares que já marcaste serão perdidos para sempre e não é possível desfazer.</string>
+    <string name="recovery_delete">Apagar</string>
+    <string name="recovery_keep">Manter</string>
+
+    <!-- Settings: sections -->
+    <string name="settings_title">Definições</string>
+    <string name="settings_appearance_title">Aparência</string>
+    <string name="settings_appearance_detail">Segue o sistema, a menos que escolhas um tema.</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Escuro</string>
+    <string name="settings_pure_black">Preto puro</string>
+    <string name="settings_pure_black_detail">Para ecrãs OLED</string>
+
+    <!-- Language -->
+    <string name="settings_language_title">Idioma</string>
+    <string name="settings_language_system">Predefinição do sistema</string>
+
+    <string name="settings_passport_title">Passaporte</string>
+    <string name="settings_passport_detail">As respostas de visto no mapa e no separador Passaporte valem para este passaporte.</string>
+    <string name="settings_second_passport">Segundo passaporte</string>
+    <string name="settings_add_second_passport">Adicionar segundo passaporte</string>
+    <string name="settings_dual_hint">Quem tem dupla nacionalidade vê a resposta mais fácil entre os dois passaportes</string>
+    <string name="settings_remove_second_passport">Remover segundo passaporte</string>
+
+    <string name="settings_haptics_title">Vibração</string>
+    <string name="settings_haptics_toggle">Vibrar ao marcar</string>
+
+    <string name="settings_colours_title">Cores do mapa</string>
+    <string name="settings_colours_detail">Escolher uma cor que já está em utilização troca as duas.</string>
+    <string name="settings_status_been">Visitei</string>
+    <string name="settings_status_lived">Morei</string>
+    <string name="settings_status_want">Quero ir</string>
+    <string name="settings_colours_reset">Repor cores predefinidas</string>
+    <!-- Accessibility name of a colour swatch: status, then colour -->
+    <string name="settings_swatch_description">%1$s: %2$s</string>
+    <string name="settings_hue_azure">Azul</string>
+    <string name="settings_hue_teal">Verde-azulado</string>
+    <string name="settings_hue_green">Verde</string>
+    <string name="settings_hue_rose">Rosa</string>
+    <string name="settings_hue_violet">Violeta</string>
+    <string name="settings_hue_amber">Âmbar</string>
+
+    <string name="settings_counting_title">Contagem de lugares</string>
+    <string name="settings_counting_detail">A base de contagem usada no separador Passaporte.</string>
+    <string name="settings_denominator_all">Todos os %1$d</string>
+    <string name="settings_denominator_un">%1$d da ONU</string>
+    <string name="settings_denominator_all_bare">Todos</string>
+    <string name="settings_denominator_un_bare">ONU</string>
+    <string name="settings_denominator_inhabited">Habitados</string>
+
+    <string name="settings_background_title">Fundo do mapa</string>
+    <string name="settings_background_detail">Oceano e terra sem marcação.</string>
+    <string name="settings_base_default">Predefinido</string>
+    <string name="settings_base_slate">Ardósia</string>
+    <string name="settings_base_sand">Areia</string>
+
+    <string name="settings_data_title">Os teus dados de viagem</string>
+    <string name="settings_export">Exportar</string>
+    <string name="settings_import">Importar</string>
+    <string name="settings_data_detail">Um ficheiro JSON que podes guardar onde quiseres. Ao importar, vale a entrada mais recente.</string>
+    <string name="settings_last_backup">Última cópia de segurança: %1$s</string>
+    <string name="settings_last_backup_never">Última cópia de segurança: nunca</string>
+    <string name="settings_restore_button">Repor a partir da cópia de segurança do Android</string>
+    <string name="settings_restore_detail">A cópia de segurança do Android deixou neste telemóvel uma cópia do teu histórico. Repor junta esses dados aos existentes, tal como importar um ficheiro.</string>
+    <string name="settings_visa_title">Dados de visto</string>
+    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” funciona nos dois casos. Os dados novos são usados de imediato.</string>
+    <string name="settings_visa_checking">A verificar…</string>
+    <string name="settings_visa_result_current">Os dados de visto já estão atualizados.</string>
+    <string name="settings_visa_result_updated">Dados de visto atualizados e já em uso.</string>
+    <string name="settings_visa_result_offline">Não foi possível contactar o servidor. Verifica a ligação ou tenta mais tarde.</string>
+    <string name="settings_visa_result_unavailable">Atualização indisponível de momento.</string>
+    <string name="settings_visa_auto">Atualizar os dados de visto automaticamente</string>
+    <string name="settings_visa_last_checked">Última verificação: %1$s</string>
+    <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
+    <string name="settings_visa_check_now">Verificar agora</string>
+    <string name="settings_cancel">Cancelar</string>
+
+    <string name="settings_import_title">Importar este ficheiro?</string>
+    <string name="settings_preview_added">Adicionados</string>
+    <string name="settings_preview_updated">Atualizados</string>
+    <string name="settings_preview_skipped">Ignorados (já atualizados)</string>
+    <string name="settings_preview_sample">p. ex. %1$s.</string>
+    <string name="settings_preview_sample_more">p. ex. %1$s e mais %2$d.</string>
+    <!-- The caveat issues are joined with the locale's list wording (ListFormatter) and end with this -->
+    <string name="settings_preview_caveat">%1$s.</string>
+    <plurals name="settings_caveat_codes">
+        <item quantity="one">%d código de lugar não reconhecido por esta versão</item>
+        <item quantity="many">%d códigos de lugar não reconhecidos por esta versão</item>
+        <item quantity="other">%d códigos de lugar não reconhecidos por esta versão</item>
+    </plurals>
+    <plurals name="settings_caveat_statuses">
+        <item quantity="one">%d entrada com um estado que esta versão não entende</item>
+        <item quantity="many">%d entradas com um estado que esta versão não entende</item>
+        <item quantity="other">%d entradas com um estado que esta versão não entende</item>
+    </plurals>
+    <plurals name="settings_caveat_unreadable">
+        <item quantity="one">%d linha não pôde ser lida</item>
+        <item quantity="many">%d linhas não puderam ser lidas</item>
+        <item quantity="other">%d linhas não puderam ser lidas</item>
+    </plurals>
+
+    <string name="settings_danger_title">Zona de perigo</string>
+    <string name="settings_danger_detail">Não dá para desfazer. Exporta uma cópia de segurança antes.</string>
+    <string name="settings_delete_everything">Apagar tudo</string>
+    <string name="settings_delete_confirm_title">Apagar tudo?</string>
+    <string name="settings_delete_confirm_body">Todos os lugares que marcaste, os teus passaportes e as tuas preferências de visualização serão apagados deste telemóvel, juntamente com a cópia guardada pela cópia de segurança do Android. A Google pode manter uma cópia de segurança anterior até o Android fazer a seguinte — nas definições de cópia de segurança do Android podes apagá-la já.</string>
+    <string name="settings_delete">Apagar</string>
+
+    <string name="settings_about_title">Sobre</string>
+    <string name="settings_about_version">BeyondBorders %1$s</string>
+    <string name="settings_about_open_source">Código aberto (GPL-3.0)</string>
+    <string name="settings_about_data_title">Sobre os dados</string>
+    <string name="settings_about_disclaimer">Uma app independente, sem ligação a nenhum governo nem em representação de nenhum. Os dados de visto são uma cópia e podem estar desatualizados: confirma as regras de entrada na fonte oficial do governo antes de viajar.</string>
+    <string name="settings_about_map_title">Dados do mapa</string>
+    <string name="settings_about_map">Fronteiras do Natural Earth (domínio público), desenhadas com o MapLibre. O mapa inteiro vem incluído na app, por isso funciona sem rede e sem conta.</string>
+    <string name="settings_about_backup_title">Cópias de segurança</string>
+    <string name="settings_about_backup">A cópia de segurança automática do próprio Android leva uma cópia do teu histórico para a tua conta Google — quem faz essa cópia é o sistema, a app nunca envia nada por iniciativa própria. Um telemóvel reinstalado ou novo começa vazio: nada volta até tocares em Repor. A base de dados, as definições e um identificador por instalação ficam totalmente fora da cópia. Desativa-a nas definições de cópia de segurança do Android, se preferires.</string>
+    <string name="settings_licences_button">Licenças de código aberto</string>
+
+    <!-- Licences dialog -->
+    <string name="settings_report_problem">Comunicar um problema</string>
+    <string name="settings_licences_title">Licenças de código aberto</string>
+    <string name="settings_licences_close">Fechar</string>
+    <string name="settings_licence_app">Beyond Borders</string>
+    <string name="settings_licence_map">Mapa</string>
+    <string name="settings_licence_borders">Fronteiras</string>
+    <string name="settings_licence_labels">Rótulos</string>
+    <string name="settings_licence_font">Fonte</string>
+    <string name="settings_licence_flags">Bandeiras</string>
+    <string name="settings_licence_visa">Dados de visto</string>
+    <string name="settings_licence_visa_body">Conjunto de dados de requisitos de visto, derivado de colaboradores da Wikipédia (CC BY-SA 4.0); veja THIRD_PARTY_NOTICES.md no repositório</string>
+    <string name="settings_licence_advice">Ligações para orientações oficiais</string>
+    <string name="settings_licence_advice_body">Auswärtiges Amt (Ministério dos Negócios Estrangeiros da Alemanha)</string>
+    <string name="settings_licence_libraries">Bibliotecas</string>
+
+    <!-- Backup transfer results -->
+    <plurals name="backup_places">
+        <item quantity="one">%d lugar</item>
+        <item quantity="many">%d lugares</item>
+        <item quantity="other">%d lugares</item>
+    </plurals>
+    <plurals name="backup_removals">
+        <item quantity="one">%d remoção</item>
+        <item quantity="many">%d remoções</item>
+        <item quantity="other">%d remoções</item>
+    </plurals>
+    <string name="backup_saved">Cópia de segurança guardada: %1$s.</string>
+    <string name="backup_saved_with_removals">Cópia de segurança guardada: %1$s e %2$s.</string>
+
+    <string name="backup_import_nothing">Nada a alterar — tudo o que está nesse ficheiro já está aqui.</string>
+    <plurals name="backup_imported_new">
+        <item quantity="one">%d lugar novo importado.</item>
+        <item quantity="many">%d lugares novos importados.</item>
+        <item quantity="other">%d lugares novos importados.</item>
+    </plurals>
+    <plurals name="backup_imported_updated">
+        <item quantity="one">%d lugar atualizado importado.</item>
+        <item quantity="many">%d lugares atualizados importados.</item>
+        <item quantity="other">%d lugares atualizados importados.</item>
+    </plurals>
+    <!-- Both kinds at once, so there are always at least two places -->
+    <string name="backup_imported_both">Importados: %1$d novos e %2$d atualizados.</string>
+    <string name="backup_already_current">Já atualizados: %1$d.</string>
+    <plurals name="backup_skipped_codes">
+        <item quantity="one">%1$d código desconhecido ignorado: %2$s.</item>
+        <item quantity="many">%1$d códigos desconhecidos ignorados: %2$s.</item>
+        <item quantity="other">%1$d códigos desconhecidos ignorados: %2$s.</item>
+    </plurals>
+    <!-- Counted in rows, listed as distinct words; one plural per word count -->
+    <plurals name="backup_skipped_status_one_word">
+        <item quantity="one">%1$d entrada com estado desconhecido ignorada: %2$s.</item>
+        <item quantity="many">%1$d entradas com estado desconhecido ignoradas: %2$s.</item>
+        <item quantity="other">%1$d entradas com estado desconhecido ignoradas: %2$s.</item>
+    </plurals>
+    <plurals name="backup_skipped_status_many_words">
+        <item quantity="one">%1$d entrada com estados desconhecidos ignorada: %2$s.</item>
+        <item quantity="many">%1$d entradas com estados desconhecidos ignoradas: %2$s.</item>
+        <item quantity="other">%1$d entradas com estados desconhecidos ignoradas: %2$s.</item>
+    </plurals>
+    <plurals name="backup_unreadable_rows">
+        <item quantity="one">%d linha não pôde ser lida.</item>
+        <item quantity="many">%d linhas não puderam ser lidas.</item>
+        <item quantity="other">%d linhas não puderam ser lidas.</item>
+    </plurals>
+    <!-- Joins two sentences of the import report -->
+    <string name="backup_sentence_join">%1$s %2$s</string>
+
+    <!-- Backup failures shown in the transfer row -->
+    <string name="backup_delete_failed">Não foi possível apagar tudo.</string>
+    <string name="backup_export_failed">A exportação falhou.</string>
+    <string name="backup_import_failed">A importação falhou.</string>
+    <string name="backup_snapshot_gone">Essa cópia já não existe.</string>
+    <string name="backup_write_open_failed">Não foi possível abrir o ficheiro para escrita.</string>
+    <string name="backup_read_open_failed">Não foi possível abrir o ficheiro para leitura.</string>
+    <string name="backup_too_large">Esse ficheiro é demasiado grande para ser uma cópia de segurança do BeyondBorders.</string>
+    <string name="backup_not_json">Este ficheiro não é JSON.</string>
+    <string name="backup_wrong_format">Este não é um ficheiro de cópia de segurança do BeyondBorders.</string>
+    <string name="backup_newer_version">Esta cópia de segurança foi gerada por uma versão mais recente do BeyondBorders (formato %1$d).</string>
+    <string name="backup_no_places">A cópia de segurança não tem nenhum lugar.</string>
+    <string name="welcome_skip">Saltar por agora</string>
+    <string name="settings_passport_unset">Não definido</string>
+    <string name="review_title">Estás a gostar do Beyond Borders?</string>
+    <string name="review_body">Marcaste %1$d lugares como visitados. O Beyond Borders é gratuito, sem anúncios nem rastreio – uma avaliação no Google Play ajuda outros viajantes a encontrá-lo. O botão abre a página do Play: toca aí nas estrelas.</string>
+    <string name="review_rate">Avaliar</string>
+    <string name="review_later">Mais tarde</string>
+    <string name="review_never">Não perguntar de novo</string>
+    <string name="settings_rate_play">Avaliar no Google Play</string>
+
+    <string name="settings_partner_passport">Passaporte do acompanhante</string>
+    <string name="settings_add_partner_passport">Adicionar passaporte do acompanhante</string>
+    <string name="settings_remove_partner_passport">Remover passaporte do acompanhante</string>
+    <string name="settings_partner_hint">Assim o mapa e a lista de vistos mostram para onde podem viajar os dois com facilidade. Só é possível indicar o passaporte de um acompanhante de viagem: escolhe o menos restritivo para a viagem; um segundo passaporte não é combinado. A app não conhece autorizações de residência nem as regras da UE/Schengen para familiares.</string>
+</resources>

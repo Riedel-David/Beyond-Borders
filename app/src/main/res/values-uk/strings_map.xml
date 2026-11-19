@@ -16,10 +16,10 @@
     <string name="map_legend_short_lived">Прожито</string>
     <string name="map_legend_short_wanted">Хочу</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Торкнись країни та обери «Відвідано», «Прожито» або «Хочу»</string>
+    <string name="map_legend_nudge">Торкнись країни та обери «Відвідано», «Проживання» або «Хочу»</string>
     <string name="map_legend_visited">Відвідано: %1$d</string>
-    <string name="map_legend_lived">Прожито: %1$d</string>
-    <string name="map_legend_wishlisted">У списку бажань: %1$d</string>
+    <string name="map_legend_lived">Проживання: %1$d</string>
+    <string name="map_legend_wishlisted">Бажані: %1$d</string>
     <string name="map_legend_no_data">Немає даних: %1$d</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
     <string name="map_legend_count_labeled">%2$s: %1$d</string>
@@ -60,7 +60,7 @@
     <string name="map_no_data_either">Немає даних ні для одного з паспортів — перевір офіційні джерела перед поїздкою.</string>
     <string name="map_no_data_this">Немає даних для цього паспорта — перевір офіційні джерела перед поїздкою.</string>
     <string name="map_chip_been">Відвідано</string>
-    <string name="map_chip_lived">Прожито</string>
+    <string name="map_chip_lived">Проживання</string>
     <string name="map_chip_want">Хочу</string>
 
     <!-- Share cards (drawn onto a canvas) -->
@@ -81,13 +81,13 @@
     </plurals>
     <string name="share_tile_places_been">ВІДВІДАНО</string>
     <string name="share_tile_continents">КОНТИНЕНТИ</string>
-    <string name="share_tile_lived">ПРОЖИТО</string>
+    <string name="share_tile_lived">ПРОЖИВАННЯ</string>
     <string name="share_tile_wishlist">СПИСОК БАЖАНЬ</string>
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
     <string name="places_filter_all">Усі</string>
     <string name="places_filter_been">Відвідано</string>
-    <string name="places_filter_lived">Прожито</string>
+    <string name="places_filter_lived">Проживання</string>
     <string name="places_filter_want">Хочу</string>
     <string name="places_filter_none">Ще ні</string>
     <string name="places_mode_travel">Мої подорожі</string>
@@ -123,7 +123,7 @@
     <string name="widget_cfg_target_title">Торкання віджета відкриває</string>
     <string name="widget_cfg_target_map">Карту</string>
     <string name="widget_cfg_target_passport">Паспорт</string>
-    <string name="widget_cfg_target_stats">Статистика</string>
+    <string name="widget_cfg_target_stats">Статистику</string>
     <string name="widget_cfg_background_title">Тло картки</string>
     <string name="widget_cfg_background_filled">Суцільне</string>
     <string name="widget_cfg_background_transparent">Прозоре</string>
@@ -131,7 +131,7 @@
     <string name="widget_cfg_add">Додати віджет</string>
     <string name="map_quick_add">Швидко додати</string>
 
-    <string name="map_partner_mode">Режим пари</string>
+    <string name="map_partner_mode">Режим партнера</string>
     <string name="map_partner_state_on">Увімкнено</string>
     <string name="map_partner_state_off">Вимкнено</string>
     <string name="map_legend_partner">Куди можете обоє</string>

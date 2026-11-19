@@ -6,7 +6,7 @@
     <string name="visa_category_visa_free">Visumfrei</string>
     <string name="visa_category_eta">Reisegenehmigung</string>
     <string name="visa_category_visa_on_arrival">Visum bei Ankunft</string>
-    <string name="visa_category_e_visa">eVisum</string>
+    <string name="visa_category_e_visa">E-Visum</string>
     <string name="visa_category_visa_required">Visum erforderlich</string>
     <string name="visa_category_check">Bestimmungen prüfen</string>
     <string name="visa_category_permit_required">Genehmigung erforderlich</string>
@@ -52,11 +52,11 @@
     <!-- Passport list -->
     <string name="visa_search_destinations">Reiseziele suchen</string>
     <string name="visa_clear">Löschen</string>
-    <string name="visa_empty_query">Keine Reiseziele zu „%1$s".</string>
-    <string name="visa_empty_filter">Keine Reiseziele im Filter „%1$s".</string>
+    <string name="visa_empty_query">Keine Reiseziele zu „%1$s“.</string>
+    <string name="visa_empty_filter">Keine Reiseziele im Filter „%1$s“.</string>
     <string name="visa_empty_nothing">Nichts gefunden.</string>
     <string name="visa_empty_wishlist">Orte zur Wunschliste hinzufügen.</string>
-    <string name="visa_empty_wishlist_filter">Keine Wunschlisten-Orte im Filter „%1$s".</string>
+    <string name="visa_empty_wishlist_filter">Keine Wunschlisten-Orte im Filter „%1$s“.</string>
     <string name="visa_unavailable_title">Keine Visumdaten</string>
     <string name="visa_unavailable_body">Die mitgelieferte Visumliste konnte nicht gelesen werden, daher gibt es in diesem Modus nichts anzuzeigen. Die Reisekarte ist nicht betroffen.</string>
 
@@ -70,19 +70,19 @@
     <string name="visa_dataset_credit">%1$s · %2$s</string>
     <string name="visa_licence_link">Lizenz</string>
     <string name="visa_source_link">Quelle: %1$s-Artikel</string>
-    <string name="visa_correction">%1$s sagt „%2$s" – hier korrigiert</string>
+    <string name="visa_correction">%1$s sagt „%2$s“ – hier korrigiert</string>
 
     <!-- Passport picker -->
     <string name="picker_choose_passport">Reisepass wählen</string>
     <string name="picker_search">Suche</string>
 
     <string name="visa_partner_you">Du: %1$s</string>
-    <string name="visa_partner_partner">Begleitung: %1$s</string>
+    <string name="visa_partner_partner">Reisebegleitung: %1$s</string>
     <string name="visa_partner_blocker_you">Dein Reisepass setzt hier die Grenze</string>
-    <string name="visa_partner_blocker_partner">Der Reisepass deiner Begleitung setzt hier die Grenze</string>
+    <string name="visa_partner_blocker_partner">Der Reisepass deiner Reisebegleitung setzt hier die Grenze</string>
     <string name="visa_partner_blocker_none">Für euch beide gleich</string>
     <string name="visa_partner_caveat">Nur pro Reisepass: Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums sind nicht berücksichtigt.</string>
-    <string name="visa_partner_toggle">Partnermodus: wohin wir beide können</string>
+    <string name="visa_partner_toggle">Reisebegleitung: wohin wir beide können</string>
     <string name="visa_summary_partner">Gemeinsame Antwort für beide Reisepässe</string>
     <string name="visa_as_of_notice_partner">Gemeinsame Antwort für beide Reisepässe, Stand %1$s – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
 </resources>

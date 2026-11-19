@@ -8,8 +8,8 @@
 
     <!-- Welcome -->
     <string name="welcome_title">Beyond Borders</string>
-    <string name="welcome_intro">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller, sur une carte de %1$d lieux. Des territoires comme le Groenland ou Porto Rico comptent à part, séparément du pays dont ils dépendent.</string>
-    <string name="welcome_intro_bare">Marque les lieux où tu es allé, où tu as vécu ou où tu veux aller.</string>
+    <string name="welcome_intro">Marque les lieux que tu as visités, ceux où tu as vécu ou ceux où tu veux aller, sur une carte de %1$d lieux. Des territoires comme le Groenland ou Porto Rico comptent à part, séparément du pays dont ils dépendent.</string>
+    <string name="welcome_intro_bare">Marque les lieux que tu as visités, ceux où tu as vécu ou ceux où tu veux aller.</string>
     <string name="welcome_privacy">Rien de ce que tu marques ne nous est envoyé. Pas de compte, pas de serveur. L\'app télécharge seulement des mises à jour publiques des données de visa et n\'envoie rien sur toi. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
     <string name="welcome_passport_hint">Les conditions de visa s\'affichent pour un passeport à la fois. Choisis le tien ; tu pourras le changer plus tard dans les Paramètres.</string>
     <string name="welcome_get_started">Commencer</string>
@@ -93,11 +93,11 @@
     <string name="settings_restore_button">Restaurer depuis la sauvegarde d\'Android</string>
     <string name="settings_restore_detail">La sauvegarde d\'Android a laissé sur ce téléphone un instantané de ton historique. La restauration le fusionne avec les données actuelles, exactement comme l\'import d\'un fichier.</string>
     <string name="settings_visa_title">Données de visa</string>
-    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Le commutateur ne commande que la vérification automatique hebdomadaire, qui ne se fait qu\'en Wi-Fi ou sur un autre réseau non limité. « Vérifier maintenant » fonctionne dans les deux cas. Les nouvelles données sont utilisées aussitôt.</string>
+    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Le commutateur ne commande que la vérification automatique hebdomadaire, qui ne se fait qu\'en Wi-Fi ou sur un autre réseau sans limite de données. « Vérifier maintenant » fonctionne dans les deux cas. Les nouvelles données sont utilisées aussitôt.</string>
     <string name="settings_visa_checking">Vérification…</string>
     <string name="settings_visa_result_current">Les données de visa sont déjà à jour.</string>
     <string name="settings_visa_result_updated">Données de visa mises à jour et déjà utilisées.</string>
-    <string name="settings_visa_result_offline">Serveur injoignable. Vérifiez votre connexion ou réessayez plus tard.</string>
+    <string name="settings_visa_result_offline">Serveur injoignable. Vérifie ta connexion ou réessaie plus tard.</string>
     <string name="settings_visa_result_unavailable">Mise à jour indisponible pour le moment.</string>
     <string name="settings_visa_auto">Mettre à jour les données de visa automatiquement</string>
     <string name="settings_visa_last_checked">Dernière vérification : %1$s</string>
@@ -236,8 +236,8 @@
     <string name="review_never">Ne plus demander</string>
     <string name="settings_rate_play">Noter sur Google Play</string>
 
-    <string name="settings_partner_passport">Passeport du ou de la partenaire de voyage</string>
-    <string name="settings_add_partner_passport">Ajouter le passeport du partenaire</string>
-    <string name="settings_remove_partner_passport">Retirer le passeport du partenaire</string>
-    <string name="settings_partner_hint">La carte et la liste des visas montrent alors où vous pouvez tous les deux voyager facilement. Un seul passeport de voyageur accompagnant peut être saisi : choisissez le moins restrictif pour le voyage ; un second passeport n\'est pas combiné. Les titres de séjour et les règles UE/Schengen pour les membres de famille ne sont pas connus de l\'appli.</string>
+    <string name="settings_partner_passport">Passeport du partenaire de voyage</string>
+    <string name="settings_add_partner_passport">Ajouter un passeport de partenaire de voyage</string>
+    <string name="settings_remove_partner_passport">Retirer le passeport de partenaire de voyage</string>
+    <string name="settings_partner_hint">La carte et la liste des visas montrent alors où vous pouvez tous les deux voyager facilement. Tu peux saisir un seul passeport de partenaire de voyage : choisis le moins restrictif pour le voyage ; un second passeport n\'est pas combiné. Les titres de séjour et les règles UE/Schengen pour les membres de famille ne sont pas connus de l\'app.</string>
 </resources>

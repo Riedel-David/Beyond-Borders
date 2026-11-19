@@ -48,14 +48,14 @@ class StringParityTest {
      * of its strings are legitimately identical to English, a [sameInLanguage] entry.
      */
     private fun translationTags(): List<String> =
-        File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}")) }!!
+        File("src/main/res").listFiles { f -> f.isDirectory && f.name.matches(Regex("values-[a-z]{2}(-r[A-Z]{2})?")) }!!
             .map { it.name.removePrefix("values-") }.sorted()
 
     private val translations: Map<String, Map<String, Entry>> = translationTags().associateWith { load("values-$it") }
 
     /** Quantities beyond one/other that a language's CLDR rules use; lint demands them only when the app needs them. */
     private val extraQuantities = mapOf(
-        "de" to emptySet<String>(), "es" to setOf("many"), "fr" to setOf("many"), "pt" to setOf("many"),
+        "de" to emptySet<String>(), "es" to setOf("many"), "fr" to setOf("many"), "pt" to setOf("many"), "pt-rPT" to setOf("many"),
         "uk" to setOf("few", "many"), "ru" to setOf("few", "many"),
     )
 
@@ -96,6 +96,10 @@ class StringParityTest {
         "pt" to setOf(
             "geo_continent_oceania", "geo_group_benelux", "geo_group_indochina", "passport_status_chip_desc",
             "settings_about_backup_title", // same word in Portuguese
+        ),
+        "pt-rPT" to setOf(
+            "geo_continent_oceania", "geo_group_benelux", "geo_group_indochina", "passport_status_chip_desc",
+            "settings_about_backup_title",
         ),
     )
 

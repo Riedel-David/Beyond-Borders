@@ -13,7 +13,7 @@
     <string name="passport_chip_lived">Morei</string>
     <string name="passport_chip_want">Quero ir</string>
     <string name="passport_mark_been">Marcar %1$s como “Visitei”</string>
-    <string name="passport_mark_lived">Marcar %1$s como lugar onde morei</string>
+    <string name="passport_mark_lived">Marcar %1$s como “Morei”</string>
     <string name="passport_mark_want">Marcar %1$s como “Quero ir”</string>
     <string name="passport_clear">Limpar</string>
     <string name="passport_clear_status">Limpar o status de %1$s</string>
@@ -35,8 +35,8 @@
         <item quantity="many">%1$d de %2$d continentes</item>
         <item quantity="other">%1$d de %2$d continentes</item>
     </plurals>
-    <string name="passport_card_lived">%1$d onde morei</string>
-    <string name="passport_card_wishlist">%1$d na lista de desejos</string>
+    <string name="passport_card_lived">Morei em %1$d</string>
+    <string name="passport_card_wishlist">%1$d desejados</string>
 
     <!-- Stats screen -->
     <string name="stats_title">Estatísticas</string>
@@ -119,7 +119,7 @@
     <string name="badge_group_islands">Países insulares</string>
     <string name="badge_group_giants">Gigantes</string>
     <string name="badge_group_special">Especiais</string>
-    <string name="badge_group_lived">Onde morei</string>
+    <string name="badge_group_lived">Morei</string>
     <string name="badge_group_wishlist">Lista de desejos</string>
 
     <!-- Badge titles and descriptions -->
@@ -214,7 +214,7 @@
     </plurals>
     <string name="badge_wishlist_10_title">Sonhador</string>
     <string name="badge_wishlist_10_desc">Coloque %1$d lugares na sua lista de desejos.</string>
-    <string name="quick_add_title">Adição rápida</string>
+    <string name="quick_add_title">Adicionar rápido</string>
     <string name="quick_add_search">Buscar todos os países</string>
     <string name="quick_add_close">Fechar</string>
     <string name="quick_add_been_desc">Já estive em %1$s</string>

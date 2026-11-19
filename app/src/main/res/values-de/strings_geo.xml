@@ -44,6 +44,6 @@
     <string name="geo_group_maghreb">Maghreb</string>
     <string name="geo_group_horn_of_africa">Horn von Afrika</string>
     <string name="geo_group_indochina">Indochina</string>
-    <string name="geo_group_the_stans">Die Stan-Staaten</string>
+    <string name="geo_group_the_stans">Stan-Staaten</string>
     <string name="geo_group_balkans">Balkan</string>
 </resources>

@@ -16,7 +16,7 @@
     <string name="visa_band_visa_free">Sans visa</string>
     <string name="visa_band_eta">ETA</string>
     <string name="visa_band_visa_on_arrival">À l\'arrivée</string>
-    <string name="visa_band_visa_required">Visa requis</string>
+    <string name="visa_band_visa_required">Visa obligatoire</string>
     <string name="visa_band_check">Vérifier</string>
     <string name="visa_band_closed">Fermé</string>
     <string name="visa_band_no_data">Sans données</string>
@@ -56,14 +56,14 @@
     <string name="visa_empty_query">Aucune destination ne correspond à « %1$s ».</string>
     <string name="visa_empty_filter">Aucune destination pour le filtre « %1$s ».</string>
     <string name="visa_empty_nothing">Aucun résultat.</string>
-    <string name="visa_empty_wishlist">Ajoutez des lieux à vos envies.</string>
-    <string name="visa_empty_wishlist_filter">Aucune envie ne correspond au filtre « %1$s ».</string>
+    <string name="visa_empty_wishlist">Ajoute des lieux à ta liste d\'envies.</string>
+    <string name="visa_empty_wishlist_filter">Aucun lieu de ta liste d\'envies ne correspond au filtre « %1$s ».</string>
     <string name="visa_unavailable_title">Aucune donnée de visa</string>
     <string name="visa_unavailable_body">La liste de visas intégrée n\'a pas pu être lue, ce mode n\'a donc rien à afficher. Ta carte de voyages n\'est pas touchée.</string>
 
     <!-- Summary card -->
     <string name="visa_summary_visa_free_of">"  sur %1$d lieux sans visa"</string>
-    <string name="visa_summary_easy">Accessibles sans rendez-vous à l\'ambassade : %1$d</string>
+    <string name="visa_summary_easy">Sans rendez-vous à l\'ambassade : %1$d</string>
     <string name="visa_summary_disclaimer_short">Données au %1$s : vérifie avant de réserver</string>
     <string name="visa_summary_info_label">Afficher les sources des données et l\'avertissement</string>
     <string name="visa_summary_info_title">À propos des données de visa</string>
@@ -78,12 +78,12 @@
     <string name="picker_search">Rechercher</string>
 
     <string name="visa_partner_you">Toi : %1$s</string>
-    <string name="visa_partner_partner">Partenaire : %1$s</string>
+    <string name="visa_partner_partner">Partenaire de voyage : %1$s</string>
     <string name="visa_partner_blocker_you">Ton passeport fixe la limite ici</string>
-    <string name="visa_partner_blocker_partner">Le passeport de ton partenaire fixe la limite ici</string>
+    <string name="visa_partner_blocker_partner">Le passeport du partenaire de voyage fixe la limite ici</string>
     <string name="visa_partner_blocker_none">Pareil pour vous deux</string>
     <string name="visa_partner_caveat">Par passeport uniquement : les titres de séjour et les règles UE/Schengen pour les membres de famille ne sont pas pris en compte.</string>
-    <string name="visa_partner_toggle">Mode partenaire : où on peut aller tous les deux</string>
+    <string name="visa_partner_toggle">Partenaire de voyage : où vous pouvez aller tous les deux</string>
     <string name="visa_summary_partner">Réponse commune aux deux passeports</string>
     <string name="visa_as_of_notice_partner">Réponse commune aux deux passeports, données au %1$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
 </resources>

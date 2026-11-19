@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Machine-made European Portuguese (pt-PT) draft: needs a proofread by a native speaker. -->
+<resources>
+    <string name="visits_row_label">Visitas</string>
+    <string name="visits_add">Adicionar</string>
+    <string name="visits_undated">Sem data</string>
+    <string name="visits_dialog_title">Visitas a %1$s</string>
+    <string name="visits_pick_year">Adicionar uma visita em</string>
+    <string name="visits_no_date">Sem data</string>
+    <string name="visits_delete">Eliminar visita</string>
+    <string name="visits_done">Concluído</string>
+    <string name="visits_none_yet">Ainda sem visitas</string>
+    <string name="stats_visits_title">Lugares por ano</string>
+    <string name="stats_visits_first_recent">Primeira visita: %1$d · Mais recente: %2$d</string>
+    <string name="backup_imported_visits">Visitas: %1$d novas, %2$d atualizadas.</string>
+    <string name="settings_preview_visits">Visitas</string>
+    <string name="visits_whole_year">Ano inteiro</string>
+    <string name="visits_pick_month">Mês (opcional)</string>
+    <string name="stats_chart_countries">Lugares nesse ano</string>
+    <string name="stats_chart_cumulative">Total acumulado</string>
+    <string name="stats_chart_summary">Lugares visitados por ano, de %1$d a %2$d. %3$d lugares no total até %2$d.</string>
+    <string name="stats_chart_year_detail">%1$d: %2$d lugares, %3$d novos, %4$d no total</string>
+    <string name="stats_chart_details_show">Mostrar números por ano</string>
+    <string name="stats_chart_details_hide">Ocultar números por ano</string>
+    <plurals name="stats_chart_no_year">
+        <item quantity="one">%1$d lugar não tem ano e não é mostrado.</item>
+        <item quantity="many">%1$d de lugares não têm ano e não são mostrados.</item>
+        <item quantity="other">%1$d lugares não têm ano e não são mostrados.</item>
+    </plurals>
+</resources>

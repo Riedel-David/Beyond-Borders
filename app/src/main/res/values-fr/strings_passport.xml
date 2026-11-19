@@ -146,9 +146,9 @@
         <item quantity="other">Visite au moins un lieu sur %1$d continents.</item>
     </plurals>
     <string name="badge_continent_complete_title">%1$s au complet</string>
-    <string name="badge_continent_complete_desc">Tous les lieux peuplés visités : %1$s.</string>
+    <string name="badge_continent_complete_desc">Visite tous les lieux peuplés : %1$s.</string>
     <string name="badge_region_desc">Tous les lieux peuplés visités : %1$s (%2$d au total).</string>
-    <string name="badge_group_desc">Tous les lieux peuplés visités, %1$s : %2$s.</string>
+    <string name="badge_group_desc">Visite tous les lieux peuplés du groupe « %1$s » : %2$s.</string>
     <plurals name="badge_dependencies_title">
         <item quantity="one">%1$d territoire</item>
         <item quantity="many">%1$d territoires</item>
@@ -219,7 +219,7 @@
     <string name="quick_add_close">Fermer</string>
     <string name="quick_add_been_desc">Visité : %1$s</string>
     <string name="passport_start_title">Commence par marquer quelques lieux</string>
-    <string name="passport_start_body">Coche d\'un coup les pays où tu es allé, ou touche un lieu sur la carte.</string>
+    <string name="passport_start_body">Coche d\'un coup les pays que tu as visités, ou touche un lieu sur la carte.</string>
     <string name="passport_pick_title">Choisis ton passeport pour voir les conditions de visa</string>
     <string name="passport_card_stats_link">Statistiques et succès</string>
 </resources>
