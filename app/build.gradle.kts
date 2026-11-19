@@ -164,11 +164,23 @@ dependencies {
 // older ABI missing a method the serializers need, which throws
 // AbstractMethodError at runtime rather than failing the build. Force wins
 // over a platform's `strictly` constraint, unlike a plain version request.
+//
+// Not 1.13.0, which an earlier version of this block forced: it ships Kotlin 2.4
+// metadata that the compiler below cannot read.
+//
+// The same force pins kotlin-stdlib to the compiler's version (libs `kotlin`):
+// the androidx test artifacts transitively pull stdlib 2.4.10, whose metadata
+// the 2.2.21 compiler built into AGP 9.5.0 cannot read, so the androidTest
+// sources failed with ~200 bogus errors. Only androidTest configurations are
+// touched; the shipped app still resolves its own stdlib.
 configurations.matching { it.name.contains("AndroidTest") }.configureEach {
     resolutionStrategy {
         force(
-            "org.jetbrains.kotlinx:kotlinx-serialization-core:1.13.0",
-            "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.13.0",
+            "org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1",
+            "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.8.1",
+            "org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.kotlin.get()}",
+            "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${libs.versions.kotlin.get()}",
+            "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${libs.versions.kotlin.get()}",
         )
     }
 }
