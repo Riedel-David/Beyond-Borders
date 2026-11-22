@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,6 +41,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -121,14 +124,26 @@ internal fun LazyListScope.visaSection(
             Column(Modifier.padding(horizontal = 16.dp)) {
                 // The whole row is the switch, so the label is its accessible name and the
                 // touch target is the row rather than the thumb.
+                val spoken = stringResource(R.string.visa_partner_toggle)
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .toggleable(value = partnerMode, role = Role.Switch, onValueChange = onPartnerMode),
+                        .heightIn(min = 48.dp)
+                        .toggleable(value = partnerMode, role = Role.Switch, onValueChange = onPartnerMode)
+                        // The long sentence does not fit one line beside the switch in German,
+                        // so the row shows the short map label and TalkBack still hears this.
+                        .semantics { contentDescription = spoken },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.visa_partner_toggle), style = MaterialTheme.typography.bodyLarge)
+                    // Weight, so a long label cannot push the switch off the right edge.
+                    Text(
+                        stringResource(R.string.map_partner_mode),
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    )
                     Switch(checked = partnerMode, onCheckedChange = null)
                 }
                 if (partnerMode) {
