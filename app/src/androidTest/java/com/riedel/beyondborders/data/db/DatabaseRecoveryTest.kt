@@ -41,7 +41,7 @@ class DatabaseRecoveryTest {
         // The message is shown verbatim on the recovery screen, so it has to be the one
         // that names the versions rather than a bare class-name fallback.
         val detail = (health as DatabaseHealth.Unusable).detail
-        assertTrue("unhelpful detail: $detail", detail.contains("3") && detail.contains("10"))
+        assertTrue("unhelpful detail: $detail", detail.contains("3") && detail.contains("12"))
     }
 
     @Test

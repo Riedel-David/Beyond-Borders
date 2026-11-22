@@ -219,7 +219,7 @@ class BeyondBordersDatabaseMigrationTest {
             assertEquals("visited", runBlocking { db.placeStatusDao().findByCode("DK") }?.status)
             assertTrue(runBlocking { db.visitDao().allRows() }.isEmpty())
             assertEquals(
-                setOf("id", "code", "year", "updatedAt", "deletedAt", "deviceId"),
+                setOf("id", "code", "year", "updatedAt", "deletedAt", "deviceId", "month"),
                 db.columnNames("visit"),
             )
             assertTrue(
