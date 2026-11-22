@@ -138,6 +138,8 @@ import com.riedel.beyondborders.ui.passport.QuickAddDialog
 import com.riedel.beyondborders.ui.passport.SearchField
 import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel
+import com.riedel.beyondborders.ui.places.homeCamera
+import com.riedel.beyondborders.ui.places.shouldCentreOnHome
 import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
 import com.riedel.beyondborders.ui.places.RegionStyleKey
@@ -249,9 +251,29 @@ fun MapScreen(
     val regionMode by viewModel.regionMode.collectAsStateWithLifecycle()
     val regionBands by viewModel.regionBands.collectAsStateWithLifecycle()
     val places by viewModel.places.collectAsStateWithLifecycle()
+    val homePassport by viewModel.homePassport.collectAsStateWithLifecycle()
     val palette = LocalMapPalette.current
 
     val controller = remember { PlacesMapController() }
+
+    // Centre on the home country once passport, registry and map are all there. Keyed on all
+    // three (mapReady is state the controller flips), never on a measured size, so it cannot
+    // wait on something only the thing it gates would write. Whether to act is decided by
+    // homeCameraFor, so the re-run after a tab switch rebuilds the map is a no-op.
+    LaunchedEffect(homePassport, places, controller.mapReady) {
+        val code = homePassport ?: return@LaunchedEffect
+        val place = places.firstOrNull { it.code == code } ?: return@LaunchedEffect
+        if (!controller.mapReady) return@LaunchedEffect
+        val centre = shouldCentreOnHome(viewModel.homeCameraFor, code, viewModel.mapCamera)
+        // Remember the passport even when skipping, so a later change in Settings still centres.
+        viewModel.homeCameraFor = code
+        if (!centre) return@LaunchedEffect
+        val target = homeCamera(place.bounds)
+        // Saved now, not when the animation ends: leaving the tab mid-flight destroys the map
+        // before its idle callback runs, and the rebuilt one would start back at the world view.
+        viewModel.mapCamera = target
+        controller.animateTo(target)
+    }
     val selected = selectedCode?.let(viewModel::placeOf)
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -957,8 +979,17 @@ private class PlacesMapController {
         style.getLayerAs<SymbolLayer>(PlacesMapStyle.LAYER_LABELS_ON_MARKED)?.setProperties(textField)
     }
 
+    /** Compose state, so an effect waiting for the map to exist re-runs when it does. */
+    var mapReady by mutableStateOf(false)
+        private set
+
+    fun animateTo(camera: MapCamera) {
+        map?.animateCamera(CameraUpdateFactory.newCameraPosition(camera.toCameraPosition()), 600)
+    }
+
     fun attach(map: MapLibreMap) {
         this.map = map
+        mapReady = true
         // A new style is about to load (first load or a palette change); until it
         // lands, the old one belongs to layers the map is discarding.
         style = null
@@ -985,6 +1016,7 @@ private class PlacesMapController {
 
     fun detach() {
         map = null
+        mapReady = false
         style = null
     }
 
