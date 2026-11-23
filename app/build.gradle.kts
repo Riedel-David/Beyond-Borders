@@ -176,8 +176,8 @@ dependencies {
 configurations.matching { it.name.contains("AndroidTest") }.configureEach {
     resolutionStrategy {
         force(
-            "org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1",
-            "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.8.1",
+            "org.jetbrains.kotlinx:kotlinx-serialization-core:1.13.0",
+            "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.13.0",
             "org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.kotlin.get()}",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${libs.versions.kotlin.get()}",
             "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${libs.versions.kotlin.get()}",
