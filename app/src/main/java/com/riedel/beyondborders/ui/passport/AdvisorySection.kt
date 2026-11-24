@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -163,7 +165,9 @@ private fun AdvisoryRow(key: String, source: String, entry: AdvisoryEntry?, loca
                 modifier = Modifier
                     .clickable(role = Role.Button) { runCatching { uriHandler.openUri(entry.url) } }
                     .semantics { contentDescription = description }
-                    .padding(vertical = 4.dp),
+                    // 48dp touch target; the Row centres both texts, so the date stays level with the link.
+                    .heightIn(min = 48.dp)
+                    .wrapContentHeight(Alignment.CenterVertically),
             )
         }
     }

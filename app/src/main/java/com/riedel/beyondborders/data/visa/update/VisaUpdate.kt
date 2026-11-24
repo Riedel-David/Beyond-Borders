@@ -251,7 +251,6 @@ internal fun preferStored(bundled: VisaRegistry, today: () -> String = ::todayUt
     bundled
 }
 
-/** Timeouts, throttling and server errors may pass; any other 4xx is final. */
 /** What a non-200 answer means: 404 is "not published", other non-retryable 4xx a rejection, the rest worth retrying. */
 internal fun failureForStatus(status: Int): Exception = when {
     status == 404 -> VisaFetchNotFound("HTTP 404")
@@ -259,6 +258,7 @@ internal fun failureForStatus(status: Int): Exception = when {
     else -> IOException("HTTP $status")
 }
 
+/** Timeouts, throttling and server errors may pass; any other 4xx is final. */
 internal fun isRetryableStatus(status: Int): Boolean = status == 408 || status == 429 || status >= 500
 
 internal fun isHttps(url: String): Boolean = url.startsWith("https://", ignoreCase = true)

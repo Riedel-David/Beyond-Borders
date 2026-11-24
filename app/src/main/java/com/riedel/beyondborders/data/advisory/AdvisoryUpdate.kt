@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
 /*
@@ -151,7 +152,7 @@ class AdvisoryRepository(
 
     fun invalidate() {
         synchronized(lock) { cache = null; loaded = false; generation++ }
-        _dataVersion.value = _dataVersion.value + 1
+        _dataVersion.update { it + 1 }
     }
 }
 

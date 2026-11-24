@@ -94,22 +94,12 @@ jobs:
             { echo "### Advisory build warnings"; echo '```'; grep '^warning:' "$RUNNER_TEMP/build.log" | cut -c1-400; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Explain the failure
-        id: explain
-        if: failure()
-        run: |
-          # Backticks are removed so the text cannot close the issue's code fence, and it sits in a
-          # fence so a feed sentence containing an @name pings nobody.
-          TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
-          { echo "### Advisory refresh failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          {
-            echo "error<<END_OF_ERROR"
-            echo "$TEXT"
-            echo "END_OF_ERROR"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Assemble the site with the live visa files
-        run: python3 -I tools/advisory/make_site.py app/src/main/assets/advisory.json https://riedel-david.github.io/Beyond-Borders/ "$RUNNER_TEMP/site"
+        run: |
+          set -o pipefail  # make_site.py's exit code must survive the tee
+          # Same log as the build, so a refusal here (live visa files that do not verify) reaches
+          # the summary and the issue too.
+          python3 -I tools/advisory/make_site.py app/src/main/assets/advisory.json https://riedel-david.github.io/Beyond-Borders/ "$RUNNER_TEMP/site" 2>&1 | tee -a "$RUNNER_TEMP/build.log"
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
@@ -117,6 +107,20 @@ jobs:
 
       - id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Explain the failure
+        id: explain
+        if: failure()
+        run: |
+          # Backticks are removed so the text cannot close the issue's code fence, and it sits in a
+          # fence so a feed sentence containing an @name pings nobody.
+          TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran, or in a step that does not log)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
+          { echo "### Advisory refresh failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "error<<END_OF_ERROR"
+            echo "$TEXT"
+            echo "END_OF_ERROR"
+          } >> "$GITHUB_OUTPUT"
 
   # Scheduled runs only: a manual dispatch is watched by whoever started it, and an issue nobody
   # closes is worse than none. The token is widened here only, not for the job that deploys.
