@@ -93,13 +93,13 @@
     <string name="settings_restore_button">Відновити з резервної копії Android</string>
     <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення обʼєднує його з поточними даними, так само як імпорт файлу.</string>
     <string name="settings_visa_title">Дані про візи</string>
-    <string name="settings_visa_detail">Завантажує невеликі файли з GitHub, особисті дані не надсилаються. Перемикач керує лише щотижневою автоматичною перевіркою, яка виконується через Wi-Fi або іншу мережу без обмежень трафіку. Кнопка «Перевірити зараз» працює в обох випадках. Нові дані застосовуються одразу.</string>
+    <string name="settings_visa_detail">Завантажує невеликі файли з GitHub, особисті дані не надсилаються. Перемикач керує лише щотижневою автоматичною перевіркою даних про візи та рекомендацій для мандрівників, яка виконується через Wi-Fi або іншу мережу без обмежень трафіку. Кнопка «Перевірити зараз» оновлює лише дані про візи й працює в обох випадках. Нові дані застосовуються одразу.</string>
     <string name="settings_visa_checking">Перевірка…</string>
     <string name="settings_visa_result_current">Дані про візи вже актуальні.</string>
     <string name="settings_visa_result_updated">Дані про візи оновлено, і вони вже використовуються.</string>
     <string name="settings_visa_result_offline">Не вдалося звʼязатися із сервером. Перевір зʼєднання або повтори пізніше.</string>
     <string name="settings_visa_result_unavailable">Оновлення зараз недоступне.</string>
-    <string name="settings_visa_auto">Оновлювати дані про візи автоматично</string>
+    <string name="settings_visa_auto">Оновлювати дані про візи та рекомендації для мандрівників автоматично</string>
     <string name="settings_visa_last_checked">Остання перевірка: %1$s</string>
     <string name="settings_visa_last_checked_never">Остання перевірка: ніколи</string>
     <string name="settings_visa_check_now">Перевірити зараз</string>
@@ -164,6 +164,8 @@
     <string name="settings_licence_visa_body">Набір даних про візові вимоги, створений на основі внесків авторів Вікіпедії (CC BY-SA 4.0), див. THIRD_PARTY_NOTICES.md у репозиторії</string>
     <string name="settings_licence_advice">Посилання на офіційні рекомендації</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральне міністерство закордонних справ Німеччини)</string>
+    <string name="settings_licence_advisory">Рекомендації для мандрівників</string>
+    <string name="settings_licence_advisory_body">Держдепартамент США (суспільне надбання); Міністерство закордонних справ Великобританії FCDO (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Бібліотеки</string>
 
     <!-- Backup transfer results -->

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Рекомендації урядів для мандрівників</string>
+    <string name="advisory_agreement">Джерел, що не радять їхати: %1$d із %2$d</string>
+    <string name="advisory_partial_data">Дані про це місце є лише в %1$d із %2$d джерел.</string>
+    <string name="advisory_none">Жодне джерело не має рекомендацій для цього місця.</string>
+    <string name="advisory_no_data">Немає даних</string>
+    <string name="advisory_tags">Теги ризику: %1$s</string>
+    <string name="advisory_updated">Оновлено: %1$s</string>
+    <string name="advisory_open_source">Відкрити джерело</string>
+    <string name="advisory_as_of">Дані станом на %1$s</string>
+    <string name="advisory_check_official">Це оцінки трьох урядів. Формулювання для оцінок Великобританії та Німеччини коротко передають позначки, які вони публікують; перед поїздкою перевірте офіційне джерело. Тут нічого не об\'єднується та не оцінюється.</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Avisos de viaje de los gobiernos</string>
+    <string name="advisory_agreement">Fuentes que desaconsejan viajar: %1$d de %2$d</string>
+    <string name="advisory_partial_data">Solo %1$d de %2$d fuentes tienen datos de este lugar.</string>
+    <string name="advisory_none">Ninguna fuente tiene avisos de viaje para este lugar.</string>
+    <string name="advisory_no_data">Sin datos</string>
+    <string name="advisory_tags">Etiquetas de riesgo: %1$s</string>
+    <string name="advisory_updated">Actualizado el %1$s</string>
+    <string name="advisory_open_source">Abrir la fuente</string>
+    <string name="advisory_as_of">Datos a fecha de %1$s</string>
+    <string name="advisory_check_official">Estas son las calificaciones de tres gobiernos. El texto que se muestra para las calificaciones del Reino Unido y de Alemania resume los indicadores que publican; consulta la fuente oficial antes de viajar. Aquí no se combina ni se puntúa nada.</string>
+</resources>

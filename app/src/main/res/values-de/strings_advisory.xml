@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Reisehinweise von Regierungen</string>
+    <string name="advisory_agreement">Quellen, die von Reisen abraten: %1$d von %2$d</string>
+    <string name="advisory_partial_data">Nur %1$d von %2$d Quellen haben Daten zu diesem Ort.</string>
+    <string name="advisory_none">Keine Reisehinweise zu diesem Ort in den Quellen.</string>
+    <string name="advisory_no_data">Keine Daten</string>
+    <string name="advisory_tags">Risikohinweise: %1$s</string>
+    <string name="advisory_updated">Stand: %1$s</string>
+    <string name="advisory_open_source">Quelle öffnen</string>
+    <string name="advisory_as_of">Daten vom %1$s</string>
+    <string name="advisory_check_official">Dies sind die Einstufungen dreier Regierungen. Die Formulierung bei den britischen und deutschen Einstufungen fasst die von ihnen veröffentlichten Kennzeichnungen zusammen. Prüfe vor der Reise die offizielle Quelle. Hier wird nichts zusammengeführt oder bewertet.</string>
+</resources>

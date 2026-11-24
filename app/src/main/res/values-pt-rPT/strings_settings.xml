@@ -93,13 +93,13 @@
     <string name="settings_restore_button">Repor a partir da cópia de segurança do Android</string>
     <string name="settings_restore_detail">A cópia de segurança do Android deixou neste telemóvel uma cópia do teu histórico. Repor junta esses dados aos existentes, tal como importar um ficheiro.</string>
     <string name="settings_visa_title">Dados de visto</string>
-    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” funciona nos dois casos. Os dados novos são usados de imediato.</string>
+    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal dos dados de visto e dos avisos de viagem, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” atualiza apenas os dados de visto e funciona nos dois casos. Os dados novos são usados de imediato.</string>
     <string name="settings_visa_checking">A verificar…</string>
     <string name="settings_visa_result_current">Os dados de visto já estão atualizados.</string>
     <string name="settings_visa_result_updated">Dados de visto atualizados e já em uso.</string>
     <string name="settings_visa_result_offline">Não foi possível contactar o servidor. Verifica a ligação ou tenta mais tarde.</string>
     <string name="settings_visa_result_unavailable">Atualização indisponível de momento.</string>
-    <string name="settings_visa_auto">Atualizar os dados de visto automaticamente</string>
+    <string name="settings_visa_auto">Atualizar dados de visto e avisos de viagem automaticamente</string>
     <string name="settings_visa_last_checked">Última verificação: %1$s</string>
     <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
     <string name="settings_visa_check_now">Verificar agora</string>
@@ -161,6 +161,8 @@
     <string name="settings_licence_visa_body">Conjunto de dados de requisitos de visto, derivado de colaboradores da Wikipédia (CC BY-SA 4.0); veja THIRD_PARTY_NOTICES.md no repositório</string>
     <string name="settings_licence_advice">Ligações para orientações oficiais</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Ministério dos Negócios Estrangeiros da Alemanha)</string>
+    <string name="settings_licence_advisory">Avisos de viagem</string>
+    <string name="settings_licence_advisory_body">Departamento de Estado dos EUA (domínio público); Foreign, Commonwealth &amp; Development Office do Reino Unido (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Bibliotecas</string>
 
     <!-- Backup transfer results -->

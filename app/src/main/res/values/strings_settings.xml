@@ -91,13 +91,13 @@
     <string name="settings_restore_button">Restore from Android\'s backup</string>
     <string name="settings_restore_detail">Android\'s backup left a snapshot of your history on this phone. Restoring merges it in, exactly like importing a file.</string>
     <string name="settings_visa_title">Visa data</string>
-    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. The switch controls only the weekly automatic check, which runs on Wi-Fi or another unmetered network. Check now works either way. New data is used straight away.</string>
+    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. The switch controls only the weekly automatic check for visa data and travel advisories, which runs on Wi-Fi or another unmetered network. Check now updates visa data only, and works either way. New data is used straight away.</string>
     <string name="settings_visa_checking">Checking…</string>
     <string name="settings_visa_result_current">Visa data is already up to date.</string>
     <string name="settings_visa_result_updated">Visa data updated and now in use.</string>
     <string name="settings_visa_result_offline">Couldn\'t reach the server. Check your connection or try again later.</string>
     <string name="settings_visa_result_unavailable">Update unavailable right now.</string>
-    <string name="settings_visa_auto">Update visa data automatically</string>
+    <string name="settings_visa_auto">Update visa data and travel advisories automatically</string>
     <string name="settings_visa_last_checked">Last checked: %1$s</string>
     <string name="settings_visa_last_checked_never">Last checked: never</string>
     <string name="settings_visa_check_now">Check now</string>
@@ -156,6 +156,8 @@
     <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>
     <string name="settings_licence_advice">Official advice links</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (German Federal Foreign Office)</string>
+    <string name="settings_licence_advisory">Travel advisories</string>
+    <string name="settings_licence_advisory_body">US Department of State (public domain); UK Foreign, Commonwealth &amp; Development Office (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Libraries</string>
 
     <!-- Backup transfer results -->

@@ -93,13 +93,13 @@
     <string name="settings_restore_button">Restaurer depuis la sauvegarde d\'Android</string>
     <string name="settings_restore_detail">La sauvegarde d\'Android a laissé sur ce téléphone un instantané de ton historique. La restauration le fusionne avec les données actuelles, exactement comme l\'import d\'un fichier.</string>
     <string name="settings_visa_title">Données de visa</string>
-    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Le commutateur ne commande que la vérification automatique hebdomadaire, qui ne se fait qu\'en Wi-Fi ou sur un autre réseau sans limite de données. « Vérifier maintenant » fonctionne dans les deux cas. Les nouvelles données sont utilisées aussitôt.</string>
+    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Le commutateur ne commande que la vérification automatique hebdomadaire des données de visa et des avis aux voyageurs, qui ne se fait qu\'en Wi-Fi ou sur un autre réseau sans limite de données. « Vérifier maintenant » ne met à jour que les données de visa et fonctionne dans les deux cas. Les nouvelles données sont utilisées aussitôt.</string>
     <string name="settings_visa_checking">Vérification…</string>
     <string name="settings_visa_result_current">Les données de visa sont déjà à jour.</string>
     <string name="settings_visa_result_updated">Données de visa mises à jour et déjà utilisées.</string>
     <string name="settings_visa_result_offline">Serveur injoignable. Vérifie ta connexion ou réessaie plus tard.</string>
     <string name="settings_visa_result_unavailable">Mise à jour indisponible pour le moment.</string>
-    <string name="settings_visa_auto">Mettre à jour les données de visa automatiquement</string>
+    <string name="settings_visa_auto">Mettre à jour les données de visa et les avis aux voyageurs automatiquement</string>
     <string name="settings_visa_last_checked">Dernière vérification : %1$s</string>
     <string name="settings_visa_last_checked_never">Dernière vérification : jamais</string>
     <string name="settings_visa_check_now">Vérifier maintenant</string>
@@ -161,6 +161,8 @@
     <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, dérivé de Wikipédia (contributeurs, CC BY-SA 4.0), voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
     <string name="settings_licence_advice">Liens vers les conseils officiels</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (ministère fédéral allemand des Affaires étrangères)</string>
+    <string name="settings_licence_advisory">Avis aux voyageurs</string>
+    <string name="settings_licence_advisory_body">Département d\'État américain (domaine public) ; Foreign, Commonwealth &amp; Development Office britannique (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Bibliothèques</string>
 
     <!-- Backup transfer results -->

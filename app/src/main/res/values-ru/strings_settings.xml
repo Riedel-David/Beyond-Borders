@@ -93,13 +93,13 @@
     <string name="settings_restore_button">Восстановить из резервной копии Android</string>
     <string name="settings_restore_detail">Резервное копирование Android оставило на этом телефоне снимок твоей истории. Восстановление объединяет его с текущими данными — так же, как импорт файла.</string>
     <string name="settings_visa_title">Данные о визах</string>
-    <string name="settings_visa_detail">Загружает небольшие файлы с GitHub, личные данные не отправляются. Переключатель управляет только еженедельной автоматической проверкой, которая выполняется по Wi-Fi или в другой сети без ограничений трафика. Кнопка «Проверить сейчас» работает в любом случае. Новые данные применяются сразу.</string>
+    <string name="settings_visa_detail">Загружает небольшие файлы с GitHub, личные данные не отправляются. Переключатель управляет только еженедельной автоматической проверкой данных о визах и рекомендаций для путешественников, которая выполняется по Wi-Fi или в другой сети без ограничений трафика. Кнопка «Проверить сейчас» обновляет только данные о визах и работает в любом случае. Новые данные применяются сразу.</string>
     <string name="settings_visa_checking">Проверка…</string>
     <string name="settings_visa_result_current">Данные о визах уже актуальны.</string>
     <string name="settings_visa_result_updated">Данные о визах обновлены и уже используются.</string>
     <string name="settings_visa_result_offline">Не удалось связаться с сервером. Проверь подключение или повтори позже.</string>
     <string name="settings_visa_result_unavailable">Обновление сейчас недоступно.</string>
-    <string name="settings_visa_auto">Обновлять данные о визах автоматически</string>
+    <string name="settings_visa_auto">Обновлять данные о визах и рекомендации для путешественников автоматически</string>
     <string name="settings_visa_last_checked">Последняя проверка: %1$s</string>
     <string name="settings_visa_last_checked_never">Последняя проверка: никогда</string>
     <string name="settings_visa_check_now">Проверить сейчас</string>
@@ -164,6 +164,8 @@
     <string name="settings_licence_visa_body">Набор данных о визовых требованиях на основе материалов участников Википедии (CC BY-SA 4.0), см. THIRD_PARTY_NOTICES.md в репозитории</string>
     <string name="settings_licence_advice">Ссылки на официальные рекомендации</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральное министерство иностранных дел Германии)</string>
+    <string name="settings_licence_advisory">Рекомендации для путешественников</string>
+    <string name="settings_licence_advisory_body">Госдепартамент США (общественное достояние); Министерство иностранных дел Великобритании FCDO (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Библиотеки</string>
 
     <!-- Backup transfer results -->
