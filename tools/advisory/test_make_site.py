@@ -49,6 +49,16 @@ class MakeSiteTest(unittest.TestCase):
         with self.assertRaises(m.SiteError):
             m.build(b'{"dataFormat": 2, "countries": {}}', "https://x/y", live(site()))
 
+    def test_check_mode_accepts_a_good_file_and_rejects_a_bad_one(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            good, bad = Path(d) / "g.json", Path(d) / "b.json"
+            good.write_bytes(ADV)
+            bad.write_bytes(b"<html>")
+            self.assertEqual(m.main(["--check", str(good)]), 0)
+            self.assertEqual(m.main(["--check", str(bad)]), 1)
+            self.assertEqual(m.main(["--check", str(Path(d) / "none.json")]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

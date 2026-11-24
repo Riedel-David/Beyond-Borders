@@ -120,6 +120,7 @@ class DeTest(unittest.TestCase):
 
     def test_no_flag_is_stance_zero(self):
         self.assertEqual(self.row()["stance"], 0)
+        self.assertEqual(self.row()["label"], "Keine Reisewarnung")
 
     def test_partial_warning_is_stance_two_and_full_warning_stance_three(self):
         self.assertEqual(self.row(partial=True)["stance"], 2)
@@ -163,6 +164,28 @@ class AssembleTest(unittest.TestCase):
         with self.assertRaises(b.BuildError) as cm:
             b.assemble(per, self.FETCHED, "now")
         self.assertIn("UK", str(cm.exception))
+
+
+class KeepIfUnchangedTest(unittest.TestCase):
+    def doc(self, gen, fetched, stance=0):
+        return {"dataFormat": 1, "generatedAt": gen,
+                "sources": {"US": {"label": "US State Department", "fetchedAt": fetched}},
+                "countries": {"FR": {"US": {"stance": stance}}}}
+
+    def test_unchanged_countries_keep_the_previous_file_including_its_dates(self):
+        old = self.doc("2026-11-18T06:30:00Z", "2026-11-18T06:29:00Z")
+        new = self.doc("2026-11-25T06:30:00Z", "2026-11-25T06:29:00Z")
+        self.assertIs(b.keep_if_unchanged(new, old), old)
+
+    def test_a_changed_advisory_takes_the_new_file(self):
+        old = self.doc("a", "a")
+        new = self.doc("b", "b", stance=3)
+        self.assertIs(b.keep_if_unchanged(new, old), new)
+
+    def test_a_missing_or_malformed_previous_file_takes_the_new_file(self):
+        new = self.doc("b", "b")
+        self.assertIs(b.keep_if_unchanged(new, None), new)
+        self.assertIs(b.keep_if_unchanged(new, {"countries": 1}), new)
 
 
 class BuildTest(unittest.TestCase):

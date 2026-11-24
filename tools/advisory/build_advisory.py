@@ -256,7 +256,7 @@ def de_label(warning: bool, partial: bool) -> str:
         return "Reisewarnung"
     if partial:
         return "Teilreisewarnung"
-    return "Reise- und Sicherheitshinweise"  # the AA's heading for a country without a warning
+    return "Keine Reisewarnung"
 
 
 def parse_de(feed, valid_codes: set) -> dict:
@@ -303,6 +303,19 @@ def assemble(per_source: dict, fetched_at: dict, generated_at: str) -> dict:
         "sources": {s: {"label": SOURCES[s], "fetchedAt": fetched_at[s]} for s in ("US", "UK", "DE")},
         "countries": dict(sorted(countries.items())),
     }
+
+
+def keep_if_unchanged(new: dict, old) -> dict:
+    """'Data as of' must only move when an advisory does. If the countries and the source labels
+    match the previous file, return the previous file whole: that keeps generatedAt and also
+    fetchedAt, which changes on every run and would otherwise make every week look like a change
+    (and every publication a new file)."""
+    if isinstance(old, dict) and old.get("dataFormat") == new["dataFormat"] \
+            and old.get("countries") == new["countries"] \
+            and {k: v.get("label") for k, v in (old.get("sources") or {}).items()} \
+            == {k: v["label"] for k, v in new["sources"].items()}:
+        return old
+    return new
 
 
 def load_places() -> tuple:
@@ -407,6 +420,11 @@ def main(argv=None) -> int:
             download(args.cache)
             src = args.cache
         doc = build(src, now_iso())
+        if args.out.is_file():
+            try:
+                doc = keep_if_unchanged(doc, json.loads(args.out.read_text(encoding="utf-8")))
+            except ValueError:
+                pass  # an unreadable previous file is simply replaced
     except BuildError as e:
         print(f"advisory build FAILED, nothing written: {e}", file=sys.stderr)
         return 1

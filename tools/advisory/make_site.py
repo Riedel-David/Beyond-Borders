@@ -2,6 +2,7 @@
 files that are live right now.
 
 Usage: python3 -I tools/advisory/make_site.py <advisory.json> <base-url> <out-dir>
+       python3 -I tools/advisory/make_site.py --check <advisory.json>
 
 A Pages deployment replaces the whole site, so publishing advisory.json alone would delete
 manifest.json and every visa_<code>.json, and the app's visa updater would find nothing. This copies
@@ -74,6 +75,14 @@ def build(advisory: bytes, base: str, get=fetch) -> dict:
 
 
 def main(argv) -> int:
+    if len(argv) == 2 and argv[0] == "--check":
+        # Used by visa-refresh.yml to vet an advisory.json it is about to carry into its own site.
+        try:
+            check_advisory(Path(argv[1]).read_bytes())
+        except (SiteError, OSError) as e:
+            print(f"{argv[1]} is not a usable advisory.json: {e}", file=sys.stderr)
+            return 1
+        return 0
     if len(argv) != 3:
         print(__doc__, file=sys.stderr)
         return 2
