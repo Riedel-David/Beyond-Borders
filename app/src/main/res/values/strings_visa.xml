@@ -43,9 +43,6 @@
     <string name="visa_as_of_notice">Data as of %1$s for a %2$s passport — verify with the official government source before booking</string>
     <string name="visa_as_of_notice_two">Data as of %1$s for %2$s and %3$s passports — verify with the official government source before booking</string>
 
-    <string name="visa_official_link">Foreign Office advice</string>
-    <string name="visa_official_link_for">Foreign Office advice: %1$s</string>
-    <string name="visa_iata_link">IATA Travel Centre (search there)</string>
 
     <!-- Passport list -->
     <string name="visa_search_destinations">Search destinations</string>

@@ -336,7 +336,6 @@ fun PassportScreen(
                 onQuery = viewModel::setQuery,
                 onFilter = viewModel::setVisaFilter,
                 onSelect = viewModel::select,
-                nameOf = { code -> viewModel.placeOf(code)?.name },
                 combinedRequirementOf = viewModel::combinedRequirementOf,
                 partnerAvailable = partnerAvailable,
                 partnerMode = partnerMode,

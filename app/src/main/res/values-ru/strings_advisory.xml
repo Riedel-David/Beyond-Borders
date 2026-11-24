@@ -8,6 +8,7 @@
     <string name="advisory_tags">Теги риска: %1$s</string>
     <string name="advisory_updated">Обновлено: %1$s</string>
     <string name="advisory_open_source">Открыть источник</string>
+    <string name="advisory_open_source_for">Открыть источник, %1$s</string>
     <string name="advisory_as_of">Данные на %1$s</string>
     <string name="advisory_check_official">Это оценки трёх правительств. Формулировки для оценок Великобритании и Германии кратко передают публикуемые ими отметки; перед поездкой проверьте официальный источник. Здесь ничего не объединяется и не оценивается.</string>
 </resources>

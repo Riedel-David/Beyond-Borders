@@ -8,6 +8,7 @@
     <string name="advisory_tags">Etiquetas de risco: %1$s</string>
     <string name="advisory_updated">Atualizado em %1$s</string>
     <string name="advisory_open_source">Abrir a fonte</string>
+    <string name="advisory_open_source_for">Abrir a fonte, %1$s</string>
     <string name="advisory_as_of">Dados de %1$s</string>
     <string name="advisory_check_official">Estas são as classificações de três governos. O texto mostrado para as do Reino Unido e da Alemanha resume os indicadores que eles publicam; consulte a fonte oficial antes de viajar. Aqui nada é combinado nem pontuado.</string>
 </resources>

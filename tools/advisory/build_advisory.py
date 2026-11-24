@@ -40,9 +40,9 @@ DEFAULT_CACHE = ROOT / "tools/advisory/cache"
 US_URL = "https://cadataapi.state.gov/api/TravelAdvisories"
 UK_INDEX_URL = "https://www.gov.uk/api/content/foreign-travel-advice"
 DE_URL = "https://www.auswaertiges-amt.de/opendata/travelwarning"
-# The AA feed carries no per-country page address and the real ones embed a node number, so every
-# German row links to the country overview, from which each page is one tap away.
-DE_LINK = "https://www.auswaertiges-amt.de/de/service/laender"
+# The AA feed has no page address, but each entry's key is the page's node id and
+# /de/-/<node id> resolves to the country's own page (it matches the officialUrl in visa.json).
+DE_LINK = "https://www.auswaertiges-amt.de/de/-/"
 
 SOURCES = {"US": "US State Department", "UK": "UK FCDO", "DE": "Auswärtiges Amt"}
 
@@ -273,6 +273,8 @@ def parse_de(feed, valid_codes: set) -> dict:
             continue
         if not isinstance(e.get("warning"), bool) or not isinstance(e.get("partialWarning"), bool):
             raise BuildError(f"DE entry {code} has non-boolean warning flags")
+        if not str(key).isdigit():
+            raise BuildError(f"DE entry {code} has a non-numeric node id {key!r}")
         warning, partial = e["warning"], e["partialWarning"]
         stance = 3 if warning else 2 if partial else 0
         updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
@@ -280,7 +282,7 @@ def parse_de(feed, valid_codes: set) -> dict:
             "stance": stance,
             "label": de_label(warning, partial),
             "updated": updated.date().isoformat(),
-            "url": DE_LINK,
+            "url": DE_LINK + str(key),
         })
     if bad:
         raise BuildError("DE entries with no usable ISO code: " + ", ".join(sorted(bad)))

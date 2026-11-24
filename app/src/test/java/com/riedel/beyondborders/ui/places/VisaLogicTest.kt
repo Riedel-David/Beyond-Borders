@@ -10,7 +10,6 @@ import com.riedel.beyondborders.data.visa.VisaConfidence
 import com.riedel.beyondborders.data.visa.VisaRegistry
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
-import com.riedel.beyondborders.ui.visa.officialLinkText
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -404,22 +403,5 @@ class VisaLogicTest {
             UiText.Res(R.string.visa_as_of_notice, "2026-02-17", UiText.Res(R.string.visa_adjective_de)),
             asOfNoticeText(visa),
         )
-    }
-
-    /**
-     * The label follows the page, not the place. Greenland's advice lives on the
-     * Denmark page, and a link reading "Greenland" that opens a page headed Dänemark
-     * would look like a bug in the one place this app claims to be careful.
-     */
-    @Test
-    fun `a parent's advice page is labelled with the parent's name`() {
-        val nameOf = { code: String -> places.firstOrNull { it.code == code }?.name }
-        assertEquals(
-            UiText.Res(R.string.visa_official_link_for, "Denmark"),
-            officialLinkText(visa["GL"]!!, nameOf = { "Denmark" }),
-        )
-        assertEquals(UiText.Res(R.string.visa_official_link), officialLinkText(visa["US"]!!, nameOf))
-        // An unknown parent falls back to its code rather than to "null".
-        assertEquals(UiText.Res(R.string.visa_official_link_for, "NO"), officialLinkText(visa["BV"]!!, nameOf))
     }
 }

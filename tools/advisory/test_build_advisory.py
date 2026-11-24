@@ -131,6 +131,16 @@ class DeTest(unittest.TestCase):
     def test_a_full_warning_wins_over_a_partial_one(self):
         self.assertEqual(self.row(warning=True, partial=True)["stance"], 3)
 
+    def test_the_url_is_the_country_page_ending_in_its_node_id(self):
+        feed = {"response": {"lastModified": 1, "contentList": ["226268"], "226268": de("FR")}}
+        url = b.parse_de(feed, VALID)["FR"]["url"]
+        self.assertEqual(url, "https://www.auswaertiges-amt.de/de/-/226268")
+
+    def test_a_non_numeric_node_id_is_an_error(self):
+        feed = {"response": {"lastModified": 1, "abc": de("FR")}}
+        with self.assertRaises(b.BuildError):
+            b.parse_de(feed, VALID)
+
     def test_the_date_is_the_last_modified_epoch_in_utc(self):
         self.assertEqual(self.row()["updated"], "2026-10-13")
 

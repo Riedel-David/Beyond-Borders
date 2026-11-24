@@ -59,7 +59,6 @@ import com.riedel.beyondborders.ui.InfoButton
 import com.riedel.beyondborders.ui.UiText
 import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.CombinedRequirement
-import com.riedel.beyondborders.ui.places.TravelAdviceRow
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.places.combinedBandCounts
@@ -69,11 +68,9 @@ import com.riedel.beyondborders.ui.theme.VisaRamp
 import com.riedel.beyondborders.ui.places.PartnerComparison
 import com.riedel.beyondborders.ui.places.PartnerSources
 import com.riedel.beyondborders.ui.places.rowSource
-import com.riedel.beyondborders.ui.places.showTravelAdvice
 import com.riedel.beyondborders.ui.visa.PartnerRows
 import com.riedel.beyondborders.ui.visa.asOfNoticeText
 import com.riedel.beyondborders.ui.visa.partnerAsOfNoticeText
-import com.riedel.beyondborders.ui.visa.officialLinkText
 import com.riedel.beyondborders.ui.visa.requirementSummaryText
 
 /**
@@ -100,7 +97,6 @@ internal fun LazyListScope.visaSection(
     onQuery: (String) -> Unit,
     onFilter: (VisaFilter) -> Unit,
     onSelect: (String?) -> Unit,
-    nameOf: (String) -> String?,
     combinedRequirementOf: (String) -> CombinedRequirement?,
     // Partner mode's switch is offered only when a caller supplies [onPartnerMode]. The
     // mode itself needs no wiring here: [visa], [rows] and [filters] already arrive as the
@@ -242,7 +238,6 @@ internal fun LazyListScope.visaSection(
                 onClick = {
                     onSelect(if (row.place.code == selectedCode) null else row.place.code)
                 },
-                nameOf = nameOf,
                 visa = visa,
                 secondVisa = secondVisa,
                 partnerSources = partnerSources,
@@ -488,7 +483,6 @@ private fun VisaListRow(
     row: VisaRow,
     expanded: Boolean,
     onClick: () -> Unit,
-    nameOf: (String) -> String?,
     visa: VisaRegistry,
     secondVisa: VisaRegistry?,
     partnerSources: PartnerSources?,
@@ -557,7 +551,6 @@ private fun VisaListRow(
                 secondVisa = secondVisa,
                 partner = combined?.partner,
                 partnerSources = partnerSources,
-                nameOf = nameOf,
                 modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 8.dp),
             )
         }
@@ -578,15 +571,11 @@ private fun VisaDetail(
     secondVisa: VisaRegistry?,
     partner: PartnerComparison?,
     partnerSources: PartnerSources?,
-    nameOf: (String) -> String?,
     modifier: Modifier = Modifier,
 ) {
     val requirement = row.requirement
     // Where the partner's answer limits the pair, their registry is the one the links point at.
     val source = rowSource(visa, partnerSources, partner)
-    // The user's own passport countries, and the partner's while partner mode is on: FCDO advice for home is noise on those rows.
-    val ownPassports = partnerSources?.all?.map { it.passport }
-        ?: listOfNotNull(visa.passport, secondVisa?.passport)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         partner?.let { PartnerRows(it, Modifier.padding(bottom = 4.dp), showCaveat = false) }
         requirement.note?.let { note ->
@@ -646,18 +635,8 @@ private fun VisaDetail(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
         )
-        requirement.officialUrl?.let { url ->
-            LinkText(officialLinkText(requirement, nameOf).asString(), url)
-        }
-        // Named for what it is. The IATA Travel Centre is one form for the whole
-        // world, so calling it "IATA: Suriname" would promise a page that does not
-        // exist.
-        LinkText(stringResource(R.string.visa_iata_link), source.iataUrl)
         if (source !== visa) {
             source.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, source.passport), it) }
-        }
-        if (showTravelAdvice(row.place.code, ownPassports)) {
-            TravelAdviceRow(row.place.code)
         }
         AdvisorySection(row.place.code)
     }

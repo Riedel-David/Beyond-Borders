@@ -45,9 +45,6 @@
     <string name="visa_as_of_notice">Stand %1$s (%2$s Reisepass) – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
     <string name="visa_as_of_notice_two">Stand %1$s (%2$s und %3$s Reisepass) – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
 
-    <string name="visa_official_link">Hinweise des Auswärtigen Amts</string>
-    <string name="visa_official_link_for">Hinweise des Auswärtigen Amts: %1$s</string>
-    <string name="visa_iata_link">IATA Travel Centre (dort suchen)</string>
 
     <!-- Passport list -->
     <string name="visa_search_destinations">Reiseziele suchen</string>

@@ -8,6 +8,7 @@
     <string name="advisory_tags">Risques signalés : %1$s</string>
     <string name="advisory_updated">Mis à jour le %1$s</string>
     <string name="advisory_open_source">Ouvrir la source</string>
+    <string name="advisory_open_source_for">Ouvrir la source, %1$s</string>
     <string name="advisory_as_of">Données au %1$s</string>
     <string name="advisory_check_official">Voici les évaluations de trois gouvernements. Le texte affiché pour celles du Royaume-Uni et de l\'Allemagne résume les indicateurs qu\'ils publient ; consultez la source officielle avant de voyager. Rien n\'est combiné ni noté ici.</string>
 </resources>

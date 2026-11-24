@@ -1,27 +1,31 @@
 package com.riedel.beyondborders.ui.passport
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.R
@@ -113,18 +117,33 @@ private fun AdvisoryRow(source: String, entry: AdvisoryEntry?, locale: Locale) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            // The date takes the leftover width and wraps; the link keeps its own, so
+            // neither a large font scale nor a long translation can push one off the row.
             Text(
                 stringResource(R.string.advisory_updated, formatAdvisoryDate(entry.updated, locale)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
             )
             val uriHandler = LocalUriHandler.current
-            // Guarded like the other links: a device with no browser must not crash on tap.
-            TextButton(
-                onClick = { runCatching { uriHandler.openUri(entry.url) } },
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-            ) { Text(stringResource(R.string.advisory_open_source), style = MaterialTheme.typography.labelMedium) }
+            val description = stringResource(R.string.advisory_open_source_for, source)
+            // Plain text rather than a TextButton, whose 40dp minimum height inflated the
+            // row. Guarded like the other links: a device with no browser must not crash on tap.
+            Text(
+                stringResource(R.string.advisory_open_source),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .clickable(role = Role.Button) { runCatching { uriHandler.openUri(entry.url) } }
+                    .semantics { contentDescription = description }
+                    .padding(vertical = 4.dp),
+            )
         }
     }
 }

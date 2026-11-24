@@ -75,17 +75,3 @@ fun asOfNoticeText(primary: VisaRegistry, second: VisaRegistry): UiText {
 /** Partner mode's disclaimer: the registry is a mixture, so it names no single passport. */
 fun partnerAsOfNoticeText(visa: VisaRegistry): UiText =
     UiText.Res(R.string.visa_as_of_notice_partner, visa.asOf)
-
-/**
- * How the Auswärtiges Amt link should be labelled.
- *
- * Named for the country whose page it actually is. Greenland's advice lives on the
- * Denmark page, and a link that said "Foreign Office: Greenland" while opening a page
- * headed Dänemark would look like a bug in exactly the place this app claims to be
- * careful about.
- */
-fun officialLinkText(requirement: VisaRequirement, nameOf: (String) -> String?): UiText {
-    val parent = requirement.officialFor ?: return UiText.Res(R.string.visa_official_link)
-    val name = nameOf(parent) ?: parent
-    return UiText.Res(R.string.visa_official_link_for, name)
-}

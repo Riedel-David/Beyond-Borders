@@ -264,16 +264,6 @@ class PartnerModeTest {
     }
 
     @Test
-    fun `travel advice is hidden for the own passports only, not where an official link shows`() {
-        assertEquals(false, showTravelAdvice("DE", listOf("DE")))
-        assertEquals(false, showTravelAdvice("fr", listOf("DE", "FR")))
-        assertEquals(true, showTravelAdvice("JP", listOf("DE")))
-        assertEquals(true, showTravelAdvice("JP", listOf("DE", "FR")))
-        // The partner's passport country is passed in alongside the user's in partner mode.
-        assertEquals(false, showTravelAdvice("UA", listOf("DE", "FR", "UA")))
-    }
-
-    @Test
     fun `a partner who becomes one of your own passports is cleared and others are kept`() {
         assertEquals(null, com.riedel.beyondborders.settings.partnerAfterOwnChange("FR", "FR"))
         assertEquals("FR", com.riedel.beyondborders.settings.partnerAfterOwnChange("FR", "DE"))

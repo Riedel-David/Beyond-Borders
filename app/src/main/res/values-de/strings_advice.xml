@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="advice_link">Reisehinweise der britischen Regierung prüfen (FCDO)</string>
-    <string name="advice_note">Öffnet eine externe Website im Browser. Die App sendet dabei nichts.</string>
-    <string name="advice_no_browser">Kein Browser zum Öffnen des Links gefunden.</string>
-</resources>

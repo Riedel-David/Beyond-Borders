@@ -47,9 +47,6 @@
     <string name="visa_as_of_notice">Дані станом на %1$s (%2$s паспорт) — перевір в офіційному урядовому джерелі перед бронюванням</string>
     <string name="visa_as_of_notice_two">Дані станом на %1$s (%2$s і %3$s паспорти) — перевір в офіційному урядовому джерелі перед бронюванням</string>
 
-    <string name="visa_official_link">Рекомендації міністерства закордонних справ</string>
-    <string name="visa_official_link_for">Рекомендації міністерства закордонних справ: %1$s</string>
-    <string name="visa_iata_link">IATA Travel Centre (шукай там)</string>
 
     <!-- Passport list -->
     <string name="visa_search_destinations">Шукати напрямки</string>

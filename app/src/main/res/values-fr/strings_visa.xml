@@ -46,9 +46,6 @@
     <string name="visa_as_of_notice">Données au %1$s pour un passeport %2$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
     <string name="visa_as_of_notice_two">Données au %1$s pour les passeports %2$s et %3$s : vérifie auprès de la source officielle du gouvernement avant de réserver</string>
 
-    <string name="visa_official_link">Conseils aux voyageurs (Affaires étrangères)</string>
-    <string name="visa_official_link_for">Conseils aux voyageurs (Affaires étrangères) : %1$s</string>
-    <string name="visa_iata_link">IATA Travel Centre (recherche sur le site)</string>
 
     <!-- Passport list -->
     <string name="visa_search_destinations">Rechercher une destination</string>
