@@ -1833,9 +1833,9 @@ private fun SelectedPlaceCard(
             ),
     ) {
         Column(Modifier.heightIn(max = maxCardHeight).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            // The live region is the header only: announcing the whole card re-read
-            // every chip and visit on each status change.
-            Row(Modifier.semantics { liveRegion = LiveRegionMode.Polite }, verticalAlignment = Alignment.CenterVertically) {
+            // The live region is the header's text only (below): announcing the whole card
+            // re-read every chip and visit on each status change.
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 // No flag (or still decoding): no slot at all. With one, the slot is a
                 // fixed width so the text does not shift between a wide and a square flag.
                 flag?.let {
@@ -1865,7 +1865,9 @@ private fun SelectedPlaceCard(
                     }
                     Spacer(Modifier.width(12.dp))
                 }
-                Column(Modifier.weight(1f)) {
+                // The live region is scoped to the text, not the whole header row: the flag
+                // button's long label would otherwise be announced on every selection.
+                Column(Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }) {
                 Text(
                     place.name,
                     style = MaterialTheme.typography.titleMedium,

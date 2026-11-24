@@ -9,9 +9,14 @@ import com.riedel.beyondborders.data.visa.VisaRequirement
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlaceRow
+import com.riedel.beyondborders.ui.places.ShowInListPlan
+import com.riedel.beyondborders.ui.places.StatusFilter
+import com.riedel.beyondborders.ui.places.VisaFilter
+import com.riedel.beyondborders.ui.places.showInListPlan
 import com.riedel.beyondborders.ui.places.VisaRow
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -89,8 +94,43 @@ class ShowCountryTest {
     }
 
     @Test
-    fun `two requests for the same country are distinct values`() {
-        val a = ShowCountryRequest("FR", PassportMode.TRAVEL, 1)
-        assertNotEquals(a, ShowCountryRequest("FR", PassportMode.TRAVEL, 2))
+    fun `the list is settled only once the query and the mode's filters are cleared`() {
+        val all = StatusFilter.ALL
+        val none = VisaFilter.All
+        assertTrue(listSettledForShow(PassportMode.TRAVEL, "", all, none, wishlistOnly = false))
+        assertFalse(listSettledForShow(PassportMode.TRAVEL, "fra", all, none, wishlistOnly = false))
+        assertFalse(listSettledForShow(PassportMode.TRAVEL, "", StatusFilter.BEEN, none, wishlistOnly = false))
+        assertTrue(listSettledForShow(PassportMode.TRAVEL, "", all, VisaFilter.Easy, wishlistOnly = true))
+        assertFalse(listSettledForShow(PassportMode.VISA, "", all, VisaFilter.Easy, wishlistOnly = false))
+        assertFalse(listSettledForShow(PassportMode.VISA, "", all, none, wishlistOnly = true))
+        assertTrue(listSettledForShow(PassportMode.VISA, "", StatusFilter.BEEN, none, wishlistOnly = false))
+    }
+
+    @Test
+    fun `a country with no row resets nothing`() {
+        assertEquals(
+            ShowInListPlan(false, false, false, null),
+            showInListPlan(PassportMode.VISA, present = false, collapseKey = "x", collapsed = setOf("x")),
+        )
+    }
+
+    @Test
+    fun `the travel plan resets the status filter and drops only a collapsed key`() {
+        assertEquals(
+            ShowInListPlan(true, true, false, europeKey),
+            showInListPlan(PassportMode.TRAVEL, present = true, collapseKey = europeKey, collapsed = setOf(europeKey)),
+        )
+        assertEquals(
+            ShowInListPlan(true, true, false, null),
+            showInListPlan(PassportMode.TRAVEL, present = true, collapseKey = europeKey, collapsed = emptySet()),
+        )
+    }
+
+    @Test
+    fun `the visa plan resets the visa filters and leaves collapse alone`() {
+        assertEquals(
+            ShowInListPlan(true, false, true, null),
+            showInListPlan(PassportMode.VISA, present = true, collapseKey = europeKey, collapsed = setOf(europeKey)),
+        )
     }
 }

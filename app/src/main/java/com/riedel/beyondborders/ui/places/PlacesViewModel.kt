@@ -664,27 +664,32 @@ class PlacesViewModel(
 
     /**
      * Makes [code] reachable in the Passport list for a "show this country" jump: selects
-     * it, picks the mode, and drops whatever would hide its row (the query, the status or
-     * visa filters, a collapsed section). Landing on the country is the point of the tap,
-     * so these resets are intended; the collapse change is the one that persists.
+     * it, picks the mode, and, when the country has a row, drops whatever would hide it
+     * (see [showInListPlan]). Returns whether the row exists, so a country with nothing
+     * to show leaves the user's query and filters alone.
      */
-    fun showInList(code: String, mode: PassportMode) {
+    fun showInList(code: String, mode: PassportMode): Boolean {
         select(code)
         setMode(mode)
+        val place = placeOf(code)
+        val grouping = _grouping.value
+        val plan = showInListPlan(
+            mode = mode,
+            present = if (mode == PassportMode.VISA) combinedRequirementOf(code) != null else place != null,
+            collapseKey = place?.let { "${grouping.name}:${sectionHeader(it, grouping)}" },
+            collapsed = settings.collapsedHeaders.value,
+        )
+        if (!plan.present) return false
         setQuery("")
-        if (mode == PassportMode.VISA) {
+        if (plan.resetStatusFilter) setStatusFilter(StatusFilter.ALL)
+        if (plan.resetVisaFilters) {
             setVisaFilter(VisaFilter.All)
             setWishlistOnly(false)
-        } else {
-            setStatusFilter(StatusFilter.ALL)
-            placeOf(code)?.let { place ->
-                val grouping = _grouping.value
-                val key = "${grouping.name}:${sectionHeader(place, grouping)}"
-                val current = settings.collapsedHeaders.value
-                if (key in current) settings.setCollapsedHeaders(current - key)
-            }
         }
+        plan.collapseKeyToDrop?.let { settings.setCollapsedHeaders(settings.collapsedHeaders.value - it) }
+        return true
     }
+
     fun setVisaFilter(value: VisaFilter) { _visaFilter.value = value }
     fun setWishlistOnly(value: Boolean) { _wishlistOnly.value = value }
 
@@ -1665,4 +1670,28 @@ internal fun shouldCentreOnHome(centredFor: String?, code: String, saved: MapCam
     centredFor == code -> false
     centredFor != null -> true
     else -> saved == null || saved.zoom < HOME_ZOOM_MIN
+}
+
+/** What [PlacesViewModel.showInList] changes to make a country's row reachable. */
+internal data class ShowInListPlan(
+    val present: Boolean,
+    val resetStatusFilter: Boolean,
+    val resetVisaFilters: Boolean,
+    val collapseKeyToDrop: String?,
+)
+
+/**
+ * Nothing is reset for a country with no row to show ([present] false): wiping the user's
+ * filters for a jump that cannot land helps no one. The collapse key is dropped only in
+ * the travel list, the only one with collapsible sections, and only if it is collapsed.
+ */
+internal fun showInListPlan(
+    mode: PassportMode,
+    present: Boolean,
+    collapseKey: String?,
+    collapsed: Set<String>,
+): ShowInListPlan = when {
+    !present -> ShowInListPlan(false, false, false, null)
+    mode == PassportMode.VISA -> ShowInListPlan(true, false, true, null)
+    else -> ShowInListPlan(true, true, false, collapseKey?.takeIf { it in collapsed })
 }

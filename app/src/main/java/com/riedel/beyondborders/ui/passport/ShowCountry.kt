@@ -3,18 +3,37 @@ package com.riedel.beyondborders.ui.passport
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlaceRow
+import com.riedel.beyondborders.ui.places.StatusFilter
+import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.places.sectionHeader
 
 /**
  * A one-shot "show this country in the list" from the map's selected-country card.
  *
- * [nonce] gives every tap its own identity: a second tap on the same flag is an equal
- * `code` and `mode`, and a data class assigned an equal value is a no-op for
- * `mutableStateOf`, so the effect keyed on it would never run again. Deliberately kept
- * out of `rememberSaveable` so a stale request cannot replay after rotation or process death.
+ * Two taps on the same flag are equal values, which a `mutableStateOf` would ignore, but
+ * the root nulls the request on every consumption and the Passport tab is a different
+ * screen from the map, so each tap is a null-to-value change and re-fires the effect.
+ * Deliberately not `rememberSaveable`, so a stale request cannot replay after rotation
+ * or process death.
  */
-data class ShowCountryRequest(val code: String, val mode: PassportMode, val nonce: Long)
+data class ShowCountryRequest(val code: String, val mode: PassportMode)
+
+/**
+ * Whether the list the screen is showing has had the "show country" reset applied, i.e.
+ * nothing the reset clears is still hiding rows. Until then a row index would refer to
+ * the previous, filtered list.
+ */
+internal fun listSettledForShow(
+    mode: PassportMode,
+    query: String,
+    statusFilter: StatusFilter,
+    visaFilter: VisaFilter,
+    wishlistOnly: Boolean,
+): Boolean = query.isBlank() && when (mode) {
+    PassportMode.VISA -> visaFilter == VisaFilter.All && !wishlistOnly
+    PassportMode.TRAVEL -> statusFilter == StatusFilter.ALL
+}
 
 /**
  * The absolute `LazyColumn` item index of [code]'s row in the travel list, or null when

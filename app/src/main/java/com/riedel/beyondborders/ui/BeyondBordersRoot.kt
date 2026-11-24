@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
-import android.os.SystemClock
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -139,7 +138,7 @@ fun BeyondBordersRoot(
     }
     val tab = Tab.entries[selected]
     // Not saveable: a request left over from before a rotation or process death must not
-    // replay. The nonce makes a repeat tap on the same flag a new value.
+    // replay. Consumption nulls it, so a repeat tap is a new value again.
     var showCountry by remember { mutableStateOf<ShowCountryRequest?>(null) }
     // A request the Passport tab never got to consume (the user left first) is dropped
     // rather than fired on their next visit.
@@ -242,8 +241,11 @@ fun BeyondBordersRoot(
                             placesViewModel,
                             contentPadding = padding,
                             onShowInList = { code, mode ->
-                                placesViewModel.showInList(code, mode)
-                                showCountry = ShowCountryRequest(code, mode, SystemClock.uptimeMillis())
+                                // Absent from the list (no visa requirement): switch tab and
+                                // mode only, without a request and so without a wait.
+                                if (placesViewModel.showInList(code, mode)) {
+                                    showCountry = ShowCountryRequest(code, mode)
+                                }
                                 selected = Tab.PASSPORT.ordinal
                             },
                         )

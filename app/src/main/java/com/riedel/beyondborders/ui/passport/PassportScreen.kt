@@ -223,9 +223,9 @@ fun PassportScreen(
 
     // A "show this country" request lands on the list, never on a stats screen the app
     // was left on. The scroll itself waits below for the list to exist.
-    LaunchedEffect(showCountry) {
-        if (showCountry != null) showStatsDetail = false
-    }
+    // A plain guarded write, not an effect: an effect runs after the first frame, which
+    // would draw the restored stats screen once before the list.
+    if (showCountry != null && showStatsDetail) showStatsDetail = false
 
     // Shared by both modes, since the fast-scroll overlay below reads from whichever
     // one is on screen: a rememberSaveable would restore a scroll offset that no
@@ -308,7 +308,10 @@ fun PassportScreen(
     // snapshotFlow and waited for, with a timeout so an absent country (no visa data, no
     // passport) can never leave the request pending. Either way it is consumed.
     val rowIndexOf by rememberUpdatedState { request: ShowCountryRequest ->
-        if (mode != request.mode) {
+        // Rows are derived flows that lag the reset the tap made, so no index is read until
+        // the query and filters the screen sees are the reset ones: an index into the
+        // old, still-filtered list would land in the wrong section.
+        if (mode != request.mode || !listSettledForShow(mode, query, statusFilter, visaFilter, wishlistOnly)) {
             null
         } else if (request.mode == PassportMode.VISA) {
             visaRowItemIndex(visaRows, request.code, headerSlots.size - visaHeaderCategorySlots(visaRows).size)
@@ -321,11 +324,16 @@ fun PassportScreen(
     }
     LaunchedEffect(showCountry) {
         val request = showCountry ?: return@LaunchedEffect
-        val index = withTimeoutOrNull(2_000) {
-            snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+        // Consumed in a finally: a cancelled scroll (the user's own touch, leaving the
+        // tab) must not leave the request to replay on a later visit.
+        try {
+            val index = withTimeoutOrNull(2_000) {
+                snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+            }
+            if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
+        } finally {
+            onShowCountryConsumed()
         }
-        if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
-        onShowCountryConsumed()
     }
 
     Box(modifier.fillMaxSize()) {
