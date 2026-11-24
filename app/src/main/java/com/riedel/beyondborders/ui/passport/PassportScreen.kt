@@ -83,6 +83,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -154,6 +158,8 @@ fun PassportScreen(
     viewModel: PlacesViewModel,
     openStats: Boolean? = null,
     onStatsConsumed: () -> Unit = {},
+    showCountry: ShowCountryRequest? = null,
+    onShowCountryConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val rowsByKey by viewModel.rows.collectAsStateWithLifecycle()
@@ -213,6 +219,12 @@ fun PassportScreen(
             showStatsDetail = it
             onStatsConsumed()
         }
+    }
+
+    // A "show this country" request lands on the list, never on a stats screen the app
+    // was left on. The scroll itself waits below for the list to exist.
+    LaunchedEffect(showCountry) {
+        if (showCountry != null) showStatsDetail = false
     }
 
     // Shared by both modes, since the fast-scroll overlay below reads from whichever
@@ -290,6 +302,30 @@ fun PassportScreen(
                 addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
             }
         }
+    }
+
+    // Rows fill in asynchronously, so the target index is looked up from live state inside
+    // snapshotFlow and waited for, with a timeout so an absent country (no visa data, no
+    // passport) can never leave the request pending. Either way it is consumed.
+    val rowIndexOf by rememberUpdatedState { request: ShowCountryRequest ->
+        if (mode != request.mode) {
+            null
+        } else if (request.mode == PassportMode.VISA) {
+            visaRowItemIndex(visaRows, request.code, headerSlots.size - visaHeaderCategorySlots(visaRows).size)
+        } else {
+            travelRowItemIndex(
+                rows, grouping, collapsedHeaders, query, request.code,
+                headerSlots.size - travelHeaderSlots(rows, grouping, collapsedHeaders, query).size,
+            )
+        }
+    }
+    LaunchedEffect(showCountry) {
+        val request = showCountry ?: return@LaunchedEffect
+        val index = withTimeoutOrNull(2_000) {
+            snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+        }
+        if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
+        onShowCountryConsumed()
     }
 
     Box(modifier.fillMaxSize()) {

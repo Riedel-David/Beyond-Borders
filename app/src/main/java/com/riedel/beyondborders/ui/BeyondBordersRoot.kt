@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
+import android.os.SystemClock
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -44,6 +45,7 @@ import com.riedel.beyondborders.AppContainer
 import com.riedel.beyondborders.R
 import com.riedel.beyondborders.ui.map.MapScreen
 import com.riedel.beyondborders.ui.passport.PassportScreen
+import com.riedel.beyondborders.ui.passport.ShowCountryRequest
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.ReviewChoice
 import com.riedel.beyondborders.ui.places.reviewChannelAllowed
@@ -136,6 +138,12 @@ fun BeyondBordersRoot(
         }
     }
     val tab = Tab.entries[selected]
+    // Not saveable: a request left over from before a rotation or process death must not
+    // replay. The nonce makes a repeat tap on the same flag a new value.
+    var showCountry by remember { mutableStateOf<ShowCountryRequest?>(null) }
+    // A request the Passport tab never got to consume (the user left first) is dropped
+    // rather than fired on their next visit.
+    LaunchedEffect(tab) { if (tab != Tab.PASSPORT) showCountry = null }
     // Back from Passport or Settings goes to the map first and exits only from there.
     // Registered here, below nothing: PassportScreen's own handler for the stats detail is
     // composed deeper and so wins while it is open, and dialogs take back before either.
@@ -230,7 +238,15 @@ fun BeyondBordersRoot(
                     // above the system bars, so it takes the Scaffold's padding as
                     // contentPadding instead of having it applied here.
                     Tab.MAP -> Box(Modifier.fillMaxSize()) {
-                        MapScreen(placesViewModel, contentPadding = padding)
+                        MapScreen(
+                            placesViewModel,
+                            contentPadding = padding,
+                            onShowInList = { code, mode ->
+                                placesViewModel.showInList(code, mode)
+                                showCountry = ShowCountryRequest(code, mode, SystemClock.uptimeMillis())
+                                selected = Tab.PASSPORT.ordinal
+                            },
+                        )
                     }
                     // Passport and Settings are lists: capped and centred on a wide window.
                     // The bottom bar stays full width, like the map.
@@ -239,6 +255,8 @@ fun BeyondBordersRoot(
                             viewModel = placesViewModel,
                             openStats = openStats,
                             onStatsConsumed = { openStats = null },
+                            showCountry = showCountry,
+                            onShowCountryConsumed = { showCountry = null },
                         )
                     }
                     Tab.SETTINGS -> CappedWidth(Modifier.padding(padding)) {

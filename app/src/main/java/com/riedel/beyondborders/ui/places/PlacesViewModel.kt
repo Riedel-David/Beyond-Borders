@@ -661,6 +661,30 @@ class PlacesViewModel(
     fun setStatusFilter(value: StatusFilter) { _statusFilter.value = value }
     fun select(code: String?) { _selectedCode.value = code }
     fun setMode(value: PassportMode) { _mode.value = value }
+
+    /**
+     * Makes [code] reachable in the Passport list for a "show this country" jump: selects
+     * it, picks the mode, and drops whatever would hide its row (the query, the status or
+     * visa filters, a collapsed section). Landing on the country is the point of the tap,
+     * so these resets are intended; the collapse change is the one that persists.
+     */
+    fun showInList(code: String, mode: PassportMode) {
+        select(code)
+        setMode(mode)
+        setQuery("")
+        if (mode == PassportMode.VISA) {
+            setVisaFilter(VisaFilter.All)
+            setWishlistOnly(false)
+        } else {
+            setStatusFilter(StatusFilter.ALL)
+            placeOf(code)?.let { place ->
+                val grouping = _grouping.value
+                val key = "${grouping.name}:${sectionHeader(place, grouping)}"
+                val current = settings.collapsedHeaders.value
+                if (key in current) settings.setCollapsedHeaders(current - key)
+            }
+        }
+    }
     fun setVisaFilter(value: VisaFilter) { _visaFilter.value = value }
     fun setWishlistOnly(value: Boolean) { _wishlistOnly.value = value }
 

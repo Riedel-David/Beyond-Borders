@@ -128,4 +128,6 @@
     <string name="map_partner_state_off">Aus</string>
     <string name="map_legend_partner">Wohin ihr beide könnt</string>
     <string name="map_no_data_partner">Für mindestens einen der beiden Reisepässe liegt keine Antwort vor – vor der Reise bei offiziellen Quellen prüfen.</string>
+    <string name="map_show_in_list">%1$s in der Liste anzeigen</string>
+    <string name="map_show_in_visa_list">%1$s unter „Wohin ich reisen kann“ anzeigen</string>
 </resources>

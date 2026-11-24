@@ -136,4 +136,6 @@
     <string name="map_partner_state_off">Вимкнено</string>
     <string name="map_legend_partner">Куди можете обоє</string>
     <string name="map_no_data_partner">Немає відповіді принаймні для одного з двох паспортів — перевір офіційні джерела перед поїздкою.</string>
+    <string name="map_show_in_list">Показати %1$s у списку</string>
+    <string name="map_show_in_visa_list">Показати %1$s у списку «Куди я можу поїхати»</string>
 </resources>
