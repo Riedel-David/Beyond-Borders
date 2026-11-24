@@ -3,6 +3,7 @@ package com.riedel.beyondborders.ui.passport
 import com.riedel.beyondborders.ui.places.Grouping
 import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.places.PlaceRow
+import com.riedel.beyondborders.ui.places.StampedRows
 import com.riedel.beyondborders.ui.places.StatusFilter
 import com.riedel.beyondborders.ui.places.VisaFilter
 import com.riedel.beyondborders.ui.places.VisaRow
@@ -34,6 +35,14 @@ internal fun listSettledForShow(
     PassportMode.VISA -> visaFilter == VisaFilter.All && !wishlistOnly
     PassportMode.TRAVEL -> statusFilter == StatusFilter.ALL
 }
+
+/**
+ * [listSettledForShow] judged on the filters this list was built under, not on the live
+ * filter flows: those flip first, so for a frame they read as reset while the list is still
+ * the old filtered one, and an index read from it points at the wrong row.
+ */
+internal fun <T> StampedRows<T>.settledForShow(mode: PassportMode): Boolean =
+    listSettledForShow(mode, query, statusFilter, visaFilter, wishlistOnly)
 
 /**
  * The absolute `LazyColumn` item index of [code]'s row in the travel list, or null when

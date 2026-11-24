@@ -12,6 +12,7 @@ import com.riedel.beyondborders.ui.places.PlaceRow
 import com.riedel.beyondborders.ui.places.ShowInListPlan
 import com.riedel.beyondborders.ui.places.StatusFilter
 import com.riedel.beyondborders.ui.places.VisaFilter
+import com.riedel.beyondborders.ui.places.StampedRows
 import com.riedel.beyondborders.ui.places.showInListPlan
 import com.riedel.beyondborders.ui.places.VisaRow
 import org.junit.Assert.assertEquals
@@ -104,6 +105,19 @@ class ShowCountryTest {
         assertFalse(listSettledForShow(PassportMode.VISA, "", all, VisaFilter.Easy, wishlistOnly = false))
         assertFalse(listSettledForShow(PassportMode.VISA, "", all, none, wishlistOnly = true))
         assertTrue(listSettledForShow(PassportMode.VISA, "", StatusFilter.BEEN, none, wishlistOnly = false))
+    }
+
+    @Test
+    fun `a list still stamped with the old filters is not settled even once the live filters read as reset`() {
+        val filteredTravel = StampedRows(listOf(row("FR", "Europe")), query = "fra", statusFilter = StatusFilter.BEEN)
+        val freshTravel = StampedRows(travel)
+        assertFalse(filteredTravel.settledForShow(PassportMode.TRAVEL))
+        assertTrue(freshTravel.settledForShow(PassportMode.TRAVEL))
+        val filteredVisa = StampedRows(listOf(vrow("FR", VisaCategory.VISA_FREE)), visaFilter = VisaFilter.Easy, wishlistOnly = true)
+        assertFalse(filteredVisa.settledForShow(PassportMode.VISA))
+        assertTrue(StampedRows<VisaRow>(emptyList()).settledForShow(PassportMode.VISA))
+        // The stale list does contain the tapped country, which is exactly why it must be refused.
+        assertEquals(4, travelRowItemIndex(filteredTravel.rows, Grouping.CONTINENT, emptySet(), "", "FR", leading = 3))
     }
 
     @Test

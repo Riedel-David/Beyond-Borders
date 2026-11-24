@@ -431,10 +431,15 @@ class PlacesViewModel(
     }
 
     /** The rows the passport list should render, already filtered and ordered. */
-    val rows: StateFlow<List<PlaceRow>> =
+    /** [rows] together with the filters they were built under, in one value, so a reader can
+     * tell which filters a list reflects (the raw filter flows run ahead of the derived rows). */
+    val rowsStamped: StateFlow<StampedRows<PlaceRow>> =
         combine(allPlaces, statuses, _query, _grouping, _statusFilter) { places, st, q, grouping, filter ->
-            buildRows(places, st, q, filter, grouping)
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+            StampedRows(buildRows(places, st, q, filter, grouping), query = q, statusFilter = filter)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, StampedRows(emptyList()))
+
+    val rows: StateFlow<List<PlaceRow>> =
+        rowsStamped.map { it.rows }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /**
      * Which place codes the map's visa lens should paint in each band, empty while
@@ -464,16 +469,22 @@ class PlacesViewModel(
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** The rows the visa list should render, already filtered and ordered. */
-    val visaRows: StateFlow<List<VisaRow>> =
+    val visaRowsStamped: StateFlow<StampedRows<VisaRow>> =
         combine(
             allPlaces,
             viewVisas,
             statuses,
             combine(_query, _visaFilter, _wishlistOnly) { q, filter, wish -> Triple(q, filter, wish) },
         ) { places, (visa, secondVisa), st, (q, filter, wish) ->
-            buildVisaRows(places, visa, secondVisa, st, q, filter, wish)
+            StampedRows(
+                buildVisaRows(places, visa, secondVisa, st, q, filter, wish),
+                query = q, visaFilter = filter, wishlistOnly = wish,
+            )
         }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, StampedRows(emptyList()))
+
+    val visaRows: StateFlow<List<VisaRow>> =
+        visaRowsStamped.map { it.rows }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
@@ -1671,6 +1682,18 @@ internal fun shouldCentreOnHome(centredFor: String?, code: String, saved: MapCam
     centredFor != null -> true
     else -> saved == null || saved.zoom < HOME_ZOOM_MIN
 }
+
+/**
+ * A derived row list with the filters it was built under. The fields a list does not use
+ * keep their defaults, which the settle check for the other mode ignores.
+ */
+data class StampedRows<T>(
+    val rows: List<T>,
+    val query: String = "",
+    val statusFilter: StatusFilter = StatusFilter.ALL,
+    val visaFilter: VisaFilter = VisaFilter.All,
+    val wishlistOnly: Boolean = false,
+)
 
 /** What [PlacesViewModel.showInList] changes to make a country's row reachable. */
 internal data class ShowInListPlan(

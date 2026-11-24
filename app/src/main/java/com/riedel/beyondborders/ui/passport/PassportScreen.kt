@@ -162,7 +162,8 @@ fun PassportScreen(
     onShowCountryConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val rowsByKey by viewModel.rows.collectAsStateWithLifecycle()
+    val stampedRows by viewModel.rowsStamped.collectAsStateWithLifecycle()
+    val rowsByKey = stampedRows.rows
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     // The stats detail popup needs a name and a status per code in a bucket, and
     // neither lives on [ContinentStat]/[RegionStat]/[NamedGroupStat] — just the
@@ -184,7 +185,8 @@ fun PassportScreen(
     val mode by viewModel.mode.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
-    val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
+    val stampedVisaRows by viewModel.visaRowsStamped.collectAsStateWithLifecycle()
+    val visaRows = stampedVisaRows.rows
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val wishlistOnly by viewModel.wishlistOnly.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
@@ -308,10 +310,16 @@ fun PassportScreen(
     // snapshotFlow and waited for, with a timeout so an absent country (no visa data, no
     // passport) can never leave the request pending. Either way it is consumed.
     val rowIndexOf by rememberUpdatedState { request: ShowCountryRequest ->
-        // Rows are derived flows that lag the reset the tap made, so no index is read until
-        // the query and filters the screen sees are the reset ones: an index into the
-        // old, still-filtered list would land in the wrong section.
-        if (mode != request.mode || !listSettledForShow(mode, query, statusFilter, visaFilter, wishlistOnly)) {
+        // Rows are derived flows that lag the reset the tap made, so settledness is judged on
+        // the filters each list was *built under* (carried in its stamp), never on the raw
+        // filter flows, which run ahead of the rows: an index into the old, still-filtered
+        // list would land in the wrong section.
+        val settled = if (request.mode == PassportMode.VISA) {
+            stampedVisaRows.settledForShow(PassportMode.VISA)
+        } else {
+            stampedRows.settledForShow(PassportMode.TRAVEL)
+        }
+        if (mode != request.mode || !settled) {
             null
         } else if (request.mode == PassportMode.VISA) {
             visaRowItemIndex(visaRows, request.code, headerSlots.size - visaHeaderCategorySlots(visaRows).size)
