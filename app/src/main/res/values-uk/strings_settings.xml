@@ -107,6 +107,7 @@
     <string name="settings_advisory_result_current">Рекомендації для мандрівників уже актуальні.</string>
     <string name="settings_advisory_result_updated">Рекомендації для мандрівників оновлено.</string>
     <string name="settings_advisory_result_failed">Не вдалося оновити рекомендації для мандрівників.</string>
+    <string name="settings_advisory_result_newer_app">Рекомендації для мандрівників: для останнього файлу потрібна новіша версія застосунку.</string>
     <string name="settings_cancel">Скасувати</string>
 
     <string name="settings_import_title">Імпортувати цей файл?</string>
@@ -169,7 +170,7 @@
     <string name="settings_sources_heading">Джерела даних</string>
     <string name="settings_licences_heading">Ліцензії відкритого коду</string>
     <string name="settings_source_advisory">Рекомендації для мандрівників</string>
-    <string name="settings_source_advisory_body">Оцінки трьох урядів, які показуються для кожної країни. Застосунок показує їхній рівень попередження і, для Auswärtiges Amt, до трьох його власних речень, що не радять їхати, дослівно; повний текст рекомендацій розміщено на сайті кожного уряду.</string>
+    <string name="settings_source_advisory_body">Оцінки трьох урядів, які показуються для кожної країни. Застосунок показує їхній рівень попередження і до трьох їхніх власних речень про окремі регіони країни або що не радять їхати, дослівно; повний текст рекомендацій розміщено на сайті кожного уряду.</string>
     <string name="settings_source_us">Держдепартамент США (суспільне надбання)</string>
     <string name="settings_source_uk">Міністерство закордонних справ Великобританії (FCDO). Contains public sector information licensed under the Open Government Licence v3.0.</string>
     <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. Застосунок показує рівень попередження Auswärtiges Amt, короткий напис, дату і до трьох власних речень, що не радять їхати, дослівно; повний текст рекомендацій розміщено на сайті Auswärtiges Amt.</string>

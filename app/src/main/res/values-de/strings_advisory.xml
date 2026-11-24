@@ -10,5 +10,5 @@
     <string name="advisory_open_source">Quelle öffnen</string>
     <string name="advisory_open_source_for">Quelle öffnen, %1$s</string>
     <string name="advisory_as_of">Daten vom %1$s</string>
-    <string name="advisory_check_official">Dies sind die Einstufungen dreier Regierungen. Die Formulierung bei den britischen und deutschen Einstufungen fasst die von ihnen veröffentlichten Kennzeichnungen zusammen. Prüfe vor der Reise die offizielle Quelle. Hier wird nichts zusammengeführt oder bewertet.</string>
+    <string name="advisory_check_official">Dies sind die Einstufungen dreier Regierungen. Die Formulierung bei den britischen und deutschen Einstufungen wird hier aus den veröffentlichten Kennzeichnungen gebildet; Sätze in Anführungszeichen stammen von der jeweiligen Regierung. Prüfe vor der Reise die offizielle Quelle. Hier wird nichts zusammengeführt oder bewertet.</string>
 </resources>

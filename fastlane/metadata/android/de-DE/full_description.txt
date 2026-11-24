@@ -1,4 +1,4 @@
-Beyond Borders ist ein Reisetracker und eine Karte besuchter Länder mit eingebautem Visa-Checker für deinen Reisepass. Sie funktioniert offline: kein Konto, keine Werbung, kein Tracking. Einzige Netzwerknutzung: ein optionaler wöchentlicher Download neuer Visa-Daten von GitHub Pages (HTTPS, in unbegrenzten Netzen oder per „Jetzt prüfen“), abschaltbar in den Einstellungen; es wird keine Kennung gesendet.
+Beyond Borders ist ein Reisetracker und eine Karte besuchter Länder mit eingebautem Visa-Checker für deinen Reisepass. Sie funktioniert offline: kein Konto, keine Werbung, kein Tracking. Einzige Netzwerknutzung: ein optionaler wöchentlicher Download neuer Visa-Daten und Reisehinweise von GitHub Pages (HTTPS, in unbegrenzten Netzen oder per „Jetzt prüfen“), abschaltbar in den Einstellungen; es wird keine Kennung gesendet.
 
 Es gibt sie wegen eines Ärgernisses: Die meisten Reisetracker wählen mehr aus, als du antippst. Tippst du auf Dänemark, bekommst du Grönland dazu. Hier sind das getrennte Orte, die App kennt keine Eltern-Kind-Beziehung und kann eine Auswahl nicht versehentlich weitergeben.
 
@@ -8,15 +8,15 @@ REISEKARTE
 • Beliebig viele Besuche pro Ort, mit Jahr und optionalem Monat, als Zeitleiste auf der Ortskarte
 • Schnell eintragen: Hake die 15 meistbesuchten Länder auf einmal ab
 • Die Regionen-Heatmap zeigt, wo du noch am meisten vor dir hast
-• Funktioniert im Flugmodus: Die Karte ist eingebaut, ohne Kartenserver
+• Funktioniert im Flugmodus: Die Karte ist eingebaut
 
 VISA-LENS
-• Sieh, wohin dein Reisepass dich bringt, aus fast 200 Reisepässen (oder überspringe die Auswahl)
+• Sieh, wohin dein Reisepass dich bringt, aus fast 200 Reisepässen
 • Die Karte nach Einreisebestimmung einfärben: visumfrei, Reisegenehmigung, Visum bei Ankunft, eVisum, Visum erforderlich, Bestimmungen prüfen
 • Länder, von denen deine eigene Regierung abrät, werden als solche gekennzeichnet, statt eine Visa-Antwort zu zeigen
 • Mit zwei Reisepässen gilt jeweils die einfachere Antwort
 • Füge den Reisepass einer Reisebegleitung hinzu und sieh, wohin ihr beide reisen könnt: Es gilt die strengere Antwort
-• Ortskarten verlinken auf Reisehinweise der britischen Regierung und, wo vorhanden, auf die Warnung des Auswärtigen Amts (öffnen im Browser)
+• Reisehinweise des US-Außenministeriums, des britischen FCDO und des Auswärtigen Amts nebeneinander, offline gebündelt und wöchentlich mit den Visa-Daten aktualisiert
 • Die Visa-Daten sind eine Momentaufnahme, optional wöchentlich aktualisiert, keine Rechtsberatung und können veraltet sein. Prüfe die Einreisebestimmungen vor der Reise bei der offiziellen Stelle des Landes.
 
 KEINE REGIERUNGS-APP
@@ -24,8 +24,7 @@ Beyond Borders ist eine unabhängige App. Sie ist mit keiner Regierung oder Beh�
 
 QUELLEN FÜR VISA- UND REISEINFORMATIONEN
 • Visabestimmungen: Visa-requirements-Datensatz (abgeleitet von Wikipedia, CC BY-SA 4.0), https://github.com/Riedel-David/Visa-requirements
-• Links zu Reisehinweisen: Regierung des Vereinigten Königreichs (GOV.UK), im Browser geöffnet
-• Reisewarnungen: Auswärtiges Amt, https://www.auswaertiges-amt.de/de/reiseundsicherheit/reise-und-sicherheitshinweise
+• Reisehinweise: US-Außenministerium (travel.state.gov, gemeinfrei); britisches Foreign, Commonwealth & Development Office (GOV.UK, Open Government Licence v3.0); Auswärtiges Amt, https://www.auswaertiges-amt.de/de/reiseundsicherheit/reise-und-sicherheitshinweise
 • Verbindliche Einreisebestimmungen: offizielle Stelle des Reiselandes (Außenministerium, Botschaft).
 
 REISEPASSLISTE UND STATISTIK
@@ -43,7 +42,7 @@ HOMESCREEN-WIDGET
 
 DEINE DATEN BLEIBEN DEINE
 • Alles wird auf deinem Gerät gespeichert
-• Verlauf, einschließlich Besuchsdaten, als JSON exportieren und importieren
+• Verlauf samt Besuchsdaten als JSON exportieren und importieren
 • "Alles löschen" setzt mit einem Fingertipp zurück
 • Bei aktivem Android-Auto-Backup ist eine Momentaufnahme deiner Daten im Geräte-Backup enthalten und wird nach einer Neuinstallation angeboten. In den Android-Einstellungen abschaltbar.
 

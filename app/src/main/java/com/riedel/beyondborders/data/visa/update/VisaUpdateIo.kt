@@ -81,10 +81,7 @@ class HttpVisaFetcher(private val baseUrl: String = UPDATE_BASE_URL) : VisaFetch
             conn.setRequestProperty("User-Agent", "BeyondBorders")
             val status = conn.responseCode
             // Most 4xx will not fix themselves on a retry; 408, 429, timeouts and 5xx might.
-            if (status != HttpURLConnection.HTTP_OK) {
-                if (status in 400..499 && !isRetryableStatus(status)) throw VisaFetchRejected("HTTP $status")
-                throw IOException("HTTP $status")
-            }
+            if (status != HttpURLConnection.HTTP_OK) throw failureForStatus(status)
             if (!isHttps(conn.url.toString())) throw VisaFetchRejected("redirected off https")
             if (conn.contentLengthLong > maxBytes) throw VisaFetchRejected("too large")
             conn.inputStream.use { input ->

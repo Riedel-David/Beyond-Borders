@@ -107,6 +107,7 @@
     <string name="settings_advisory_result_current">Reisehinweise sind bereits aktuell.</string>
     <string name="settings_advisory_result_updated">Reisehinweise aktualisiert.</string>
     <string name="settings_advisory_result_failed">Reisehinweise konnten nicht aktualisiert werden.</string>
+    <string name="settings_advisory_result_newer_app">Reisehinweise: Die neueste Datei erfordert eine neuere Version der App.</string>
     <string name="settings_cancel">Abbrechen</string>
 
     <string name="settings_import_title">Diese Datei importieren?</string>
@@ -163,7 +164,7 @@
     <string name="settings_sources_heading">Datenquellen</string>
     <string name="settings_licences_heading">Open-Source-Lizenzen</string>
     <string name="settings_source_advisory">Reisehinweise</string>
-    <string name="settings_source_advisory_body">Bewertungen von drei Regierungen, die bei jedem Land angezeigt werden. Die App zeigt deren Warnstatus und, beim Auswärtigen Amt, bis zu drei seiner eigenen Sätze, die von Reisen abraten, wörtlich zitiert; die vollständigen Hinweise stehen auf der Website der jeweiligen Regierung.</string>
+    <string name="settings_source_advisory_body">Bewertungen von drei Regierungen, die bei jedem Land angezeigt werden. Die App zeigt deren Warnstatus und bis zu drei ihrer eigenen Sätze zu Landesteilen oder zum Abraten von Reisen, wörtlich zitiert; die vollständigen Hinweise stehen auf der Website der jeweiligen Regierung.</string>
     <string name="settings_source_us">US-Außenministerium (gemeinfrei)</string>
     <string name="settings_source_uk">Britisches Außenministerium (FCDO). Contains public sector information licensed under the Open Government Licence v3.0.</string>
     <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. Die App zeigt den Warnstatus des Auswärtigen Amts mit Kurzbezeichnung und Datum sowie bis zu drei seiner eigenen Sätze, die von Reisen abraten, wörtlich zitiert; die vollständigen Hinweise stehen auf der Website des Auswärtigen Amts.</string>

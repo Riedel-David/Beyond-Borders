@@ -107,6 +107,7 @@
     <string name="settings_advisory_result_current">Рекомендации для путешественников уже актуальны.</string>
     <string name="settings_advisory_result_updated">Рекомендации для путешественников обновлены.</string>
     <string name="settings_advisory_result_failed">Не удалось обновить рекомендации для путешественников.</string>
+    <string name="settings_advisory_result_newer_app">Рекомендации для путешественников: для последнего файла нужна более новая версия приложения.</string>
     <string name="settings_cancel">Отмена</string>
 
     <string name="settings_import_title">Импортировать этот файл?</string>
@@ -169,7 +170,7 @@
     <string name="settings_sources_heading">Источники данных</string>
     <string name="settings_licences_heading">Лицензии открытого ПО</string>
     <string name="settings_source_advisory">Рекомендации для путешественников</string>
-    <string name="settings_source_advisory_body">Оценки трёх правительств, которые показываются для каждой страны. Приложение показывает их уровень предупреждения и, для Auswärtiges Amt, до трёх его собственных предложений, не советующих ехать, дословно; полный текст рекомендаций находится на сайте каждого правительства.</string>
+    <string name="settings_source_advisory_body">Оценки трёх правительств, которые показываются для каждой страны. Приложение показывает их уровень предупреждения и до трёх их собственных предложений о частях страны или не советующих ехать, дословно; полный текст рекомендаций находится на сайте каждого правительства.</string>
     <string name="settings_source_us">Госдепартамент США (общественное достояние)</string>
     <string name="settings_source_uk">Министерство иностранных дел Великобритании (FCDO). Contains public sector information licensed under the Open Government Licence v3.0.</string>
     <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. Приложение показывает уровень предупреждения Auswärtiges Amt, краткую метку, дату и до трёх собственных предложений, не советующих ехать, дословно; полный текст рекомендаций находится на сайте Auswärtiges Amt.</string>
