@@ -55,6 +55,35 @@ class AdvisoryTest {
         assertEquals(emptyList<String>(), fr.getValue("UK").tags)
     }
 
+    private fun deEntry(notes: String) = parseAdvisory(
+        withGenerated(
+            "2026-11-24T07:00:00Z",
+            """{"GE": {"DE": {"stance": 2, "label": "L", "updated": "2026-01-01", "url": "https://a.example/"$notes}}}""",
+        ).toString(Charsets.UTF_8),
+    )!!.forPlace("GE").getValue("DE")
+
+    @Test
+    fun `notes are read verbatim and an entry without them has an empty list`() {
+        assertEquals(listOf("Von Reisen nach X wird abgeraten."), deEntry(""", "notes": ["Von Reisen nach X wird abgeraten."]""").notes)
+        assertEquals(emptyList<String>(), deEntry("").notes)
+        assertEquals(emptyList<String>(), data.forPlace("fr").getValue("DE").notes)
+    }
+
+    @Test
+    fun `non-string or blank notes are dropped and a non-array notes field is ignored`() {
+        assertEquals(listOf("a", "b"), deEntry(""", "notes": ["a", 5, null, "  ", {"x": 1}, "b"]""").notes)
+        assertEquals(emptyList<String>(), deEntry(""", "notes": "Von Reisen wird abgeraten"""").notes)
+        assertEquals(2, deEntry(""", "notes": null""").stance)
+    }
+
+    @Test
+    fun `notes are capped in count and length`() {
+        assertEquals(listOf("1", "2", "3"), deEntry(""", "notes": ["1", "2", "3", "4", "5"]""").notes)
+        val long = deEntry(""", "notes": ["${"x".repeat(900)}"]""").notes.single()
+        assertEquals(MAX_ADVISORY_NOTE_CHARS, long.length)
+        assertTrue(long.endsWith("…"))
+    }
+
     @Test
     fun `an unknown dataFormat is ignored entirely`() {
         assertNull(parseAdvisory(fixture.replace("\"dataFormat\": 1", "\"dataFormat\": 2")))

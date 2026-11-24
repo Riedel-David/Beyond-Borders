@@ -223,7 +223,8 @@ only: residence permits and EU/Schengen family-member rules are not taken into a
 The expanded country row in the Visa tab shows what the US State Department, the UK Foreign,
 Commonwealth & Development Office and the German Auswärtiges Amt currently advise for that
 country, side by side: each government's own rating (the US wording as published; the UK and
-German ones are short summaries of the flags those governments publish), the date of that
+German ones are short summaries of the flags those governments publish, and the German row also quotes
+the Auswärtiges Amt's own "wird abgeraten" sentences, which the flags do not carry), the date of that
 advice and a link to its country page. Nothing is combined or scored beyond a count of how many
 sources advise against travel, and a place a source does not cover says so. The data is a
 snapshot, bundled with each release and refreshed weekly (see below), with its "as of" date

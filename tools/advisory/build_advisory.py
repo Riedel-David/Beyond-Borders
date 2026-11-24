@@ -8,9 +8,10 @@ tools/advisory/cache/, gitignored, so a failed run can be examined and an offlin
     US  https://cadataapi.state.gov/api/TravelAdvisories                    one call, level 1-4
     UK  https://www.gov.uk/api/content/foreign-travel-advice[/<slug>]       index + one call per country
     DE  https://www.auswaertiges-amt.de/opendata/travelwarning              one call, warning flags
+        https://www.auswaertiges-amt.de/opendata/travelwarning/<node id>    one call per country, page text
 
 With --source DIR nothing is downloaded: DIR holds us.json, de.json, uk_index.json and uk/<slug>.json,
-which is exactly what a cache directory looks like.
+which is exactly what a cache directory looks like (plus de_detail/<node id>.json).
 
 Each source's own rating is kept verbatim in `label`; `stance` (0-3) is only a common key for the
 app's agreement count and row colour (docs/PLAN.md, "Country travel advisories"). No score is blended.
@@ -251,19 +252,112 @@ def parse_uk(pages: dict, index: dict) -> dict:
 
 # --- DE ---------------------------------------------------------------------------------------
 
-def de_label(warning: bool, partial: bool) -> str:
+# The AA's feed flags only the formal Reisewarnung / Teilreisewarnung. Its second tier, "Von Reisen
+# nach X wird (dringend) abgeraten", exists only in the page text (Georgia, Israel and North Korea
+# have all flags false and that sentence). The AA's terms forbid showing its information incomplete
+# or in a distorting context, so a page that says "abgeraten" must never be labelled "no warning":
+# the sentences are carried verbatim as `notes` and the row counts as stance 2.
+DE_NOTE_WORD = "abgeraten"
+DE_MAX_NOTES = 3
+DE_NOTE_MAX_CHARS = 400
+# Fewer than this share of countries without a fetched detail page means the detail endpoint is
+# broken, not that one country hiccuped.
+DE_MAX_MISSING_SHARE = 0.10
+
+DE_LABEL_NONE = "Keine formelle Reisewarnung"
+DE_LABEL_ADVISED_AGAINST = "Keine formelle Reisewarnung, aber Reiseabraten (siehe Hinweise)"
+
+
+def de_label(warning: bool, partial: bool, notes: list = ()) -> str:
     if warning:
         return "Reisewarnung"
     if partial:
         return "Teilreisewarnung"
-    return "Keine Reisewarnung"
+    return DE_LABEL_ADVISED_AGAINST if notes else DE_LABEL_NONE
 
 
-def parse_de(feed, valid_codes: set) -> dict:
+def de_stance(warning: bool, partial: bool, notes: list = ()) -> int:
+    # 3 stays the formal Reisewarnung alone, so the "advise against travel" count is unchanged.
+    return 3 if warning else 2 if (partial or notes) else 0
+
+
+_BLOCK_TAG = re.compile(r"</?(?:p|br|li|ul|ol|div|h[1-6]|blockquote|tr|table|section)\b[^>]*>", re.I)
+_ANY_TAG = re.compile(r"<[^>]+>")
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-ZÄÖÜ„\"“(])")
+
+
+def de_sentences(content: str) -> list:
+    """The page text as sentences: block-level tags and line breaks end a sentence, other tags vanish,
+    entities are decoded. Whitespace is collapsed; the words are untouched."""
+    text = _ANY_TAG.sub("", _BLOCK_TAG.sub("\n", content or ""))
+    text = html.unescape(text).replace("\xa0", " ")
+    out = []
+    for line in text.split("\n"):
+        line = re.sub(r"\s+", " ", line).strip(" -•\t")
+        for sent in _SENTENCE_END.split(line):
+            sent = sent.strip()
+            if sent:
+                out.append(sent)
+    return out
+
+
+def trim_note(sent: str) -> str:
+    if len(sent) <= DE_NOTE_MAX_CHARS:
+        return sent
+    cut = sent[:DE_NOTE_MAX_CHARS - 1].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "…"
+
+
+# "abgeraten" alone is far too wide: the pages also say it of alcohol in public, night driving,
+# drones, currency exchange and rental cars (observed 2026-11-25: 197 hits in 89 countries, most of
+# them not about going to a place). The second-tier advice is always phrased "Von (nicht notwendigen)
+# Reisen in/nach ... wird (dringend) abgeraten", so a note must also say Reise/Reisen (or Einzelreisen, Aufenthalte: Djibouti, Finland). That drops
+# sentence fragments ("wird abgeraten.") too. "Reisen auf dem Landweg" is advice about the route
+# into the neighbouring country (Dominican Republic -> Haiti), not about the country itself.
+_TRAVEL = re.compile(r"\b(?:Einzelr|R)eisen?\b|\bAufenthalten?\b")
+_ROUTE_ONLY = re.compile(r"\bauf dem Landweg\b")
+_SEE_ALSO = re.compile(r"[,;]?\s*siehe\b[^.]*\.?$")
+
+
+def is_travel_advice(sent: str) -> bool:
+    return DE_NOTE_WORD in sent.lower() and bool(_TRAVEL.search(sent)) and not _ROUTE_ONLY.search(sent)
+
+
+def de_notes(content: str) -> list:
+    """Up to three distinct sentences advising against travel ('Reisen ... abgeraten'), verbatim and
+    in page order. The same sentence appears under 'Aktuelles' and again under 'Sicherheit', the
+    second time often with ', siehe Sicherheit' appended, so that suffix is ignored when comparing."""
+    seen, notes = set(), []
+    for sent in de_sentences(content):
+        if not is_travel_advice(sent):
+            continue
+        key = _SEE_ALSO.sub("", sent).rstrip(".:; ")
+        if key in seen:
+            continue
+        seen.add(key)
+        notes.append(trim_note(sent))
+        if len(notes) == DE_MAX_NOTES:
+            break
+    return notes
+
+
+def detail_content(detail, key: str):
+    """The page HTML of one detail payload, or None if the payload is not the expected shape."""
+    resp = detail.get("response") if isinstance(detail, dict) else None
+    entry = resp.get(str(key)) if isinstance(resp, dict) else None
+    content = entry.get("content") if isinstance(entry, dict) else None
+    return content if isinstance(content, str) and content.strip() else None
+
+
+def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
+    """details: node id -> detail payload. A country whose three flags are all false and whose page
+    is missing cannot be told from one with Reiseabraten, so that is an error, never 'no warning'."""
     resp = feed.get("response") if isinstance(feed, dict) else None
     if not isinstance(resp, dict):
         raise BuildError("DE feed has no 'response' object")
-    out, bad = {}, []
+    details = details or {}
+    out, bad, unverified, missing = {}, [], [], []
+    total = 0
     for key, e in resp.items():
         if not isinstance(e, dict):
             continue  # lastModified, contentList
@@ -275,17 +369,33 @@ def parse_de(feed, valid_codes: set) -> dict:
             raise BuildError(f"DE entry {code} has non-boolean warning flags")
         if not str(key).isdigit():
             raise BuildError(f"DE entry {code} has a non-numeric node id {key!r}")
+        total += 1
         warning, partial = e["warning"], e["partialWarning"]
-        stance = 3 if warning else 2 if partial else 0
+        content = detail_content(details.get(str(key)), key)
+        notes = []
+        if content is None:
+            missing.append(code)
+            if not warning and not partial:
+                unverified.append(code)
+        else:
+            notes = de_notes(content)
         updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
-        merge(out, code, {
-            "stance": stance,
-            "label": de_label(warning, partial),
+        entry = {
+            "stance": de_stance(warning, partial, notes),
+            "label": de_label(warning, partial, notes),
             "updated": updated.date().isoformat(),
             "url": DE_LINK + str(key),
-        })
+        }
+        if notes:
+            entry["notes"] = notes
+        merge(out, code, entry)
     if bad:
         raise BuildError("DE entries with no usable ISO code: " + ", ".join(sorted(bad)))
+    if unverified:
+        raise BuildError("DE page text missing for countries with no formal warning, so 'no warning' "
+                         "cannot be verified: " + ", ".join(sorted(unverified)))
+    if total and len(missing) > DE_MAX_MISSING_SHARE * total:
+        raise BuildError(f"DE page text missing for {len(missing)} of {total} countries: " + ", ".join(sorted(missing)))
     return out
 
 
@@ -355,7 +465,8 @@ def download(cache: Path) -> None:
     pause between a worker's requests, which is gentle for ~230 small JSON files."""
     (cache / "uk").mkdir(parents=True, exist_ok=True)
     (cache / "us.json").write_bytes(http_get(US_URL))
-    (cache / "de.json").write_bytes(http_get(DE_URL))
+    de_raw = http_get(DE_URL)
+    (cache / "de.json").write_bytes(de_raw)
     index_raw = http_get(UK_INDEX_URL)
     (cache / "uk_index.json").write_bytes(index_raw)
     slugs = uk_slugs(json.loads(index_raw))
@@ -366,6 +477,28 @@ def download(cache: Path) -> None:
 
     with ThreadPoolExecutor(max_workers=4) as ex:
         list(ex.map(one, slugs))  # re-raises the first failure
+
+    # The German page text, one call per country, two at a time: that is where the AA's "abgeraten"
+    # lives. A country that fails after http_get's retries is left out; parse_de decides whether
+    # that is tolerable (it never is for a country with no formal warning).
+    (cache / "de_detail").mkdir(exist_ok=True)
+
+    def one_de(key: str) -> None:
+        try:
+            (cache / "de_detail" / f"{key}.json").write_bytes(http_get(f"{DE_URL}/{key}"))
+        except BuildError as e:
+            print(f"warning: {e}", file=sys.stderr)
+        time.sleep(0.3)
+
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        list(ex.map(one_de, de_node_ids(json.loads(de_raw))))
+
+
+def de_node_ids(feed) -> list:
+    resp = feed.get("response") if isinstance(feed, dict) else None
+    if not isinstance(resp, dict):
+        raise BuildError("DE feed has no 'response' object")
+    return [str(k) for k, v in resp.items() if isinstance(v, dict) and str(k).isdigit()]
 
 
 def uk_slugs(index: dict) -> list:
@@ -394,10 +527,19 @@ def build(src: Path, generated_at: str) -> dict:
             raise BuildError(f"{src / c} is missing")
     slugs = uk_slugs(read_json(src / "uk_index.json"))
     pages = {s: read_json(src / "uk" / f"{s}.json") for s in slugs}
+    de_feed = read_json(src / "de.json")
+    details = {}
+    for key in de_node_ids(de_feed):
+        f = src / "de_detail" / f"{key}.json"
+        if f.is_file():
+            try:
+                details[key] = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError:
+                pass  # unreadable counts as missing, which parse_de judges
     per_source = {
         "US": parse_us(read_json(src / "us.json"), index),
         "UK": parse_uk(pages, index),
-        "DE": parse_de(read_json(src / "de.json"), valid),
+        "DE": parse_de(de_feed, valid, details),
     }
     for rows in per_source.values():
         for code in rows:

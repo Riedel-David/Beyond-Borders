@@ -35,7 +35,13 @@ data class AdvisoryEntry(
     val updated: String,
     val url: String,
     val tags: List<String> = emptyList(),
+    /** The source's own sentences, verbatim (German entries only): "Von Reisen nach X wird abgeraten". */
+    val notes: List<String> = emptyList(),
 )
+
+// Defensive caps on the optional `notes` field; the pipeline writes at most 3 of at most 400 characters.
+const val MAX_ADVISORY_NOTES = 3
+const val MAX_ADVISORY_NOTE_CHARS = 500
 
 /**
  * [countries] is keyed by upper-case ISO code, then by source key. A source that has nothing
@@ -113,7 +119,14 @@ private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
     if (stance !in 0..3 || label.isBlank() || !DATE_REGEX.matches(updated) || !isHttps(url)) return null
     runCatching { LocalDate.parse(updated) }.getOrNull() ?: return null
     val tags = o.optJSONArray("tags")?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf(String::isNotBlank) } }
-    return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList())
+    // Optional and additive: absent, not an array, or non-string members all mean "no notes" for that
+    // part, so an older or odd file can never cost the entry itself.
+    val notes = o.optJSONArray("notes")?.let { a ->
+        (0 until a.length()).mapNotNull { (a.opt(it) as? String)?.trim()?.takeIf(String::isNotEmpty) }
+            .map { if (it.length > MAX_ADVISORY_NOTE_CHARS) it.take(MAX_ADVISORY_NOTE_CHARS - 1) + "…" else it }
+            .take(MAX_ADVISORY_NOTES)
+    }
+    return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList(), notes ?: emptyList())
 }
 
 /** Tomorrow's instant, to allow for a publisher a time zone ahead. */

@@ -138,8 +138,23 @@ travel advisories side by side: per country and source a `stance` (0-3, a common
 wording; the UK and German labels are short summaries the build writes from the flags those feeds
 publish. It is generated, never edited by hand.
 
+The German feed's four flags only encode the formal *Reisewarnung* and *Teilreisewarnung*. The AA's
+second tier, "Von Reisen nach X wird (dringend) abgeraten", appears only in each country page's text
+(Georgia, Israel and North Korea carry it with every flag false), and the AA's terms forbid showing its
+information incomplete or out of context, so the build also fetches every country's page
+(`/opendata/travelwarning/<node id>`, cached in `tools/advisory/cache/de_detail/`). The DE entry maps:
+`warning` is stance 3 "Reisewarnung"; `partialWarning` is stance 2 "Teilreisewarnung"; otherwise a
+sentence about travelling ("Reise(n)", "Aufenthalte", "abgeraten") gives stance 2 "Keine formelle
+Reisewarnung, aber Reiseabraten (siehe Hinweise)", and none gives stance 0 "Keine formelle
+Reisewarnung". Text alone never reaches 3, so the "advise against travel" count is the formal warning only.
+Those sentences are the optional DE-only field `notes` (a list of at most 3 strings, each at most 400
+characters, verbatim from the page, de-duplicated). Absent `notes` means none; a parser must ignore
+anything in it that is not a string. It is an additive field, so `dataFormat` stays 1. The build refuses
+(and writes nothing) if a page is missing for any country with all flags false, or for more than 10% of
+countries.
+
 ```sh
-python3 tools/advisory/build_advisory.py                        # downloads all three feeds (~230 small calls)
+python3 tools/advisory/build_advisory.py                        # downloads all three feeds (~430 small calls)
 python3 tools/advisory/build_advisory.py --source tools/advisory/cache   # offline, from the last download
 python3 -m unittest tools/advisory/test_build_advisory.py tools/advisory/test_make_site.py
 ```
