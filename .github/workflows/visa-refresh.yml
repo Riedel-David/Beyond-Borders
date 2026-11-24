@@ -143,6 +143,10 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+    # Shared with advisory-refresh.yml: both deploy the whole site, so they must not overlap.
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -157,6 +161,18 @@ jobs:
 
       - name: Assemble the site
         run: python3 -I tools/visa/make_site.py app/src/main/assets "$RUNNER_TEMP/site"
+
+      # A Pages deployment replaces the whole site, so advisory.json (published weekly by
+      # advisory-refresh.yml) must ride along or this deploy would delete it. The live copy is
+      # newest; the bundled one is only the fallback before the first advisory publication.
+      - name: Carry over advisory.json
+        run: |
+          if curl -fsSL --retry 3 -o "$RUNNER_TEMP/site/advisory.json" https://riedel-david.github.io/Beyond-Borders/advisory.json; then
+            echo "Carried over the live advisory.json."
+          elif [ -f app/src/main/assets/advisory.json ]; then
+            cp app/src/main/assets/advisory.json "$RUNNER_TEMP/site/advisory.json"
+            echo "No live advisory.json; used the bundled copy."
+          fi
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

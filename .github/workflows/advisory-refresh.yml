@@ -1,0 +1,89 @@
+name: Advisory data refresh
+
+# Weekly publication of advisory.json (US State Department, UK FCDO and Auswärtiges Amt travel
+# advisories, tools/advisory/build_advisory.py) to the GitHub Pages site that already serves the
+# visa data. Advisories change on any day, so this runs mid-week (Wednesday 06:30 UTC), clear of
+# visa-refresh (Monday 07:00) and visa-freshness (Monday 09:30).
+#
+# Publish only, no pull request: the app bundles a copy for first run and offline, refreshed by hand
+# with the same build (docs/DATA.md).
+#
+# A Pages deployment replaces the WHOLE site, so this job does not deploy advisory.json alone. It
+# assembles one site holding advisory.json and the visa files that are live right now
+# (tools/advisory/make_site.py, which checks them against the live manifest's sha256), and
+# visa-refresh.yml's publish job does the mirror image by carrying the live advisory.json. Both
+# publish jobs share one concurrency group so the later one always reads what the earlier deployed.
+#
+# The build refuses to write unless every feed is reachable and plausible and every country maps to
+# an ISO code, and the site assembly refuses unless the live visa files verify, so a bad run
+# deploys nothing and the previous site stays live. A failed scheduled run opens (or comments on)
+# one issue, like visa-refresh.yml.
+on:
+  schedule:
+    - cron: "30 6 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: advisory-refresh
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # A dispatch from another ref must not deploy to the production site.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build advisory.json
+        run: |
+          python3 -m unittest tools/advisory/test_build_advisory.py tools/advisory/test_make_site.py
+          python3 -I tools/advisory/build_advisory.py
+
+      - name: Assemble the site with the live visa files
+        run: python3 -I tools/advisory/make_site.py app/src/main/assets/advisory.json https://riedel-david.github.io/Beyond-Borders/ "$RUNNER_TEMP/site"
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # Scheduled runs only: a manual dispatch is watched by whoever started it, and an issue nobody
+  # closes is worse than none. The token is widened here only, not for the job that deploys.
+  notify:
+    needs: [publish]
+    if: ${{ always() && github.event_name == 'schedule' && needs.publish.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Advisory data refresh failed"
+          BODY="The publish job failed: $RUN_URL"
+          N="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$TITLE\" in:title" --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number' | head -n 1)"
+          if [ -z "$N" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY Steps: docs/DATA.md."
+          else
+            gh issue comment "$N" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          fi

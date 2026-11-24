@@ -130,3 +130,26 @@ The curation rules — what gets merged, dropped, renamed or given a private cod
 and why — live in [`tools/geo/rules.py`](../tools/geo/rules.py). Read that file
 before changing anything about the place list.
 
+
+## Regenerating the travel advisories
+
+`app/src/main/assets/advisory.json` holds the US State Department, UK FCDO and German Auswärtiges Amt
+travel advisories side by side (format and stance mapping: PLAN.md, "Country travel advisories"). It
+is generated, never edited by hand.
+
+```sh
+python3 tools/advisory/build_advisory.py                        # downloads all three feeds (~230 small calls)
+python3 tools/advisory/build_advisory.py --source tools/advisory/cache   # offline, from the last download
+python3 -m unittest tools/advisory/test_build_advisory.py tools/advisory/test_make_site.py
+```
+
+The build writes nothing unless every feed is reachable, each yields at least 150 countries, and every
+feed entry maps to an ISO code. An unmapped name is an error that lists it: add it to `US_ALIASES` or
+`UK_ALIASES` in `build_advisory.py` (the US feed's `Category` is FIPS, not ISO, and the UK feed has no
+code at all, so both are matched by name against `places.json`).
+
+`.github/workflows/advisory-refresh.yml` runs it on Wednesdays and publishes the result to GitHub Pages
+with no pull request. Pages deployments replace the whole site, so `tools/advisory/make_site.py` copies
+the live visa files (verified against the live manifest) into the same deployment, and
+`visa-refresh.yml` carries the live `advisory.json` the other way. A failed run publishes nothing and
+opens an issue. The bundled copy is refreshed by hand by running the build and committing the file.
