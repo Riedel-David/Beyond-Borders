@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Avis aux voyageurs des gouvernements</string>
+    <string name="advisory_agreement">Sources déconseillant de voyager : %1$d sur %2$d</string>
+    <string name="advisory_partial_data">Seules %1$d sources sur %2$d ont des données pour ce lieu.</string>
+    <string name="advisory_none">Aucune source n\'a d\'avis pour ce lieu.</string>
+    <string name="advisory_no_data">Aucune donnée</string>
+    <string name="advisory_tags">Risques signalés : %1$s</string>
+    <string name="advisory_updated">Mis à jour le %1$s</string>
+    <string name="advisory_open_source">Ouvrir la source</string>
+    <string name="advisory_as_of">Données au %1$s</string>
+    <string name="advisory_check_official">Chaque note est celle du gouvernement concerné, telle que publiée, et n\'est ni combinée ni notée ici. Consultez la source officielle avant de voyager.</string>
+</resources>

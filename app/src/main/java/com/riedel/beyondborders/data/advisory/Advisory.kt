@@ -1,0 +1,136 @@
+package com.riedel.beyondborders.data.advisory
+
+import com.riedel.beyondborders.data.visa.update.DATE_REGEX
+import com.riedel.beyondborders.data.visa.update.isHttps
+import java.time.Instant
+import java.time.LocalDate
+import org.json.JSONObject
+
+/** The only `advisory.json` dataFormat this build understands; any other file is ignored whole. */
+const val SUPPORTED_ADVISORY_FORMAT = 1
+const val ADVISORY_FILE = "advisory.json"
+
+// Three sources, one line each, a country a few hundred bytes a source: well under this, and
+// a bound so a wrong file on the host cannot fill memory. Larger than the visa files' limit.
+const val MAX_ADVISORY_BYTES = 1024 * 1024
+
+/** The sources in the order the rows are shown. */
+val ADVISORY_SOURCES = listOf("US", "UK", "DE")
+
+/**
+ * One government's rating for one country. [stance] is the pipeline's normalisation to 0..3
+ * (0 normal precautions, 1 increased caution, 2 reconsider or parts of the country, 3 do not
+ * travel) and exists only so the count and the row accent have something to key on;
+ * [label] is the source's own wording and is always what is shown.
+ */
+data class AdvisoryEntry(
+    val stance: Int,
+    val label: String,
+    val updated: String,
+    val url: String,
+    val tags: List<String> = emptyList(),
+)
+
+/**
+ * [countries] is keyed by upper-case ISO code, then by source key. A source that has nothing
+ * for a country is an absent key, which is why "no data" and "no warning" stay different.
+ */
+data class AdvisoryData(
+    val generatedAt: Instant,
+    val sourceLabels: Map<String, String>,
+    val countries: Map<String, Map<String, AdvisoryEntry>>,
+) {
+    /** Exact-code lookup only: no sovereign fallback, so Denmark's rating never shows on Greenland. */
+    fun forPlace(code: String): Map<String, AdvisoryEntry> = countries[code.uppercase()] ?: emptyMap()
+}
+
+/**
+ * "[against] of [withData]" sources advise against travel (stance 3). [withData] counts only
+ * the sources that have an entry for the country, so a missing source is not a "no".
+ */
+data class Agreement(val against: Int, val withData: Int)
+
+/** The screen's one agreement line is a function of the entries alone, with no weighting. */
+fun agreementOf(entries: Map<String, AdvisoryEntry>): Agreement {
+    val present = ADVISORY_SOURCES.mapNotNull { entries[it] }
+    return Agreement(present.count { it.stance == 3 }, present.size)
+}
+
+enum class AdvisoryRejection { UNPARSEABLE, FUTURE_DATED, NOT_NEWER }
+
+// --- pure functions, unit-testable without Android ---------------------------
+
+/**
+ * Null for anything this build should ignore: malformed JSON, another dataFormat, a missing or
+ * unreadable generatedAt. A bad entry (stance outside 0..3, no label, a date that is not
+ * ISO, a link that is not https) is skipped on its own, leaving that source "no data" for the
+ * country rather than inventing a rating or failing the lot.
+ */
+internal fun parseAdvisory(json: String): AdvisoryData? = try {
+    val root = JSONObject(json)
+    if (root.optInt("dataFormat", -1) != SUPPORTED_ADVISORY_FORMAT) {
+        null
+    } else {
+        val generatedAt = Instant.parse(root.getString("generatedAt"))
+        val labels = LinkedHashMap<String, String>()
+        root.optJSONObject("sources")?.let { s ->
+            for (key in ADVISORY_SOURCES) {
+                s.optJSONObject(key)?.optString("label")?.takeIf { it.isNotBlank() }?.let { labels[key] = it }
+            }
+        }
+        val out = LinkedHashMap<String, Map<String, AdvisoryEntry>>()
+        val countries = root.getJSONObject("countries")
+        for (code in countries.keys()) {
+            if (!ISO_REGEX.matches(code)) continue
+            val c = countries.optJSONObject(code) ?: continue
+            val entries = LinkedHashMap<String, AdvisoryEntry>()
+            for (source in ADVISORY_SOURCES) {
+                parseEntry(c.optJSONObject(source))?.let { entries[source] = it }
+            }
+            if (entries.isNotEmpty()) out[code] = entries
+        }
+        AdvisoryData(generatedAt, labels, out)
+    }
+} catch (e: Exception) {
+    null
+}
+
+private val ISO_REGEX = Regex("[A-Z]{2}")
+
+private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
+    o ?: return null
+    val stance = o.optInt("stance", -1)
+    val label = o.optString("label")
+    val updated = o.optString("updated")
+    val url = o.optString("url")
+    if (stance !in 0..3 || label.isBlank() || !DATE_REGEX.matches(updated) || !isHttps(url)) return null
+    runCatching { LocalDate.parse(updated) }.getOrNull() ?: return null
+    val tags = o.optJSONArray("tags")?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf(String::isNotBlank) } }
+    return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList())
+}
+
+/** Tomorrow's instant, to allow for a publisher a time zone ahead. */
+internal fun advisoryLatestAllowed(now: Instant): Instant = now.plusSeconds(24 * 3600)
+
+/**
+ * Null means accept. [inUse] is the newest copy already usable (stored or bundled). A copy that
+ * is not strictly newer is not an error but changes nothing, so it is rejected to save the write.
+ */
+internal fun verifyAdvisory(bytes: ByteArray, inUse: Instant?, now: Instant): AdvisoryRejection? {
+    val data = parseAdvisory(bytes.toString(Charsets.UTF_8)) ?: return AdvisoryRejection.UNPARSEABLE
+    // A file with no usable country at all would blank the section for everyone; never accept it.
+    if (data.countries.isEmpty()) return AdvisoryRejection.UNPARSEABLE
+    if (data.generatedAt > advisoryLatestAllowed(now)) return AdvisoryRejection.FUTURE_DATED
+    if (inUse != null && data.generatedAt <= inUse) return AdvisoryRejection.NOT_NEWER
+    return null
+}
+
+/** The stored copy only when it parses and is strictly newer than the bundled one and not future-dated. */
+internal fun chooseAdvisory(bundled: AdvisoryData?, stored: AdvisoryData?, now: Instant): AdvisoryData? {
+    val usable = stored?.takeIf {
+        it.generatedAt <= advisoryLatestAllowed(now) && (bundled == null || it.generatedAt > bundled.generatedAt)
+    }
+    return usable ?: bundled
+}
+
+internal fun nowInstant(): Instant = Instant.now()

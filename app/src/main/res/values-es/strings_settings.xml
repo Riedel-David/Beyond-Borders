@@ -161,6 +161,8 @@
     <string name="settings_licence_visa_body">Conjunto de datos sobre requisitos de visado, derivado de colaboradores de Wikipedia (CC BY-SA 4.0); consulta THIRD_PARTY_NOTICES.md en el repositorio</string>
     <string name="settings_licence_advice">Enlaces a recomendaciones oficiales</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Ministerio de Exteriores de Alemania)</string>
+    <string name="settings_licence_advisory">Avisos de viaje</string>
+    <string name="settings_licence_advisory_body">Departamento de Estado de EE. UU. (dominio público); Foreign, Commonwealth &amp; Development Office del Reino Unido (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Bibliotecas</string>
 
     <!-- Backup transfer results -->

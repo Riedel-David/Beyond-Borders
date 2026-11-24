@@ -16,6 +16,12 @@ import com.riedel.beyondborders.data.visa.VisaRepository
 import com.riedel.beyondborders.data.visa.update.FileVisaStore
 import com.riedel.beyondborders.data.visa.update.VisaStore
 import com.riedel.beyondborders.data.visa.update.VisaUpdateScheduling
+import com.riedel.beyondborders.data.advisory.AdvisoryRepository
+import com.riedel.beyondborders.data.advisory.AdvisoryScheduling
+import com.riedel.beyondborders.data.advisory.AdvisoryStore
+import com.riedel.beyondborders.data.advisory.FileAdvisoryStore
+import com.riedel.beyondborders.data.advisory.WorkManagerAdvisoryScheduling
+import com.riedel.beyondborders.data.advisory.readBundledAdvisory
 import com.riedel.beyondborders.data.visa.update.WorkManagerVisaScheduling
 import com.riedel.beyondborders.data.visa.update.preferStored
 import com.riedel.beyondborders.settings.SettingsStore
@@ -96,6 +102,15 @@ class AppContainer(context: Context) {
     val visaStore: VisaStore by lazy { FileVisaStore.forContext(appContext) }
 
     val visaUpdates: VisaUpdateScheduling by lazy { WorkManagerVisaScheduling(appContext) }
+
+    /** Downloaded travel advisories; independent of the visa files, see AdvisoryUpdate.kt. */
+    val advisoryStore: AdvisoryStore by lazy { FileAdvisoryStore.forContext(appContext) }
+
+    val advisoryUpdates: AdvisoryScheduling by lazy { WorkManagerAdvisoryScheduling(appContext) }
+
+    val advisory: AdvisoryRepository by lazy {
+        AdvisoryRepository(bundledLoader = { readBundledAdvisory(appContext.assets) }, store = advisoryStore)
+    }
 
     val visa: VisaRepository by lazy {
         VisaRepository(

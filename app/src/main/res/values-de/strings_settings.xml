@@ -158,6 +158,8 @@
     <string name="settings_licence_visa_body">Datensatz zu Visumbestimmungen, abgeleitet von Wikipedia-Autoren (CC BY-SA 4.0), siehe THIRD_PARTY_NOTICES.md im Repository</string>
     <string name="settings_licence_advice">Links zu offiziellen Hinweisen</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Bundesministerium des Auswärtigen)</string>
+    <string name="settings_licence_advisory">Reisehinweise</string>
+    <string name="settings_licence_advisory_body">US-Außenministerium (gemeinfrei); britisches Außenministerium FCDO (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Bibliotheken</string>
 
     <!-- Backup transfer results -->

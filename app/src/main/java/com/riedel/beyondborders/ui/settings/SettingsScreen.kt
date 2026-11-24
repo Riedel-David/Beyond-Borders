@@ -132,6 +132,7 @@ fun SettingsScreen(
             resolver = context.applicationContext.contentResolver,
             snapshot = container.cloudSnapshot,
             visaUpdates = container.visaUpdates,
+            advisoryUpdates = container.advisoryUpdates,
         ),
     )
 

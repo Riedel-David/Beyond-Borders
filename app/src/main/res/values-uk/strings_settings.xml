@@ -164,6 +164,8 @@
     <string name="settings_licence_visa_body">Набір даних про візові вимоги, створений на основі внесків авторів Вікіпедії (CC BY-SA 4.0), див. THIRD_PARTY_NOTICES.md у репозиторії</string>
     <string name="settings_licence_advice">Посилання на офіційні рекомендації</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральне міністерство закордонних справ Німеччини)</string>
+    <string name="settings_licence_advisory">Рекомендації для мандрівників</string>
+    <string name="settings_licence_advisory_body">Держдепартамент США (суспільне надбання); Міністерство закордонних справ Великобританії FCDO (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Бібліотеки</string>
 
     <!-- Backup transfer results -->

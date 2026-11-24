@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Government travel advisories</string>
+    <string name="advisory_agreement">Sources advising against travel: %1$d of %2$d</string>
+    <string name="advisory_partial_data">Only %1$d of %2$d sources have data for this place.</string>
+    <string name="advisory_none">No advisory data for this place from any source.</string>
+    <string name="advisory_no_data">No data</string>
+    <string name="advisory_tags">Risk tags: %1$s</string>
+    <string name="advisory_updated">Updated %1$s</string>
+    <string name="advisory_open_source">Open source</string>
+    <string name="advisory_as_of">Data as of %1$s</string>
+    <string name="advisory_check_official">Each rating is the government\'s own, shown as published and not combined or scored here. Check the official source before you travel.</string>
+</resources>

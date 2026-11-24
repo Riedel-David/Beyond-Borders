@@ -659,6 +659,7 @@ private fun VisaDetail(
         if (showTravelAdvice(row.place.code, ownPassports)) {
             TravelAdviceRow(row.place.code)
         }
+        AdvisorySection(row.place.code)
     }
 }
 

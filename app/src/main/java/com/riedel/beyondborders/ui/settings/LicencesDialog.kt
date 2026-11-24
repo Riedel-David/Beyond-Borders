@@ -31,6 +31,7 @@ private val LICENCE_LINES = listOf(
     UiText.Res(R.string.settings_licence_flags) to UiText.Plain("country-flags, Wikimedia Commons (public domain)"),
     UiText.Res(R.string.settings_licence_visa) to UiText.Res(R.string.settings_licence_visa_body),
     UiText.Res(R.string.settings_licence_advice) to UiText.Res(R.string.settings_licence_advice_body),
+    UiText.Res(R.string.settings_licence_advisory) to UiText.Res(R.string.settings_licence_advisory_body),
     UiText.Res(R.string.settings_licence_libraries) to
         UiText.Plain("AndroidX, Jetpack Compose, Room, Kotlin coroutines (Apache-2.0)"),
 )

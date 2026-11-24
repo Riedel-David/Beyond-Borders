@@ -156,6 +156,8 @@
     <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>
     <string name="settings_licence_advice">Official advice links</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (German Federal Foreign Office)</string>
+    <string name="settings_licence_advisory">Travel advisories</string>
+    <string name="settings_licence_advisory_body">US Department of State (public domain); UK Foreign, Commonwealth &amp; Development Office (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Libraries</string>
 
     <!-- Backup transfer results -->

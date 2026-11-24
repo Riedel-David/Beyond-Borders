@@ -19,6 +19,8 @@ class BeyondBordersApp : Application() {
         CoroutineScope(Dispatchers.IO).launch {
             // Idempotent (KEEP), so every launch may call it; off cancels a queued run.
             container.visaUpdates.sync(container.settings.visaAutoUpdate.value)
+            // Same switch, own job: advisories and visa data fail and succeed separately.
+            container.advisoryUpdates.sync(container.settings.visaAutoUpdate.value)
             // Opening the database is disk work of the same kind, and doing it here
             // rather than on the first query means a version this build cannot migrate
             // is a screen offering a way out instead of a crash — see DatabaseRecovery.

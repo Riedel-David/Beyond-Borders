@@ -164,6 +164,8 @@
     <string name="settings_licence_visa_body">Набор данных о визовых требованиях на основе материалов участников Википедии (CC BY-SA 4.0), см. THIRD_PARTY_NOTICES.md в репозитории</string>
     <string name="settings_licence_advice">Ссылки на официальные рекомендации</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральное министерство иностранных дел Германии)</string>
+    <string name="settings_licence_advisory">Рекомендации для путешественников</string>
+    <string name="settings_licence_advisory_body">Госдепартамент США (общественное достояние); Министерство иностранных дел Великобритании FCDO (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Библиотеки</string>
 
     <!-- Backup transfer results -->

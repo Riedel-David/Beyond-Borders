@@ -161,6 +161,8 @@
     <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, dérivé de Wikipédia (contributeurs, CC BY-SA 4.0), voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
     <string name="settings_licence_advice">Liens vers les conseils officiels</string>
     <string name="settings_licence_advice_body">Auswärtiges Amt (ministère fédéral allemand des Affaires étrangères)</string>
+    <string name="settings_licence_advisory">Avis aux voyageurs</string>
+    <string name="settings_licence_advisory_body">Département d\'État américain (domaine public) ; Foreign, Commonwealth &amp; Development Office britannique (Open Government Licence v3.0)</string>
     <string name="settings_licence_libraries">Bibliothèques</string>
 
     <!-- Backup transfer results -->

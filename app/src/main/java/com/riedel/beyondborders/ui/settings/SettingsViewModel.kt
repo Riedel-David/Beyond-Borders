@@ -14,6 +14,7 @@ import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.CloudSnapshot
 import com.riedel.beyondborders.data.visa.update.VisaCheckOutcome
 import com.riedel.beyondborders.data.visa.update.VisaUpdateScheduling
+import com.riedel.beyondborders.data.advisory.AdvisoryScheduling
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.visa.VisaRegistry
@@ -88,6 +89,7 @@ class SettingsViewModel(
     private val visaUpdates: VisaUpdateScheduling = VisaUpdateScheduling.None,
     private val today: () -> LocalDate = LocalDate::now,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val advisoryUpdates: AdvisoryScheduling = AdvisoryScheduling.None,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
@@ -182,6 +184,8 @@ class SettingsViewModel(
     fun setVisaAutoUpdate(enabled: Boolean) {
         settings.setVisaAutoUpdate(enabled)
         visaUpdates.sync(enabled)
+        // The one switch covers both weekly jobs; they stay separate jobs.
+        advisoryUpdates.sync(enabled)
         // A stale "Up to date" beside a switch that was just flipped reads as a reply to it.
         clearVisaResult()
     }
@@ -443,10 +447,11 @@ class SettingsViewModel(
             resolver: ContentResolver,
             snapshot: CloudSnapshot,
             visaUpdates: VisaUpdateScheduling = VisaUpdateScheduling.None,
+            advisoryUpdates: AdvisoryScheduling = AdvisoryScheduling.None,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(settings, places, resolver, snapshot, visaUpdates) as T
+                return SettingsViewModel(settings, places, resolver, snapshot, visaUpdates, advisoryUpdates = advisoryUpdates) as T
             }
         }
     }
