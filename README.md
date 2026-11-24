@@ -1,7 +1,7 @@
 <img src="docs/screenshots/social-preview.png" alt="Beyond Borders" />
 
 An Android app for tracking where you have been and where your passport gets you
-without a visa. Works offline, no account; visa data refreshes itself weekly (the automatic check can be switched off in Settings).
+without a visa. Works offline, no account; visa data and government travel advisories refresh themselves weekly (the automatic check can be switched off in Settings).
 
 **Needs Android 11+ on an arm64 phone** (no x86 emulators). Install steps are [below](#install).
 
@@ -42,10 +42,13 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
   252-place curated answer; a second passport is optional, and the easier of its two
   answers wins. A snapshot that can be out of date: confirm entry rules with
   [the official source](#data-and-licences) before you travel.
+- **Travel advisories** — the US, UK and German governments' travel advisories for a country side by
+  side, from the country row, with each government's own date and a link to its country page. A
+  snapshot too: check the official source before you travel.
 - **Partner mode** — pick a travel partner's passport and the Visa tab and the map's Visa
   lens show the stricter of your two passports, and who sets the limit.
-- **Visa data updater** — a weekly check on an unmetered network such as Wi-Fi for newer visa files for the passports you have set (a partner passport included),
-  over HTTPS, verified before use; the bundled data is the fallback. The weekly check can be switched off in Settings; *Check now* still works.
+- **Visa data updater** — a weekly check on an unmetered network such as Wi-Fi for newer visa files for the passports you have set (a partner passport included)
+  and for the travel advisories, over HTTPS, verified before use; the bundled data is the fallback. The weekly check can be switched off in Settings; *Check now* still works.
 - **Rating prompt** — once or twice the app asks for a Google Play rating, and Settings has a
   *Rate on Google Play* row.
 - **Share** — your travels as an image in one of three styles: the map with a caption bar,
@@ -54,7 +57,7 @@ so a cascade is not a bug that was fixed, it is a thing the code cannot express.
   It adds the logo, wordmark and stat tiles as it is resized. Tapping it opens the map, or
   the stats screen for the percent and continents widgets.
 - **Settings** — theme (including a pure black option for OLED screens), map colours, *Visa data*
-  (automatic updates, *Check now*), a *Partner passport*, JSON export / import, restoring from Android's backup
+  (automatic updates, *Check now*), *Data sources and licences*, a *Partner passport*, JSON export / import, restoring from Android's backup
   after a reinstall, and *Delete everything*, which clears your places, passports and
   display settings.
 
@@ -63,7 +66,7 @@ More detail in [docs/FEATURES.md](docs/FEATURES.md).
 ## Privacy
 
 Everything stays on your phone. The app has no account, no
-basemap, no tile server and no API key; the geometry is bundled in the APK. Its only network use is a weekly download of public visa data from GitHub Pages, on an unmetered network, with nothing about you sent; Settings → Visa data switches the weekly check off, and *Check now* contacts GitHub Pages only when tapped. Details in
+basemap, no tile server and no API key; the geometry is bundled in the APK. Its only network use is a weekly download of public visa data and travel advisories from GitHub Pages, on an unmetered network, with nothing about you sent; Settings → Visa data switches the weekly check off, and *Check now* contacts GitHub Pages only when tapped. Details in
 the [privacy policy](docs/PRIVACY.md).
 
 ## Install
@@ -82,7 +85,7 @@ from the last several years.
 3. To check the download, compare `sha256sum BeyondBorders.apk` with the
    contents of `BeyondBorders.apk.sha256` next to it.
 
-The app refreshes its visa data itself but cannot update itself: watch the
+The app refreshes its visa data and travel advisories itself but cannot update itself: watch the
 Releases page, or point [Obtainium](https://github.com/ImranR98/Obtainium) at this
 repository to be notified of new versions (Obtainium is untested with this app's release
 files, so treat that as a suggestion).
@@ -127,8 +130,8 @@ Boundaries come from [Natural Earth](https://www.naturalearthdata.com/) (public 
 visa requirements from the [Visa-requirements dataset](https://github.com/Riedel-David/Visa-requirements)
 (derived from Wikipedia contributors, CC BY-SA 4.0) plus hand-curated territory answers of our own, and map labels use Noto Sans
 (SIL OFL 1.1). Map rendering is [MapLibre Native Android](https://github.com/maplibre/maplibre-native)
-(BSD-2-Clause). Travel-advice links come from the German Federal Foreign Office's open
-data, used at build time only. Provenance and checksums are in
+(BSD-2-Clause). Travel advisories come from the US State Department (public domain), the UK Foreign, Commonwealth
+& Development Office (Open Government Licence v3.0) and the German Auswärtiges Amt's open data. Provenance and checksums are in
 [ASSET_SOURCES.md](ASSET_SOURCES.md); the full notices, including the upstream copyright
 text, are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 

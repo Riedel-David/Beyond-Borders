@@ -77,7 +77,7 @@ Google account. After a reinstall, Settings shows **Restore from Android's backu
 opens the same preview an imported file gets, and nothing is applied until you confirm.
 Theme, colours, passports and widget configuration are deliberately left out and start
 fresh, as does the per-install id the merge uses to tell this device's writes from
-another's. The app never uploads anything itself (its only network use is downloading visa data); the
+another's. The app never uploads anything itself (its only network use is downloading visa data and travel advisories); the
 copy is made by the system, and Android's backup settings are where to switch it off.
 
 **Delete everything** (Settings) clears your places, both passports and the display
@@ -218,10 +218,23 @@ It applies to the Visa tab and the map Visa lens only, not to the stats or share
 own passports are left out of the picker, since one of them would be no partner. Per passport
 only: residence permits and EU/Schengen family-member rules are not taken into account.
 
+## Travel advisories
+
+The expanded country row in the Visa tab shows what the US State Department, the UK Foreign,
+Commonwealth & Development Office and the German Auswärtiges Amt currently advise for that
+country, side by side: each government's own rating (the US wording as published; the UK and
+German ones are short summaries of the flags those governments publish), the date of that
+advice and a link to its country page. Nothing is combined or scored beyond a count of how many
+sources advise against travel, and a place a source does not cover says so. The data is a
+snapshot, bundled with each release and refreshed weekly (see below), with its "as of" date
+shown; confirm with the official source before you travel. Settings → *Data sources and
+licences* names the three sources, with their licences and links.
+
 ## Visa data updates
 
-Downloaded visa data is used straight away, without closing the app. *Check now* in
-Settings works on any connection, whether or not the automatic check is on, and says
-whether the data was already current, was updated, or could not be fetched. The weekly
-automatic check runs on unmetered networks only, and the Settings → *Visa data* switch
-turns that weekly check off; it does not stop *Check now*.
+Downloaded visa data and travel advisories are used straight away, without closing the app.
+*Check now* in Settings refreshes both, on any connection, whether or not the automatic check
+is on, and says whether each was already current, was updated, or could not be fetched; one
+failing never stops the other. The Visa data section also shows the date of the advisory data in
+use. The weekly automatic check runs on unmetered networks only, and the Settings → *Visa data*
+switch turns that weekly check off for both; it does not stop *Check now*.

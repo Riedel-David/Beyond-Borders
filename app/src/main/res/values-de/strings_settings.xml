@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Orte markieren, an denen du warst, gelebt hast oder noch hinwillst – auf einer Karte mit allen %1$d Orten. Gebiete wie Grönland oder Puerto Rico zählen einzeln und getrennt von dem Staat, zu dem sie gehören.</string>
     <string name="welcome_intro_bare">Orte markieren, an denen du warst, gelebt hast oder noch hinwillst.</string>
-    <string name="welcome_privacy">Nichts von dem, was du markierst, wird an uns gesendet. Kein Konto, kein Server. Die App lädt nur öffentliche Visumdatenupdates herunter und sendet nichts über dich. (Die Android-Geräte-Sicherung kann die Daten trotzdem enthalten, wenn sie aktiviert ist.)</string>
+    <string name="welcome_privacy">Nichts von dem, was du markierst, wird an uns gesendet. Kein Konto, kein Server. Die App lädt nur öffentliche Visumdaten- und Reisehinweis-Updates herunter und sendet nichts über dich. (Die Android-Geräte-Sicherung kann die Daten trotzdem enthalten, wenn sie aktiviert ist.)</string>
     <string name="welcome_passport_hint">Visumregeln gelten jeweils für einen Reisepass. Den eigenen wählen – später in den Einstellungen änderbar.</string>
     <string name="welcome_get_started">Los geht\'s</string>
 
@@ -93,7 +93,7 @@
     <string name="settings_restore_button">Aus Android-Sicherung wiederherstellen</string>
     <string name="settings_restore_detail">Die Android-Sicherung hat einen Schnappschuss des Verlaufs auf diesem Handy hinterlassen. Das Wiederherstellen führt ihn zusammen, genau wie der Import einer Datei.</string>
     <string name="settings_visa_title">Visumdaten</string>
-    <string name="settings_visa_detail">Lädt kleine Dateien von GitHub herunter, es werden keine persönlichen Daten gesendet. Der Schalter steuert nur die wöchentliche automatische Prüfung von Visumdaten und Reisehinweisen, die im WLAN oder in einem anderen nicht getakteten Netz läuft. „Jetzt prüfen“ aktualisiert nur die Visumdaten und funktioniert in beiden Fällen. Neue Daten gelten sofort.</string>
+    <string name="settings_visa_detail">Lädt kleine Dateien von GitHub herunter, es werden keine persönlichen Daten gesendet. Der Schalter steuert nur die wöchentliche automatische Prüfung von Visumdaten und Reisehinweisen, die im WLAN oder in einem anderen nicht getakteten Netz läuft. „Jetzt prüfen“ aktualisiert beides und funktioniert in beiden Fällen. Neue Daten gelten sofort.</string>
     <string name="settings_visa_checking">Prüfe …</string>
     <string name="settings_visa_result_current">Die Visumdaten sind auf dem neuesten Stand.</string>
     <string name="settings_visa_result_updated">Visumdaten aktualisiert und jetzt in Gebrauch.</string>
@@ -103,6 +103,10 @@
     <string name="settings_visa_last_checked">Zuletzt geprüft: %1$s</string>
     <string name="settings_visa_last_checked_never">Zuletzt geprüft: nie</string>
     <string name="settings_visa_check_now">Jetzt prüfen</string>
+    <string name="settings_visa_advisory_as_of">Reisehinweise, Stand: %1$s</string>
+    <string name="settings_advisory_result_current">Reisehinweise sind bereits aktuell.</string>
+    <string name="settings_advisory_result_updated">Reisehinweise aktualisiert.</string>
+    <string name="settings_advisory_result_failed">Reisehinweise konnten nicht aktualisiert werden.</string>
     <string name="settings_cancel">Abbrechen</string>
 
     <string name="settings_import_title">Diese Datei importieren?</string>
@@ -142,11 +146,11 @@
     <string name="settings_about_map">Grenzen von Natural Earth (gemeinfrei), gezeichnet mit MapLibre. Die gesamte Karte steckt in der App und funktioniert daher ohne Netzwerk und ohne Konto.</string>
     <string name="settings_about_backup_title">Sicherungen</string>
     <string name="settings_about_backup">Die automatische Android-Sicherung überträgt einen Schnappschuss des Verlaufs in das Google-Konto – das System erstellt diese Kopie, die App lädt selbst nie etwas hoch. Ein neu installiertes oder neues Handy startet leer: Es wird nichts zurückgespielt, bis „Wiederherstellen“ getippt wird. Datenbank, Einstellungen und eine installationsspezifische ID bleiben komplett außerhalb der Sicherung. In den Android-Sicherungseinstellungen lässt sie sich abschalten.</string>
-    <string name="settings_licences_button">Open-Source-Lizenzen</string>
+    <string name="settings_licences_button">Datenquellen und Lizenzen</string>
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Problem melden</string>
-    <string name="settings_licences_title">Open-Source-Lizenzen</string>
+    <string name="settings_licences_title">Datenquellen und Lizenzen</string>
     <string name="settings_licences_close">Schließen</string>
     <string name="settings_licence_app">Beyond Borders</string>
     <string name="settings_licence_map">Karte</string>
@@ -156,10 +160,13 @@
     <string name="settings_licence_flags">Flaggen</string>
     <string name="settings_licence_visa">Visumdaten</string>
     <string name="settings_licence_visa_body">Datensatz zu Visumbestimmungen, abgeleitet von Wikipedia-Autoren (CC BY-SA 4.0), siehe THIRD_PARTY_NOTICES.md im Repository</string>
-    <string name="settings_licence_advice">Links zu offiziellen Hinweisen</string>
-    <string name="settings_licence_advice_body">Auswärtiges Amt (Bundesministerium des Auswärtigen)</string>
-    <string name="settings_licence_advisory">Reisehinweise</string>
-    <string name="settings_licence_advisory_body">US-Außenministerium (gemeinfrei); britisches Außenministerium FCDO (Open Government Licence v3.0)</string>
+    <string name="settings_sources_heading">Datenquellen</string>
+    <string name="settings_licences_heading">Open-Source-Lizenzen</string>
+    <string name="settings_source_advisory">Reisehinweise</string>
+    <string name="settings_source_advisory_body">Bewertungen von drei Regierungen, die bei jedem Land angezeigt werden. Die App zeigt deren Warnstatus; die vollständigen Hinweise stehen auf der Website der jeweiligen Regierung.</string>
+    <string name="settings_source_us">US-Außenministerium (gemeinfrei)</string>
+    <string name="settings_source_uk">Britisches Außenministerium (FCDO). Contains public sector information licensed under the Open Government Licence v3.0.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. Die App zeigt den Warnstatus des Auswärtigen Amts mit Kurzbezeichnung und Datum; die vollständigen Hinweise stehen auf der Website des Auswärtigen Amts.</string>
     <string name="settings_licence_libraries">Bibliotheken</string>
 
     <!-- Backup transfer results -->

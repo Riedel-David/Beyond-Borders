@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Marca os lugares onde já estiveste ou moraste e aonde queres ir — num mapa com %1$d lugares. Territórios como a Groenlândia ou Porto Rico contam à parte, separados do país a que pertencem.</string>
     <string name="welcome_intro_bare">Marca os lugares onde já estiveste ou moraste e aonde queres ir.</string>
-    <string name="welcome_privacy">Nada do que marcas nos é enviado. Sem conta, sem servidor. A app só descarrega atualizações públicas dos dados de visto e não envia nada sobre ti. (A cópia de segurança do próprio Android ainda pode incluir estes dados, se estiver ativada.)</string>
+    <string name="welcome_privacy">Nada do que marcas nos é enviado. Sem conta, sem servidor. A app só descarrega atualizações públicas dos dados de visto e dos avisos de viagem e não envia nada sobre ti. (A cópia de segurança do próprio Android ainda pode incluir estes dados, se estiver ativada.)</string>
     <string name="welcome_passport_hint">Os requisitos de visto valem para um passaporte por vez. Escolhe o teu — podes mudar mais tarde nas Definições.</string>
     <string name="welcome_get_started">Começar</string>
 
@@ -93,7 +93,7 @@
     <string name="settings_restore_button">Repor a partir da cópia de segurança do Android</string>
     <string name="settings_restore_detail">A cópia de segurança do Android deixou neste telemóvel uma cópia do teu histórico. Repor junta esses dados aos existentes, tal como importar um ficheiro.</string>
     <string name="settings_visa_title">Dados de visto</string>
-    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal dos dados de visto e dos avisos de viagem, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” atualiza apenas os dados de visto e funciona nos dois casos. Os dados novos são usados de imediato.</string>
+    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal dos dados de visto e dos avisos de viagem, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” atualiza ambos e funciona nos dois casos. Os dados novos são usados de imediato.</string>
     <string name="settings_visa_checking">A verificar…</string>
     <string name="settings_visa_result_current">Os dados de visto já estão atualizados.</string>
     <string name="settings_visa_result_updated">Dados de visto atualizados e já em uso.</string>
@@ -103,6 +103,10 @@
     <string name="settings_visa_last_checked">Última verificação: %1$s</string>
     <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
     <string name="settings_visa_check_now">Verificar agora</string>
+    <string name="settings_visa_advisory_as_of">Avisos de viagem de %1$s</string>
+    <string name="settings_advisory_result_current">Os avisos de viagem já estão atualizados.</string>
+    <string name="settings_advisory_result_updated">Avisos de viagem atualizados.</string>
+    <string name="settings_advisory_result_failed">Não foi possível atualizar os avisos de viagem.</string>
     <string name="settings_cancel">Cancelar</string>
 
     <string name="settings_import_title">Importar este ficheiro?</string>
@@ -145,11 +149,11 @@
     <string name="settings_about_map">Fronteiras do Natural Earth (domínio público), desenhadas com o MapLibre. O mapa inteiro vem incluído na app, por isso funciona sem rede e sem conta.</string>
     <string name="settings_about_backup_title">Cópias de segurança</string>
     <string name="settings_about_backup">A cópia de segurança automática do próprio Android leva uma cópia do teu histórico para a tua conta Google — quem faz essa cópia é o sistema, a app nunca envia nada por iniciativa própria. Um telemóvel reinstalado ou novo começa vazio: nada volta até tocares em Repor. A base de dados, as definições e um identificador por instalação ficam totalmente fora da cópia. Desativa-a nas definições de cópia de segurança do Android, se preferires.</string>
-    <string name="settings_licences_button">Licenças de código aberto</string>
+    <string name="settings_licences_button">Fontes de dados e licenças</string>
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Comunicar um problema</string>
-    <string name="settings_licences_title">Licenças de código aberto</string>
+    <string name="settings_licences_title">Fontes de dados e licenças</string>
     <string name="settings_licences_close">Fechar</string>
     <string name="settings_licence_app">Beyond Borders</string>
     <string name="settings_licence_map">Mapa</string>
@@ -159,10 +163,13 @@
     <string name="settings_licence_flags">Bandeiras</string>
     <string name="settings_licence_visa">Dados de visto</string>
     <string name="settings_licence_visa_body">Conjunto de dados de requisitos de visto, derivado de colaboradores da Wikipédia (CC BY-SA 4.0); veja THIRD_PARTY_NOTICES.md no repositório</string>
-    <string name="settings_licence_advice">Ligações para orientações oficiais</string>
-    <string name="settings_licence_advice_body">Auswärtiges Amt (Ministério dos Negócios Estrangeiros da Alemanha)</string>
-    <string name="settings_licence_advisory">Avisos de viagem</string>
-    <string name="settings_licence_advisory_body">Departamento de Estado dos EUA (domínio público); Foreign, Commonwealth &amp; Development Office do Reino Unido (Open Government Licence v3.0)</string>
+    <string name="settings_sources_heading">Fontes de dados</string>
+    <string name="settings_licences_heading">Licenças de código aberto</string>
+    <string name="settings_source_advisory">Avisos de viagem</string>
+    <string name="settings_source_advisory_body">Avaliações de três governos, apresentadas em cada país. A app mostra o nível de alerta deles; o aviso completo está no site de cada governo.</string>
+    <string name="settings_source_us">Departamento de Estado dos EUA (domínio público)</string>
+    <string name="settings_source_uk">Foreign, Commonwealth &amp; Development Office do Reino Unido. Contains public sector information licensed under the Open Government Licence v3.0.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. A app mostra o nível de alerta do Auswärtiges Amt com a sua etiqueta curta e a data; o aviso completo está no site do Auswärtiges Amt.</string>
     <string name="settings_licence_libraries">Bibliotecas</string>
 
     <!-- Backup transfer results -->

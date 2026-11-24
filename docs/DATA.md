@@ -134,8 +134,9 @@ before changing anything about the place list.
 ## Regenerating the travel advisories
 
 `app/src/main/assets/advisory.json` holds the US State Department, UK FCDO and German Auswärtiges Amt
-travel advisories side by side (format and stance mapping: PLAN.md, "Country travel advisories"). It
-is generated, never edited by hand.
+travel advisories side by side: per country and source a `stance` (0-3, a common key only), the source's `label`, an `updated` date and the `url` of its country page. The US label is the feed's own
+wording; the UK and German labels are short summaries the build writes from the flags those feeds
+publish. It is generated, never edited by hand.
 
 ```sh
 python3 tools/advisory/build_advisory.py                        # downloads all three feeds (~230 small calls)

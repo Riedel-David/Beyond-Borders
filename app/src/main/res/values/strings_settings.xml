@@ -8,7 +8,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Mark the places you\'ve been, lived in, or want to go — on a map of all %1$d places. Territories like Greenland or Puerto Rico count on their own, separate from the country they belong to.</string>
     <string name="welcome_intro_bare">Mark the places you\'ve been, lived in, or want to go.</string>
-    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server. The app only downloads public visa data updates and sends nothing about you. (Android\'s own device backup may include it, if you have that switched on.)</string>
+    <string name="welcome_privacy">Nothing you mark is sent to us. No account, no server. The app only downloads public visa data and travel advisory updates and sends nothing about you. (Android\'s own device backup may include it, if you have that switched on.)</string>
     <string name="welcome_passport_hint">Visa requirements are for one passport at a time. Pick yours — you can change it later in Settings.</string>
     <string name="welcome_get_started">Get started</string>
 
@@ -91,7 +91,7 @@
     <string name="settings_restore_button">Restore from Android\'s backup</string>
     <string name="settings_restore_detail">Android\'s backup left a snapshot of your history on this phone. Restoring merges it in, exactly like importing a file.</string>
     <string name="settings_visa_title">Visa data</string>
-    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. The switch controls only the weekly automatic check for visa data and travel advisories, which runs on Wi-Fi or another unmetered network. Check now updates visa data only, and works either way. New data is used straight away.</string>
+    <string name="settings_visa_detail">Downloads small files from GitHub - no personal data is sent. The switch controls only the weekly automatic check for visa data and travel advisories, which runs on Wi-Fi or another unmetered network. Check now updates both, and works either way. New data is used straight away.</string>
     <string name="settings_visa_checking">Checking…</string>
     <string name="settings_visa_result_current">Visa data is already up to date.</string>
     <string name="settings_visa_result_updated">Visa data updated and now in use.</string>
@@ -101,6 +101,10 @@
     <string name="settings_visa_last_checked">Last checked: %1$s</string>
     <string name="settings_visa_last_checked_never">Last checked: never</string>
     <string name="settings_visa_check_now">Check now</string>
+    <string name="settings_visa_advisory_as_of">Travel advisories as of %1$s</string>
+    <string name="settings_advisory_result_current">Travel advisories are already up to date.</string>
+    <string name="settings_advisory_result_updated">Travel advisories updated.</string>
+    <string name="settings_advisory_result_failed">Couldn\'t refresh travel advisories.</string>
     <string name="settings_cancel">Cancel</string>
 
     <string name="settings_import_title">Import this file?</string>
@@ -140,11 +144,11 @@
     <string name="settings_about_map">Borders from Natural Earth (public domain), drawn with MapLibre. The whole map is bundled in the app, so it works with no network and no account.</string>
     <string name="settings_about_backup_title">Backups</string>
     <string name="settings_about_backup">Android\'s own Auto Backup carries a snapshot of your history to your Google account — the system makes that copy, the app never uploads anything itself. A reinstalled or new phone starts empty: nothing is put back until you tap Restore. The database, your settings and a per-install id stay out of the backup entirely. Switch it off in Android\'s backup settings if you would rather it did not.</string>
-    <string name="settings_licences_button">Open-source licences</string>
+    <string name="settings_licences_button">Data sources and licences</string>
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Report a problem</string>
-    <string name="settings_licences_title">Open-source licences</string>
+    <string name="settings_licences_title">Data sources and licences</string>
     <string name="settings_licences_close">Close</string>
     <string name="settings_licence_app">Beyond Borders</string>
     <string name="settings_licence_map">Map</string>
@@ -154,10 +158,13 @@
     <string name="settings_licence_flags">Flags</string>
     <string name="settings_licence_visa">Visa data</string>
     <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>
-    <string name="settings_licence_advice">Official advice links</string>
-    <string name="settings_licence_advice_body">Auswärtiges Amt (German Federal Foreign Office)</string>
-    <string name="settings_licence_advisory">Travel advisories</string>
-    <string name="settings_licence_advisory_body">US Department of State (public domain); UK Foreign, Commonwealth &amp; Development Office (Open Government Licence v3.0)</string>
+    <string name="settings_sources_heading">Data sources</string>
+    <string name="settings_licences_heading">Open-source licences</string>
+    <string name="settings_source_advisory">Travel advisories</string>
+    <string name="settings_source_advisory_body">Government ratings shown for each country. The app shows their warning status; the complete advice is on each government\'s website.</string>
+    <string name="settings_source_us">US Department of State (public domain)</string>
+    <string name="settings_source_uk">UK Foreign, Commonwealth &amp; Development Office. Contains public sector information licensed under the Open Government Licence v3.0.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. The app shows the Auswärtiges Amt\'s warning status, a short label and its date; the complete advice is on the Auswärtiges Amt\'s website.</string>
     <string name="settings_licence_libraries">Libraries</string>
 
     <!-- Backup transfer results -->

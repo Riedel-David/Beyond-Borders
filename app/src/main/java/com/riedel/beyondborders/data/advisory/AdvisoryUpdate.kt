@@ -169,8 +169,12 @@ class AdvisoryUpdateWorker(context: Context, params: WorkerParameters) : Corouti
 interface AdvisoryScheduling {
     fun sync(enabled: Boolean)
 
+    /** Runs a check now, in the caller's coroutine. Never throws for network trouble. */
+    suspend fun checkNow(): AdvisoryOutcome
+
     object None : AdvisoryScheduling {
         override fun sync(enabled: Boolean) = Unit
+        override suspend fun checkNow(): AdvisoryOutcome = AdvisoryOutcome.UP_TO_DATE
     }
 }
 
@@ -188,6 +192,14 @@ class WorkManagerAdvisoryScheduling(context: Context) : AdvisoryScheduling {
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
             .build()
         wm.enqueueUniquePeriodicWork(PERIODIC_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    override suspend fun checkNow(): AdvisoryOutcome = try {
+        performAdvisoryUpdate(appContext as BeyondBordersApp)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AdvisoryOutcome.REJECTED
     }
 
     private companion object {

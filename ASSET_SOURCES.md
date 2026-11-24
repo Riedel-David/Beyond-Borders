@@ -1,7 +1,7 @@
 # Bundled asset provenance
 
 The app is offline-first: every reference-data asset under `app/src/main/assets/`
-is bundled at build time (the visa files can later be replaced by newer ones from the app's updater, see docs/DATA.md; the bundled copy stays the fallback), so there is no source or checksum
+is bundled at build time (the visa files and `advisory.json` can later be replaced by newer ones from the app's updaters, see docs/DATA.md; the bundled copy stays the fallback), so there is no source or checksum
 recorded anywhere a rebuild could check against. This file is that record. SHA-256
 and byte size were computed directly from the files currently in the repo
 (`shasum -a 256`); "source" is what the generator scripts in `tools/` say they were
@@ -77,6 +77,23 @@ cd app/src/main/assets && LC_ALL=C shasum -a 256 visa*.json > ../../../../docs/v
 ```
 
 Verify a checkout with `cd app/src/main/assets && shasum -a 256 -c ../../../../docs/visa-checksums.txt`.
+
+## Travel advisories — `tools/advisory/build_advisory.py`
+
+`advisory.json` is generated, never edited by hand: per country, the rating, date and country-page
+link of three governments. Sources, fetched live by the script:
+
+- US Department of State, `https://cadataapi.state.gov/api/TravelAdvisories` (public domain; label verbatim).
+- UK FCDO, `https://www.gov.uk/api/content/foreign-travel-advice` plus one call per country
+  (Open Government Licence v3.0; label is a summary the script writes from the alert-status flags).
+- Auswärtiges Amt open data, `https://www.auswaertiges-amt.de/opendata/travelwarning` (bespoke terms;
+  label is a summary written from the `warning` and `partialWarning` flags).
+
+Rebuild with `python3 tools/advisory/build_advisory.py` (needs network; `--source tools/advisory/cache` for offline)
+and commit the file; details and the tests are in [`docs/DATA.md`](docs/DATA.md). The published copy is rebuilt
+every Wednesday by `.github/workflows/advisory-refresh.yml`. The file records its own `generatedAt` and each
+source's `fetchedAt`, so it is not pinned to a checksum like the visa files. Licences and the Auswärtiges Amt
+terms: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Country flags — `tools/flags/build_flags.py`
 

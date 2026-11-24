@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Познач на карті, де вже вдалося побувати, де довелося жити і куди мрієш поїхати. Місць на карті: %1$d. Території на кшталт Гренландії чи Пуерто-Рико враховуються окремо, не разом із країною, до якої вони належать.</string>
     <string name="welcome_intro_bare">Познач, де вже вдалося побувати, де довелося жити і куди мрієш поїхати.</string>
-    <string name="welcome_privacy">Ми не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису чи сервера. Застосунок лише завантажує публічні оновлення даних про візи й нічого не надсилає про тебе. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
+    <string name="welcome_privacy">Ми не отримуємо нічого з того, що ти позначаєш. Жодного облікового запису чи сервера. Застосунок лише завантажує публічні оновлення даних про візи та рекомендацій для мандрівників й нічого не надсилає про тебе. (Власне резервне копіювання Android усе ж може охопити ці дані, якщо його ввімкнено.)</string>
     <string name="welcome_passport_hint">Візові вимоги показано для одного паспорта за раз. Обери свій — згодом його можна змінити в налаштуваннях.</string>
     <string name="welcome_get_started">Почати</string>
 
@@ -93,7 +93,7 @@
     <string name="settings_restore_button">Відновити з резервної копії Android</string>
     <string name="settings_restore_detail">Резервне копіювання Android залишило на цьому телефоні знімок твоєї історії. Відновлення обʼєднує його з поточними даними, так само як імпорт файлу.</string>
     <string name="settings_visa_title">Дані про візи</string>
-    <string name="settings_visa_detail">Завантажує невеликі файли з GitHub, особисті дані не надсилаються. Перемикач керує лише щотижневою автоматичною перевіркою даних про візи та рекомендацій для мандрівників, яка виконується через Wi-Fi або іншу мережу без обмежень трафіку. Кнопка «Перевірити зараз» оновлює лише дані про візи й працює в обох випадках. Нові дані застосовуються одразу.</string>
+    <string name="settings_visa_detail">Завантажує невеликі файли з GitHub, особисті дані не надсилаються. Перемикач керує лише щотижневою автоматичною перевіркою даних про візи та рекомендацій для мандрівників, яка виконується через Wi-Fi або іншу мережу без обмежень трафіку. Кнопка «Перевірити зараз» оновлює і те, і інше та працює в обох випадках. Нові дані застосовуються одразу.</string>
     <string name="settings_visa_checking">Перевірка…</string>
     <string name="settings_visa_result_current">Дані про візи вже актуальні.</string>
     <string name="settings_visa_result_updated">Дані про візи оновлено, і вони вже використовуються.</string>
@@ -103,6 +103,10 @@
     <string name="settings_visa_last_checked">Остання перевірка: %1$s</string>
     <string name="settings_visa_last_checked_never">Остання перевірка: ніколи</string>
     <string name="settings_visa_check_now">Перевірити зараз</string>
+    <string name="settings_visa_advisory_as_of">Рекомендації для мандрівників станом на %1$s</string>
+    <string name="settings_advisory_result_current">Рекомендації для мандрівників уже актуальні.</string>
+    <string name="settings_advisory_result_updated">Рекомендації для мандрівників оновлено.</string>
+    <string name="settings_advisory_result_failed">Не вдалося оновити рекомендації для мандрівників.</string>
     <string name="settings_cancel">Скасувати</string>
 
     <string name="settings_import_title">Імпортувати цей файл?</string>
@@ -148,11 +152,11 @@
     <string name="settings_about_map">Кордони з Natural Earth (суспільне надбання), відображені за допомогою MapLibre. Уся карта вбудована в застосунок, тож працює без мережі й облікового запису.</string>
     <string name="settings_about_backup_title">Резервні копії</string>
     <string name="settings_about_backup">Власне автоматичне резервне копіювання Android переносить знімок твоєї історії до облікового запису Google — цю копію створює система, застосунок сам нічого не вивантажує. Перевстановлений або новий телефон починає з порожнього стану: нічого не повертається, доки ти не торкнешся «Відновити». База даних, твої налаштування та ідентифікатор встановлення до резервної копії не потрапляють узагалі. Якщо не хочеш цього, вимкни копіювання в налаштуваннях резервного копіювання Android.</string>
-    <string name="settings_licences_button">Ліцензії відкритого коду</string>
+    <string name="settings_licences_button">Джерела даних і ліцензії</string>
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Повідомити про проблему</string>
-    <string name="settings_licences_title">Ліцензії відкритого коду</string>
+    <string name="settings_licences_title">Джерела даних і ліцензії</string>
     <string name="settings_licences_close">Закрити</string>
     <string name="settings_licence_app">Beyond Borders</string>
     <string name="settings_licence_map">Карта</string>
@@ -162,10 +166,13 @@
     <string name="settings_licence_flags">Прапори</string>
     <string name="settings_licence_visa">Візові дані</string>
     <string name="settings_licence_visa_body">Набір даних про візові вимоги, створений на основі внесків авторів Вікіпедії (CC BY-SA 4.0), див. THIRD_PARTY_NOTICES.md у репозиторії</string>
-    <string name="settings_licence_advice">Посилання на офіційні рекомендації</string>
-    <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральне міністерство закордонних справ Німеччини)</string>
-    <string name="settings_licence_advisory">Рекомендації для мандрівників</string>
-    <string name="settings_licence_advisory_body">Держдепартамент США (суспільне надбання); Міністерство закордонних справ Великобританії FCDO (Open Government Licence v3.0)</string>
+    <string name="settings_sources_heading">Джерела даних</string>
+    <string name="settings_licences_heading">Ліцензії відкритого коду</string>
+    <string name="settings_source_advisory">Рекомендації для мандрівників</string>
+    <string name="settings_source_advisory_body">Оцінки трьох урядів, які показуються для кожної країни. Застосунок показує їхній рівень попередження; повний текст рекомендацій розміщено на сайті кожного уряду.</string>
+    <string name="settings_source_us">Держдепартамент США (суспільне надбання)</string>
+    <string name="settings_source_uk">Міністерство закордонних справ Великобританії (FCDO). Contains public sector information licensed under the Open Government Licence v3.0.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. Застосунок показує рівень попередження Auswärtiges Amt, короткий напис і дату; повний текст рекомендацій розміщено на сайті Auswärtiges Amt.</string>
     <string name="settings_licence_libraries">Бібліотеки</string>
 
     <!-- Backup transfer results -->

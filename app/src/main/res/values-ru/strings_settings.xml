@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Отмечай посещённые места, места проживания и те, куда хочешь попасть, — на карте из %1$d мест. Территории вроде Гренландии или Пуэрто-Рико считаются отдельно, не вместе со страной, которой они принадлежат.</string>
     <string name="welcome_intro_bare">Отмечай посещённые места, места проживания и те, куда хочешь попасть.</string>
-    <string name="welcome_privacy">Ничего из того, что ты отмечаешь, нам не отправляется. Ни аккаунта, ни сервера. Приложение лишь скачивает публичные обновления данных о визах и ничего не отправляет о тебе. (Резервное копирование Android всё же может сохранять эти данные, если оно у тебя включено.)</string>
+    <string name="welcome_privacy">Ничего из того, что ты отмечаешь, нам не отправляется. Ни аккаунта, ни сервера. Приложение лишь скачивает публичные обновления данных о визах и рекомендаций для путешественников и ничего не отправляет о тебе. (Резервное копирование Android всё же может сохранять эти данные, если оно у тебя включено.)</string>
     <string name="welcome_passport_hint">Визовые требования показываются для одного паспорта за раз. Выбери свой — позже его можно сменить в настройках.</string>
     <string name="welcome_get_started">Начать</string>
 
@@ -93,7 +93,7 @@
     <string name="settings_restore_button">Восстановить из резервной копии Android</string>
     <string name="settings_restore_detail">Резервное копирование Android оставило на этом телефоне снимок твоей истории. Восстановление объединяет его с текущими данными — так же, как импорт файла.</string>
     <string name="settings_visa_title">Данные о визах</string>
-    <string name="settings_visa_detail">Загружает небольшие файлы с GitHub, личные данные не отправляются. Переключатель управляет только еженедельной автоматической проверкой данных о визах и рекомендаций для путешественников, которая выполняется по Wi-Fi или в другой сети без ограничений трафика. Кнопка «Проверить сейчас» обновляет только данные о визах и работает в любом случае. Новые данные применяются сразу.</string>
+    <string name="settings_visa_detail">Загружает небольшие файлы с GitHub, личные данные не отправляются. Переключатель управляет только еженедельной автоматической проверкой данных о визах и рекомендаций для путешественников, которая выполняется по Wi-Fi или в другой сети без ограничений трафика. Кнопка «Проверить сейчас» обновляет и то, и другое и работает в любом случае. Новые данные применяются сразу.</string>
     <string name="settings_visa_checking">Проверка…</string>
     <string name="settings_visa_result_current">Данные о визах уже актуальны.</string>
     <string name="settings_visa_result_updated">Данные о визах обновлены и уже используются.</string>
@@ -103,6 +103,10 @@
     <string name="settings_visa_last_checked">Последняя проверка: %1$s</string>
     <string name="settings_visa_last_checked_never">Последняя проверка: никогда</string>
     <string name="settings_visa_check_now">Проверить сейчас</string>
+    <string name="settings_visa_advisory_as_of">Рекомендации для путешественников на %1$s</string>
+    <string name="settings_advisory_result_current">Рекомендации для путешественников уже актуальны.</string>
+    <string name="settings_advisory_result_updated">Рекомендации для путешественников обновлены.</string>
+    <string name="settings_advisory_result_failed">Не удалось обновить рекомендации для путешественников.</string>
     <string name="settings_cancel">Отмена</string>
 
     <string name="settings_import_title">Импортировать этот файл?</string>
@@ -148,11 +152,11 @@
     <string name="settings_about_map">Границы из Natural Earth (общественное достояние), отрисовка — MapLibre. Вся карта встроена в приложение, поэтому оно работает без сети и без аккаунта.</string>
     <string name="settings_about_backup_title">Резервные копии</string>
     <string name="settings_about_backup">Собственное автоматическое резервное копирование Android переносит снимок твоей истории в аккаунт Google — копию создаёт система, само приложение ничего не загружает. Переустановленное приложение или новый телефон начинают с пустых данных: ничего не возвращается, пока ты не нажмёшь «Восстановить». База данных, настройки и идентификатор установки в резервную копию не попадают вовсе. Если не хочешь этого, отключи копирование в настройках Android.</string>
-    <string name="settings_licences_button">Лицензии открытого ПО</string>
+    <string name="settings_licences_button">Источники данных и лицензии</string>
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Сообщить о проблеме</string>
-    <string name="settings_licences_title">Лицензии открытого ПО</string>
+    <string name="settings_licences_title">Источники данных и лицензии</string>
     <string name="settings_licences_close">Закрыть</string>
     <string name="settings_licence_app">Beyond Borders</string>
     <string name="settings_licence_map">Карта</string>
@@ -162,10 +166,13 @@
     <string name="settings_licence_flags">Флаги</string>
     <string name="settings_licence_visa">Визовые данные</string>
     <string name="settings_licence_visa_body">Набор данных о визовых требованиях на основе материалов участников Википедии (CC BY-SA 4.0), см. THIRD_PARTY_NOTICES.md в репозитории</string>
-    <string name="settings_licence_advice">Ссылки на официальные рекомендации</string>
-    <string name="settings_licence_advice_body">Auswärtiges Amt (Федеральное министерство иностранных дел Германии)</string>
-    <string name="settings_licence_advisory">Рекомендации для путешественников</string>
-    <string name="settings_licence_advisory_body">Госдепартамент США (общественное достояние); Министерство иностранных дел Великобритании FCDO (Open Government Licence v3.0)</string>
+    <string name="settings_sources_heading">Источники данных</string>
+    <string name="settings_licences_heading">Лицензии открытого ПО</string>
+    <string name="settings_source_advisory">Рекомендации для путешественников</string>
+    <string name="settings_source_advisory_body">Оценки трёх правительств, которые показываются для каждой страны. Приложение показывает их уровень предупреждения; полный текст рекомендаций находится на сайте каждого правительства.</string>
+    <string name="settings_source_us">Госдепартамент США (общественное достояние)</string>
+    <string name="settings_source_uk">Министерство иностранных дел Великобритании (FCDO). Contains public sector information licensed under the Open Government Licence v3.0.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. Приложение показывает уровень предупреждения Auswärtiges Amt, краткую метку и дату; полный текст рекомендаций находится на сайте Auswärtiges Amt.</string>
     <string name="settings_licence_libraries">Библиотеки</string>
 
     <!-- Backup transfer results -->

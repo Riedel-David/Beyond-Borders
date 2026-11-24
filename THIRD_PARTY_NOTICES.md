@@ -20,7 +20,7 @@ Licence: Creative Commons Attribution-ShareAlike 4.0 International,
 whole-country answer of each passport is kept; Wikipedia's wording is reduced to the
 app's categories and day counts; some answers are hand-corrected or added in
 `tools/visa/rules.py`; and the DE asset additionally carries links to the German
-Foreign Office's travel advice. **Share-alike:** these `visa*.json` assets (not the
+Foreign Office's travel advice (see below). **Share-alike:** these `visa*.json` assets (not the
 app's source code, which stays GPL-3.0) are distributed under CC BY-SA 4.0 as well, and
 anyone reusing them must keep that licence and this attribution. No endorsement by
 Wikipedia, its contributors or the dataset's author is implied.
@@ -68,17 +68,44 @@ The app is built on AndroidX libraries, Jetpack Compose and Material 3, Room, an
 kotlinx.coroutines, all licensed under the Apache License 2.0
 (<https://www.apache.org/licenses/LICENSE-2.0>).
 
-## Auswärtiges Amt travel-warning data
+## Travel advisories (`advisory.json`)
 
-The visa build reads the German Federal Foreign Office's travel-warning open data
-(<https://www.auswaertiges-amt.de/opendata/travelwarning>) only to learn each
-country's content id, from which it generates the link to that country's official
-travel-advice page. No advice text is copied into the app. The Foreign Office
-publishes no formal licence for this feed; its interface page sets terms of use
-(information taken over complete and current, clearly attributed to the Auswärtiges
-Amt, no guarantee of accuracy, and a request-and-accept procedure for access). The
-links in the app are attributed to the Auswärtiges Amt. This project has not
-requested or recorded a separate agreement with them.
+The `advisory.json` asset and its weekly updates carry, for each country, the current rating
+of three governments, the date of that rating and a link to the country's page on the
+government's own site. The build is `tools/advisory/build_advisory.py` (see `ASSET_SOURCES.md`).
+The app shows these side by side and does not combine them; it is not affiliated with any of
+the three governments, and the ratings are a snapshot that can be out of date.
+
+**US Department of State** (<https://travel.state.gov/>). Travel advisories are works of the
+US federal government and in the public domain. The US label is the feed's own wording.
+
+**UK Foreign, Commonwealth & Development Office** (<https://www.gov.uk/foreign-travel-advice>).
+Contains public sector information licensed under the Open Government Licence v3.0,
+<https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/>. Changes made
+here: the app's label is a short summary the build writes from the feed's alert-status flags
+(for example "FCDO advises against all travel"), not FCDO text, and only the strongest advice
+is stated; the linked FCDO page has the full advice.
+
+**Auswärtiges Amt** (German Federal Foreign Office), *Reise- und Sicherheitshinweise*, from its
+open-data interface (<https://www.auswaertiges-amt.de/opendata/travelwarning>). The app shows
+the Auswärtiges Amt's warning status for each country (a travel warning, a partial warning or
+none) as a short label the build writes from the feed's `warning` and `partialWarning` flags,
+the date of the feed entry, and a link to the Auswärtiges Amt's page for that country. The
+advice text itself is not copied: the complete Reise- und Sicherheitshinweise are on the
+Auswärtiges Amt's website. The Auswärtiges Amt publishes no formal licence for this feed;
+its interface page
+(<https://www.auswaertiges-amt.de/de/service/opendata/open-data-schnittstelle-736118>) allows
+the information to be taken over on conditions: it is taken over complete and kept current
+through the interface, it is clearly recognisable as coming from the Auswärtiges Amt, and it is
+not shown altered, incomplete, outdated or in a distorting context (the Auswärtiges Amt
+reserves the right to withdraw permission otherwise, gives no guarantee of accuracy, and
+asks users of the interface to contact it via <https://www.diplo.de/kontakt>, naming the
+application and confirming acceptance of these terms). Beyond Borders is a free app, so the
+extra rules for paid apps do not apply. The app refreshes the data weekly on an unmetered
+network and shows the date of the data on screen. It takes over only the warning
+status and links to the rest, whereas the terms speak of information taken over complete, so
+whether this use is accepted is for the Auswärtiges Amt to say. Confirmation with the
+Auswärtiges Amt: pending (the request has not been sent yet).
 
 ## Icons
 
