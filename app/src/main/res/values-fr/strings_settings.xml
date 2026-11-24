@@ -107,6 +107,7 @@
     <string name="settings_advisory_result_current">Les avis aux voyageurs sont déjà à jour.</string>
     <string name="settings_advisory_result_updated">Avis aux voyageurs mis à jour.</string>
     <string name="settings_advisory_result_failed">Impossible d\'actualiser les avis aux voyageurs.</string>
+    <string name="settings_advisory_result_newer_app">Avis aux voyageurs : le dernier fichier nécessite une version plus récente de l\'application.</string>
     <string name="settings_cancel">Annuler</string>
 
     <string name="settings_import_title">Importer ce fichier ?</string>
@@ -166,7 +167,7 @@
     <string name="settings_sources_heading">Sources de données</string>
     <string name="settings_licences_heading">Licences open source</string>
     <string name="settings_source_advisory">Avis aux voyageurs</string>
-    <string name="settings_source_advisory_body">Évaluations de trois gouvernements, affichées pour chaque pays. L\'app montre leur niveau d\'alerte et, pour l\'Auswärtiges Amt, jusqu\'à trois de ses propres phrases déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de chaque gouvernement.</string>
+    <string name="settings_source_advisory_body">Évaluations de trois gouvernements, affichées pour chaque pays. L\'app montre leur niveau d\'alerte et jusqu\'à trois de leurs propres phrases sur des régions du pays ou déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de chaque gouvernement.</string>
     <string name="settings_source_us">Département d\'État américain (domaine public)</string>
     <string name="settings_source_uk">Foreign, Commonwealth &amp; Development Office britannique. Contains public sector information licensed under the Open Government Licence v3.0.</string>
     <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. L\'app affiche le niveau d\'alerte de l\'Auswärtiges Amt avec son libellé court, sa date et jusqu\'à trois de ses propres phrases déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de l\'Auswärtiges Amt.</string>

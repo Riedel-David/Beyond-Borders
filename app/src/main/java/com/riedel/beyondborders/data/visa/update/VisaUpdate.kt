@@ -35,7 +35,10 @@ data class FetchPlan(val fetch: List<String>, val delete: List<String>)
 enum class Rejection { TOO_LARGE, WRONG_LENGTH, WRONG_HASH, UNPARSEABLE, WRONG_PASSPORT, ASOF_MISMATCH, FUTURE_DATED, OLDER_THAN_IN_USE }
 
 /** A file was fetched but must not be used; unlike an [IOException] it is not worth retrying. */
-class VisaFetchRejected(message: String) : Exception(message)
+open class VisaFetchRejected(message: String) : Exception(message)
+
+/** The server answered 404: the file is not published (yet). A [VisaFetchRejected] for every existing caller. */
+class VisaFetchNotFound(message: String) : VisaFetchRejected(message)
 
 /** Network side, behind an interface so the apply logic runs on the host with a fake. */
 interface VisaFetcher {
@@ -249,6 +252,13 @@ internal fun preferStored(bundled: VisaRegistry, today: () -> String = ::todayUt
 }
 
 /** Timeouts, throttling and server errors may pass; any other 4xx is final. */
+/** What a non-200 answer means: 404 is "not published", other non-retryable 4xx a rejection, the rest worth retrying. */
+internal fun failureForStatus(status: Int): Exception = when {
+    status == 404 -> VisaFetchNotFound("HTTP 404")
+    status in 400..499 && !isRetryableStatus(status) -> VisaFetchRejected("HTTP $status")
+    else -> IOException("HTTP $status")
+}
+
 internal fun isRetryableStatus(status: Int): Boolean = status == 408 || status == 429 || status >= 500
 
 internal fun isHttps(url: String): Boolean = url.startsWith("https://", ignoreCase = true)

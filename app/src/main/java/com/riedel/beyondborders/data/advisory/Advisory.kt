@@ -20,6 +20,12 @@ const val MIN_ADVISORY_COUNTRIES = 150
 /** A download must keep at least this share of the countries in the copy already in use. */
 const val MIN_ADVISORY_RETAINED = 0.8
 
+/** A source with at least this many entries in the copy in use is guarded against collapsing. */
+const val MIN_GUARDED_SOURCE_ENTRIES = 100
+
+/** ...and a download must keep at least this share of that source's entries. */
+const val MIN_SOURCE_RETAINED = 0.5
+
 /** The sources in the order the rows are shown. */
 val ADVISORY_SOURCES = listOf("US", "UK", "DE")
 
@@ -27,7 +33,9 @@ val ADVISORY_SOURCES = listOf("US", "UK", "DE")
  * One government's rating for one country. [stance] is the pipeline's normalisation to 0..3
  * (0 normal precautions, 1 increased caution, 2 reconsider or parts of the country, 3 do not
  * travel) and exists only so the count and the row accent have something to key on;
- * [label] is the source's own wording and is always what is shown.
+ * [label] is what is shown. It is usually the source's own wording, but two are written by the
+ * pipeline: the UK's stance-0 "no travel warning" line and the German "no formal warning, but
+ * advised against" line, whose reasons are then carried in [notes].
  */
 data class AdvisoryEntry(
     val stance: Int,
@@ -35,7 +43,10 @@ data class AdvisoryEntry(
     val updated: String,
     val url: String,
     val tags: List<String> = emptyList(),
-    /** The source's own sentences, verbatim (German entries only): "Von Reisen nach X wird abgeraten". */
+    /**
+     * The source's own sentences, verbatim, about parts of the country or (German) an advice
+     * against travel: "Von Reisen nach X wird abgeraten". Any source may carry them.
+     */
     val notes: List<String> = emptyList(),
 )
 
@@ -63,7 +74,9 @@ data class AdvisoryData(
 }
 
 /**
- * "[against] of [withData]" sources advise against travel (stance 3). [withData] counts only
+ * "[against] of [withData]" sources advise against travel (stance 3). The screen shows this line
+ * only when [against] is at least 1: at 0 the rows speak for themselves, and a "0 of 3" would sit
+ * above a quoted German sentence advising against travel (stance 2 there) and read as a contradiction. [withData] counts only
  * the sources that have an entry for the country, so a missing source is not a "no".
  */
 data class Agreement(val against: Int, val withData: Int)
@@ -74,7 +87,19 @@ fun agreementOf(entries: Map<String, AdvisoryEntry>): Agreement {
     return Agreement(present.count { it.stance == 3 }, present.size)
 }
 
-enum class AdvisoryRejection { UNPARSEABLE, IMPLAUSIBLE, FUTURE_DATED, NOT_NEWER }
+/** NEWER_FORMAT: well-formed, but written for a newer app; not a fault, just nothing this build can use. */
+enum class AdvisoryRejection { UNPARSEABLE, IMPLAUSIBLE, FUTURE_DATED, NOT_NEWER, NEWER_FORMAT }
+
+/** Entries per source, for the collapse guard. */
+internal fun advisorySourceCounts(data: AdvisoryData): Map<String, Int> =
+    ADVISORY_SOURCES.associateWith { s -> data.countries.values.count { s in it } }
+
+/** True when [bytes] is a JSON object whose dataFormat is an integer above what this build reads. */
+internal fun isNewerAdvisoryFormat(bytes: ByteArray): Boolean = try {
+    JSONObject(bytes.toString(Charsets.UTF_8)).optInt("dataFormat", -1) > SUPPORTED_ADVISORY_FORMAT
+} catch (e: Exception) {
+    false
+}
 
 // --- pure functions, unit-testable without Android ---------------------------
 
@@ -157,7 +182,9 @@ internal fun verifyAdvisory(
     now: Instant,
     inUseCountries: Int = 0,
     minCountries: Int = MIN_ADVISORY_COUNTRIES,
+    inUseSources: Map<String, Int> = emptyMap(),
 ): AdvisoryRejection? {
+    if (isNewerAdvisoryFormat(bytes)) return AdvisoryRejection.NEWER_FORMAT
     val data = parseAdvisory(bytes.toString(Charsets.UTF_8)) ?: return AdvisoryRejection.UNPARSEABLE
     // A file with no usable country at all would blank the section for everyone; never accept it.
     if (data.countries.isEmpty()) return AdvisoryRejection.UNPARSEABLE
@@ -165,6 +192,14 @@ internal fun verifyAdvisory(
     // then be shown for places the old copy covered.
     if (data.countries.size < minCountries || data.countries.size < inUseCountries * MIN_ADVISORY_RETAINED) {
         return AdvisoryRejection.IMPLAUSIBLE
+    }
+    // One whole source vanishing leaves enough countries to pass the check above, yet turns that
+    // source's row into "No data" everywhere.
+    val counts = advisorySourceCounts(data)
+    for ((source, before) in inUseSources) {
+        if (before >= MIN_GUARDED_SOURCE_ENTRIES && (counts[source] ?: 0) < before * MIN_SOURCE_RETAINED) {
+            return AdvisoryRejection.IMPLAUSIBLE
+        }
     }
     if (data.generatedAt > advisoryLatestAllowed(now)) return AdvisoryRejection.FUTURE_DATED
     if (inUse != null && data.generatedAt <= inUse) return AdvisoryRejection.NOT_NEWER

@@ -1,6 +1,8 @@
 package com.riedel.beyondborders.data.advisory
 
+import com.riedel.beyondborders.data.visa.update.VisaFetchNotFound
 import com.riedel.beyondborders.data.visa.update.VisaFetchRejected
+import com.riedel.beyondborders.data.visa.update.failureForStatus
 import com.riedel.beyondborders.data.visa.update.VisaFetcher
 import java.io.File
 import java.io.IOException
@@ -9,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assume
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -337,6 +340,172 @@ class AdvisoryTest {
         }, store, { now })
         // The first pass reads under generation 0, invalidate() bumps it, so the pass is discarded and redone.
         assertEquals(Instant.parse("2026-11-24T09:00:00Z"), repo.current()!!.generatedAt)
+    }
+
+    // --- notes on every source, allow-list, stricter guards -----------------------------
+
+    private fun entry(source: String, extra: String = "", url: String = "https://travel.state.gov/x") =
+        """"$source": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "$url"$extra}"""
+
+    @Test
+    fun `notes are read for all three sources and capped for each`() {
+        val long = "x".repeat(600)
+        val j = """{"FR": {${entry("US", ""","notes": ["US one", "US two"]""")},
+            ${entry("UK", ""","notes": ["UK one"]""", "https://www.gov.uk/x")},
+            ${entry("DE", ""","notes": ["a", "b", "c", "d", "$long"]""", "https://www.auswaertiges-amt.de/x")}}}"""
+        val fr = parseAdvisory(String(withGenerated("2026-11-24T00:00:00Z", j)))!!.forPlace("FR")
+        assertEquals(listOf("US one", "US two"), fr.getValue("US").notes)
+        assertEquals(listOf("UK one"), fr.getValue("UK").notes)
+        assertEquals(listOf("a", "b", "c"), fr.getValue("DE").notes)
+        val capped = parseAdvisory(String(withGenerated("2026-11-24T00:00:00Z",
+            """{"FR": {${entry("US", ""","notes": ["$long"]""")}}}""")))!!.forPlace("FR").getValue("US").notes.single()
+        assertEquals(MAX_ADVISORY_NOTE_CHARS, capped.length)
+    }
+
+    @Test
+    fun `a url with userinfo or a lookalike host is dropped and an upper-case allowed host is kept`() {
+        fun parsed(url: String) = parseAdvisory(String(withGenerated("2026-11-24T00:00:00Z", """{"FR": {${entry("US", "", url)}}}""")))!!.forPlace("FR")
+        assertTrue(parsed("https://travel.state.gov@evil.example/").isEmpty())
+        assertTrue(parsed("https://travel.state.gov.evil.example/").isEmpty())
+        assertTrue(parsed("http://travel.state.gov/").isEmpty())
+        assertEquals(1, parsed("https://TRAVEL.STATE.GOV/x").size)
+    }
+
+    private fun sourced(count: Int, vararg sources: String): ByteArray {
+        val urls = mapOf("US" to "https://travel.state.gov/x", "UK" to "https://www.gov.uk/x", "DE" to "https://www.auswaertiges-amt.de/x")
+        val body = (1..count).joinToString(",") { n ->
+            val code = "" + ('A' + n / 26) + ('A' + n % 26)
+            """"$code": {${sources.joinToString(",") { entry(it, "", urls.getValue(it)) }}}"""
+        }
+        return withGenerated("2026-11-24T00:00:00Z", "{$body}")
+    }
+
+    private val threeSources = mapOf("US" to 200, "UK" to 200, "DE" to 200)
+
+    @Test
+    fun `a file in which one whole source has no entries is rejected`() {
+        val noDe = sourced(200, "US", "UK")
+        assertEquals(AdvisoryRejection.IMPLAUSIBLE, verifyAdvisory(noDe, null, now, 200, 1, threeSources))
+        assertNull(verifyAdvisory(sourced(200, "US", "UK", "DE"), null, now, 200, 1, threeSources))
+    }
+
+    @Test
+    fun `a source that keeps half of its entries passes and one below half is rejected`() {
+        val half = withGenerated("2026-11-24T00:00:00Z", "{" + (1..200).joinToString(",") { n ->
+            val code = "" + ('A' + n / 26) + ('A' + n % 26)
+            """"$code": {${entry("US")}${if (n <= 100) "," + entry("UK", "", "https://www.gov.uk/x") else ""}}"""
+        } + "}")
+        val inUse = mapOf("US" to 200, "UK" to 200)
+        assertNull(verifyAdvisory(half, null, now, 200, 1, inUse))
+        assertEquals(AdvisoryRejection.IMPLAUSIBLE, verifyAdvisory(half, null, now, 200, 1, mapOf("US" to 200, "UK" to 201)))
+    }
+
+    @Test
+    fun `a small source is not guarded so a short list can shrink`() {
+        assertNull(verifyAdvisory(sourced(200, "US", "UK"), null, now, 200, 1, mapOf("US" to 200, "UK" to 200, "DE" to 99)))
+    }
+
+    @Test
+    fun `a run rejects a source collapse against the stored copy and leaves it alone`() {
+        val full = sourced(200, "US", "UK", "DE").toString(Charsets.UTF_8).replace("2026-11-24", "2026-11-01").toByteArray()
+        val store = FakeStore(bytes = full)
+        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(body = sourced(200, "US", "UK")), store, { null }, { now }, minCountries = 1))
+        assertArrayEquals(full, store.bytes)
+    }
+
+    // --- format bump and 404 --------------------------------------------------------------
+
+    private fun format(n: Int) = """{"dataFormat": $n, "generatedAt": "2026-11-24T00:00:00Z", "sources": {}, "countries": {}}""".toByteArray()
+
+    @Test
+    fun `a download with a newer dataFormat is its own calm outcome and leaves the stored copy untouched`() {
+        val store = FakeStore(bytes = fixtureBytes)
+        assertEquals(AdvisoryRejection.NEWER_FORMAT, verifyAdvisory(format(2), null, now))
+        assertEquals(AdvisoryOutcome.NEEDS_NEWER_APP, runAdvisoryUpdate(FakeFetcher(body = format(2)), store, { null }, { now }, minCountries = 1))
+        assertArrayEquals(fixtureBytes, store.bytes)
+    }
+
+    @Test
+    fun `an older or missing dataFormat and plain garbage stay a rejection`() {
+        assertEquals(AdvisoryRejection.UNPARSEABLE, verifyAdvisory(format(0), null, now))
+        assertEquals(AdvisoryRejection.UNPARSEABLE, verifyAdvisory("<html>".toByteArray(), null, now))
+    }
+
+    @Test
+    fun `a stored copy in a newer dataFormat is ignored and the bundled asset is used`() = runBlocking {
+        val repo = AdvisoryRepository({ fixtureBytes }, FakeStore(bytes = format(2)), { now })
+        assertEquals(data, repo.current())
+    }
+
+    @Test
+    fun `a 404 means nothing newer and is not a failure`() {
+        val store = FakeStore(bytes = fixtureBytes)
+        assertEquals(AdvisoryOutcome.UP_TO_DATE, runAdvisoryUpdate(FakeFetcher(fail = VisaFetchNotFound("HTTP 404")), store, { null }, { now }, minCountries = 1))
+        assertArrayEquals(fixtureBytes, store.bytes)
+    }
+
+    @Test
+    fun `http statuses map to not found, rejected or retryable`() {
+        assertTrue(failureForStatus(404) is VisaFetchNotFound)
+        assertTrue(failureForStatus(403) is VisaFetchRejected && failureForStatus(403) !is VisaFetchNotFound)
+        for (retry in listOf(408, 429, 500, 503)) assertTrue("$retry", failureForStatus(retry) is IOException)
+    }
+
+    @Test
+    fun `the worker retries only when offline`() {
+        assertTrue(shouldRetryAdvisory(AdvisoryOutcome.OFFLINE))
+        for (o in AdvisoryOutcome.values().filter { it != AdvisoryOutcome.OFFLINE }) assertFalse("$o", shouldRetryAdvisory(o))
+    }
+
+    @Test
+    fun `a stored copy dated exactly like the bundled one loses to it`() {
+        val same = parseAdvisory(fixture)!!.copy(countries = emptyMap())
+        assertEquals(data, chooseAdvisory(data, same, now))
+    }
+
+    @Test
+    fun `a garbage stored file is replaced by the next newer valid download`() {
+        val store = FakeStore(bytes = "garbage".toByteArray())
+        assertEquals(AdvisoryOutcome.UPDATED, runAdvisoryUpdate(FakeFetcher(body = fixtureBytes), store, { null }, { now }, minCountries = 1))
+        assertArrayEquals(fixtureBytes, store.bytes)
+    }
+
+    // --- FileAdvisoryStore ---------------------------------------------------------------------
+
+    private fun tempDir() = kotlin.io.path.createTempDirectory("advisory").toFile()
+
+    @Test
+    fun `the file store round-trips bytes and reads null before the first write`() {
+        val dir = File(tempDir(), "nested")
+        try {
+            val s = FileAdvisoryStore(dir)
+            assertNull(s.read())
+            s.write(fixtureBytes)
+            assertArrayEquals(fixtureBytes, FileAdvisoryStore(dir).read())
+            s.write("two".toByteArray())
+            assertArrayEquals("two".toByteArray(), s.read())
+            assertEquals(listOf("advisory.json"), dir.list()!!.toList())
+        } finally { dir.parentFile.deleteRecursively() }
+    }
+
+    @Test
+    fun `a corrupt file in the store reads as bytes that parse to nothing so the bundled copy wins`() = runBlocking {
+        val dir = tempDir()
+        try {
+            File(dir, ADVISORY_FILE).writeText("{not json")
+            assertEquals(data, AdvisoryRepository({ fixtureBytes }, FileAdvisoryStore(dir), { now }).current())
+        } finally { dir.deleteRecursively() }
+    }
+
+    @Test
+    fun `a write clears temp files left by a process that died mid-write`() {
+        val dir = tempDir()
+        try {
+            File(dir, "advisory-123.tmp").writeText("half")
+            File(dir, "other.txt").writeText("keep")
+            FileAdvisoryStore(dir).write(fixtureBytes)
+            assertEquals(setOf("advisory.json", "other.txt"), dir.list()!!.toSet())
+        } finally { dir.deleteRecursively() }
     }
 
     // --- bundled asset ---------------------------------------------------------------------

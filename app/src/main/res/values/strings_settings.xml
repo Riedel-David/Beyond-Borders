@@ -105,6 +105,7 @@
     <string name="settings_advisory_result_current">Travel advisories are already up to date.</string>
     <string name="settings_advisory_result_updated">Travel advisories updated.</string>
     <string name="settings_advisory_result_failed">Couldn\'t refresh travel advisories.</string>
+    <string name="settings_advisory_result_newer_app">Travel advisories: the latest file needs a newer version of the app.</string>
     <string name="settings_cancel">Cancel</string>
 
     <string name="settings_import_title">Import this file?</string>
@@ -161,7 +162,7 @@
     <string name="settings_sources_heading">Data sources</string>
     <string name="settings_licences_heading">Open-source licences</string>
     <string name="settings_source_advisory">Travel advisories</string>
-    <string name="settings_source_advisory_body">Government ratings shown for each country. The app shows their warning status and, for the Auswärtiges Amt, up to three of its own sentences advising against travel, quoted word for word; the complete advice is on each government\'s website.</string>
+    <string name="settings_source_advisory_body">Government ratings shown for each country. The app shows their warning status and up to three of their own sentences about parts of a country or advising against travel, quoted word for word; the complete advice is on each government\'s website.</string>
     <string name="settings_source_us">US Department of State (public domain)</string>
     <string name="settings_source_uk">UK Foreign, Commonwealth &amp; Development Office. Contains public sector information licensed under the Open Government Licence v3.0.</string>
     <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. The app shows the Auswärtiges Amt\'s warning status, a short label, its date and up to three of its own sentences advising against travel, quoted word for word; the complete advice is on the Auswärtiges Amt\'s website.</string>

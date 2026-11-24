@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.riedel.beyondborders.BeyondBordersApp
 import com.riedel.beyondborders.data.visa.update.HttpVisaFetcher
+import com.riedel.beyondborders.data.visa.update.VisaFetchNotFound
 import com.riedel.beyondborders.data.visa.update.VisaFetchRejected
 import com.riedel.beyondborders.data.visa.update.VisaFetcher
 import java.io.File
@@ -53,6 +54,8 @@ class FileAdvisoryStore(private val dir: File) : AdvisoryStore {
 
     override fun write(bytes: ByteArray) { synchronized(lock) {
         dir.mkdirs()
+        // A process killed between create and move leaves its temp file behind; nothing else uses these names.
+        dir.listFiles { f -> f.name.startsWith("advisory-") && f.name.endsWith(".tmp") }?.forEach { it.delete() }
         val tmp = File.createTempFile("advisory-", ".tmp", dir)
         try {
             tmp.writeBytes(bytes)
@@ -67,7 +70,14 @@ class FileAdvisoryStore(private val dir: File) : AdvisoryStore {
     }
 }
 
-enum class AdvisoryOutcome { UPDATED, UP_TO_DATE, OFFLINE, REJECTED }
+/**
+ * NEEDS_NEWER_APP: the published file is in a newer format than this build reads. Calm, not a
+ * failure: the bundled or stored copy keeps working. A 404 (not published yet) is [UP_TO_DATE].
+ */
+enum class AdvisoryOutcome { UPDATED, UP_TO_DATE, OFFLINE, REJECTED, NEEDS_NEWER_APP }
+
+/** Only a network failure is worth the scheduler's backoff; everything else waits for the next period. */
+internal fun shouldRetryAdvisory(outcome: AdvisoryOutcome): Boolean = outcome == AdvisoryOutcome.OFFLINE
 
 /**
  * One whole run: fetch, verify, write. Never throws for network trouble, and never deletes:
@@ -84,15 +94,20 @@ internal fun runAdvisoryUpdate(
         fetcher.fetch(ADVISORY_FILE, MAX_ADVISORY_BYTES)
     } catch (e: IOException) {
         return AdvisoryOutcome.OFFLINE
+    } catch (e: VisaFetchNotFound) {
+        // Not published yet: nothing newer than what is in use, which is not the user's problem.
+        return AdvisoryOutcome.UP_TO_DATE
     } catch (e: VisaFetchRejected) {
         return AdvisoryOutcome.REJECTED
     }
     val t = now()
     val stored = runCatching { store.read()?.let { parseAdvisory(it.toString(Charsets.UTF_8)) } }.getOrNull()
     val inUse = chooseAdvisory(runCatching(bundled).getOrNull(), stored, t)
-    return when (verifyAdvisory(bytes, inUse?.generatedAt, t, inUse?.countries?.size ?: 0, minCountries)) {
+    val inUseSources = inUse?.let(::advisorySourceCounts) ?: emptyMap()
+    return when (verifyAdvisory(bytes, inUse?.generatedAt, t, inUse?.countries?.size ?: 0, minCountries, inUseSources)) {
         null -> if (runCatching { store.write(bytes) }.isSuccess) AdvisoryOutcome.UPDATED else AdvisoryOutcome.REJECTED
         AdvisoryRejection.NOT_NEWER -> AdvisoryOutcome.UP_TO_DATE
+        AdvisoryRejection.NEWER_FORMAT -> AdvisoryOutcome.NEEDS_NEWER_APP
         else -> AdvisoryOutcome.REJECTED
     }
 }
@@ -157,7 +172,7 @@ suspend fun performAdvisoryUpdate(app: BeyondBordersApp): AdvisoryOutcome = with
 class AdvisoryUpdateWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = try {
         val outcome = performAdvisoryUpdate(applicationContext as BeyondBordersApp)
-        if (outcome == AdvisoryOutcome.OFFLINE) Result.retry() else Result.success()
+        if (shouldRetryAdvisory(outcome)) Result.retry() else Result.success()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {

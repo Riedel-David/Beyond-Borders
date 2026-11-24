@@ -107,6 +107,7 @@
     <string name="settings_advisory_result_current">Los avisos de viaje ya están al día.</string>
     <string name="settings_advisory_result_updated">Avisos de viaje actualizados.</string>
     <string name="settings_advisory_result_failed">No se pudieron actualizar los avisos de viaje.</string>
+    <string name="settings_advisory_result_newer_app">Avisos de viaje: el archivo más reciente requiere una versión más nueva de la app.</string>
     <string name="settings_cancel">Cancelar</string>
 
     <string name="settings_import_title">¿Importar este archivo?</string>
@@ -166,7 +167,7 @@
     <string name="settings_sources_heading">Fuentes de datos</string>
     <string name="settings_licences_heading">Licencias de código abierto</string>
     <string name="settings_source_advisory">Avisos de viaje</string>
-    <string name="settings_source_advisory_body">Valoraciones de tres gobiernos que se muestran en cada país. La app muestra su nivel de aviso y, del Auswärtiges Amt, hasta tres de sus propias frases que desaconsejan viajar, citadas literalmente; el aviso completo está en el sitio web de cada gobierno.</string>
+    <string name="settings_source_advisory_body">Valoraciones de tres gobiernos que se muestran en cada país. La app muestra su nivel de aviso y hasta tres de sus propias frases sobre zonas del país o que desaconsejan viajar, citadas literalmente; el aviso completo está en el sitio web de cada gobierno.</string>
     <string name="settings_source_us">Departamento de Estado de EE. UU. (dominio público)</string>
     <string name="settings_source_uk">Foreign, Commonwealth &amp; Development Office del Reino Unido. Contains public sector information licensed under the Open Government Licence v3.0.</string>
     <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. La app muestra el nivel de aviso del Auswärtiges Amt con su etiqueta breve, su fecha y hasta tres de sus propias frases que desaconsejan viajar, citadas literalmente; el aviso completo está en el sitio web del Auswärtiges Amt.</string>

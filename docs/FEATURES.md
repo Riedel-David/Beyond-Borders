@@ -223,10 +223,11 @@ only: residence permits and EU/Schengen family-member rules are not taken into a
 The expanded country row in the Visa tab shows what the US State Department, the UK Foreign,
 Commonwealth & Development Office and the German Auswärtiges Amt currently advise for that
 country, side by side: each government's own rating (the US wording as published; the UK and
-German ones are short summaries of the flags those governments publish, and the German row also quotes
-the Auswärtiges Amt's own "wird abgeraten" sentences, which the flags do not carry), the date of that
-advice and a link to its country page. Nothing is combined or scored beyond a count of how many
-sources advise against travel to the whole country (US Level 4, UK all or all-but-essential, German formal Reisewarnung; a partial warning or the AA's "abgeraten" text does not count), and a place a source does not cover says so. The data is a
+German ones are short summaries of the flags those governments publish), the date of that
+advice and a link to its country page. Where a government publishes sentences about parts of a country or, for
+Germany, "wird abgeraten" advice, up to three of them are quoted word for word under its row (the German
+ones in German quotation marks and tagged German for screen readers). Nothing is combined or scored beyond a count of how many
+sources advise against travel to the whole country (US Level 4, UK all or all-but-essential, German formal Reisewarnung; a partial warning or the AA's "abgeraten" text does not count). That line appears only when the count is at least one; at zero the rows speak for themselves, so a quoted German "abgeraten" sentence is never contradicted by a "0 of 3". A place a source does not cover says so. The data is a
 snapshot, bundled with each release and refreshed weekly (see below), with its "as of" date
 shown; confirm with the official source before you travel. Settings → *Data sources and
 licences* names the three sources, with their licences and links.
@@ -235,7 +236,7 @@ licences* names the three sources, with their licences and links.
 
 Downloaded visa data and travel advisories are used straight away, without closing the app.
 *Check now* in Settings refreshes both, on any connection, whether or not the automatic check
-is on, and says whether each was already current, was updated, or could not be fetched; one
+is on, and says whether each was already current, was updated, or could not be fetched (a file that is not published yet counts as already current, and one written for a newer app version is reported as needing it, not as a failure); one
 failing never stops the other. The Visa data section also shows the date of the advisory data in
 use. The weekly automatic check runs on unmetered networks only, and the Settings → *Visa data*
 switch turns that weekly check off for both; it does not stop *Check now*.
