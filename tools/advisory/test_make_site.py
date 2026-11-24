@@ -5,7 +5,9 @@ Run: python3 -m unittest tools/advisory/test_make_site.py
 import hashlib
 import json
 import sys
+import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -28,7 +30,7 @@ def site(visa=VISA, **meta):
 class MakeSiteTest(unittest.TestCase):
     def test_the_site_holds_the_live_visa_files_and_the_new_advisory_file(self):
         files = m.build(ADV, "https://x/y", live(site()))
-        self.assertEqual(set(files), {"manifest.json", "visa_de.json", "advisory.json"})
+        self.assertEqual(set(files), {"manifest.json", "visa_de.json", "advisory.json", "advisory-heartbeat.json"})
         self.assertEqual(files["advisory.json"], ADV)
 
     def test_a_visa_file_that_does_not_match_the_manifest_is_refused(self):
@@ -48,6 +50,29 @@ class MakeSiteTest(unittest.TestCase):
     def test_a_malformed_advisory_file_is_refused(self):
         with self.assertRaises(m.SiteError):
             m.build(b'{"dataFormat": 2, "countries": {}}', "https://x/y", live(site()))
+
+    def test_every_site_carries_a_heartbeat_with_the_build_time(self):
+        now = datetime(2026, 11, 25, 6, 30, 5, tzinfo=timezone.utc)
+        files = m.build(ADV, "https://x/y", live(site()), now=now)
+        self.assertEqual(json.loads(files["advisory-heartbeat.json"]), {"refreshedAt": "2026-11-25T06:30:05Z"})
+
+    def test_a_heartbeat_older_than_the_limit_or_unreadable_is_refused(self):
+        now = datetime(2026, 11, 25, tzinfo=timezone.utc)
+        fresh = m.heartbeat(now - timedelta(days=9))
+        stale = m.heartbeat(now - timedelta(days=11))
+        self.assertEqual(m.check_heartbeat(fresh, now, 10), now - timedelta(days=9))
+        for bad in (stale, b"{}", b"nope", m.heartbeat(now + timedelta(days=3))):
+            with self.assertRaises(m.SiteError):
+                m.check_heartbeat(bad, now, 10)
+        m.check_heartbeat(stale, now)  # no limit given: only the shape is judged (the carry-over uses this)
+
+    def test_check_heartbeat_mode_exits_nonzero_for_a_stale_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "h.json"
+            f.write_bytes(m.heartbeat(datetime.now(timezone.utc) - timedelta(days=30)))
+            self.assertEqual(m.main(["--check-heartbeat", str(f)]), 1)
+            f.write_bytes(m.heartbeat(datetime.now(timezone.utc)))
+            self.assertEqual(m.main(["--check-heartbeat", str(f)]), 0)
 
     def test_check_mode_accepts_a_good_file_and_rejects_a_bad_one(self):
         import tempfile

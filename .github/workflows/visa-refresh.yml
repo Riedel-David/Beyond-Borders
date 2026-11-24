@@ -163,25 +163,48 @@ jobs:
         run: python3 -I tools/visa/make_site.py app/src/main/assets "$RUNNER_TEMP/site"
 
       # A Pages deployment replaces the whole site, so advisory.json (published weekly by
-      # advisory-refresh.yml) must ride along or this deploy would delete it. The live copy is
-      # newest; the bundled one is only the fallback before the first advisory publication.
-      - name: Carry over advisory.json
+      # advisory-refresh.yml) and its heartbeat must ride along or this deploy would delete them. The
+      # live copy is newest; the bundled one is only the fallback.
+      - name: Carry over advisory.json and its heartbeat
         run: |
-          # 404 means no advisory has been published yet: use the bundled copy. Any other failure
-          # (network, 5xx, a file that does not validate) fails the job, so the previous
-          # deployment, which still has advisory.json, stays live instead of losing it.
-          DEST="$RUNNER_TEMP/site/advisory.json"
-          CODE="$(curl -sSL --retry 3 -o "$DEST" -w '%{http_code}' https://riedel-david.github.io/Beyond-Borders/advisory.json)"
-          if [ "$CODE" = 200 ]; then
-            python3 -I tools/advisory/make_site.py --check "$DEST"
-            echo "Carried over the live advisory.json."
-          elif [ "$CODE" = 404 ]; then
-            rm -f "$DEST"
+          LIVE=https://riedel-david.github.io/Beyond-Borders
+          SITE="$RUNNER_TEMP/site"
+          fetch() {  # $1 = file name; sets RC: 0 fetched, 3 not live, anything else is an error
+            RC=0
+            python3 -I tools/advisory/fetch_live.py "$LIVE/$1" "$SITE/$1" --probe "$LIVE/manifest.json" || RC=$?
+          }
+          use_bundled() {  # $1 = why
             python3 -I tools/advisory/make_site.py --check app/src/main/assets/advisory.json
-            cp app/src/main/assets/advisory.json "$DEST"
-            echo "No live advisory.json; used the bundled copy."
+            cp app/src/main/assets/advisory.json "$SITE/advisory.json"
+            echo "::warning::advisory.json: $1; used the bundled copy."
+            echo "- advisory.json: $1; the bundled copy was published." >> "$GITHUB_STEP_SUMMARY"
+          }
+          fetch advisory.json
+          if [ "$RC" = 0 ]; then
+            if python3 -I tools/advisory/make_site.py --check "$SITE/advisory.json"; then
+              echo "Carried over the live advisory.json."
+            else
+              # A live file that does not validate would otherwise block every visa publication
+              # until someone fixes the advisory side. The bundled copy is valid (CI checks it) and
+              # replaces it; advisory-refresh.yml repairs the live file on its next run.
+              use_bundled "the live copy does not validate"
+            fi
+          elif [ "$RC" = 3 ]; then
+            # Not published yet (404, or Pages' first-request 503 on an up site): the bundled copy.
+            use_bundled "none published yet"
           else
-            echo "Fetching the live advisory.json returned HTTP $CODE" >&2
+            # Any other status or an unreachable site: stop. The previous deployment, which still
+            # has the live advisory.json, stays up. Falling back to the bundled copy here could
+            # replace a newer live file with an older one without anyone noticing.
+            exit 1
+          fi
+          fetch advisory-heartbeat.json
+          if [ "$RC" = 0 ]; then
+            python3 -I tools/advisory/make_site.py --check-heartbeat "$SITE/advisory-heartbeat.json" --max-age-days 100000 \
+              || { echo "::warning::advisory-heartbeat.json is unreadable; not carried over"; rm -f "$SITE/advisory-heartbeat.json"; }
+          elif [ "$RC" = 3 ]; then
+            echo "No live heartbeat yet (advisory-refresh.yml has not published one)."
+          else
             exit 1
           fi
 

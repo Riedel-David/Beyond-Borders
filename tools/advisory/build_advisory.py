@@ -22,6 +22,7 @@ is written. A partial file would make the app show "no data" for a country that 
 """
 import argparse
 import datetime
+import hashlib
 import html
 import json
 import re
@@ -158,28 +159,102 @@ def us_stance(level: int) -> int:
     return {1: 0, 2: 1, 3: 2, 4: 3}[level]
 
 
+US_TAG_MAX_CHARS = 60
+US_SINGLE_TAGS = {"crime", "terrorism", "unrest", "civil unrest", "kidnapping", "armed conflict", "health",
+                  "health risks", "landmines", "natural disasters", "hostage taking"}
+
+
 def us_tags(summary: str) -> list:
     """The risk indicators, from the 'due to ...' clause of the summary's first paragraph. Optional
-    decoration: anything that does not parse cleanly is dropped rather than guessed at."""
+    decoration: anything that does not parse cleanly is dropped rather than guessed at. Split on
+    commas only ('crime and kidnapping' stays one tag: splitting on 'and' cut 'health care and ...'
+    apart), with 'U.S.' protected from the full-stop cut, and 'and'/'or'/'the' dropped at the start of a
+    piece ('..., and kidnapping', '..., or landmines')."""
     m = re.search(r"<p>(.*?)</p>", summary or "", re.S)
     if not m:
         return []
-    text = html.unescape(re.sub(r"<[^>]+>", "", m.group(1))).replace("\xa0", " ")
-    m = re.search(r"\bdue to\s+([^.]*)", text)
+    text = html.unescape(re.sub(r"<[^>]+>", "", m.group(1))).replace("\xa0", " ").replace("\u202f", " ")
+    text = re.sub(r"\bU\.S\.", "US", text)
+    m = re.search(r"\bdue to\s+([^.]*)", text, re.I)
     if not m:
         return []
-    parts = re.split(r",\s*(?:and\s+)?|\s+and\s+", m.group(1))
-    tags = [re.sub(r"^the ", "", t.strip().lower()) for t in parts]
-    return [t for t in tags if 0 < len(t) <= 30]
+    tags = []
+    for part in m.group(1).split(","):
+        t = re.sub(r"\s+", " ", part.strip().lower())
+        t = re.sub(r"^(?:(?:and|or|the)\s+)+", "", t)
+        t = re.sub(r"^(?:(?:the\s+)?(?:risk|threat|potential)s?\s+(?:of|for)\s+|risks\s+to\s+)", "", t)
+        # 'crime and kidnapping' is two indicators, but 'gay and lesbian individuals' is one phrase:
+        # only a pair of indicators the feed uses on their own is split.
+        pieces = re.split(r"\s+(?:and|or)\s+", t)
+        if not (len(pieces) > 1 and all(x in US_SINGLE_TAGS for x in pieces)):
+            pieces = [t]
+        for x in pieces:
+            if 0 < len(x) <= US_TAG_MAX_CHARS and x not in tags:
+                tags.append(x)
+    return tags
+
+
+# --- regional advice as notes (US, UK) --------------------------------------------------------
+# Both governments rate the country as a whole and then name the regions in prose ("Do Not Travel to
+# the Valley of the Apurimac ..."). Those sentences are carried verbatim as `notes`, exactly like the
+# German ones, so that a Level 2 or 3 row says where. The stance mapping is not touched.
+_US_REGION = re.compile(r"^(?:Do not travel|Reconsider travel)\s+(?:to|in)\b", re.I)
+
+
+def us_notes(summary: str, country: str) -> list:
+    """Summary sentences that name a region to avoid. The first sentence is the country-wide headline
+    and is skipped, as is anything that is the whole country ('... for any reason', 'to <country>
+    due to ...'), which the label already says. A feed summary can be cut short (Mexico's is, so its
+    'Do Not Travel to' list is not in it); what is not there is not invented."""
+    cname = re.escape(country.strip())
+    units = de_units(summary)[1:]
+    notes = []
+    for u in _redundant([u for u in units if _US_REGION.search(u.text) and not u.text.rstrip().endswith(":")]):
+        if re.search(r"for any reason", u.text, re.I) \
+                or re.match(r"^(?:Do not travel|Reconsider travel)\s+(?:to|in)\s+" + cname + r"\b\s*(?:due|[.,])", u.text, re.I):
+            continue
+        notes.append(trim_note(u.note))
+    return notes[:DE_MAX_NOTES]
+
+
+def uk_notes(page: dict) -> list:
+    """The first sentence under each 'Areas where FCDO advises against ...' heading of the warnings
+    part (and under 'FCDO advises against all travel to X'), which says where. Headings vary in
+    spacing (non-breaking spaces), so they are compared with whitespace collapsed."""
+    parts = (page.get("details") or {}).get("parts") or []
+    body = parts[0].get("body") if parts and isinstance(parts[0], dict) else None
+    if not isinstance(body, str):
+        return []
+    notes = []
+    chunks = re.split(r"(?=<h2\b)", body)
+    for chunk in chunks:
+        m = re.match(r"<h2[^>]*>(.*?)</h2>", chunk, re.S)
+        if not m:
+            continue
+        heading = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))).strip()
+        if not re.search(r"\bFCDO advises against\b", heading.replace("\u202f", " ")):
+            continue
+        for u in de_units(chunk[m.end():]):
+            if re.search(r"\b(?:FCDO )?advises against\b", u.text) and not u.text.rstrip().endswith(":"):
+                text = _split_sentences(u.note)[0] if u.note is u.text else u.note
+                notes.append(trim_note(text))
+                break
+    seen, out = set(), []
+    for n in notes:
+        if _key(n) not in seen:
+            seen.add(_key(n))
+            out.append(n)
+    return out[:DE_MAX_NOTES]
 
 
 def parse_us(feed, index: dict) -> dict:
     if not isinstance(feed, list):
         raise BuildError("US feed is not a list")
-    out, unmapped = {}, []
+    rows, unmapped = {}, []
     for e in feed:
         title = e.get("Title", "")
         name, _, label = title.rpartition(" - ")
+        name = re.sub(r"\s+Travel Advisory$", "", name)
         m = re.match(r"Level ([1-4])\b", label)
         if not m:
             raise BuildError(f"US entry {title!r} has no 'Level 1-4' rating")
@@ -196,11 +271,27 @@ def parse_us(feed, index: dict) -> dict:
         tags = us_tags(e.get("Summary", ""))
         if tags:
             entry["tags"] = tags
+        notes = us_notes(e.get("Summary", ""), name)
+        if notes:
+            entry["notes"] = notes
         for c in codes:
-            merge(out, c, dict(entry))
+            rows.setdefault(c, []).append((re.sub(r"^The\s+", "", name), dict(entry)))
     if unmapped:
         raise BuildError("US entries with no ISO mapping: " + ", ".join(sorted(unmapped)))
-    return out
+    return {code: merge_us(found) for code, found in rows.items()}
+
+
+def merge_us(found: list) -> dict:
+    """One ISO code, several feed entries (Gaza and the West Bank are both Palestine). The most
+    cautious one supplies stance, link, tags and notes, so a calm page cannot hide a warning one. If
+    the ratings differ, the label names both, so 'Level 4' is not read as covering the whole territory."""
+    best = max(found, key=lambda f: f[1]["stance"])  # max keeps the first of equals
+    entry = dict(best[1])
+    if len({f[1]["label"] for f in found}) > 1:
+        ordered = sorted(found, key=lambda f: -f[1]["stance"])
+        entry["label"] = "; ".join(f"{n}: {e['label']}" for n, e in ordered)
+    entry["updated"] = max(f[1]["updated"] for f in found)
+    return entry
 
 
 # --- UK ---------------------------------------------------------------------------------------
@@ -249,6 +340,9 @@ def parse_uk(pages: dict, index: dict) -> dict:
             "updated": iso_date(page.get("public_updated_at") or d.get("updated_at")),
             "url": "https://www.gov.uk/foreign-travel-advice/" + slug,
         }
+        notes = uk_notes(page) if entry["stance"] else []
+        if notes:
+            entry["notes"] = notes
         for c in codes:
             merge(out, c, dict(entry))
     if unmapped:
@@ -263,9 +357,8 @@ def parse_uk(pages: dict, index: dict) -> dict:
 # have all flags false and that sentence). The AA's terms forbid showing its information incomplete
 # or in a distorting context, so a page that says "abgeraten" must never be labelled "no warning":
 # the sentences are carried verbatim as `notes` and the row counts as stance 2.
-DE_NOTE_WORD = "abgeraten"
 DE_MAX_NOTES = 3
-DE_NOTE_MAX_CHARS = 400
+DE_NOTE_MAX_CHARS = 500  # the app's own limit per note
 # More than this share of countries without a fetched detail page means the detail endpoint is
 # broken, not that one country hiccuped.
 DE_MAX_MISSING_SHARE = 0.10
@@ -287,24 +380,135 @@ def de_stance(warning: bool, partial: bool, notes: list = ()) -> int:
     return 3 if warning else 2 if (partial or notes) else 0
 
 
-_BLOCK_TAG = re.compile(r"</?(?:p|br|li|ul|ol|div|h[1-6]|blockquote|tr|table|section)\b[^>]*>", re.I)
 _ANY_TAG = re.compile(r"<[^>]+>")
+# <li> and headings get a marker so that block structure survives tag stripping; every other block
+# tag (p, br, ul, div ...) is only a line break.
+_LINE_BREAK = re.compile(r"<(/?)(li|h[1-6])\b[^>]*>|</?(?:p|br|ul|ol|div|blockquote|tr|table|section)\b[^>]*>", re.I)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-ZÄÖÜ„\"“(])")
+# A full stop that does not end a sentence: abbreviations and ordinal dates ("am 12. November").
+_ABBREV = re.compile(r"\b(?:o\.\s?g|z\.\s?B|u\.\s?a|d\.\s?h|u\.\s?U|i\.\s?d\.\s?R|bzw|ca|inkl|ggf|evtl|vgl|Nr)\.", re.I)
+_ORDINAL_DATE = re.compile(r"(?<=\d)\.(?=\s+(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\b)")
+_DOT = "\x00"
+
+
+def _split_sentences(text: str) -> list:
+    text = _ABBREV.sub(lambda m: m.group(0)[:-1] + _DOT, text)
+    text = _ORDINAL_DATE.sub(_DOT, text)
+    return [s.replace(_DOT, ".").strip() for s in _SENTENCE_END.split(text) if s.strip()]
+
+
+def _blocks(content: str) -> list:
+    """(kind, text) per line of the page: 'li', 'h' (heading) or 'p'. Other tags vanish, entities are
+    decoded, whitespace is collapsed; the words are untouched."""
+    def mark(m):
+        if m.group(2) and not m.group(1):
+            return "\n\x01" if m.group(2).lower() == "li" else "\n\x02"
+        return "\n"
+    text = html.unescape(_ANY_TAG.sub("", _LINE_BREAK.sub(mark, content or ""))).replace("\xa0", " ")
+    out = []
+    for line in text.split("\n"):
+        kind = "li" if line.startswith("\x01") else "h" if line.startswith("\x02") else "p"
+        stripped = re.sub(r"\s+", " ", line.lstrip("\x01\x02")).strip()
+        if kind == "p" and stripped[:1] in ("-", "•", "–"):
+            kind = "li"  # a hyphen list typed inside one paragraph, lines split by <br/>
+        stripped = stripped.strip(" -•–\t")
+        if stripped:
+            out.append((kind, stripped))
+    return out
+
+
+class Unit:
+    """One sentence of a page. `text` is the whole sentence (what is judged and hashed); `note` is
+    what is shown, which for a list sentence may elide trailing list items with a visible '[...]'."""
+
+    def __init__(self, text: str, note: str = None, context: str = ""):
+        self.text, self.note, self.context = text, note or text, context
+
+
+def _join_items(items: list) -> str:
+    out = ""
+    for it in items:
+        glue = not out or out[-1] in ",;:." or out.rsplit(" ", 1)[-1] in ("und", "sowie", "oder", "bzw.")
+        out += (" " if glue else "; ") + it
+    return out.strip()
+
+
+def _list_unit(head: str, items: list, tail: str, context: str) -> Unit:
+    """'Von Reisen in folgende Regionen wird abgeraten:' + its <li> items, or 'Von Reisen' + items +
+    'wird abgeraten.' (Tunisia): one sentence the page only broke up for layout. The items are
+    joined with '; ' unless they already end in punctuation. Over the length limit the trailing
+    items are replaced by a visible '[...]', never silently cut; the tail stays, since it carries
+    the verb."""
+    tail = (" " + tail) if tail else ""
+    full = head + " " + _join_items(items) + tail
+    if len(full) <= DE_NOTE_MAX_CHARS:
+        return Unit(full, context=context)
+    shown, budget = [], DE_NOTE_MAX_CHARS - len(head) - len(tail) - len(" […]") - 2
+    for it in items:
+        if len(_join_items(shown + [it])) > budget:
+            break
+        shown.append(it)
+    if not shown:
+        shown = items[:1]
+    return Unit(full, head + " " + _join_items(shown) + " […]" + tail, context)
+
+
+def de_units(content: str) -> list:
+    """The page as sentences. A paragraph that stops without a full stop, or ends in a colon, goes on
+    in the list items that follow it (and a lower-case paragraph after the list: Tunisia's
+    'Von Reisen' / four <li> / 'wird abgeraten.'); headings end a sentence. A list that nothing
+    continues is not joined: its items are sentences of their own."""
+    units, state = [], {"head": None, "items": [], "tail": [], "ctx": ""}
+    last_p = [""]
+
+    def flush():
+        head, items, tail = state["head"], state["items"], " ".join(state["tail"])
+        if head is not None:
+            if items and (head.endswith(":") or tail):
+                units.append(_list_unit(head, items, tail, last_p[0]))
+            else:
+                units.append(Unit(head if not tail else head + " " + tail, context=last_p[0]))
+                for it in items:
+                    units.extend(Unit(s, context=last_p[0]) for s in _split_sentences(it))
+        state.update(head=None, items=[], tail=[])
+
+    for kind, text in _blocks(content):
+        if kind == "h":
+            flush()
+        elif kind == "li":
+            if state["head"] is not None and not state["tail"]:
+                state["items"].append(text)
+            else:
+                flush()
+                units.extend(Unit(s, context=last_p[0]) for s in _split_sentences(text))
+        else:
+            if state["head"] is not None and text[:1].islower():
+                if state["items"]:
+                    state["tail"].append(text)
+                    if text[-1] in ".!?":
+                        flush()
+                else:
+                    state["head"] += " " + text
+                    if text[-1] in ".!?":
+                        flush()
+                continue
+            flush()
+            sents = _split_sentences(text)
+            for s in sents[:-1]:
+                units.append(Unit(s, context=last_p[0]))
+                last_p[0] = s
+            if sents:
+                if sents[-1][-1] in ".!?":
+                    units.append(Unit(sents[-1], context=last_p[0]))
+                    last_p[0] = sents[-1]
+                else:
+                    state["head"] = sents[-1]
+    flush()
+    return units
 
 
 def de_sentences(content: str) -> list:
-    """The page text as sentences: block-level tags and line breaks end a sentence, other tags vanish,
-    entities are decoded. Whitespace is collapsed; the words are untouched."""
-    text = _ANY_TAG.sub("", _BLOCK_TAG.sub("\n", content or ""))
-    text = html.unescape(text).replace("\xa0", " ")
-    out = []
-    for line in text.split("\n"):
-        line = re.sub(r"\s+", " ", line).strip(" -•\t")
-        for sent in _SENTENCE_END.split(line):
-            sent = sent.strip()
-            if sent:
-                out.append(sent)
-    return out
+    return [u.text for u in de_units(content)]
 
 
 def trim_note(sent: str) -> str:
@@ -314,30 +518,59 @@ def trim_note(sent: str) -> str:
     return cut + "…"
 
 
+# The second-tier advice is phrased "Von (nicht notwendigen) Reisen in/nach ... wird (dringend)
+# abgeraten" or "Vor Reisen in ... wird gewarnt" (Israel), and a few pages give it as an imperative
+# ("Meiden Sie möglichst Reisen in die Provinzen ...": Angola, Turkey, Uzbekistan, Turkmenistan).
 # "abgeraten" alone is far too wide: the pages also say it of alcohol in public, night driving,
 # drones, currency exchange and rental cars (observed 2026-11-25: 197 hits in 89 countries, most of
-# them not about going to a place). The second-tier advice is always phrased "Von (nicht notwendigen)
-# Reisen in/nach ... wird (dringend) abgeraten", so a note must also say Reise/Reisen (or Einzelreisen, Aufenthalte: Djibouti, Finland). That drops
-# sentence fragments ("wird abgeraten.") too. "Reisen auf dem Landweg" is advice about the route
-# into the neighbouring country (Dominican Republic -> Haiti), not about the country itself.
-_TRAVEL = re.compile(r"\b(?:Einzelr|R)eisen?\b|\bAufenthalten?\b")
+# them not about going to a place). So a note must also name a trip (Reise/Reisen, Einzelreisen,
+# Individualreisen, Aufenthalte, Besuch). That drops sentence fragments ("wird abgeraten.") too.
+# Einreise/Ausreise are not trips: they are about documents. "Reisen auf dem Landweg" is advice
+# about the route into the neighbouring country (Dominican Republic -> Haiti).
+_ADVICE = re.compile(r"abgeraten|abzuraten|\bgewarnt\b", re.I)
+_TRIP = (r"\bReisen?\b|\b[A-ZÄÖÜ]\w*(?<!Ein)(?<!Aus)(?<!Weiter)(?<!Wieder)(?<!Rück)(?<!An)(?<!Durch)(?<!Zu)(?<!Heim)(?<!Mit)(?<!Ab)reisen\b")
+_TRAVEL = re.compile(_TRIP + r"|\bAufenthalten?\b|\bBesuch(?:en)?\b")
+# An imperative counts for Reisen anywhere, for Aufenthalte only at a border ("Vermeiden Sie
+# Aufenthalte in der Sonne / an Stränden / in der Nähe von Wasserläufen" are not about a region).
+_IMPERATIVE = re.compile(
+    r"\b(?:Vermeiden|Meiden)\s+Sie\s+(?:(?!bei\b|auf\b|während\b|im\b|vor\b)\w+\s+){0,5}?"
+    r"(?:(?:" + _TRIP + r")\s+(?:in|nach|durch|zu)\b"
+    r"|Aufenthalte\b[^.;]*Grenz"
+    r"|Fahrten\b[^.;]*?(?:in die (?:Provinz|Region)|Grenz))")
+# The guidance sentences that only refer back to the advice ("Führen Sie unabdingbare Reisen in die
+# Regionen, von denen abgeraten wird, nur mit ... durch") are not the advice.
+_GUIDANCE = re.compile(r"^(?:Führen|Beachten|Informieren|Berücksichtigen|Erkundigen|Prüfen)\w*\s+Sie\b")
 _ROUTE_ONLY = re.compile(r"\bauf dem Landweg\b")
 _SEE_ALSO = re.compile(r"[,;]?\s*siehe\b[^.]*\.?$")
+# Advice about a category of place, not a place ("Von Reisen in die unmittelbare Nähe militärischer
+# Sperrgebiete", Vietnam, true of every country and no reason to mark this one).
+_CATEGORY_ONLY = re.compile(r"\bmilitärische\w*\s+Sperrgebiet", re.I)
+# "Von Reisen in diese Gebiete wird daher abgeraten" depends on the sentence before it; alone it
+# says nothing, and the sentence before it is already a note.
+_ORPHAN = re.compile(r"^(?:Diese|Dies|Daher|Deshalb|Darum)\b|\bbetroffenen?\s+Gebiete?\b|\bin diese[nm]?\s+(?:Gebiete|Regionen|Landesteile|Provinzen|Orte|Bereiche|Grenzgebiete)\b|\bwird\s+(?:daher|deshalb)\b", re.I)
+_BACKREF = re.compile(r"\bo\.\s?g\.|\boben genannt")
 
 
 # "nicht mehr abgeraten", "nicht länger dringend abgeraten", "kein Abraten mehr": a sentence that
 # withdraws the advice must never become a note that asserts it.
 _NEGATED = re.compile(
-    r"\b(?:nicht|nie|niemals)\s+(?:(?:mehr|länger|weiter|dringend|ausdrücklich|generell|derzeit|grundsätzlich)\s+)*abgeraten"
-    r"|\bnicht\s+(?:mehr|länger)\b[^.;]*abgeraten"
-    r"|\bkein\w*\b[^.;]{0,40}\bAbraten",
+    r"\b(?:nicht|nie|niemals)\s+(?:(?:mehr|länger|weiter|dringend|ausdrücklich|generell|derzeit|grundsätzlich)\s+)*(?:abgeraten|abzuraten|gewarnt)"
+    r"|\bnicht\s+(?:mehr|länger)\b[^.;]*(?:abgeraten|abzuraten|gewarnt)"
+    r"|\bkein\w*\b[^.;]{0,60}\b(?:Abraten|abzuraten)",
     re.I,
 )
 
 
 def is_travel_advice(sent: str) -> bool:
-    return (DE_NOTE_WORD in sent.lower() and bool(_TRAVEL.search(sent))
-            and not _ROUTE_ONLY.search(sent) and not _NEGATED.search(sent))
+    if sent.rstrip().endswith(":"):
+        return False  # a bare stub ("Von Reisen in folgende Regionen wird abgeraten:") names nothing
+    if _ROUTE_ONLY.search(sent) or _NEGATED.search(sent) or _CATEGORY_ONLY.search(sent):
+        return False
+    if _ORPHAN.search(sent) or _GUIDANCE.search(sent):
+        return False
+    if _IMPERATIVE.search(sent):
+        return True
+    return bool(_ADVICE.search(sent)) and bool(_TRAVEL.search(sent))
 
 
 # A page may quote advice about another country ("Reisen aus der und in die Russische Föderation" on
@@ -378,22 +611,101 @@ def foreign_matcher(own: str, names: dict):
     return is_foreign
 
 
-def de_notes(content: str, is_foreign=None) -> list:
-    """Up to three distinct sentences advising against travel ('Reisen ... abgeraten'), verbatim and
-    in page order. The same sentence appears under 'Aktuelles' and again under 'Sicherheit', the
-    second time often with ', siehe Sicherheit' appended, so that suffix is ignored when comparing."""
-    seen, notes = set(), []
-    for sent in de_sentences(content):
-        if not is_travel_advice(sent) or (is_foreign and is_foreign(sent)):
+def own_matcher(own: str, names: dict):
+    own_re = _country_pattern(names.get(own, ""))
+    return lambda sent: bool(own_re and own_re.search(sent))
+
+
+def _key(sent: str) -> str:
+    """What two sentences are compared by: the 'siehe Sicherheit' suffix the second copy often has
+    is ignored, as are case and punctuation."""
+    return re.sub(r"\W+", " ", _SEE_ALSO.sub("", sent)).strip().lower()
+
+
+def _words(sent: str) -> set:
+    return {w for w in _key(sent).split() if len(w) > 2}
+
+
+def _redundant(units: list) -> list:
+    """Drops a sentence whose words are all in a longer one kept before or after it (Morocco says
+    'Westsahara sowie Grenzregion mit Algerien' and then each half again). Equal keys keep the first."""
+    keep = []
+    for i, u in enumerate(units):
+        k, w = _key(u.text), _words(u.text)
+        covered = False
+        for j, v in enumerate(units):
+            if i == j:
+                continue
+            kv, wv = _key(v.text), _words(v.text)
+            if k == kv:
+                covered = j < i
+            elif k in kv or w < wv:
+                covered = True
+            if covered:
+                break
+        if not covered:
+            keep.append(u)
+    return keep
+
+
+# "... und beachten Sie die Reise- und Sicherheitshinweise für die Demokratische Republik Kongo" (Angola)
+# is a pointer to another page, not a statement about another country.
+_POINTER = re.compile(r"[,;]?\s*(?:und\s+)?(?:beachten Sie|siehe)\b.*$", re.I)
+
+
+def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = False) -> list:
+    """Up to three distinct sentences advising against travel, verbatim and in page order except that
+    a sentence naming the page's own country or saying 'gewarnt' goes first. A sentence that points
+    back ('in die o.g. Grenzgebiete') brings the sentence before it along, so the note can be read
+    alone."""
+    found = []
+    for u in de_units(content):
+        if not is_travel_advice(u.text) or (is_foreign and is_foreign(_POINTER.sub("", u.text))):
             continue
-        key = _SEE_ALSO.sub("", sent).rstrip(".:; ")
-        if key in seen:
-            continue
-        seen.add(key)
-        notes.append(trim_note(sent))
-        if len(notes) == DE_MAX_NOTES:
-            break
-    return notes
+        if full_warning and not re.search(r"abgeraten|abzuraten", u.text, re.I):
+            continue  # "Vor Reisen nach X wird gewarnt" is the Reisewarnung itself, which the label states
+        found.append(u)
+    notes = []
+    for u in _redundant(found):
+        text = u.note
+        if _BACKREF.search(text) and u.context and u.context not in text \
+                and len(u.context) + 1 + len(text) <= DE_NOTE_MAX_CHARS:
+            text = u.context + " " + text
+        specific = bool(is_own and is_own(u.text)) or bool(re.search(r"\bgewarnt\b", u.text))
+        notes.append((0 if specific else 1, trim_note(text)))
+    notes.sort(key=lambda n: n[0])  # stable: page order inside a tier
+    return [t for _, t in notes[:DE_MAX_NOTES]]
+
+
+# --- the tripwire -----------------------------------------------------------------------------
+# A country with no formal flag and no extracted note is stance 0. If its page nevertheless has a
+# sentence that looks like travel advice, the extractor has missed a phrasing (that is how Tunisia,
+# Turkey and Angola slipped through), and a silent miss shows "no warning" for a country the AA
+# advises against. So the build fails on such a page unless a human has looked at that exact
+# sentence: tools/advisory/de_reviewed.json maps a country code to {sha256 of the sentence: reason}.
+# A reworded sentence has a new hash and is reviewed again.
+_WIRE_TRIGGER = re.compile(r"abgeraten|abzuraten|\bgewarnt\b|Lebensgefahr|Sperrzone|Sperrgebiet|\b(?:Vermeiden|Meiden)\s+Sie\b", re.I)
+_WIRE_PLACE = re.compile(_TRIP + r"|Aufenthalt|Besuch|Gebiet|Region|Provinz|Grenz|Landesteil|Bundesstaat|Zone\b|Insel|Küste|Distrikt|Bezirk")
+REVIEWED = Path(__file__).resolve().parent / "de_reviewed.json"
+
+
+def sentence_sha(sent: str) -> str:
+    return hashlib.sha256(sent.encode("utf-8")).hexdigest()
+
+
+def load_reviewed(path: Path = REVIEWED) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise BuildError(f"cannot read {path}: {e}")
+    if not isinstance(data, dict) or not all(isinstance(v, dict) for v in data.values()):
+        raise BuildError(f"{path} must map a country code to an object of sentence hashes")
+    return data
+
+
+def de_wire_hits(content: str) -> list:
+    """Sentences of a page that look like advice about travel to a place."""
+    return [u.text for u in de_units(content) if _WIRE_TRIGGER.search(u.text) and _WIRE_PLACE.search(u.text)]
 
 
 def detail_content(detail, key: str):
@@ -404,14 +716,20 @@ def detail_content(detail, key: str):
     return content if isinstance(content, str) and content.strip() else None
 
 
-def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
+def warn(msg: str) -> None:
+    print(f"warning: {msg}", file=sys.stderr)
+
+
+def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None) -> dict:
     """details: node id -> detail payload. A country whose three flags are all false and whose page
-    is missing cannot be told from one with Reiseabraten, so that is an error, never 'no warning'."""
+    is missing cannot be told from one with Reiseabraten, so that is an error, never 'no warning'.
+    reviewed: the tripwire's allowlist (see de_reviewed.json); None means nothing is reviewed."""
     resp = feed.get("response") if isinstance(feed, dict) else None
     if not isinstance(resp, dict):
         raise BuildError("DE feed has no 'response' object")
     details = details or {}
-    out, bad, unverified, missing = {}, [], [], []
+    reviewed = reviewed or {}
+    out, bad, unverified, missing, tripped = {}, [], [], [], []
     total = 0
     names = {str(e.get("countryCode", "")).upper(): str(e.get("countryName", ""))
              for e in resp.values() if isinstance(e, dict)}
@@ -428,6 +746,8 @@ def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
             raise BuildError(f"DE entry {code} has a non-numeric node id {key!r}")
         total += 1
         warning, partial = e["warning"], e["partialWarning"]
+        if e.get("situationWarning") is True or e.get("situationPartWarning") is True:
+            warn(f"DE {code} has a situation warning flag set; the app does not show it yet")
         content = detail_content(details.get(str(key)), key)
         notes = []
         if content is None:
@@ -435,7 +755,14 @@ def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
             if not warning and not partial:
                 unverified.append(code)
         else:
-            notes = de_notes(content, foreign_matcher(code, names))
+            notes = de_notes(content, foreign_matcher(code, names), own_matcher(code, names), warning)
+            if not warning and not partial and not notes:
+                is_foreign = foreign_matcher(code, names)
+                for sent in de_wire_hits(content):
+                    if is_foreign(_POINTER.sub("", sent)):
+                        continue  # about another country, as de_notes judges it
+                    if sentence_sha(sent) not in (reviewed.get(code) or {}):
+                        tripped.append(f"{code} [{sentence_sha(sent)[:12]}] {sent[:200]}")
         updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
         entry = {
             "stance": de_stance(warning, partial, notes),
@@ -451,6 +778,11 @@ def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
     if unverified:
         raise BuildError("DE page text missing for countries with no formal warning, so 'no warning' "
                          "cannot be verified: " + ", ".join(sorted(unverified)))
+    if tripped:
+        raise BuildError(
+            f"{len(tripped)} German page sentence(s) look like travel advice on a country the build "
+            "rates 'no warning'. Either teach de_notes the phrasing, or review the sentence and add "
+            "its full sha256 and a reason to tools/advisory/de_reviewed.json:\n  " + "\n  ".join(tripped))
     if total and len(missing) > DE_MAX_MISSING_SHARE * total:
         raise BuildError(f"DE page text missing for {len(missing)} of {total} countries: " + ", ".join(sorted(missing)))
     return out
@@ -485,6 +817,27 @@ def keep_if_unchanged(new: dict, old) -> dict:
             == {k: v["label"] for k, v in new["sources"].items()}:
         return old
     return new
+
+
+DE_DRIFT_LIMIT = 4
+
+
+def de_advised_count(doc) -> int:
+    rows = (doc or {}).get("countries") if isinstance(doc, dict) else None
+    if not isinstance(rows, dict):
+        return 0
+    return sum(1 for c in rows.values() if isinstance(c, dict) and (c.get("DE") or {}).get("stance", 0) >= 2)
+
+
+def warn_on_drift(new: dict, old) -> None:
+    """A page rewrite that makes the extractor miss (or over-match) shows up as many countries moving
+    at once. Not an error: the AA does change its advice, and a real week can move a few."""
+    if not isinstance(old, dict) or "countries" not in old:
+        return
+    was, now = de_advised_count(old), de_advised_count(new)
+    if abs(now - was) > DE_DRIFT_LIMIT:
+        warn(f"DE countries rated 'reconsider' or worse moved from {was} to {now} against the previous file; "
+             "check that the page extraction still reads the AA's text")
 
 
 def load_places() -> tuple:
@@ -607,7 +960,7 @@ def build(src: Path, generated_at: str) -> dict:
     per_source = {
         "US": parse_us(read_json(src / "us.json"), index),
         "UK": parse_uk(pages, index),
-        "DE": parse_de(de_feed, valid, details),
+        "DE": parse_de(de_feed, valid, details, load_reviewed()),
     }
     check_urls(per_source)
     for rows in per_source.values():
@@ -638,9 +991,11 @@ def main(argv=None) -> int:
         prev = args.previous or args.out
         if prev.is_file():
             try:
-                doc = keep_if_unchanged(doc, json.loads(prev.read_text(encoding="utf-8")))
+                old = json.loads(prev.read_text(encoding="utf-8"))
             except ValueError:
-                pass  # an unreadable previous file is simply replaced
+                old = None  # an unreadable previous file is simply replaced
+            warn_on_drift(doc, old)
+            doc = keep_if_unchanged(doc, old)
     except BuildError as e:
         print(f"advisory build FAILED, nothing written: {e}", file=sys.stderr)
         return 1

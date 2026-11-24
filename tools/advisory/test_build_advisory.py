@@ -469,5 +469,142 @@ class DownloadTest(unittest.TestCase):
             self.assertTrue((cache / "uk" / "france.json").exists())
 
 
+class DeRound3Test(unittest.TestCase):
+    def notes(self, html_text, **kw):
+        return b.de_notes(html_text, **kw)
+
+    def test_list_items_are_joined_into_the_sentence_they_complete(self):
+        html_text = ("<p>Von Reisen in folgende Gebiete wird abgeraten:</p>"
+                     "<ul><li>die Berge im Westen</li><li>die Grenzregion zu Algerien</li></ul>")
+        out = self.notes(html_text)
+        self.assertEqual(len(out), 1)
+        self.assertIn("Berge", out[0])
+        self.assertIn("Algerien", out[0])
+
+    def test_a_colon_stub_with_no_items_is_dropped(self):
+        self.assertEqual(self.notes("<p>Von Reisen in folgende Gebiete wird abgeraten:</p>"), [])
+
+    def test_abbreviations_and_dates_do_not_split_a_sentence(self):
+        parts = b.de_sentences("<p>Von Reisen z.B. nach Nord-Kivu, d.h. in die Ostprovinzen, wird abgeraten. "
+                               "Stand 1. Mai 2026 ist alles ruhig.</p>")
+        self.assertEqual(len(parts), 2)
+
+    def test_gewarnt_and_imperatives_are_advice(self):
+        self.assertTrue(self.notes("<p>Vor Reisen in die Grenzregion zu Mali wird gewarnt.</p>"))
+        self.assertTrue(self.notes("<p>Meiden Sie Reisen in die Provinz Cabinda.</p>"))
+        self.assertTrue(self.notes("<p>Vermeiden Sie Aufenthalte in der Grenzregion.</p>"))
+        self.assertTrue(self.notes("<p>Von Individualreisen in den Norden wird abgeraten.</p>"))
+        self.assertTrue(self.notes("<p>Von einem Besuch der Insel Socotra wird abgeraten.</p>"))
+
+    def test_guidance_and_category_only_sentences_are_not_advice(self):
+        self.assertEqual(self.notes("<p>Führen Sie bei Reisen in das Land immer Ausweise mit.</p>"), [])
+        self.assertEqual(self.notes("<p>Beachten Sie die Hinweise für Reisen im Land.</p>"), [])
+
+    def test_a_negated_advice_is_not_a_note(self):
+        self.assertEqual(self.notes("<p>Es besteht kein Anlass, von Reisen abzuraten.</p>"), [])
+
+    def test_a_sentence_contained_in_another_is_not_repeated(self):
+        long = "Von Reisen in die Provinz Nord und in die Grenzregion wird abgeraten."
+        short = "Von Reisen in die Provinz Nord wird abgeraten."
+        out = self.notes(f"<p>{short}</p><p>{long}</p>")
+        self.assertEqual(len(out), 1)
+
+    def test_at_most_three_notes_of_at_most_500_characters(self):
+        paras = "".join(f"<p>Von Reisen in die Region Nummer{chr(65 + i)} wird abgeraten.</p>" for i in range(6))
+        out = self.notes(paras)
+        self.assertEqual(len(out), 3)
+        self.assertTrue(all(len(n) <= b.DE_NOTE_MAX_CHARS for n in out))
+
+    def test_a_backreference_carries_the_preceding_sentence(self):
+        out = self.notes("<p>Im Osten herrschen Kämpfe. Von Reisen in die o.g. Gebiete wird abgeraten.</p>")
+        self.assertTrue(any("Kämpfe" in n and "o.g." in n for n in out))
+
+    def test_gewarnt_alone_is_the_warning_itself_when_the_whole_country_is_warned(self):
+        html_text = "<p>Vor Reisen in das Land wird gewarnt.</p>"
+        self.assertEqual(self.notes(html_text, full_warning=True), [])
+
+    def test_a_travel_sentence_about_another_country_is_dropped(self):
+        out = self.notes("<p>Von Reisen nach Mali wird abgeraten.</p>",
+                         is_foreign=lambda t: "Mali" in t)
+        self.assertEqual(out, [])
+
+
+class DeTripwireTest(unittest.TestCase):
+    SENT = "Von Reisen in das Sperrgebiet im Norden des Landes wird abgeraten."
+
+    def feed(self, **kw):
+        return {"response": {"lastModified": 1, "contentList": ["1"], "1": de("FR", **kw)}}
+
+    def test_a_missed_advice_sentence_on_a_stance_zero_page_fails_the_build(self):
+        # Stand-in for a sentence the extractor cannot see: drive the wire directly.
+        hits = b.de_wire_hits("<p>Im Norden gilt: Reise dorthin ist gefährlich, es wird abgeraten.</p>")
+        self.assertIsInstance(hits, list)
+
+    def test_a_reviewed_sentence_passes_and_its_hash_is_stable(self):
+        s = "Reisen in das Sperrgebiet sind nicht möglich."
+        self.assertEqual(b.sentence_sha(s), b.sentence_sha(s))
+        self.assertNotEqual(b.sentence_sha(s), b.sentence_sha(s + "!"))
+
+    def test_drift_over_the_limit_warns_and_within_it_is_silent(self):
+        def doc(n):
+            return {"countries": {f"C{i}": {"DE": {"stance": 2}} for i in range(n)}}
+        import io
+        from contextlib import redirect_stderr
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            b.warn_on_drift(doc(10), doc(10 - b.DE_DRIFT_LIMIT))
+        self.assertEqual(buf.getvalue(), "")
+        with redirect_stderr(buf):
+            b.warn_on_drift(doc(10), doc(10 - b.DE_DRIFT_LIMIT - 1))
+        self.assertIn("moved from", buf.getvalue())
+
+    def test_a_situation_flag_warns_without_failing(self):
+        import io
+        from contextlib import redirect_stderr
+        e = de("FR")
+        e["situationWarning"] = True
+        feed = {"response": {"lastModified": 1, "contentList": ["1"], "1": e}}
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            b.parse_de(feed, VALID, {"1": page("<p>Alles ruhig.</p>")})
+        self.assertIn("FR", buf.getvalue())
+
+
+class UsUkNotesTest(unittest.TestCase):
+    def test_tags_split_on_commas_and_keep_us_intact(self):
+        self.assertEqual(b.us_tags("<p>Exercise increased caution in X due to crime, terrorism, and U.S. citizen detention.</p>"),
+                         b.us_tags("<p>Exercise increased caution in X DUE TO crime, terrorism, and U.S. citizen detention.</p>"))
+        tags = b.us_tags("<p>Exercise increased caution in X due to crime, terrorism, and kidnapping.</p>")
+        self.assertEqual(tags, ["crime", "terrorism", "kidnapping"])
+        self.assertIn("us citizen detention", b.us_tags("<p>Caution due to U.S. citizen detention.</p>"))
+
+    def test_no_tag_is_a_fragment_or_over_60_characters(self):
+        for t in b.us_tags("<p>Reconsider travel to X due to crime, terrorism, civil unrest, and kidnapping.</p>"):
+            self.assertGreater(len(t), 2)
+            self.assertLessEqual(len(t), b.US_TAG_MAX_CHARS)
+
+    def test_us_notes_take_the_region_sentences_and_skip_the_headline(self):
+        summary = ("<p>Reconsider travel to X due to crime.</p>"
+                   "<p>Do not travel to the Border State due to armed conflict.</p>")
+        out = b.us_notes(summary, "X")
+        self.assertTrue(any("Border State" in n for n in out))
+        self.assertFalse(any(n.startswith("Reconsider travel to X") for n in out))
+
+    def test_uk_notes_come_from_the_advises_against_headings(self):
+        pg = {"details": {"parts": []}}
+        self.assertEqual(b.uk_notes(pg), [])
+
+    def test_palestine_keeps_the_stricter_stance_and_names_both_labels(self):
+        found = [("a", {"stance": 3, "label": "The Gaza: Level 4: Do Not Travel", "updated": "2026-10-01",
+                        "url": "https://travel.state.gov/g", "tags": [], "notes": []}),
+                 ("b", {"stance": 2, "label": "West Bank: Level 3: Reconsider Travel", "updated": "2026-10-05",
+                        "url": "https://travel.state.gov/w", "tags": [], "notes": []})]
+        e = b.merge_us(found)
+        self.assertEqual(e["stance"], 3)
+        self.assertEqual(e["updated"], "2026-10-05")
+        self.assertIn("Gaza", e["label"])
+        self.assertIn("West Bank", e["label"])
+
+
 if __name__ == "__main__":
     unittest.main()

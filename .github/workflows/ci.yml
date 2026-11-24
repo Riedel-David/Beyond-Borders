@@ -35,6 +35,9 @@ jobs:
       - name: Visa tooling tests
         run: python3 -m unittest discover -s tools/visa -p 'test_*.py'
 
+      - name: Advisory tooling tests
+        run: python3 -m unittest discover -s tools/advisory -p 'test_*.py'
+
       - name: Compile and unit tests
         run: ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :app:assembleRelease
 

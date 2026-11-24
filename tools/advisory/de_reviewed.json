@@ -1,0 +1,86 @@
+{
+ "AR": {
+  "0499fdfe32b1045f64051a4217dabdca7d11f101fd5308a4ebda677e6d0294cb": "Behaviour at football matches.",
+  "37c5691c9df850bfad6a67a5b4ccb1752d7fa8c65d0feb51c830464019039819": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region.",
+  "d1572dbaabf1ae7ff3587984ff00975a8fd5e3272abd919884d6d2a46c5121c5": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
+ },
+ "AU": {
+  "a8bd910b73a8a1374ecf74ac0d55614c459a356d872dbcd7e1b152e511c199be": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
+ },
+ "BD": {
+  "3b7a5cffea6996fb7ea3ecebd657c17980617255a0f6eaa88cbfadf15dad0d6f": "Crowd caution in a border area, not advice against going there."
+ },
+ "BZ": {
+  "acb055460a3de68dedddf0a959603134a4290ff2c9ca651c93873343b95df6ea": "Night-driving or after-dark safety tip, not advice against travelling to a region."
+ },
+ "CG": {
+  "b4e32a0c39f064df112b7d5fc03c50727fd40432cf3628c242721d842e1af16f": "Night-driving or after-dark safety tip, not advice against travelling to a region."
+ },
+ "CL": {
+  "0060568f4b0c4a4b0f58ad7b8d05d09172c860e5cc658a2642d068b1c7095c3b": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region.",
+  "66fc8d49f5a5b7c49c29ebaffa6b5bf2e35093618c5f484812a34f32e200fd50": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region.",
+  "e9532721929b49976aa1ff154f400f4ce31b2cdb3980c90e7f526cb9b1595bcc": "Night-driving or after-dark safety tip, not advice against travelling to a region."
+ },
+ "CN": {
+  "8d00f18c3c32545ab4b253585bc28972cde44ef4addd7fbdd2a29b45cbcf3146": "Avian-influenza hygiene advice (avoid poultry markets), not about travelling to a place."
+ },
+ "CY": {
+  "0e44cd920a9ddeb3086831d37816436355f4a646a57fe120da1278cf2557cd58": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
+ },
+ "DO": {
+  "5c6bb830552d479b27844988e9901504334d635ac49c45f53a770985b687701b": "Advice about the overland route to the neighbouring country (Haiti), which the extractor excludes on purpose; the country itself is not advised against.",
+  "78b2f1409ed38596f0958ccedcb4a095bea8dac9e014a1ede87e4fb3dc0cba12": "Advice about the overland route to the neighbouring country (Haiti), which the extractor excludes on purpose; the country itself is not advised against."
+ },
+ "GD": {
+  "5b05d9bbca74524cf67c9ce33c69d995170495a85499b76da276b192be2833df": "Advice not to carry parcels across the border for others; about smuggling risk, not about travelling to a region."
+ },
+ "GR": {
+  "362e57fa8a507e6a239cdb51290255d23663e4ca58d6d45f3178177a55bb6c4a": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
+ },
+ "GT": {
+  "dcff7c041df7105c2a287e4084943d2f90d3aa0247776aa1f370bd8e42b6b343": "Advice not to carry parcels across the border for others; about smuggling risk, not about travelling to a region."
+ },
+ "HK": {
+  "8d00f18c3c32545ab4b253585bc28972cde44ef4addd7fbdd2a29b45cbcf3146": "Avian-influenza hygiene advice (avoid poultry markets), not about travelling to a place."
+ },
+ "HN": {
+  "f1157da93871f1a80c29d8cd760e7997efdd4c1f382efe9361eba8793305daf3": "Advice not to carry parcels across the border for others; about smuggling risk, not about travelling to a region."
+ },
+ "HR": {
+  "87e73fd914326ed760848e8fdc8d3af13d0d29386085312a1c673adf9b5a9d0a": "Sun exposure health advice."
+ },
+ "IS": {
+  "b71f9cc6954d3e8480fc315cb8a7b32b0b4023e805263b487b282d2da3e11bcc": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
+ },
+ "JM": {
+  "90b5cb4fd6453f9b8b33e30e8ef0b005d15febd32c05b14e5820f8596e4ff46e": "Advice not to carry parcels across the border for others; about smuggling risk, not about travelling to a region."
+ },
+ "KG": {
+  "7445a92f377310fcf9cccee40fe0ea1e916c3cdc55d63c2b177a8b53834c264e": "Flash-flood caution near rivers and gorges."
+ },
+ "KR": {
+  "8d00f18c3c32545ab4b253585bc28972cde44ef4addd7fbdd2a29b45cbcf3146": "Avian-influenza hygiene advice (avoid poultry markets), not about travelling to a place."
+ },
+ "ME": {
+  "4f4e3df9aff57b27d99bd900234a239c6a5c94a0aba5b2defe5ab9176b755ed4": "Night-driving or after-dark safety tip, not advice against travelling to a region."
+ },
+ "NL": {
+  "c93386b36ae4fe9df928c92dac8ba3ed83fc818879a0aa7b9136521ac7a020ce": "Night-driving or after-dark safety tip, not advice against travelling to a region."
+ },
+ "SE": {
+  "d1c54cc60fa4cf465ebccc1d36b9c8d7e721e11256e724112a4cb20a2f5ce91a": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
+ },
+ "SV": {
+  "d5a673f4424048ae1c3594516ffee8245a1d10bdf52bebc272da7e3bb1d635f9": "Night-driving or after-dark safety tip, not advice against travelling to a region."
+ },
+ "VN": {
+  "27fd284111f80ae17ffab6f9af20bee6e858aa77c27be60c42a5ef1de09d6ade": "Generic military restricted-area warning that holds for any country, not about a region.",
+  "4812b6553a65f37d69ee70e0b32f3e0c185487677291057a7c1d66ed0e8cab6d": "Generic military restricted-area warning that holds for any country, not about a region.",
+  "ab9353ef2ca5c87e900b212f5fcfb64df465acb4b1466d9d4410fef7127c6273": "Generic military restricted-area warning that holds for any country, not about a region.",
+  "c321df8282b5124551d52fe57242acfd9ccc92cb9073f9ac4c82155361da5964": "Food hygiene (reef fish), not travel advice."
+ },
+ "VU": {
+  "a9d60eefbced6d9fb5e76b66190873128bd15c0f951419b7380806911ed6ad8b": "Volcano exclusion-zone guidance around named volcanoes; a safety rule on site, not advice against the trip.",
+  "c081e522deb12caad9a9895bf36678945cca3bc273a3dc09b936bd5d9e9e3367": "Volcano exclusion-zone guidance around named volcanoes; a safety rule on site, not advice against the trip."
+ }
+}

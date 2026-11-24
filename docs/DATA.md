@@ -170,4 +170,19 @@ code at all, so both are matched by name against `places.json`).
 with no pull request. Pages deployments replace the whole site, so `tools/advisory/make_site.py` copies
 the live visa files (verified against the live manifest) into the same deployment, and
 `visa-refresh.yml` carries the live `advisory.json` the other way. A failed run publishes nothing and
-opens an issue. The bundled copy is refreshed by hand by running the build and committing the file.
+opens an issue that quotes the build's error text (also in the run's step summary).
+
+The advisory file rides along on every visa publish too: `visa-refresh.yml` fetches the live
+`advisory.json` and heartbeat (`tools/advisory/fetch_live.py`; Pages answers a first request for a missing
+path with 503 then 404, which counts as absent). A live file that fails validation falls back to the bundled
+copy with a `::warning::`; any other error fails the job, because the previous deployment keeps the live file
+and silently publishing an older bundled copy over a newer one is worse.
+
+Every advisory refresh also publishes `advisory-heartbeat.json` (the run time), even when the data is
+unchanged. `visa-freshness.yml` opens an issue when it is more than 10 days old or missing while
+`advisory.json` is live. German pages with no warning flag are scanned for travel-advice sentences
+that extraction missed; an unreviewed hit fails the build, and a reviewed one is recorded with a reason in
+`tools/advisory/de_reviewed.json` (sentence hash per country code).
+
+Before a release, refresh the bundled asset: run the build (`--previous` the live file) and commit
+`advisory.json`, so a fresh install without network starts from current data.
