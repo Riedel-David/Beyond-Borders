@@ -93,13 +93,13 @@
     <string name="settings_restore_button">Restaurar desde la copia de Android</string>
     <string name="settings_restore_detail">La copia de seguridad de Android dejó una instantánea de tu historial en este teléfono. Al restaurarla se fusiona con los datos actuales, igual que al importar un archivo.</string>
     <string name="settings_visa_title">Datos de visado</string>
-    <string name="settings_visa_detail">Descarga archivos pequeños de GitHub; no se envía ningún dato personal. El interruptor solo controla la comprobación automática semanal, que se hace con Wi-Fi u otra red sin límite de datos. Comprobar ahora funciona en ambos casos. Los datos nuevos se usan al instante.</string>
+    <string name="settings_visa_detail">Descarga archivos pequeños de GitHub; no se envía ningún dato personal. El interruptor solo controla la comprobación automática semanal de los datos de visado y los avisos de viaje, que se hace con Wi-Fi u otra red sin límite de datos. Comprobar ahora actualiza solo los datos de visado y funciona en ambos casos. Los datos nuevos se usan al instante.</string>
     <string name="settings_visa_checking">Comprobando…</string>
     <string name="settings_visa_result_current">Los datos de visado ya están al día.</string>
     <string name="settings_visa_result_updated">Datos de visado actualizados y en uso.</string>
     <string name="settings_visa_result_offline">No se pudo conectar con el servidor. Revisa tu conexión o inténtalo más tarde.</string>
     <string name="settings_visa_result_unavailable">Actualización no disponible por ahora.</string>
-    <string name="settings_visa_auto">Actualizar los datos de visado automáticamente</string>
+    <string name="settings_visa_auto">Actualizar datos de visado y avisos de viaje automáticamente</string>
     <string name="settings_visa_last_checked">Última comprobación: %1$s</string>
     <string name="settings_visa_last_checked_never">Última comprobación: nunca</string>
     <string name="settings_visa_check_now">Comprobar ahora</string>

@@ -6,6 +6,7 @@ import java.io.File
 import java.io.IOException
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
+import org.junit.Assume
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -113,26 +114,26 @@ class AdvisoryTest {
 
     @Test
     fun `a newer valid file is accepted`() {
-        assertNull(verifyAdvisory(fixtureBytes, Instant.parse("2026-11-01T00:00:00Z"), now))
-        assertNull(verifyAdvisory(fixtureBytes, null, now))
+        assertNull(verifyAdvisory(fixtureBytes, Instant.parse("2026-11-01T00:00:00Z"), now, minCountries = 1))
+        assertNull(verifyAdvisory(fixtureBytes, null, now, minCountries = 1))
     }
 
     @Test
     fun `a file that is not newer than the copy in use is not applied`() {
-        assertEquals(AdvisoryRejection.NOT_NEWER, verifyAdvisory(fixtureBytes, data.generatedAt, now))
-        assertEquals(AdvisoryRejection.NOT_NEWER, verifyAdvisory(fixtureBytes, Instant.parse("2026-12-01T00:00:00Z"), now))
+        assertEquals(AdvisoryRejection.NOT_NEWER, verifyAdvisory(fixtureBytes, data.generatedAt, now, minCountries = 1))
+        assertEquals(AdvisoryRejection.NOT_NEWER, verifyAdvisory(fixtureBytes, Instant.parse("2026-12-01T00:00:00Z"), now, minCountries = 1))
     }
 
     @Test
     fun `a future-dated file is rejected but tomorrow is tolerated`() {
-        assertEquals(AdvisoryRejection.FUTURE_DATED, verifyAdvisory(withGenerated("2026-12-30T00:00:00Z"), null, now))
-        assertNull(verifyAdvisory(withGenerated("2026-11-25T12:00:00Z"), null, now))
+        assertEquals(AdvisoryRejection.FUTURE_DATED, verifyAdvisory(withGenerated("2026-12-30T00:00:00Z"), null, now, minCountries = 1))
+        assertNull(verifyAdvisory(withGenerated("2026-11-25T12:00:00Z"), null, now, minCountries = 1))
     }
 
     @Test
     fun `a file with no usable country is rejected so it cannot blank the section`() {
-        assertEquals(AdvisoryRejection.UNPARSEABLE, verifyAdvisory(withGenerated("2026-11-24T00:00:00Z", "{}"), null, now))
-        assertEquals(AdvisoryRejection.UNPARSEABLE, verifyAdvisory("junk".toByteArray(), null, now))
+        assertEquals(AdvisoryRejection.UNPARSEABLE, verifyAdvisory(withGenerated("2026-11-24T00:00:00Z", "{}"), null, now, minCountries = 1))
+        assertEquals(AdvisoryRejection.UNPARSEABLE, verifyAdvisory("junk".toByteArray(), null, now, minCountries = 1))
     }
 
     @Test
@@ -163,7 +164,7 @@ class AdvisoryTest {
     fun `a newer download is written to the store`() {
         val store = FakeStore()
         val fetcher = FakeFetcher(body = fixtureBytes)
-        assertEquals(AdvisoryOutcome.UPDATED, runAdvisoryUpdate(fetcher, store, { null }, { now }))
+        assertEquals(AdvisoryOutcome.UPDATED, runAdvisoryUpdate(fetcher, store, { null }, { now }, minCountries = 1))
         assertArrayEquals(fixtureBytes, store.bytes)
         assertEquals("advisory.json", fetcher.lastFile)
     }
@@ -171,28 +172,28 @@ class AdvisoryTest {
     @Test
     fun `an offline run leaves the stored copy alone`() {
         val store = FakeStore(bytes = fixtureBytes)
-        assertEquals(AdvisoryOutcome.OFFLINE, runAdvisoryUpdate(FakeFetcher(fail = IOException("down")), store, { null }, { now }))
+        assertEquals(AdvisoryOutcome.OFFLINE, runAdvisoryUpdate(FakeFetcher(fail = IOException("down")), store, { null }, { now }, minCountries = 1))
         assertArrayEquals(fixtureBytes, store.bytes)
     }
 
     @Test
     fun `a rejected fetch or a garbage body changes nothing and does not throw`() {
         val store = FakeStore(bytes = fixtureBytes)
-        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(fail = VisaFetchRejected("x")), store, { null }, { now }))
-        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(body = "<html>".toByteArray()), store, { null }, { now }))
+        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(fail = VisaFetchRejected("x")), store, { null }, { now }, minCountries = 1))
+        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(body = "<html>".toByteArray()), store, { null }, { now }, minCountries = 1))
         assertArrayEquals(fixtureBytes, store.bytes)
     }
 
     @Test
     fun `an identical download is up to date and writes nothing`() {
         val store = FakeStore()
-        assertEquals(AdvisoryOutcome.UP_TO_DATE, runAdvisoryUpdate(FakeFetcher(body = fixtureBytes), store, { data }, { now }))
+        assertEquals(AdvisoryOutcome.UP_TO_DATE, runAdvisoryUpdate(FakeFetcher(body = fixtureBytes), store, { data }, { now }, minCountries = 1))
         assertNull(store.bytes)
     }
 
     @Test
     fun `a disk failure is a rejection and not a throw`() {
-        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(body = fixtureBytes), FakeStore(failWrite = true), { null }, { now }))
+        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(body = fixtureBytes), FakeStore(failWrite = true), { null }, { now }, minCountries = 1))
     }
 
     @Test
@@ -200,7 +201,7 @@ class AdvisoryTest {
         // Independence is structural: runAdvisoryUpdate takes only an AdvisoryStore and a fetcher,
         // so a visa failure cannot reach it and its failures cannot reach a visa run.
         val fetcher = FakeFetcher(fail = IOException("down"))
-        runAdvisoryUpdate(fetcher, FakeStore(), { null }, { now })
+        runAdvisoryUpdate(fetcher, FakeStore(), { null }, { now }, minCountries = 1)
         assertEquals(1, fetcher.calls)
     }
 
@@ -235,5 +236,69 @@ class AdvisoryTest {
         repo.invalidate()
         assertEquals(Instant.parse("2026-11-24T09:00:00Z"), repo.current()!!.generatedAt)
         assertTrue(repo.dataVersion.value > before)
+    }
+
+    // --- plausibility ------------------------------------------------------------------
+
+    private fun manyCountries(n: Int): String =
+        (0 until n).joinToString(",", "{", "}") {
+            val code = "" + ('A' + it / 26) + ('A' + it % 26)
+            """"$code": {"US": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://a.example/"}}"""
+        }
+
+    @Test
+    fun `a valid file under the 150 country floor is rejected`() {
+        assertEquals(AdvisoryRejection.IMPLAUSIBLE, verifyAdvisory(withGenerated("2026-11-24T00:00:00Z", manyCountries(149)), null, now))
+        assertNull(verifyAdvisory(withGenerated("2026-11-24T00:00:00Z", manyCountries(150)), null, now))
+    }
+
+    @Test
+    fun `a file below 80 percent of the copy in use is rejected`() {
+        val b = withGenerated("2026-11-24T00:00:00Z", manyCountries(159))
+        assertEquals(AdvisoryRejection.IMPLAUSIBLE, verifyAdvisory(b, null, now, inUseCountries = 200, minCountries = 1))
+        assertNull(verifyAdvisory(withGenerated("2026-11-24T00:00:00Z", manyCountries(160)), null, now, inUseCountries = 200, minCountries = 1))
+    }
+
+    @Test
+    fun `a truncated download does not replace a full stored copy`() {
+        val full = withGenerated("2026-11-01T00:00:00Z", manyCountries(200))
+        val store = FakeStore(bytes = full)
+        val short = withGenerated("2026-11-24T00:00:00Z", manyCountries(160).let { manyCountries(100) })
+        assertEquals(AdvisoryOutcome.REJECTED, runAdvisoryUpdate(FakeFetcher(body = short), store, { null }, { now }, minCountries = 1))
+        assertArrayEquals(full, store.bytes)
+    }
+
+    @Test
+    fun `a null label or url is rejected rather than shown as the word null`() {
+        val j = """{"FR": {"US": {"stance": 1, "label": null, "updated": "2026-01-01", "url": "https://a.example/"},
+                    "UK": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": null},
+                    "DE": {"stance": 1, "label": "L", "updated": null, "url": "https://a.example/"}}}"""
+        assertTrue(parseAdvisory(String(withGenerated("2026-11-24T00:00:00Z", j)))!!.countries.isEmpty())
+    }
+
+    @Test
+    fun `a load that races invalidate does not publish the stale result`() = runBlocking {
+        val store = FakeStore()
+        lateinit var repo: AdvisoryRepository
+        var first = true
+        repo = AdvisoryRepository({
+            if (first) { first = false; store.bytes = withGenerated("2026-11-24T09:00:00Z"); repo.invalidate() }
+            fixtureBytes
+        }, store, { now })
+        // The first pass reads under generation 0, invalidate() bumps it, so the pass is discarded and redone.
+        assertEquals(Instant.parse("2026-11-24T09:00:00Z"), repo.current()!!.generatedAt)
+    }
+
+    // --- bundled asset ---------------------------------------------------------------------
+
+    @Test
+    fun `the bundled advisory asset parses and keeps every country it lists`() {
+        val f = File("src/main/assets/advisory.json")
+        Assume.assumeTrue("asset not on this branch", f.isFile)
+        val text = f.readText()
+        val parsed = parseAdvisory(text)
+        assertNotNull(parsed)
+        assertEquals(org.json.JSONObject(text).getJSONObject("countries").length(), parsed!!.countries.size)
+        assertTrue(parsed.countries.size >= MIN_ADVISORY_COUNTRIES)
     }
 }

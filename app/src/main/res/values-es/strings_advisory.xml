@@ -9,5 +9,5 @@
     <string name="advisory_updated">Actualizado el %1$s</string>
     <string name="advisory_open_source">Abrir la fuente</string>
     <string name="advisory_as_of">Datos a fecha de %1$s</string>
-    <string name="advisory_check_official">Cada calificación es la del propio gobierno, tal como la publica, y aquí no se combina ni se puntúa. Consulta la fuente oficial antes de viajar.</string>
+    <string name="advisory_check_official">Estas son las calificaciones de tres gobiernos. El texto que se muestra para las calificaciones del Reino Unido y de Alemania resume los indicadores que publican; consulta la fuente oficial antes de viajar. Aquí no se combina ni se puntúa nada.</string>
 </resources>

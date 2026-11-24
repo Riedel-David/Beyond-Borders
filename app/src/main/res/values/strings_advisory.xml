@@ -9,5 +9,5 @@
     <string name="advisory_updated">Updated %1$s</string>
     <string name="advisory_open_source">Open source</string>
     <string name="advisory_as_of">Data as of %1$s</string>
-    <string name="advisory_check_official">Each rating is the government\'s own, shown as published and not combined or scored here. Check the official source before you travel.</string>
+    <string name="advisory_check_official">These are the ratings of three governments. The wording shown for the UK and German ratings summarises the flags they publish, so check the official source before you travel. Nothing is combined or scored here.</string>
 </resources>

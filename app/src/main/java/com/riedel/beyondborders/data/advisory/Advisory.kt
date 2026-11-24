@@ -14,6 +14,12 @@ const val ADVISORY_FILE = "advisory.json"
 // a bound so a wrong file on the host cannot fill memory. Larger than the visa files' limit.
 const val MAX_ADVISORY_BYTES = 1024 * 1024
 
+/** The pipeline's own floor: a file with fewer countries than this is truncated, whatever else is valid. */
+const val MIN_ADVISORY_COUNTRIES = 150
+
+/** A download must keep at least this share of the countries in the copy already in use. */
+const val MIN_ADVISORY_RETAINED = 0.8
+
 /** The sources in the order the rows are shown. */
 val ADVISORY_SOURCES = listOf("US", "UK", "DE")
 
@@ -56,7 +62,7 @@ fun agreementOf(entries: Map<String, AdvisoryEntry>): Agreement {
     return Agreement(present.count { it.stance == 3 }, present.size)
 }
 
-enum class AdvisoryRejection { UNPARSEABLE, FUTURE_DATED, NOT_NEWER }
+enum class AdvisoryRejection { UNPARSEABLE, IMPLAUSIBLE, FUTURE_DATED, NOT_NEWER }
 
 // --- pure functions, unit-testable without Android ---------------------------
 
@@ -100,9 +106,10 @@ private val ISO_REGEX = Regex("[A-Z]{2}")
 private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
     o ?: return null
     val stance = o.optInt("stance", -1)
-    val label = o.optString("label")
-    val updated = o.optString("updated")
-    val url = o.optString("url")
+    // optString turns a JSON null into the text "null"; only a real string counts.
+    val label = o.opt("label") as? String ?: return null
+    val updated = o.opt("updated") as? String ?: return null
+    val url = o.opt("url") as? String ?: return null
     if (stance !in 0..3 || label.isBlank() || !DATE_REGEX.matches(updated) || !isHttps(url)) return null
     runCatching { LocalDate.parse(updated) }.getOrNull() ?: return null
     val tags = o.optJSONArray("tags")?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf(String::isNotBlank) } }
@@ -116,10 +123,21 @@ internal fun advisoryLatestAllowed(now: Instant): Instant = now.plusSeconds(24 *
  * Null means accept. [inUse] is the newest copy already usable (stored or bundled). A copy that
  * is not strictly newer is not an error but changes nothing, so it is rejected to save the write.
  */
-internal fun verifyAdvisory(bytes: ByteArray, inUse: Instant?, now: Instant): AdvisoryRejection? {
+internal fun verifyAdvisory(
+    bytes: ByteArray,
+    inUse: Instant?,
+    now: Instant,
+    inUseCountries: Int = 0,
+    minCountries: Int = MIN_ADVISORY_COUNTRIES,
+): AdvisoryRejection? {
     val data = parseAdvisory(bytes.toString(Charsets.UTF_8)) ?: return AdvisoryRejection.UNPARSEABLE
     // A file with no usable country at all would blank the section for everyone; never accept it.
     if (data.countries.isEmpty()) return AdvisoryRejection.UNPARSEABLE
+    // Valid but truncated would replace a full dataset with a partial one, and "no data" would
+    // then be shown for places the old copy covered.
+    if (data.countries.size < minCountries || data.countries.size < inUseCountries * MIN_ADVISORY_RETAINED) {
+        return AdvisoryRejection.IMPLAUSIBLE
+    }
     if (data.generatedAt > advisoryLatestAllowed(now)) return AdvisoryRejection.FUTURE_DATED
     if (inUse != null && data.generatedAt <= inUse) return AdvisoryRejection.NOT_NEWER
     return null

@@ -93,13 +93,13 @@
     <string name="settings_restore_button">Repor a partir da cópia de segurança do Android</string>
     <string name="settings_restore_detail">A cópia de segurança do Android deixou neste telemóvel uma cópia do teu histórico. Repor junta esses dados aos existentes, tal como importar um ficheiro.</string>
     <string name="settings_visa_title">Dados de visto</string>
-    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” funciona nos dois casos. Os dados novos são usados de imediato.</string>
+    <string name="settings_visa_detail">Descarrega pequenos ficheiros do GitHub, sem enviar dados pessoais. O interruptor controla apenas a verificação automática semanal dos dados de visto e dos avisos de viagem, que só ocorre em Wi-Fi ou noutra rede sem limite de dados. “Verificar agora” atualiza apenas os dados de visto e funciona nos dois casos. Os dados novos são usados de imediato.</string>
     <string name="settings_visa_checking">A verificar…</string>
     <string name="settings_visa_result_current">Os dados de visto já estão atualizados.</string>
     <string name="settings_visa_result_updated">Dados de visto atualizados e já em uso.</string>
     <string name="settings_visa_result_offline">Não foi possível contactar o servidor. Verifica a ligação ou tenta mais tarde.</string>
     <string name="settings_visa_result_unavailable">Atualização indisponível de momento.</string>
-    <string name="settings_visa_auto">Atualizar os dados de visto automaticamente</string>
+    <string name="settings_visa_auto">Atualizar dados de visto e avisos de viagem automaticamente</string>
     <string name="settings_visa_last_checked">Última verificação: %1$s</string>
     <string name="settings_visa_last_checked_never">Última verificação: nunca</string>
     <string name="settings_visa_check_now">Verificar agora</string>

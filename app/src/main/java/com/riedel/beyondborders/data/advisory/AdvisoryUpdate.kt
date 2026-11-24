@@ -78,6 +78,7 @@ internal fun runAdvisoryUpdate(
     store: AdvisoryStore,
     bundled: () -> AdvisoryData?,
     now: () -> Instant = ::nowInstant,
+    minCountries: Int = MIN_ADVISORY_COUNTRIES,
 ): AdvisoryOutcome {
     val bytes = try {
         fetcher.fetch(ADVISORY_FILE, MAX_ADVISORY_BYTES)
@@ -88,8 +89,8 @@ internal fun runAdvisoryUpdate(
     }
     val t = now()
     val stored = runCatching { store.read()?.let { parseAdvisory(it.toString(Charsets.UTF_8)) } }.getOrNull()
-    val inUse = chooseAdvisory(runCatching(bundled).getOrNull(), stored, t)?.generatedAt
-    return when (verifyAdvisory(bytes, inUse, t)) {
+    val inUse = chooseAdvisory(runCatching(bundled).getOrNull(), stored, t)
+    return when (verifyAdvisory(bytes, inUse?.generatedAt, t, inUse?.countries?.size ?: 0, minCountries)) {
         null -> if (runCatching { store.write(bytes) }.isSuccess) AdvisoryOutcome.UPDATED else AdvisoryOutcome.REJECTED
         AdvisoryRejection.NOT_NEWER -> AdvisoryOutcome.UP_TO_DATE
         else -> AdvisoryOutcome.REJECTED
@@ -107,6 +108,8 @@ class AdvisoryRepository(
 ) {
     private var cache: AdvisoryData? = null
     private var loaded = false
+    // Bumped by invalidate(); a load that began before it must not publish its stale result.
+    private var generation = 0
     private val lock = Any()
 
     private val _dataVersion = MutableStateFlow(0)
@@ -115,16 +118,24 @@ class AdvisoryRepository(
     val dataVersion: StateFlow<Int> = _dataVersion.asStateFlow()
 
     suspend fun current(): AdvisoryData? = withContext(Dispatchers.IO) {
-        synchronized(lock) { if (loaded) return@withContext cache }
-        val bundled = runCatching { bundledLoader()?.let { parseAdvisory(it.toString(Charsets.UTF_8)) } }.getOrNull()
-        val stored = runCatching { store.read()?.let { parseAdvisory(it.toString(Charsets.UTF_8)) } }.getOrNull()
-        val chosen = chooseAdvisory(bundled, stored, now())
-        synchronized(lock) { cache = chosen; loaded = true }
-        chosen
+        var result: AdvisoryData? = null
+        var done = false
+        while (!done) {
+            val startedAt = synchronized(lock) { if (loaded) { result = cache; done = true }; generation }
+            if (done) break
+            val bundled = runCatching { bundledLoader()?.let { parseAdvisory(it.toString(Charsets.UTF_8)) } }.getOrNull()
+            val stored = runCatching { store.read()?.let { parseAdvisory(it.toString(Charsets.UTF_8)) } }.getOrNull()
+            val chosen = chooseAdvisory(bundled, stored, now())
+            // Invalidated while reading: what was read may predate the new file, so read again.
+            synchronized(lock) {
+                if (generation == startedAt) { cache = chosen; loaded = true; result = chosen; done = true }
+            }
+        }
+        result
     }
 
     fun invalidate() {
-        synchronized(lock) { cache = null; loaded = false }
+        synchronized(lock) { cache = null; loaded = false; generation++ }
         _dataVersion.value = _dataVersion.value + 1
     }
 }
