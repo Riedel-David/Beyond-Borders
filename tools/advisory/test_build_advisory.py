@@ -226,6 +226,24 @@ class DeNotesTest(unittest.TestCase):
                      "Von Reisen wird nicht gewarnt."):
             self.assertEqual(b.de_notes(f"<p>{text}</p>"), [], text)
 
+    def test_a_negated_abraten_is_not_a_note(self):
+        for text in ("Von Reisen nach Katar wird nicht mehr abgeraten.",
+                     "Von Reisen nach Katar wird nicht länger dringend abgeraten.",
+                     "Von Reisen nach Katar wird nicht abgeraten.",
+                     "Es wird nicht mehr von Reisen nach Katar abgeraten.",
+                     "Es besteht kein Grund, von Reisen nach Katar abzuraten, Abraten gibt es nicht. Kein Abraten von Reisen mehr.",
+                     ):
+            self.assertEqual(b.de_notes(f"<p>{text}</p>"), [], text)
+        # "nicht notwendigen Reisen" is the usual positive phrasing and must survive
+        ok = "Von nicht notwendigen Reisen nach Katar wird abgeraten."
+        self.assertEqual(b.de_notes(f"<p>{ok}</p>"), [ok])
+
+    def test_trimming_keeps_whole_code_points(self):
+        long_sentence = "Von Reisen nach " + "😀" * 600 + " wird abgeraten."
+        note = b.de_notes(f"<p>{long_sentence}</p>")[0]
+        note.encode("utf-8")  # raises on a lone surrogate
+        self.assertLessEqual(len(note), b.DE_NOTE_MAX_CHARS)
+
     def test_other_sentences_around_a_match_are_not_included(self):
         html_text = "<p>Die Lage ist ruhig. Von Reisen nach Katar wird abgeraten. Es gibt Strände.</p>"
         self.assertEqual(b.de_notes(html_text), ["Von Reisen nach Katar wird abgeraten."])
@@ -323,6 +341,132 @@ class BuildTest(unittest.TestCase):
             out = Path(d) / "advisory.json"
             self.assertEqual(b.main(["--source", str(src), "--out", str(out)]), 1)
             self.assertFalse(out.exists())
+
+
+NAMES = {"BY": "Belarus", "RU": "Russische Föderation", "IL": "Israel", "PS": "Palästinensische Gebiete*",
+         "PY": "Paraguay", "BR": "Brasilien", "KP": "Demokratische Volksrepublik Korea (Nordkorea)",
+         "KR": "Republik Korea (Südkorea)", "NE": "Niger", "NG": "Nigeria", "GN": "Guinea", "GW": "Guinea-Bissau"}
+
+
+class ForeignNotesTest(unittest.TestCase):
+    def notes(self, code, *sentences):
+        html_text = "".join(f"<p>{x}</p>" for x in sentences)
+        return b.de_notes(html_text, b.foreign_matcher(code, NAMES))
+
+    def test_belarus_does_not_quote_the_advice_for_russia(self):
+        # from the cached page of node 201904, section "Reisen aus der und in die Russische Föderation"
+        self.assertEqual(self.notes("BY", "Von Reisen in die Russische Föderation wird abgeraten."), [])
+        self.assertEqual(self.notes("BY", "Von Reisen nach Belarus wird dringend abgeraten."),
+                         ["Von Reisen nach Belarus wird dringend abgeraten."])
+
+    def test_the_palestinian_page_does_not_quote_israels_sentences_but_keeps_east_jerusalem(self):
+        self.assertEqual(self.notes("PS",
+                                    "Von Reisen in andere Landesteile Israels sowie nach Ost-Jerusalem wird abgeraten.",
+                                    "Von Reisen nach Ost-Jerusalem wird abgeraten."),
+                         ["Von Reisen nach Ost-Jerusalem wird abgeraten."])
+        self.assertEqual(len(self.notes("IL", "Von Reisen in andere Landesteile Israels wird abgeraten.")), 1)
+
+    def test_a_border_zone_sentence_stays_with_its_own_country(self):
+        s = "Von nicht notwendigen Reisen in das Grenzgebiet zu Brasilien wird abgeraten."
+        self.assertEqual(self.notes("PY", s), [s])
+
+    def test_inflected_names_match_and_longer_names_do_not_swallow_shorter_ones(self):
+        self.assertEqual(self.notes("BY", "Von Reisen in die Russischen Föderation wird abgeraten."), [])
+        # Nigeria is not Niger, and Guinea-Bissau is not Guinea
+        s = "Von Reisen nach Nigeria wird abgeraten."
+        self.assertEqual(self.notes("NG", s), [s])
+        self.assertEqual(self.notes("NE", s), [])
+        self.assertEqual(self.notes("GN", "Von Reisen nach Guinea-Bissau wird abgeraten."), [])
+
+    def test_a_sentence_that_names_no_country_is_kept(self):
+        s = "Von Reisen in die Hauptstadtregion wird abgeraten."
+        self.assertEqual(self.notes("BY", s), [s])
+
+    def test_a_country_left_with_no_note_and_no_flag_is_stance_zero(self):
+        feed = {"response": {"1": dict(de("FR"), countryName="Frankreich"), "2": dict(de("MX"), countryName="Mexiko")}}
+        details = {"1": page("<p>Von Reisen nach Mexiko wird abgeraten.</p>", "1"), "2": page("x", "2")}
+        self.assertEqual(b.parse_de(feed, VALID, details)["FR"]["stance"], 0)
+
+
+class UrlHostTest(unittest.TestCase):
+    def test_a_url_on_an_unknown_host_fails_the_build(self):
+        ok = {"stance": 0, "label": "l", "updated": "2026-01-01", "url": "https://www.gov.uk/x"}
+        b.check_urls({"UK": {"FR": ok}})
+        for bad in ("https://evil.example/x", "https://www.gov.uk.evil.example/x", "http://[bad"):
+            with self.assertRaises((b.BuildError, ValueError)):
+                b.check_urls({"UK": {"FR": dict(ok, url=bad)}})
+
+    def test_every_host_the_builders_write_is_allowed(self):
+        self.assertEqual(urllib_host(b.DE_LINK), "www.auswaertiges-amt.de")
+        for h in ("travel.state.gov", "www.gov.uk", "www.auswaertiges-amt.de"):
+            self.assertIn(h, b.URL_HOSTS)
+
+
+def urllib_host(u):
+    import urllib.parse
+    return urllib.parse.urlparse(u).hostname
+
+
+class PreviousFileTest(unittest.TestCase):
+    def _src(self, d):
+        src = Path(d) / "src"
+        (src / "uk").mkdir(parents=True)
+        (src / "de_detail").mkdir()
+        (src / "us.json").write_text("[]")
+        return src
+
+    def test_previous_is_what_unchanged_is_judged_against(self):
+        new = {"dataFormat": 1, "generatedAt": "2026-11-30T00:00:00Z", "sources": {"US": {"label": "a", "fetchedAt": "n"}},
+               "countries": {"FR": {}}}
+        live = dict(new, generatedAt="2026-11-26T00:00:00Z")
+        bundled = dict(new, generatedAt="2026-11-24T00:00:00Z")
+        self.assertIs(b.keep_if_unchanged(new, live), live)
+        self.assertIsNot(b.keep_if_unchanged(new, live), bundled)
+
+    def test_main_reads_previous_instead_of_out(self):
+        with tempfile.TemporaryDirectory() as d:
+            doc = {"dataFormat": 1, "generatedAt": "2026-11-26T00:00:00Z", "sources": {}, "countries": {}}
+            prev = Path(d) / "prev.json"
+            prev.write_text(json.dumps(doc))
+            out = Path(d) / "out.json"
+            real = b.build
+            b.build = lambda src, at: dict(doc, generatedAt=at)
+            try:
+                self.assertEqual(b.main(["--source", d, "--out", str(out), "--previous", str(prev)]), 0)
+            finally:
+                b.build = real
+            self.assertEqual(json.loads(out.read_text())["generatedAt"], "2026-11-26T00:00:00Z")
+
+
+class DownloadTest(unittest.TestCase):
+    def test_a_failed_detail_fetch_never_reuses_a_stale_page(self):
+        feed = {"response": {"1": de("FR")}}
+        payloads = {
+            b.US_URL: b"[]", b.DE_URL: json.dumps(feed).encode(),
+            b.UK_INDEX_URL: json.dumps({"links": {"children": [{"details": {"country": {"slug": "france"}}}]}}).encode(),
+            b.UK_INDEX_URL + "/france": b"{}",
+        }
+
+        def fake(url, tries=4):
+            if url not in payloads:
+                raise b.BuildError("down")
+            return payloads[url]
+
+        with tempfile.TemporaryDirectory() as d:
+            cache = Path(d)
+            (cache / "de_detail").mkdir()
+            (cache / "de_detail" / "1.json").write_text("stale")
+            (cache / "uk").mkdir()
+            (cache / "uk" / "gone.json").write_text("stale")
+            real = b.http_get
+            b.http_get = fake
+            try:
+                b.download(cache)
+            finally:
+                b.http_get = real
+            self.assertFalse((cache / "de_detail" / "1.json").exists())
+            self.assertFalse((cache / "uk" / "gone.json").exists())
+            self.assertTrue((cache / "uk" / "france.json").exists())
 
 
 if __name__ == "__main__":

@@ -226,7 +226,7 @@ country, side by side: each government's own rating (the US wording as published
 German ones are short summaries of the flags those governments publish, and the German row also quotes
 the Auswärtiges Amt's own "wird abgeraten" sentences, which the flags do not carry), the date of that
 advice and a link to its country page. Nothing is combined or scored beyond a count of how many
-sources advise against travel, and a place a source does not cover says so. The data is a
+sources advise against travel to the whole country (US Level 4, UK all or all-but-essential, German formal Reisewarnung; a partial warning or the AA's "abgeraten" text does not count), and a place a source does not cover says so. The data is a
 snapshot, bundled with each release and refreshed weekly (see below), with its "as of" date
 shown; confirm with the official source before you travel. Settings → *Data sources and
 licences* names the three sources, with their licences and links.

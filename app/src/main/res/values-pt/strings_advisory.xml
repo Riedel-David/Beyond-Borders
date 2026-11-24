@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="advisory_title">Avisos de viagem dos governos</string>
-    <string name="advisory_agreement">Fontes que desaconselham viajar: %1$d de %2$d</string>
+    <string name="advisory_agreement">Fontes que desaconselham viajar para todo o país: %1$d de %2$d</string>
     <string name="advisory_partial_data">Só %1$d de %2$d fontes têm dados deste lugar.</string>
     <string name="advisory_none">Nenhuma fonte tem avisos de viagem para este lugar.</string>
     <string name="advisory_no_data">Sem dados</string>

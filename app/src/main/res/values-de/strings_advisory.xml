@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="advisory_title">Reisehinweise von Regierungen</string>
-    <string name="advisory_agreement">Quellen, die von Reisen abraten: %1$d von %2$d</string>
+    <string name="advisory_agreement">Quellen, die von Reisen in das ganze Land abraten: %1$d von %2$d</string>
     <string name="advisory_partial_data">Nur %1$d von %2$d Quellen haben Daten zu diesem Ort.</string>
     <string name="advisory_none">Keine Reisehinweise zu diesem Ort in den Quellen.</string>
     <string name="advisory_no_data">Keine Daten</string>

@@ -50,10 +50,29 @@ jobs:
         with:
           persist-credentials: false
 
+      # "Data as of" must move only when an advisory does. The build judges "unchanged" against the
+      # previous file, and that is the live published copy, not the bundled one (which stops matching
+      # after the first publication and would make every week look changed).
+      - name: Fetch the live advisory.json as the previous file
+        run: |
+          # 404: nothing published yet, the build falls back to the bundled copy. Any other failure
+          # fails the job, like the carry-over step in visa-refresh.yml.
+          PREV="$RUNNER_TEMP/previous-advisory.json"
+          CODE="$(curl -sSL --retry 3 -o "$PREV" -w '%{http_code}' https://riedel-david.github.io/Beyond-Borders/advisory.json)"
+          if [ "$CODE" = 200 ]; then
+            echo "ADVISORY_PREVIOUS=$PREV" >> "$GITHUB_ENV"
+          elif [ "$CODE" = 404 ]; then
+            rm -f "$PREV"
+            echo "No live advisory.json; the bundled copy is the previous file."
+          else
+            echo "Fetching the live advisory.json returned HTTP $CODE" >&2
+            exit 1
+          fi
+
       - name: Build advisory.json
         run: |
           python3 -m unittest tools/advisory/test_build_advisory.py tools/advisory/test_make_site.py
-          python3 -I tools/advisory/build_advisory.py
+          python3 -I tools/advisory/build_advisory.py ${ADVISORY_PREVIOUS:+--previous "$ADVISORY_PREVIOUS"}
 
       - name: Assemble the site with the live visa files
         run: python3 -I tools/advisory/make_site.py app/src/main/assets/advisory.json https://riedel-david.github.io/Beyond-Borders/ "$RUNNER_TEMP/site"

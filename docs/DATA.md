@@ -146,7 +146,7 @@ information incomplete or out of context, so the build also fetches every countr
 `warning` is stance 3 "Reisewarnung"; `partialWarning` is stance 2 "Teilreisewarnung"; otherwise a
 sentence about travelling ("Reise(n)", "Aufenthalte", "abgeraten") gives stance 2 "Keine formelle
 Reisewarnung, aber Reiseabraten (siehe Hinweise)", and none gives stance 0 "Keine formelle
-Reisewarnung". Text alone never reaches 3, so the "advise against travel" count is the formal warning only.
+Reisewarnung". Text alone never reaches 3, so the headline count, "Sources advising against travel to the whole country", is the formal warning only.
 Those sentences are the optional DE-only field `notes` (a list of at most 3 strings, each at most 400
 characters, verbatim from the page, de-duplicated). Absent `notes` means none; a parser must ignore
 anything in it that is not a string. It is an additive field, so `dataFormat` stays 1. The build refuses
@@ -158,6 +158,8 @@ python3 tools/advisory/build_advisory.py                        # downloads all 
 python3 tools/advisory/build_advisory.py --source tools/advisory/cache   # offline, from the last download
 python3 -m unittest tools/advisory/test_build_advisory.py tools/advisory/test_make_site.py
 ```
+
+Every `url` must be on `https`-hosts `travel.state.gov`, `www.gov.uk` or `www.auswaertiges-amt.de` (`URL_HOSTS` in `build_advisory.py`, `ADVISORY_URL_HOSTS` in `Advisory.kt`; keep them equal): the build fails on any other host and the app drops such an entry. `--previous FILE` names the file "unchanged" is judged against (the weekly job passes the live published copy, so `generatedAt` only moves when an advisory does).
 
 The build writes nothing unless every feed is reachable, each yields at least 150 countries, and every
 feed entry maps to an ISO code. An unmapped name is an error that lists it: add it to `US_ALIASES` or

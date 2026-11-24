@@ -21,7 +21,7 @@ class AdvisoryTest {
     private val fixtureBytes = fixture.toByteArray()
     private val data = parseAdvisory(fixture)!!
 
-    private fun withGenerated(at: String, countries: String = """{"FR": {"US": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://a.example/"}}}"""): ByteArray =
+    private fun withGenerated(at: String, countries: String = """{"FR": {"US": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://travel.state.gov/"}}}"""): ByteArray =
         """{"dataFormat": 1, "generatedAt": "$at", "sources": {}, "countries": $countries}""".toByteArray()
 
     private class FakeFetcher(var body: ByteArray? = null, var fail: Exception? = null) : VisaFetcher {
@@ -58,7 +58,7 @@ class AdvisoryTest {
     private fun deEntry(notes: String) = parseAdvisory(
         withGenerated(
             "2026-11-24T07:00:00Z",
-            """{"GE": {"DE": {"stance": 2, "label": "L", "updated": "2026-01-01", "url": "https://a.example/"$notes}}}""",
+            """{"GE": {"DE": {"stance": 2, "label": "L", "updated": "2026-01-01", "url": "https://travel.state.gov/"$notes}}}""",
         ).toString(Charsets.UTF_8),
     )!!.forPlace("GE").getValue("DE")
 
@@ -82,6 +82,27 @@ class AdvisoryTest {
         val long = deEntry(""", "notes": ["${"x".repeat(900)}"]""").notes.single()
         assertEquals(MAX_ADVISORY_NOTE_CHARS, long.length)
         assertTrue(long.endsWith("…"))
+    }
+
+    @Test
+    fun `a note is cut at a code point and never leaves half a surrogate pair`() {
+        val cut = deEntry(""", "notes": ["${"x".repeat(MAX_ADVISORY_NOTE_CHARS - 2)}😀😀"]""").notes.single()
+        assertTrue(cut.endsWith("…"))
+        assertTrue(cut.length <= MAX_ADVISORY_NOTE_CHARS)
+        assertTrue(!Character.isHighSurrogate(cut[cut.length - 2]))
+    }
+
+    @Test
+    fun `an entry whose url is on a host outside the allow-list is dropped`() {
+        val entries = parseAdvisory(
+            withGenerated(
+                "2026-11-24T07:00:00Z",
+                """{"FR": {"US": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://evil.example/x"},
+                    "UK": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://www.gov.uk.evil.example/x"},
+                    "DE": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://www.auswaertiges-amt.de/de/-/1"}}}""",
+            ).toString(Charsets.UTF_8),
+        )!!.forPlace("FR")
+        assertEquals(setOf("DE"), entries.keys)
     }
 
     @Test
@@ -272,7 +293,7 @@ class AdvisoryTest {
     private fun manyCountries(n: Int): String =
         (0 until n).joinToString(",", "{", "}") {
             val code = "" + ('A' + it / 26) + ('A' + it % 26)
-            """"$code": {"US": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://a.example/"}}"""
+            """"$code": {"US": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "https://travel.state.gov/"}}"""
         }
 
     @Test
@@ -299,9 +320,9 @@ class AdvisoryTest {
 
     @Test
     fun `a null label or url is rejected rather than shown as the word null`() {
-        val j = """{"FR": {"US": {"stance": 1, "label": null, "updated": "2026-01-01", "url": "https://a.example/"},
+        val j = """{"FR": {"US": {"stance": 1, "label": null, "updated": "2026-01-01", "url": "https://travel.state.gov/"},
                     "UK": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": null},
-                    "DE": {"stance": 1, "label": "L", "updated": null, "url": "https://a.example/"}}}"""
+                    "DE": {"stance": 1, "label": "L", "updated": null, "url": "https://travel.state.gov/"}}}"""
         assertTrue(parseAdvisory(String(withGenerated("2026-11-24T00:00:00Z", j)))!!.countries.isEmpty())
     }
 
@@ -329,5 +350,9 @@ class AdvisoryTest {
         assertNotNull(parsed)
         assertEquals(org.json.JSONObject(text).getJSONObject("countries").length(), parsed!!.countries.size)
         assertTrue(parsed.countries.size >= MIN_ADVISORY_COUNTRIES)
+        // No single entry lost either (a url on a host outside the allow-list would be dropped quietly).
+        val raw = org.json.JSONObject(text).getJSONObject("countries")
+        val rawEntries = raw.keys().asSequence().sumOf { raw.getJSONObject(it).length() }
+        assertEquals(rawEntries, parsed.countries.values.sumOf { it.size })
     }
 }

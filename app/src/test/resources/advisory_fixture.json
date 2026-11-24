@@ -9,8 +9,8 @@
   "SY": {"US": {"stance": 3, "label": "Level 4: Do not travel", "updated": "2026-08-01", "url": "https://travel.state.gov/sy"},
          "UK": {"stance": 3, "label": "FCDO advises against all travel", "updated": "2026-08-03", "url": "https://www.gov.uk/foreign-travel-advice/syria"}},
   "GL": {"DE": {"stance": 0, "label": "Keine Reisewarnung", "updated": "2026-09-15", "url": "https://www.auswaertiges-amt.de/gl"}},
-  "XX": {"US": {"stance": 7, "label": "bad stance", "updated": "2026-01-01", "url": "https://x.example/"},
+  "XX": {"US": {"stance": 7, "label": "bad stance", "updated": "2026-01-01", "url": "https://travel.state.gov/"},
          "UK": {"stance": 2, "label": "bad url", "updated": "2026-01-01", "url": "http://x.example/"},
-         "DE": {"stance": 2, "label": "bad date", "updated": "yesterday", "url": "https://x.example/"}},
-  "france": {"US": {"stance": 1, "label": "not an ISO key", "updated": "2026-01-01", "url": "https://x.example/"}}
+         "DE": {"stance": 2, "label": "bad date", "updated": "yesterday", "url": "https://travel.state.gov/"}},
+  "france": {"US": {"stance": 1, "label": "not an ISO key", "updated": "2026-01-01", "url": "https://travel.state.gov/"}}
  }}

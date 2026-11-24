@@ -1,6 +1,6 @@
 """Build app/src/main/assets/advisory.json from the US, UK and German government travel advisories.
 
-Usage: python3 -I tools/advisory/build_advisory.py [--source DIR] [--out FILE] [--cache DIR]
+Usage: python3 -I tools/advisory/build_advisory.py [--source DIR] [--out FILE] [--cache DIR] [--previous FILE]
 
 Without --source the three feeds are downloaded (and the raw payloads saved under --cache, default
 tools/advisory/cache/, gitignored, so a failed run can be examined and an offline run repeated):
@@ -25,9 +25,11 @@ import datetime
 import html
 import json
 import re
+import shutil
 import sys
 import time
 import unicodedata
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -44,6 +46,10 @@ DE_URL = "https://www.auswaertiges-amt.de/opendata/travelwarning"
 # The AA feed has no page address, but each entry's key is the page's node id and
 # /de/-/<node id> resolves to the country's own page (it matches the officialUrl in visa.json).
 DE_LINK = "https://www.auswaertiges-amt.de/de/-/"
+
+# Hosts an advisory `url` may point at. The app drops any entry whose host is not on its own copy of
+# this list (ADVISORY_URL_HOSTS in Advisory.kt): the two must match.
+URL_HOSTS = {"travel.state.gov", "www.gov.uk", "www.auswaertiges-amt.de"}
 
 SOURCES = {"US": "US State Department", "UK": "UK FCDO", "DE": "Auswärtiges Amt"}
 
@@ -260,7 +266,7 @@ def parse_uk(pages: dict, index: dict) -> dict:
 DE_NOTE_WORD = "abgeraten"
 DE_MAX_NOTES = 3
 DE_NOTE_MAX_CHARS = 400
-# Fewer than this share of countries without a fetched detail page means the detail endpoint is
+# More than this share of countries without a fetched detail page means the detail endpoint is
 # broken, not that one country hiccuped.
 DE_MAX_MISSING_SHARE = 0.10
 
@@ -319,17 +325,66 @@ _ROUTE_ONLY = re.compile(r"\bauf dem Landweg\b")
 _SEE_ALSO = re.compile(r"[,;]?\s*siehe\b[^.]*\.?$")
 
 
+# "nicht mehr abgeraten", "nicht länger dringend abgeraten", "kein Abraten mehr": a sentence that
+# withdraws the advice must never become a note that asserts it.
+_NEGATED = re.compile(
+    r"\b(?:nicht|nie|niemals)\s+(?:(?:mehr|länger|weiter|dringend|ausdrücklich|generell|derzeit|grundsätzlich)\s+)*abgeraten"
+    r"|\bnicht\s+(?:mehr|länger)\b[^.;]*abgeraten"
+    r"|\bkein\w*\b[^.;]{0,40}\bAbraten",
+    re.I,
+)
+
+
 def is_travel_advice(sent: str) -> bool:
-    return DE_NOTE_WORD in sent.lower() and bool(_TRAVEL.search(sent)) and not _ROUTE_ONLY.search(sent)
+    return (DE_NOTE_WORD in sent.lower() and bool(_TRAVEL.search(sent))
+            and not _ROUTE_ONLY.search(sent) and not _NEGATED.search(sent))
 
 
-def de_notes(content: str) -> list:
+# A page may quote advice about another country ("Reisen aus der und in die Russische Föderation" on
+# Belarus's page, Israel's sentences on the Palestinian territories'): that would be shown under the
+# wrong country. A sentence that names another country and not the page's own is dropped, unless it is
+# about a border zone ("Grenzgebiet zu Brasilien" is advice about Paraguay). The formal flag, which is
+# per country, still shows, so dropping can only lose a note, never a warning.
+_BORDER = re.compile(r"Grenz|grenz", )
+_INFLECTION = r"(?:s|n|en|e|er|em|es)?"
+
+
+def _country_pattern(name: str):
+    """The names one feed entry goes by, as one regex that tolerates German inflection ('Israels',
+    'Russischen Föderation'). 'Korea, Republik / Nordkorea' style annotations give alternatives."""
+    base = name.replace("*", "")
+    alts = [re.sub(r"\s*\([^)]*\)", "", base)] + re.findall(r"\(([^)]*)\)", base)
+    alts = [a.strip() for part in alts for a in part.split("/") if a.strip()]
+    parts = []
+    for alt in alts:
+        words = [re.escape(w) + _INFLECTION for w in alt.split()]
+        parts.append(r"(?<![\w-])" + r"\s+".join(words) + r"(?![\w-])")
+    return re.compile("|".join(parts)) if parts else None
+
+
+def foreign_matcher(own: str, names: dict):
+    """names: ISO code -> German country name from the feed. Returns sent -> True when the sentence
+    belongs to another country's page."""
+    own_re = _country_pattern(names.get(own, ""))
+    others = [r for c, n in names.items() if c != own and (r := _country_pattern(n))]
+
+    def is_foreign(sent: str) -> bool:
+        if own_re and own_re.search(sent):
+            return False
+        if _BORDER.search(sent):
+            return False
+        return any(r.search(sent) for r in others)
+
+    return is_foreign
+
+
+def de_notes(content: str, is_foreign=None) -> list:
     """Up to three distinct sentences advising against travel ('Reisen ... abgeraten'), verbatim and
     in page order. The same sentence appears under 'Aktuelles' and again under 'Sicherheit', the
     second time often with ', siehe Sicherheit' appended, so that suffix is ignored when comparing."""
     seen, notes = set(), []
     for sent in de_sentences(content):
-        if not is_travel_advice(sent):
+        if not is_travel_advice(sent) or (is_foreign and is_foreign(sent)):
             continue
         key = _SEE_ALSO.sub("", sent).rstrip(".:; ")
         if key in seen:
@@ -358,6 +413,8 @@ def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
     details = details or {}
     out, bad, unverified, missing = {}, [], [], []
     total = 0
+    names = {str(e.get("countryCode", "")).upper(): str(e.get("countryName", ""))
+             for e in resp.values() if isinstance(e, dict)}
     for key, e in resp.items():
         if not isinstance(e, dict):
             continue  # lastModified, contentList
@@ -378,7 +435,7 @@ def parse_de(feed, valid_codes: set, details: dict = None) -> dict:
             if not warning and not partial:
                 unverified.append(code)
         else:
-            notes = de_notes(content)
+            notes = de_notes(content, foreign_matcher(code, names))
         updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
         entry = {
             "stance": de_stance(warning, partial, notes),
@@ -443,6 +500,13 @@ def check_targets(valid: set) -> None:
                     raise BuildError(f"alias {name!r} targets {c}, which is not in places.json")
 
 
+def check_urls(per_source: dict) -> None:
+    bad = sorted({f"{src} {code}: {e['url']}" for src, rows in per_source.items() for code, e in rows.items()
+                  if urllib.parse.urlparse(e["url"]).hostname not in URL_HOSTS})
+    if bad:
+        raise BuildError("advisory urls on a host that is not allowed: " + "; ".join(bad[:5]))
+
+
 def now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -463,6 +527,10 @@ def http_get(url: str, tries: int = 4) -> bytes:
 def download(cache: Path) -> None:
     """Fetches every feed into `cache`. Three calls plus one per UK country, four at a time with a
     pause between a worker's requests, which is gentle for ~230 small JSON files."""
+    # Start from empty per-country directories: a page that fails to download must be missing, never
+    # last week's copy read as this week's.
+    for sub in ("uk", "de_detail"):
+        shutil.rmtree(cache / sub, ignore_errors=True)
     (cache / "uk").mkdir(parents=True, exist_ok=True)
     (cache / "us.json").write_bytes(http_get(US_URL))
     de_raw = http_get(DE_URL)
@@ -541,6 +609,7 @@ def build(src: Path, generated_at: str) -> dict:
         "UK": parse_uk(pages, index),
         "DE": parse_de(de_feed, valid, details),
     }
+    check_urls(per_source)
     for rows in per_source.values():
         for code in rows:
             if code not in valid:
@@ -557,6 +626,8 @@ def main(argv=None) -> int:
     ap.add_argument("--source", type=Path, help="read cached feeds from DIR instead of downloading")
     ap.add_argument("--cache", type=Path, default=DEFAULT_CACHE, help="where downloads are saved")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    ap.add_argument("--previous", type=Path, help="the file 'unchanged' is judged against (default: --out); "
+                    "the weekly job passes the live published copy, which is newer than the bundled one")
     args = ap.parse_args(argv)
     try:
         src = args.source
@@ -564,9 +635,10 @@ def main(argv=None) -> int:
             download(args.cache)
             src = args.cache
         doc = build(src, now_iso())
-        if args.out.is_file():
+        prev = args.previous or args.out
+        if prev.is_file():
             try:
-                doc = keep_if_unchanged(doc, json.loads(args.out.read_text(encoding="utf-8")))
+                doc = keep_if_unchanged(doc, json.loads(prev.read_text(encoding="utf-8")))
             except ValueError:
                 pass  # an unreadable previous file is simply replaced
     except BuildError as e:

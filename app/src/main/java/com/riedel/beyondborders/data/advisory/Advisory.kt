@@ -44,6 +44,12 @@ const val MAX_ADVISORY_NOTES = 3
 const val MAX_ADVISORY_NOTE_CHARS = 500
 
 /**
+ * Hosts an advisory `url` may point at; an entry on any other host is dropped. The pipeline's
+ * URL_HOSTS in tools/advisory/build_advisory.py must list the same hosts.
+ */
+val ADVISORY_URL_HOSTS = setOf("travel.state.gov", "www.gov.uk", "www.auswaertiges-amt.de")
+
+/**
  * [countries] is keyed by upper-case ISO code, then by source key. A source that has nothing
  * for a country is an absent key, which is why "no data" and "no warning" stay different.
  */
@@ -117,16 +123,25 @@ private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
     val updated = o.opt("updated") as? String ?: return null
     val url = o.opt("url") as? String ?: return null
     if (stance !in 0..3 || label.isBlank() || !DATE_REGEX.matches(updated) || !isHttps(url)) return null
+    val host = runCatching { java.net.URI(url).host }.getOrNull()?.lowercase()
+    if (host !in ADVISORY_URL_HOSTS) return null
     runCatching { LocalDate.parse(updated) }.getOrNull() ?: return null
     val tags = o.optJSONArray("tags")?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf(String::isNotBlank) } }
     // Optional and additive: absent, not an array, or non-string members all mean "no notes" for that
     // part, so an older or odd file can never cost the entry itself.
     val notes = o.optJSONArray("notes")?.let { a ->
         (0 until a.length()).mapNotNull { (a.opt(it) as? String)?.trim()?.takeIf(String::isNotEmpty) }
-            .map { if (it.length > MAX_ADVISORY_NOTE_CHARS) it.take(MAX_ADVISORY_NOTE_CHARS - 1) + "…" else it }
+            .map { if (it.length > MAX_ADVISORY_NOTE_CHARS) capNote(it) else it }
             .take(MAX_ADVISORY_NOTES)
     }
     return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList(), notes ?: emptyList())
+}
+
+/** Cuts at [MAX_ADVISORY_NOTE_CHARS] chars including the ellipsis, never between the halves of a surrogate pair. */
+internal fun capNote(note: String): String {
+    var end = MAX_ADVISORY_NOTE_CHARS - 1
+    if (Character.isHighSurrogate(note[end - 1])) end--
+    return note.substring(0, end) + "…"
 }
 
 /** Tomorrow's instant, to allow for a publisher a time zone ahead. */

@@ -28,7 +28,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.LocaleList
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -116,14 +115,13 @@ private fun AdvisoryRow(source: String, entry: AdvisoryEntry?, locale: Locale) {
                 .padding(horizontal = 8.dp, vertical = 2.dp),
         )
         // The Auswärtiges Amt's own sentences, quoted as published. They are German in every app
-        // locale, so the text is tagged German for TalkBack's pronunciation.
+        // locale, so the text is tagged German for TalkBack's pronunciation. Never truncated: the AA's
+        // terms forbid showing its text incomplete, so the sentence wraps in full at any font scale.
         entry.notes.forEach { note ->
             Text(
                 buildAnnotatedString { withStyle(SpanStyle(localeList = LocaleList("de"))) { append("„$note“") } },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
             )
         }
         if (entry.tags.isNotEmpty()) {

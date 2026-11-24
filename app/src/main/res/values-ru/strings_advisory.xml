@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="advisory_title">Рекомендации правительств для путешественников</string>
-    <string name="advisory_agreement">Источников, не советующих ехать: %1$d из %2$d</string>
+    <string name="advisory_agreement">Источников, не советующих ехать в страну целиком: %1$d из %2$d</string>
     <string name="advisory_partial_data">Данные об этом месте есть только в %1$d из %2$d источников.</string>
     <string name="advisory_none">Ни в одном источнике нет рекомендаций для этого места.</string>
     <string name="advisory_no_data">Нет данных</string>

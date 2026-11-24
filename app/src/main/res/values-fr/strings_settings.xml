@@ -166,10 +166,10 @@
     <string name="settings_sources_heading">Sources de données</string>
     <string name="settings_licences_heading">Licences open source</string>
     <string name="settings_source_advisory">Avis aux voyageurs</string>
-    <string name="settings_source_advisory_body">Évaluations de trois gouvernements, affichées pour chaque pays. L\'app montre leur niveau d\'alerte ; l\'avis complet se trouve sur le site de chaque gouvernement.</string>
+    <string name="settings_source_advisory_body">Évaluations de trois gouvernements, affichées pour chaque pays. L\'app montre leur niveau d\'alerte et, pour l\'Auswärtiges Amt, jusqu\'à trois de ses propres phrases déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de chaque gouvernement.</string>
     <string name="settings_source_us">Département d\'État américain (domaine public)</string>
     <string name="settings_source_uk">Foreign, Commonwealth &amp; Development Office britannique. Contains public sector information licensed under the Open Government Licence v3.0.</string>
-    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. L\'app affiche le niveau d\'alerte de l\'Auswärtiges Amt avec son libellé court et sa date ; l\'avis complet se trouve sur le site de l\'Auswärtiges Amt.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. L\'app affiche le niveau d\'alerte de l\'Auswärtiges Amt avec son libellé court, sa date et jusqu\'à trois de ses propres phrases déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de l\'Auswärtiges Amt.</string>
     <string name="settings_licence_libraries">Bibliothèques</string>
 
     <!-- Backup transfer results -->
