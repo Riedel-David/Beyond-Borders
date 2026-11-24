@@ -90,9 +90,10 @@ is stated; the linked FCDO page has the full advice.
 open-data interface (<https://www.auswaertiges-amt.de/opendata/travelwarning>). The app shows
 the Auswärtiges Amt's warning status for each country (a travel warning, a partial warning or
 none) as a short label the build writes from the feed's `warning` and `partialWarning` flags,
-the date of the feed entry, and a link to the Auswärtiges Amt's page for that country. The
-advice text itself is not copied: the complete Reise- und Sicherheitshinweise are on the
-Auswärtiges Amt's website. The Auswärtiges Amt publishes no formal licence for this feed;
+the date of the feed entry, a link to the Auswärtiges Amt's page for that country and, where
+the page says so, up to three of its own sentences advising against travel ("… wird abgeraten"),
+quoted word for word. The rest of the advice text is not copied: the complete Reise- und
+Sicherheitshinweise are on the Auswärtiges Amt's website. The Auswärtiges Amt publishes no formal licence for this feed;
 its interface page
 (<https://www.auswaertiges-amt.de/de/service/opendata/open-data-schnittstelle-736118>) allows
 the information to be taken over on conditions: it is taken over complete and kept current
@@ -103,7 +104,7 @@ asks users of the interface to contact it via <https://www.diplo.de/kontakt>, na
 application and confirming acceptance of these terms). Beyond Borders is a free app, so the
 extra rules for paid apps do not apply. The app refreshes the data weekly on an unmetered
 network and shows the date of the data on screen. It takes over only the warning
-status and links to the rest, whereas the terms speak of information taken over complete, so
+status, those quoted sentences and a link to the rest, whereas the terms speak of information taken over complete, so
 whether this use is accepted is for the Auswärtiges Amt to say. Confirmation with the
 Auswärtiges Amt: pending (the request has not been sent yet).
 
