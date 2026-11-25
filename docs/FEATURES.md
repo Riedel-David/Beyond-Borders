@@ -229,7 +229,7 @@ Germany, "wird abgeraten" advice, up to three of them are quoted word for word u
 ones in German quotation marks and tagged German for screen readers). Nothing is combined or scored beyond a count of how many
 sources advise against travel to the whole country (US Level 4, UK all or all-but-essential, German formal Reisewarnung; a partial warning or the AA's "abgeraten" text does not count). That line appears only when the count is at least one; at zero the rows speak for themselves, so a quoted German "abgeraten" sentence is never contradicted by a "0 of 3". A place a source does not cover says so. The data is a
 snapshot, bundled with each release and refreshed weekly (see below), with its "as of" date
-shown; confirm with the official source before you travel. Settings → *Data sources and
+shown; confirm with the official source before you travel. The expanded visa row no longer links to the official visa source or the IATA Travel Centre (deliberately removed: the advisory block has its own per-source links), though the data model still carries `officialUrl` and `iataUrl`. Settings → *Data sources and
 licences* names the three sources, with their licences and links.
 
 ## Visa data updates

@@ -192,6 +192,9 @@ internal fun verifyAdvisory(
     val data = parseAdvisory(bytes.toString(Charsets.UTF_8)) ?: return AdvisoryRejection.UNPARSEABLE
     // A file with no usable country at all would blank the section for everyone; never accept it.
     if (data.countries.isEmpty()) return AdvisoryRejection.UNPARSEABLE
+    // First, so a stale download is "up to date" rather than "implausible"; it also means the
+    // retention checks below only ever compare a file that would replace the copy in use.
+    if (inUse != null && data.generatedAt <= inUse) return AdvisoryRejection.NOT_NEWER
     // Valid but truncated would replace a full dataset with a partial one, and "no data" would
     // then be shown for places the old copy covered.
     if (data.countries.size < minCountries || data.countries.size < inUseCountries * MIN_ADVISORY_RETAINED) {
@@ -206,7 +209,6 @@ internal fun verifyAdvisory(
         }
     }
     if (data.generatedAt > advisoryLatestAllowed(now)) return AdvisoryRejection.FUTURE_DATED
-    if (inUse != null && data.generatedAt <= inUse) return AdvisoryRejection.NOT_NEWER
     return null
 }
 
