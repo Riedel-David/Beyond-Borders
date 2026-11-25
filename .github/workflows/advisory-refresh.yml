@@ -129,10 +129,14 @@ jobs:
           # fence so a feed sentence containing an @name pings nobody.
           TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran, or in a step that does not log)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
           { echo "### Advisory refresh failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          # The text comes from feed content, so the delimiter is random per run and regenerated
+          # if the text happens to contain it: a fixed one could be forged to end the output early.
+          DELIM="EOF_$(openssl rand -hex 16)"
+          while printf '%s' "$TEXT" | grep -qF "$DELIM"; do DELIM="EOF_$(openssl rand -hex 16)"; done
           {
-            echo "error<<END_OF_ERROR"
+            echo "error<<$DELIM"
             echo "$TEXT"
-            echo "END_OF_ERROR"
+            echo "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
   # Keeps the bundled copy current. No `needs` either way (see the header). It never deploys Pages,
@@ -231,10 +235,14 @@ jobs:
         run: |
           TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran, or in a step that does not log)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
           { echo "### Advisory data pull request failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          # The text comes from feed content, so the delimiter is random per run and regenerated
+          # if the text happens to contain it: a fixed one could be forged to end the output early.
+          DELIM="EOF_$(openssl rand -hex 16)"
+          while printf '%s' "$TEXT" | grep -qF "$DELIM"; do DELIM="EOF_$(openssl rand -hex 16)"; done
           {
-            echo "error<<END_OF_ERROR"
+            echo "error<<$DELIM"
             echo "$TEXT"
-            echo "END_OF_ERROR"
+            echo "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
   # Scheduled runs only: a manual dispatch is watched by whoever started it, and an issue nobody
