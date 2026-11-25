@@ -95,6 +95,13 @@ class ShowCountryTest {
     }
 
     @Test
+    fun `the list holds a row only when it has more items than the row's index`() {
+        assertEquals(false, listHoldsRow(totalItems = 5, rowIndex = 5))
+        assertEquals(true, listHoldsRow(totalItems = 6, rowIndex = 5))
+        assertEquals(false, listHoldsRow(totalItems = 0, rowIndex = 0))
+    }
+
+    @Test
     fun `the list is settled only once the query and the mode's filters are cleared`() {
         val all = StatusFilter.ALL
         val none = VisaFilter.All

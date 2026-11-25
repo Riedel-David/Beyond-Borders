@@ -133,3 +133,10 @@ internal fun showCountryIndex(
  * neighbouring row otherwise.
  */
 internal fun scrollTargetFor(rowIndex: Int): Int = (rowIndex - 1).coerceAtLeast(0)
+
+/**
+ * Whether a list of [totalItems] items already holds the row at [rowIndex] (an absolute item
+ * index, as [showCountryIndex] returns it). Judged on the row, not on [scrollTargetFor]'s
+ * target one item earlier: a list of exactly [rowIndex] items has the target but not the row.
+ */
+internal fun listHoldsRow(totalItems: Int, rowIndex: Int): Boolean = totalItems > rowIndex

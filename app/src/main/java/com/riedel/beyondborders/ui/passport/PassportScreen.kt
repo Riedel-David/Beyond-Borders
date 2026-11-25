@@ -322,7 +322,7 @@ fun PassportScreen(
                 withFrameNanos { }
                 withFrameNanos { }
                 val settled = rowIndexOf(request) ?: first
-                snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > scrollTargetFor(settled) }
+                snapshotFlow { listState.layoutInfo.totalItemsCount }.first { listHoldsRow(it, settled) }
                 settled
             }
             if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
