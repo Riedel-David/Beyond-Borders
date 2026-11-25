@@ -277,24 +277,33 @@ class DeNotesTest(unittest.TestCase):
         ok = "Von nicht notwendigen Reisen nach Katar wird abgeraten."
         self.assertEqual(b.de_notes(f"<p>{ok}</p>"), [ok])
 
-    def test_trimming_keeps_whole_code_points(self):
-        long_sentence = "Von Reisen nach " + "😀" * 600 + " wird abgeraten."
-        note = b.de_notes(f"<p>{long_sentence}</p>")[0]
-        note.encode("utf-8")  # raises on a lone surrogate
-        self.assertLessEqual(len(note), b.DE_NOTE_MAX_CHARS)
+    def test_a_note_over_the_limit_fails_the_build_instead_of_being_cut(self):
+        long_sentence = "Von Reisen nach " + "😀" * (b.DE_NOTE_MAX_CHARS + 10) + " wird abgeraten."
+        with self.assertRaises(b.BuildError):
+            b.de_notes(f"<p>{long_sentence}</p>")
+
+    def test_a_note_at_the_limit_is_kept_whole(self):
+        ok = "Von Reisen nach " + "x" * (b.DE_NOTE_MAX_CHARS - len("Von Reisen nach  wird abgeraten.")) + " wird abgeraten."
+        self.assertEqual(len(ok), b.DE_NOTE_MAX_CHARS)
+        self.assertEqual(b.de_notes(f"<p>{ok}</p>"), [ok])
 
     def test_other_sentences_around_a_match_are_not_included(self):
         html_text = "<p>Die Lage ist ruhig. Von Reisen nach Katar wird abgeraten. Es gibt Strände.</p>"
         self.assertEqual(b.de_notes(html_text), ["Von Reisen nach Katar wird abgeraten."])
 
-    def test_at_most_three_notes_and_long_ones_are_trimmed_at_a_word(self):
+    def test_at_most_three_notes_and_long_item_lists_are_elided_visibly(self):
         many = "".join(f"<p>Von Reisen nach Ort{i} wird abgeraten.</p>" for i in range(6))
         self.assertEqual(len(b.de_notes(many)), 3)
-        long_sentence = "Von Reisen in " + ", ".join(f"Provinz{i}" for i in range(200)) + " wird abgeraten."
-        note = b.de_notes(f"<p>{long_sentence}</p>")[0]
-        self.assertLessEqual(len(note), b.DE_NOTE_MAX_CHARS)
-        self.assertTrue(note.endswith("…"))
-        self.assertTrue(long_sentence.startswith(note[:-1]))
+        long_sentence = "Von Reisen in " + ", ".join(f"Provinz{i}" for i in range(300)) + " wird abgeraten."
+        with self.assertRaises(b.BuildError):
+            b.de_notes(f"<p>{long_sentence}</p>")
+
+    def test_the_limit_counts_utf16_units_like_the_apps_string_length(self):
+        # 400 emoji are 400 code points but 800 UTF-16 units; 600 of them is over the app's limit.
+        s = "Von Reisen nach " + "😀" * 600 + " wird abgeraten."
+        self.assertLess(len(s), b.DE_NOTE_MAX_CHARS)
+        with self.assertRaises(b.BuildError):
+            b.de_notes(f"<p>{s}</p>")
 
     def test_a_page_with_no_content_has_no_notes(self):
         self.assertEqual(b.de_notes(""), [])

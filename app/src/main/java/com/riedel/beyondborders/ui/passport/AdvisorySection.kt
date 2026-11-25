@@ -120,7 +120,7 @@ private fun AdvisoryRow(key: String, source: String, entry: AdvisoryEntry?, loca
         )
         // A source's own sentences, quoted as published. The Auswärtiges Amt's are German in every
         // app locale, so they are tagged German for TalkBack's pronunciation; the US and UK ones are
-        // English. Never truncated: the AA's terms forbid showing its text incomplete, so a sentence
+        // English. Never truncated (the app drops a note over its length cap rather than cut it): the AA's terms forbid showing its text incomplete, so a sentence
         // wraps in full at any font scale.
         entry.notes.forEach { note ->
             val german = key == GERMAN_SOURCE

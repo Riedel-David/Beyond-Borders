@@ -112,19 +112,12 @@ class AdvisoryTest {
     }
 
     @Test
-    fun `notes are capped in count and length`() {
+    fun `notes are capped in count and a note over the length cap is dropped never cut`() {
         assertEquals(listOf("1", "2", "3"), deEntry(""", "notes": ["1", "2", "3", "4", "5"]""").notes)
-        val long = deEntry(""", "notes": ["${"x".repeat(900)}"]""").notes.single()
-        assertEquals(MAX_ADVISORY_NOTE_CHARS, long.length)
-        assertTrue(long.endsWith("…"))
-    }
-
-    @Test
-    fun `a note is cut at a code point and never leaves half a surrogate pair`() {
-        val cut = deEntry(""", "notes": ["${"x".repeat(MAX_ADVISORY_NOTE_CHARS - 2)}😀😀"]""").notes.single()
-        assertTrue(cut.endsWith("…"))
-        assertTrue(cut.length <= MAX_ADVISORY_NOTE_CHARS)
-        assertTrue(!Character.isHighSurrogate(cut[cut.length - 2]))
+        val atCap = "x".repeat(MAX_ADVISORY_NOTE_CHARS)
+        assertEquals(listOf(atCap), deEntry(""", "notes": ["$atCap"]""").notes)
+        val over = "x".repeat(MAX_ADVISORY_NOTE_CHARS + 1)
+        assertEquals(listOf("kept"), deEntry(""", "notes": ["$over", "kept"]""").notes)
     }
 
     @Test
@@ -380,8 +373,8 @@ class AdvisoryTest {
         """"$source": {"stance": 1, "label": "L", "updated": "2026-01-01", "url": "$url"$extra}"""
 
     @Test
-    fun `notes are read for all three sources and capped for each`() {
-        val long = "x".repeat(600)
+    fun `notes are read for all three sources and an over-long one is dropped for each`() {
+        val long = "x".repeat(MAX_ADVISORY_NOTE_CHARS + 1)
         val j = """{"FR": {${entry("US", ""","notes": ["US one", "US two"]""")},
             ${entry("UK", ""","notes": ["UK one"]""", "https://www.gov.uk/x")},
             ${entry("DE", ""","notes": ["a", "b", "c", "d", "$long"]""", "https://www.auswaertiges-amt.de/x")}}}"""
@@ -390,8 +383,8 @@ class AdvisoryTest {
         assertEquals(listOf("UK one"), fr.getValue("UK").notes)
         assertEquals(listOf("a", "b", "c"), fr.getValue("DE").notes)
         val capped = parseAdvisory(String(withGenerated("2026-11-24T00:00:00Z",
-            """{"FR": {${entry("US", ""","notes": ["$long"]""")}}}""")))!!.forPlace("FR").getValue("US").notes.single()
-        assertEquals(MAX_ADVISORY_NOTE_CHARS, capped.length)
+            """{"FR": {${entry("US", ""","notes": ["$long"]""")}}}""")))!!.forPlace("FR").getValue("US").notes
+        assertTrue(capped.isEmpty())
     }
 
     @Test

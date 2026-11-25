@@ -55,9 +55,12 @@ data class AdvisoryEntry(
     val labelKey: String? = null,
 )
 
-// Defensive caps on the optional `notes` field; the pipeline writes at most 3 of at most 400 characters.
+// Defensive caps on the optional `notes` field. A note is shown whole or not at all (the Auswärtiges
+// Amt's terms forbid showing its text incomplete), so one over the length cap is dropped, never cut.
+// MAX_ADVISORY_NOTE_CHARS must stay equal to DE_NOTE_MAX_CHARS in tools/advisory/build_advisory.py,
+// which fails the build on a longer note, so a file from the pipeline never loses one here.
 const val MAX_ADVISORY_NOTES = 3
-const val MAX_ADVISORY_NOTE_CHARS = 500
+const val MAX_ADVISORY_NOTE_CHARS = 1000
 
 /**
  * Hosts an advisory `url` may point at; an entry on any other host is dropped. The pipeline's
@@ -162,19 +165,12 @@ private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
     // part, so an older or odd file can never cost the entry itself.
     val notes = o.optJSONArray("notes")?.let { a ->
         (0 until a.length()).mapNotNull { (a.opt(it) as? String)?.trim()?.takeIf(String::isNotEmpty) }
-            .map { if (it.length > MAX_ADVISORY_NOTE_CHARS) capNote(it) else it }
+            .filter { it.length <= MAX_ADVISORY_NOTE_CHARS }
             .take(MAX_ADVISORY_NOTES)
     }
     // Optional and additive, like notes: only a non-blank string counts, anything else means "no key".
     val labelKey = (o.opt("labelKey") as? String)?.trim()?.takeIf(String::isNotEmpty)
     return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList(), notes ?: emptyList(), labelKey)
-}
-
-/** Cuts at [MAX_ADVISORY_NOTE_CHARS] chars including the ellipsis, never between the halves of a surrogate pair. */
-internal fun capNote(note: String): String {
-    var end = MAX_ADVISORY_NOTE_CHARS - 1
-    if (Character.isHighSurrogate(note[end - 1])) end--
-    return note.substring(0, end) + "…"
 }
 
 /** Tomorrow's instant, to allow for a publisher a time zone ahead. */

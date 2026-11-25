@@ -271,7 +271,10 @@ def parse_us(feed, index: dict) -> dict:
         tags = us_tags(e.get("Summary", ""))
         if tags:
             entry["tags"] = tags
-        notes = us_notes(e.get("Summary", ""), name)
+        try:
+            notes = us_notes(e.get("Summary", ""), name)
+        except NoteTooLong as exc:
+            raise BuildError(f"US {name}: {exc}") from exc
         if notes:
             entry["notes"] = notes
         for c in codes:
@@ -359,7 +362,10 @@ def parse_uk(pages: dict, index: dict) -> dict:
             "updated": iso_date(page.get("public_updated_at") or d.get("updated_at")),
             "url": "https://www.gov.uk/foreign-travel-advice/" + slug,
         }
-        notes = uk_notes(page) if entry["stance"] else []
+        try:
+            notes = uk_notes(page) if entry["stance"] else []
+        except NoteTooLong as exc:
+            raise BuildError(f"UK {slug}: {exc}") from exc
         if notes:
             entry["notes"] = notes
         for c in codes:
@@ -377,7 +383,10 @@ def parse_uk(pages: dict, index: dict) -> dict:
 # or in a distorting context, so a page that says "abgeraten" must never be labelled "no warning":
 # the sentences are carried verbatim as `notes` and the row counts as stance 2.
 DE_MAX_NOTES = 3
-DE_NOTE_MAX_CHARS = 500  # the app's own limit per note
+# The app's own limit per note: MAX_ADVISORY_NOTE_CHARS in Advisory.kt must stay equal to this. A longer
+# note is a build error here and is dropped, never cut, by the app (the AA's terms forbid showing its
+# text incomplete), so the two sides agree on what "too long" means.
+DE_NOTE_MAX_CHARS = 1000
 # More than this share of countries without a fetched detail page means the detail endpoint is
 # broken, not that one country hiccuped.
 DE_MAX_MISSING_SHARE = 0.10
@@ -538,11 +547,17 @@ def de_sentences(content: str) -> list:
     return [u.text for u in de_units(content)]
 
 
+class NoteTooLong(BuildError):
+    pass
+
+
 def trim_note(sent: str) -> str:
-    if len(sent) <= DE_NOTE_MAX_CHARS:
-        return sent
-    cut = sent[:DE_NOTE_MAX_CHARS - 1].rsplit(" ", 1)[0].rstrip(",;:")
-    return cut + "…"
+    """A note is carried whole or not at all: the sources' terms forbid showing their text incomplete,
+    so over the limit the build fails loudly (a human decides) instead of cutting."""
+    units = len(sent.encode("utf-16-le")) // 2  # the app counts UTF-16 units (Kotlin String.length)
+    if units > DE_NOTE_MAX_CHARS:
+        raise NoteTooLong(f"note of {units} chars exceeds {DE_NOTE_MAX_CHARS}: {sent[:80]!r}...")
+    return sent
 
 
 # The second-tier advice is phrased "Von (nicht notwendigen) Reisen in/nach ... wird (dringend)
@@ -782,7 +797,10 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
             if not warning and not partial:
                 unverified.append(code)
         else:
-            notes = de_notes(content, foreign_matcher(code, names), own_matcher(code, names), warning)
+            try:
+                notes = de_notes(content, foreign_matcher(code, names), own_matcher(code, names), warning)
+            except NoteTooLong as exc:
+                raise BuildError(f"DE {code}: {exc}") from exc
             if not warning and not partial and not notes:
                 is_foreign = foreign_matcher(code, names)
                 for sent in de_wire_hits(content):
