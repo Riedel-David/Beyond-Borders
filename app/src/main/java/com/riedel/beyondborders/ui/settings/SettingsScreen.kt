@@ -1037,9 +1037,14 @@ internal const val VISA_RESULT_VISIBLE_MS = 5_000L
  */
 internal fun shouldAutoClearVisaResult(outcome: VisaCheckOutcome): Boolean = outcome is VisaCheckOutcome.UpToDate
 
-/** Check now covers both datasets, so the pair fades only when both reported "nothing to do". */
+/**
+ * Check now covers both datasets, so the pair fades only when both reported "nothing to do".
+ * "Not published yet" is as calm as "up to date" for advisories: there is nothing to act on, and
+ * leaving it up would pin the line for good on an install the weekly job has not reached yet.
+ */
 internal fun shouldAutoClearCheck(done: VisaCheckState.Done): Boolean =
-    shouldAutoClearVisaResult(done.outcome) && done.advisory == AdvisoryOutcome.UP_TO_DATE
+    shouldAutoClearVisaResult(done.outcome) &&
+        (done.advisory == AdvisoryOutcome.UP_TO_DATE || done.advisory == AdvisoryOutcome.NOT_PUBLISHED)
 
 /** Offline and rejected are both "the refresh did not happen" as far as the user can tell. */
 internal fun advisoryCheckFailed(outcome: AdvisoryOutcome): Boolean =

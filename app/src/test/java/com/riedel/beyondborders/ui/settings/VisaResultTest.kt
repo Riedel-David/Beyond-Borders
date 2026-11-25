@@ -56,11 +56,11 @@ class CheckNowTest {
     }
 
     @Test
-    fun `the result fades only when both datasets were already current`() {
+    fun `the result fades only when both datasets have nothing to offer`() {
         assertTrue(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.UP_TO_DATE)))
         assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.UPDATED)))
         assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.OFFLINE)))
-        assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.NOT_PUBLISHED)))
+        assertTrue(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.NOT_PUBLISHED)))
         assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.Offline, AdvisoryOutcome.UP_TO_DATE)))
     }
 
