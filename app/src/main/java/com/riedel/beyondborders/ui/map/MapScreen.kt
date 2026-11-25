@@ -115,6 +115,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.riedel.beyondborders.R
+import com.riedel.beyondborders.ui.places.PassportMode
 import com.riedel.beyondborders.ui.BounceFilterChip
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -233,6 +234,9 @@ fun MapScreen(
     // navigation bar's height, and safeDrawing alone would not account for it once
     // the map opts out of the Scaffold's content padding to draw full-bleed.
     contentPadding: PaddingValues = PaddingValues(),
+    // Tap on the selected-country card's flag: the root switches to the Passport tab in
+    // the mode that matches the lens.
+    onShowInList: (code: String, mode: PassportMode) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
@@ -790,6 +794,13 @@ fun MapScreen(
                     // travel-status chips are the other lens's question, and showing
                     // both on the same tap reads as if they're related.
                     showStatusToggle = !lens,
+                    onShowInList = {
+                        onShowInList(place.code, if (lens) PassportMode.VISA else PassportMode.TRAVEL)
+                    },
+                    showInListLabel = stringResource(
+                        if (lens) R.string.map_show_in_visa_list else R.string.map_show_in_list,
+                        place.name,
+                    ),
                     onToggle = { target ->
                         viewModel.vibrate()
                         viewModel.toggle(place.code, target)
@@ -1793,6 +1804,8 @@ private fun SelectedPlaceCard(
     partnerActive: Boolean,
     showStatusToggle: Boolean,
     onToggle: (PlaceStatus) -> Unit,
+    onShowInList: () -> Unit,
+    showInListLabel: String,
     modifier: Modifier = Modifier,
 ) {
     val flag = rememberPlaceFlag(place.code)
@@ -1820,15 +1833,26 @@ private fun SelectedPlaceCard(
             ),
     ) {
         Column(Modifier.heightIn(max = maxCardHeight).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            // The live region is the header only: announcing the whole card re-read
-            // every chip and visit on each status change.
-            Row(Modifier.semantics { liveRegion = LiveRegionMode.Polite }, verticalAlignment = Alignment.CenterVertically) {
+            // The live region is the header's text only (below): announcing the whole card
+            // re-read every chip and visit on each status change.
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 // No flag (or still decoding): no slot at all. With one, the slot is a
                 // fixed width so the text does not shift between a wide and a square flag.
                 flag?.let {
                     val (w, h) = flagThumbSize(it.bitmap.width, it.bitmap.height, 64f, 40f)
                     val shape = RoundedCornerShape(4.dp)
-                    Box(Modifier.width(64.dp), contentAlignment = Alignment.Center) {
+                    // The tap target is the slot itself, 64 dp wide and at least 48 dp tall:
+                    // the flag inside is at most 40 dp, so the height is padded by layout
+                    // size alone and the header row keeps its look.
+                    Box(
+                        Modifier
+                            .width(64.dp)
+                            .heightIn(min = 48.dp)
+                            .clip(shape)
+                            .semantics { contentDescription = showInListLabel }
+                            .clickable(role = Role.Button, onClick = onShowInList),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Image(
                             bitmap = it.bitmap,
                             contentDescription = null,
@@ -1841,7 +1865,9 @@ private fun SelectedPlaceCard(
                     }
                     Spacer(Modifier.width(12.dp))
                 }
-                Column(Modifier.weight(1f)) {
+                // The live region is scoped to the text, not the whole header row: the flag
+                // button's long label would otherwise be announced on every selection.
+                Column(Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }) {
                 Text(
                     place.name,
                     style = MaterialTheme.typography.titleMedium,

@@ -83,6 +83,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -154,9 +158,12 @@ fun PassportScreen(
     viewModel: PlacesViewModel,
     openStats: Boolean? = null,
     onStatsConsumed: () -> Unit = {},
+    showCountry: ShowCountryRequest? = null,
+    onShowCountryConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val rowsByKey by viewModel.rows.collectAsStateWithLifecycle()
+    val stampedRows by viewModel.rowsStamped.collectAsStateWithLifecycle()
+    val rowsByKey = stampedRows.rows
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     // The stats detail popup needs a name and a status per code in a bucket, and
     // neither lives on [ContinentStat]/[RegionStat]/[NamedGroupStat] — just the
@@ -178,7 +185,8 @@ fun PassportScreen(
     val mode by viewModel.mode.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
-    val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
+    val stampedVisaRows by viewModel.visaRowsStamped.collectAsStateWithLifecycle()
+    val visaRows = stampedVisaRows.rows
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val wishlistOnly by viewModel.wishlistOnly.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
@@ -214,6 +222,12 @@ fun PassportScreen(
             onStatsConsumed()
         }
     }
+
+    // A "show this country" request lands on the list, never on a stats screen the app
+    // was left on. The scroll itself waits below for the list to exist.
+    // A plain guarded write, not an effect: an effect runs after the first frame, which
+    // would draw the restored stats screen once before the list.
+    if (showCountry != null && showStatsDetail) showStatsDetail = false
 
     // Shared by both modes, since the fast-scroll overlay below reads from whichever
     // one is on screen: a rememberSaveable would restore a scroll offset that no
@@ -289,6 +303,44 @@ fun PassportScreen(
                 if (rows.isEmpty()) add(null) // "empty"
                 addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
             }
+        }
+    }
+
+    // Rows fill in asynchronously, so the target index is looked up from live state inside
+    // snapshotFlow and waited for, with a timeout so an absent country (no visa data, no
+    // passport) can never leave the request pending. Either way it is consumed.
+    val rowIndexOf by rememberUpdatedState { request: ShowCountryRequest ->
+        // Rows are derived flows that lag the reset the tap made, so settledness is judged on
+        // the filters each list was *built under* (carried in its stamp), never on the raw
+        // filter flows, which run ahead of the rows: an index into the old, still-filtered
+        // list would land in the wrong section.
+        val settled = if (request.mode == PassportMode.VISA) {
+            stampedVisaRows.settledForShow(PassportMode.VISA)
+        } else {
+            stampedRows.settledForShow(PassportMode.TRAVEL)
+        }
+        if (mode != request.mode || !settled) {
+            null
+        } else if (request.mode == PassportMode.VISA) {
+            visaRowItemIndex(visaRows, request.code, headerSlots.size - visaHeaderCategorySlots(visaRows).size)
+        } else {
+            travelRowItemIndex(
+                rows, grouping, collapsedHeaders, query, request.code,
+                headerSlots.size - travelHeaderSlots(rows, grouping, collapsedHeaders, query).size,
+            )
+        }
+    }
+    LaunchedEffect(showCountry) {
+        val request = showCountry ?: return@LaunchedEffect
+        // Consumed in a finally: a cancelled scroll (the user's own touch, leaving the
+        // tab) must not leave the request to replay on a later visit.
+        try {
+            val index = withTimeoutOrNull(2_000) {
+                snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+            }
+            if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
+        } finally {
+            onShowCountryConsumed()
         }
     }
 

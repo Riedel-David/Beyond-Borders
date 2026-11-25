@@ -132,4 +132,6 @@
     <string name="map_partner_state_off">Désactivé</string>
     <string name="map_legend_partner">Où vous pouvez aller tous les deux</string>
     <string name="map_no_data_partner">Aucune réponse pour au moins un des deux passeports : consulte les sources officielles avant de voyager.</string>
+    <string name="map_show_in_list">Afficher %1$s dans la liste</string>
+    <string name="map_show_in_visa_list">Afficher %1$s dans « Où je peux aller »</string>
 </resources>
