@@ -123,7 +123,7 @@ internal fun parseAdvisory(json: String): AdvisoryData? = try {
         val labels = LinkedHashMap<String, String>()
         root.optJSONObject("sources")?.let { s ->
             for (key in ADVISORY_SOURCES) {
-                s.optJSONObject(key)?.optString("label")?.takeIf { it.isNotBlank() }?.let { labels[key] = it }
+                (s.optJSONObject(key)?.opt("label") as? String)?.takeIf { it.isNotBlank() }?.let { labels[key] = it }
             }
         }
         val out = LinkedHashMap<String, Map<String, AdvisoryEntry>>()
@@ -147,7 +147,8 @@ private val ISO_REGEX = Regex("[A-Z]{2}")
 
 private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
     o ?: return null
-    val stance = o.optInt("stance", -1)
+    // optInt coerces "3" and 2.9 to an Int; the file's own type is the contract, so only a real Int counts.
+    val stance = o.opt("stance") as? Int ?: return null
     // optString turns a JSON null into the text "null"; only a real string counts.
     val label = o.opt("label") as? String ?: return null
     val updated = o.opt("updated") as? String ?: return null

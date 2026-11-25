@@ -90,6 +90,27 @@ class AdvisoryTest {
     }
 
     @Test
+    fun `an entry whose stance is not a JSON integer is skipped`() {
+        for (bad in listOf("\"3\"", "2.9", "null", "true")) {
+            val d = parseAdvisory(
+                withGenerated(
+                    "2026-11-24T07:00:00Z",
+                    """{"GE": {"DE": {"stance": $bad, "label": "L", "updated": "2026-01-01", "url": "https://travel.state.gov/"}}}""",
+                ).toString(Charsets.UTF_8),
+            )!!
+            assertTrue(bad, d.forPlace("GE").isEmpty())
+        }
+    }
+
+    @Test
+    fun `a null source label is not read as the text null`() {
+        val d = parseAdvisory(
+            """{"dataFormat": 1, "generatedAt": "2026-11-24T07:00:00Z", "sources": {"us": {"label": null}}, "countries": {}}""",
+        )!!
+        assertFalse(d.sourceLabels.values.any { it == "null" })
+    }
+
+    @Test
     fun `notes are capped in count and length`() {
         assertEquals(listOf("1", "2", "3"), deEntry(""", "notes": ["1", "2", "3", "4", "5"]""").notes)
         val long = deEntry(""", "notes": ["${"x".repeat(900)}"]""").notes.single()
