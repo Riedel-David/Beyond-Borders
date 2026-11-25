@@ -386,7 +386,7 @@ DE_MAX_NOTES = 3
 # The app's own limit per note: MAX_ADVISORY_NOTE_CHARS in Advisory.kt must stay equal to this. A longer
 # note is a build error here and is dropped, never cut, by the app (the AA's terms forbid showing its
 # text incomplete), so the two sides agree on what "too long" means.
-DE_NOTE_MAX_CHARS = 1000
+DE_NOTE_MAX_CHARS = 1500
 # More than this share of countries without a fetched detail page means the detail endpoint is
 # broken, not that one country hiccuped.
 DE_MAX_MISSING_SHARE = 0.10

@@ -60,7 +60,7 @@ data class AdvisoryEntry(
 // MAX_ADVISORY_NOTE_CHARS must stay equal to DE_NOTE_MAX_CHARS in tools/advisory/build_advisory.py,
 // which fails the build on a longer note, so a file from the pipeline never loses one here.
 const val MAX_ADVISORY_NOTES = 3
-const val MAX_ADVISORY_NOTE_CHARS = 1000
+const val MAX_ADVISORY_NOTE_CHARS = 1500
 
 /**
  * Hosts an advisory `url` may point at; an entry on any other host is dropped. The pipeline's

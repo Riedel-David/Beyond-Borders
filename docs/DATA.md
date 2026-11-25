@@ -147,10 +147,10 @@ information incomplete or out of context, so the build also fetches every countr
 sentence about travelling ("Reise(n)", "Aufenthalte", "abgeraten") gives stance 2 "Keine formelle
 Reisewarnung, aber Reiseabraten (siehe Hinweise)", and none gives stance 0 "Keine formelle
 Reisewarnung". Text alone never reaches 3, so the headline count, "Sources advising against travel to the whole country", is the formal warning only.
-Those sentences are the optional DE-only field `notes` (a list of at most 3 strings, each at most 1000
+Those sentences are the optional DE-only field `notes` (a list of at most 3 strings, each at most 1500
 characters, verbatim from the page, de-duplicated). Absent `notes` means none; a parser must ignore
 anything in it that is not a string. A note is never cut: the build fails (naming the country) on one over
-`DE_NOTE_MAX_CHARS` (1000, UTF-16 units; `MAX_ADVISORY_NOTE_CHARS` in the app is the same number), and the app drops one that is. It is an additive field, so `dataFormat` stays 1. The build refuses
+`DE_NOTE_MAX_CHARS` (1500, UTF-16 units; `MAX_ADVISORY_NOTE_CHARS` in the app is the same number), and the app drops one that is. It is an additive field, so `dataFormat` stays 1. The build refuses
 (and writes nothing) if a page is missing for any country with all flags false, or for more than 10% of
 countries.
 
