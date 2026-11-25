@@ -213,7 +213,7 @@ def us_notes(summary: str, country: str) -> list:
         if re.search(r"for any reason", u.text, re.I) \
                 or re.match(r"^(?:Do not travel|Reconsider travel)\s+(?:to|in)\s+" + cname + r"\b\s*(?:due|[.,])", u.text, re.I):
             continue
-        notes.append(trim_note(u.note))
+        notes.append(trim_note(u.text))
     return notes[:DE_MAX_NOTES]
 
 
@@ -236,7 +236,7 @@ def uk_notes(page: dict) -> list:
             continue
         for u in de_units(chunk[m.end():]):
             if re.search(r"\b(?:FCDO )?advises against\b", u.text) and not u.text.rstrip().endswith(":"):
-                text = _split_sentences(u.note)[0] if u.note is u.text else u.note
+                text = _split_sentences(u.text)[0]
                 notes.append(trim_note(text))
                 break
     seen, out = set(), []
@@ -454,11 +454,10 @@ def _blocks(content: str) -> list:
 
 
 class Unit:
-    """One sentence of a page. `text` is the whole sentence (what is judged and hashed); `note` is
-    what is shown, which for a list sentence may elide trailing list items with a visible '[...]'."""
+    """One sentence of a page: `text` is the whole sentence, judged, hashed and (if selected) shown."""
 
-    def __init__(self, text: str, note: str = None, context: str = ""):
-        self.text, self.note, self.context = text, note or text, context
+    def __init__(self, text: str, context: str = ""):
+        self.text, self.context = text, context
 
 
 def _join_items(items: list) -> str:
@@ -472,21 +471,11 @@ def _join_items(items: list) -> str:
 def _list_unit(head: str, items: list, tail: str, context: str) -> Unit:
     """'Von Reisen in folgende Regionen wird abgeraten:' + its <li> items, or 'Von Reisen' + items +
     'wird abgeraten.' (Tunisia): one sentence the page only broke up for layout. The items are
-    joined with '; ' unless they already end in punctuation. Over the length limit the trailing
-    items are replaced by a visible '[...]', never silently cut; the tail stays, since it carries
-    the verb."""
+    joined with '; ' unless they already end in punctuation. Over the length limit the sentence is
+    not shortened: if it is selected as a note, trim_note fails the build (NoteTooLong) naming the
+    source and country."""
     tail = (" " + tail) if tail else ""
-    full = head + " " + _join_items(items) + tail
-    if len(full) <= DE_NOTE_MAX_CHARS:
-        return Unit(full, context=context)
-    shown, budget = [], DE_NOTE_MAX_CHARS - len(head) - len(tail) - len(" […]") - 2
-    for it in items:
-        if len(_join_items(shown + [it])) > budget:
-            break
-        shown.append(it)
-    if not shown:
-        shown = items[:1]
-    return Unit(full, head + " " + _join_items(shown) + " […]" + tail, context)
+    return Unit(head + " " + _join_items(items) + tail, context=context)
 
 
 def de_units(content: str) -> list:
@@ -709,7 +698,7 @@ def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = Fa
         found.append(u)
     notes = []
     for u in _redundant(found):
-        text = u.note
+        text = u.text
         if _BACKREF.search(text) and u.context and u.context not in text \
                 and len(u.context) + 1 + len(text) <= DE_NOTE_MAX_CHARS:
             text = u.context + " " + text

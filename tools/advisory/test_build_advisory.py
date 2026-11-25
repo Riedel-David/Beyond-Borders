@@ -291,9 +291,16 @@ class DeNotesTest(unittest.TestCase):
         html_text = "<p>Die Lage ist ruhig. Von Reisen nach Katar wird abgeraten. Es gibt Strände.</p>"
         self.assertEqual(b.de_notes(html_text), ["Von Reisen nach Katar wird abgeraten."])
 
-    def test_at_most_three_notes_and_long_item_lists_are_elided_visibly(self):
+    def test_at_most_three_notes(self):
         many = "".join(f"<p>Von Reisen nach Ort{i} wird abgeraten.</p>" for i in range(6))
         self.assertEqual(len(b.de_notes(many)), 3)
+
+    def test_a_list_sentence_over_the_limit_fails_the_build_instead_of_being_elided(self):
+        items = "".join(f"<li>Provinz{i} im Norden</li>" for i in range(200))
+        with self.assertRaises(b.NoteTooLong):
+            b.de_notes(f"<p>Von Reisen in folgende Regionen wird abgeraten:</p><ul>{items}</ul>")
+
+    def test_a_long_plain_sentence_fails_the_build(self):
         long_sentence = "Von Reisen in " + ", ".join(f"Provinz{i}" for i in range(300)) + " wird abgeraten."
         with self.assertRaises(b.BuildError):
             b.de_notes(f"<p>{long_sentence}</p>")
