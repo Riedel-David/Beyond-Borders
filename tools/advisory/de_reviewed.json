@@ -27,6 +27,9 @@
  "CY": {
   "0e44cd920a9ddeb3086831d37816436355f4a646a57fe120da1278cf2557cd58": "Natural-hazard guidance (fires, disasters) that applies when an event happens, not advice against going to a region."
  },
+ "DK": {
+  "c5868a5fb4b044cabdbcc1b1ccaea385785b9b2bc4682fa0eca324e4e4e89001": "Sits under the heading Grönland on Denmark's page: advice about Greenland, not Denmark (the app never cascades a status to another place)."
+ },
  "DO": {
   "5c6bb830552d479b27844988e9901504334d635ac49c45f53a770985b687701b": "Advice about the overland route to the neighbouring country (Haiti), which the extractor excludes on purpose; the country itself is not advised against.",
   "78b2f1409ed38596f0958ccedcb4a095bea8dac9e014a1ede87e4fb3dc0cba12": "Advice about the overland route to the neighbouring country (Haiti), which the extractor excludes on purpose; the country itself is not advised against."

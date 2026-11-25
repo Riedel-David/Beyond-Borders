@@ -459,8 +459,8 @@ def _blocks(content: str) -> list:
 class Unit:
     """One sentence of a page: `text` is the whole sentence, judged, hashed and (if selected) shown."""
 
-    def __init__(self, text: str, context: str = ""):
-        self.text, self.context = text, context
+    def __init__(self, text: str, context: str = "", heading: str = ""):
+        self.text, self.context, self.heading = text, context, heading
 
 
 def _join_items(items: list) -> str:
@@ -471,14 +471,14 @@ def _join_items(items: list) -> str:
     return out.strip()
 
 
-def _list_unit(head: str, items: list, tail: str, context: str) -> Unit:
+def _list_unit(head: str, items: list, tail: str, context: str, heading: str = "") -> Unit:
     """'Von Reisen in folgende Regionen wird abgeraten:' + its <li> items, or 'Von Reisen' + items +
     'wird abgeraten.' (Tunisia): one sentence the page only broke up for layout. The items are
     joined with '; ' unless they already end in punctuation. Over the length limit the sentence is
     not shortened: if it is selected as a note, trim_note fails the build (NoteTooLong) naming the
     source and country."""
     tail = (" " + tail) if tail else ""
-    return Unit(head + " " + _join_items(items) + tail, context=context)
+    return Unit(head + " " + _join_items(items) + tail, context=context, heading=heading)
 
 
 def de_units(content: str) -> list:
@@ -488,27 +488,29 @@ def de_units(content: str) -> list:
     continues is not joined: its items are sentences of their own."""
     units, state = [], {"head": None, "items": [], "tail": [], "ctx": ""}
     last_p = [""]
+    heading = [""]
 
     def flush():
         head, items, tail = state["head"], state["items"], " ".join(state["tail"])
         if head is not None:
             if items and (head.endswith(":") or tail):
-                units.append(_list_unit(head, items, tail, last_p[0]))
+                units.append(_list_unit(head, items, tail, last_p[0], heading[0]))
             else:
-                units.append(Unit(head if not tail else head + " " + tail, context=last_p[0]))
+                units.append(Unit(head if not tail else head + " " + tail, context=last_p[0], heading=heading[0]))
                 for it in items:
-                    units.extend(Unit(s, context=last_p[0]) for s in _split_sentences(it))
+                    units.extend(Unit(s, context=last_p[0], heading=heading[0]) for s in _split_sentences(it))
         state.update(head=None, items=[], tail=[])
 
     for kind, text in _blocks(content):
         if kind == "h":
             flush()
+            heading[0] = text
         elif kind == "li":
             if state["head"] is not None and not state["tail"]:
                 state["items"].append(text)
             else:
                 flush()
-                units.extend(Unit(s, context=last_p[0]) for s in _split_sentences(text))
+                units.extend(Unit(s, context=last_p[0], heading=heading[0]) for s in _split_sentences(text))
         else:
             if state["head"] is not None and text[:1].islower():
                 if state["items"]:
@@ -523,11 +525,11 @@ def de_units(content: str) -> list:
             flush()
             sents = _split_sentences(text)
             for s in sents[:-1]:
-                units.append(Unit(s, context=last_p[0]))
+                units.append(Unit(s, context=last_p[0], heading=heading[0]))
                 last_p[0] = s
             if sents:
                 if sents[-1][-1] in ".!?":
-                    units.append(Unit(sents[-1], context=last_p[0]))
+                    units.append(Unit(sents[-1], context=last_p[0], heading=heading[0]))
                     last_p[0] = sents[-1]
                 else:
                     state["head"] = sents[-1]
@@ -645,6 +647,29 @@ def foreign_matcher(own: str, names: dict):
     return is_foreign
 
 
+# Pages of countries with overseas territories or autonomous parts give those their own section
+# ("Grönland" on Denmark's page), and advice in such a section is about the territory: "Von
+# Individualreisen außerhalb der größeren Städte wird abgeraten" under Grönland says nothing about
+# Denmark, and the app never cascades a status to another place. The headings are flat (no nesting
+# to read), so this is an explicit list per country, matched against the heading a sentence sits
+# under; a section runs until the next heading. Domestic sub-regions (Xinjiang, Oromia, Sinai) are
+# deliberately not here: advice about them is advice about the country's own parts. The tripwire
+# below still sees these sentences, so a new one has to be reviewed by a human.
+TERRITORY_HEADINGS = {
+    "DK": r"Grönland|Färöer",
+    "FR": r"Neukaledonien|Polynesien|Guayana|Martinique|Guadeloupe|Barthélemy|St\. Martin|Réunion|Mayotte|Überseedép|Überseegebiet",
+    "GB": r"Anguilla|Bermuda|Jungferninseln|Kaimaninseln|Montserrat|St\. Helena|Ascension|Tristan|Turks|Falkland|Chagos|Pitcairn|Überseegebiet",
+    "NL": r"Karibische Teile",
+    "US": r"Samoa|Guam\b|Puerto Rico",
+}
+
+
+def territory_matcher(own: str):
+    """Unit -> True when its section heading names a territory of `own` that is not `own` itself."""
+    pat = re.compile(TERRITORY_HEADINGS[own]) if own in TERRITORY_HEADINGS else None
+    return lambda u: bool(pat and pat.search(u.heading))
+
+
 def own_matcher(own: str, names: dict):
     own_re = _country_pattern(names.get(own, ""))
     return lambda sent: bool(own_re and own_re.search(sent))
@@ -687,7 +712,7 @@ def _redundant(units: list) -> list:
 _POINTER = re.compile(r"[,;]?\s*(?:und\s+)?(?:beachten Sie|siehe)\b.*$", re.I)
 
 
-def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = False) -> list:
+def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = False, is_territory=None) -> list:
     """Up to three distinct sentences advising against travel, verbatim and in page order except that
     a sentence naming the page's own country or saying 'gewarnt' goes first. A sentence that points
     back ('in die o.g. Grenzgebiete') brings the sentence before it along, so the note can be read
@@ -696,6 +721,8 @@ def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = Fa
     for u in de_units(content):
         if not is_travel_advice(u.text) or (is_foreign and is_foreign(_POINTER.sub("", u.text))):
             continue
+        if is_territory and is_territory(u):
+            continue  # advice about Greenland is not advice about Denmark
         if full_warning and not re.search(r"abgeraten|abzuraten", u.text, re.I):
             continue  # "Vor Reisen nach X wird gewarnt" is the Reisewarnung itself, which the label states
         found.append(u)
@@ -790,7 +817,8 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
                 unverified.append(code)
         else:
             try:
-                notes = de_notes(content, foreign_matcher(code, names), own_matcher(code, names), warning)
+                notes = de_notes(content, foreign_matcher(code, names), own_matcher(code, names), warning,
+                                territory_matcher(code))
             except NoteTooLong as exc:
                 raise BuildError(f"DE {code}: {exc}") from exc
             if not warning and not partial and not notes:

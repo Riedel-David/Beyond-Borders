@@ -198,5 +198,11 @@ unchanged. `visa-freshness.yml` opens an issue when it is more than 10 days old 
 that extraction missed; an unreviewed hit fails the build, and a reviewed one is recorded with a reason in
 `tools/advisory/de_reviewed.json` (sentence hash per country code).
 
+German notes are also not taken from a section about a territory of the country (Denmark's page keeps
+its Greenland advice under a `Grönland` heading, and Denmark is not Greenland). The page's headings are
+flat, so `TERRITORY_HEADINGS` in `build_advisory.py` lists them per country (DK, FR, GB, NL, US); a
+sentence under such a heading is no note, but the tripwire still sees it, so on a country with no
+formal flag a new one has to be reviewed. Domestic sub-regions (Xinjiang, Oromia) are not territories.
+
 Before a release, refresh the bundled asset: run the build (`--previous` the live file) and commit
 `advisory.json`, so a fresh install without network starts from current data.

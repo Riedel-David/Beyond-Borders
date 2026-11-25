@@ -626,6 +626,46 @@ class DeTripwireTest(unittest.TestCase):
         self.assertIn("FR", buf.getvalue())
 
 
+class TerritorySectionTest(unittest.TestCase):
+    """Denmark's page: Greenland has its own section, and its advice is not Denmark's."""
+    DK = ("<h2>Sicherheit</h2><h3>Kriminalität</h3><p>Kleinkriminalität kommt in den größeren Städten vor.</p>"
+          "<h2>Reiseinfos</h2><h3>Färöer</h3><p>Bei gebuchten Reisen ist sicherzustellen, dass Busfahrer die Erlaubnis haben.</p>"
+          "<h3>Grönland</h3><p>Von Individualreisen außerhalb der größeren Städte wird abgeraten.</p>"
+          "<h3>Infrastruktur/Verkehr</h3><p>Es gibt ein Inlandsflugnetz.</p>")
+    SENT = "Von Individualreisen außerhalb der größeren Städte wird abgeraten."
+
+    def test_the_section_heading_travels_with_each_sentence(self):
+        by = {u.text: u.heading for u in b.de_units(self.DK)}
+        self.assertEqual(by[self.SENT], "Grönland")
+        self.assertEqual(by["Es gibt ein Inlandsflugnetz."], "Infrastruktur/Verkehr")
+
+    def test_advice_under_a_territory_heading_is_not_the_countrys_note(self):
+        self.assertEqual(b.de_notes(self.DK, is_territory=b.territory_matcher("DK")), [])
+        self.assertEqual(b.de_notes(self.DK), [self.SENT])  # without the matcher it is taken
+
+    def test_the_same_sentence_under_a_country_wide_heading_stays_a_note(self):
+        html_ = "<h3>Sicherheit</h3><p>" + self.SENT + "</p>"
+        self.assertEqual(b.de_notes(html_, is_territory=b.territory_matcher("DK")), [self.SENT])
+
+    def test_a_domestic_sub_region_heading_is_not_a_territory(self):
+        html_ = "<h3>Region Xinjiang</h3><p>Von Reisen in die Region Xinjiang wird abgeraten.</p>"
+        self.assertEqual(len(b.de_notes(html_, is_territory=b.territory_matcher("CN"))), 1)
+
+    def test_a_denmark_page_is_stance_zero_but_the_sentence_still_trips_the_wire_until_reviewed(self):
+        feed = {"response": {"lastModified": 1, "contentList": ["1"], "1": de("DK")}}
+        with self.assertRaises(b.BuildError) as cm:
+            b.parse_de(feed, {"DK"}, {"1": page(self.DK)})
+        self.assertIn("Individualreisen", str(cm.exception))
+        out = b.parse_de(feed, {"DK"}, {"1": page(self.DK)}, {"DK": {b.sentence_sha(self.SENT): "Greenland"}})
+        self.assertEqual(out["DK"]["stance"], 0)
+        self.assertNotIn("notes", out["DK"])
+
+    def test_every_territory_pattern_compiles(self):
+        import re
+        for code, pat in b.TERRITORY_HEADINGS.items():
+            re.compile(pat)
+
+
 class UsUkNotesTest(unittest.TestCase):
     def test_tags_split_on_commas_and_keep_us_intact(self):
         self.assertEqual(b.us_tags("<p>Exercise increased caution in X due to crime, terrorism, and U.S. citizen detention.</p>"),
