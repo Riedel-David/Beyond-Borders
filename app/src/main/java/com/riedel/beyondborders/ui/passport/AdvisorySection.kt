@@ -240,6 +240,10 @@ internal fun advisoryLabelRes(key: String?): Int? = when (key) {
     else -> null
 }
 
+/** False for the user's own passport country (ISO codes, case-insensitive): a rating of home is not travel advice. */
+internal fun showsAdvisory(placeCode: String, ownPassports: Collection<String>): Boolean =
+    ownPassports.none { it.equals(placeCode, ignoreCase = true) }
+
 internal fun advisoryTone(stance: Int): AdvisoryTone = when (stance) {
     1 -> AdvisoryTone.CAUTION
     2 -> AdvisoryTone.WARNING

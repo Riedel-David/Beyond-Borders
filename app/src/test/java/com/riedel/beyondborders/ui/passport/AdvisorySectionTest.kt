@@ -111,4 +111,12 @@ class AdvisorySectionTest {
         assertNull(advisoryLabelRes("uk_from_the_future"))
         assertNull(advisoryLabelRes(""))
     }
+
+    @Test
+    fun `the advisory is hidden on every own passport country and shown elsewhere`() {
+        assertEquals(false, showsAdvisory("DE", listOf("DE")))
+        assertEquals(false, showsAdvisory("fr", listOf("DE", "FR")))
+        assertEquals(true, showsAdvisory("FR", listOf("DE")))
+        assertEquals(true, showsAdvisory("FR", emptyList()))
+    }
 }

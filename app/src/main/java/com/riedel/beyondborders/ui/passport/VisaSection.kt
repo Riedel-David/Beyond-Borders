@@ -638,7 +638,9 @@ private fun VisaDetail(
         if (source !== visa) {
             source.sourceUrl?.let { LinkText(stringResource(R.string.visa_source_link, source.passport), it) }
         }
-        AdvisorySection(row.place.code)
+        // Advice about travelling to your own country is not for you; the partner's country still gets it.
+        val ownPassports = listOfNotNull(visa.passport, secondVisa?.passport) + (partnerSources?.own?.map { it.passport } ?: emptyList())
+        if (showsAdvisory(row.place.code, ownPassports)) AdvisorySection(row.place.code)
     }
 }
 
