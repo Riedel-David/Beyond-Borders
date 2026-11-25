@@ -105,9 +105,10 @@ class AdvisoryTest {
     @Test
     fun `a null source label is not read as the text null`() {
         val d = parseAdvisory(
-            """{"dataFormat": 1, "generatedAt": "2026-11-24T07:00:00Z", "sources": {"us": {"label": null}}, "countries": {}}""",
+            """{"dataFormat": 1, "generatedAt": "2026-11-24T07:00:00Z", "sources": {"US": {"label": null}, "UK": {"label": "UK FCDO"}}, "countries": {}}""",
         )!!
-        assertFalse(d.sourceLabels.values.any { it == "null" })
+        assertNull(d.sourceLabels["US"])
+        assertEquals("UK FCDO", d.sourceLabels["UK"])
     }
 
     @Test
