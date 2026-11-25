@@ -125,6 +125,7 @@ import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
 import com.riedel.beyondborders.ui.places.geoNameRes
 import com.riedel.beyondborders.ui.places.geoNameText
+import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
@@ -279,56 +280,31 @@ fun PassportScreen(
     // Remembered, not rebuilt per composition: this walks all 252 rows calling
     // sectionHeader on each, which is not something to redo while a finger is down.
     val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query, nationality == null, noMarks, partnerAvailable) {
-        if (mode == PassportMode.VISA) {
-            buildList {
-                add(null) // "mode"
-                if (visa == null) {
-                    add(null) // "visa-missing"
-                } else {
-                    add(null) // "visa-summary"
-                    if (partnerAvailable) add(null) // "visa-partner"
-                    add(null) // "visa-search"
-                    add(null) // "visa-filters"
-                    if (visaRows.isEmpty()) add(null) // "visa-empty"
-                    addAll(visaHeaderCategorySlots(visaRows).map { it?.name })
-                }
-            }
-        } else {
-            buildList {
-                add(null) // "mode"
-                if (nationality == null) add(null) // "passport-prompt"
-                if (noMarks) add(null) // "start"
-                add(null) // "stats"
-                add(null) // "controls"
-                if (rows.isEmpty()) add(null) // "empty"
-                addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
-            }
-        }
+        passportHeaderSlots(
+            mode, visa == null, partnerAvailable, nationality == null, noMarks,
+            visaRows, rows, grouping, collapsedHeaders, query,
+        )
     }
 
     // Rows fill in asynchronously, so the target index is looked up from live state inside
     // snapshotFlow and waited for, with a timeout so an absent country (no visa data, no
     // passport) can never leave the request pending. Either way it is consumed.
+    // Everything here is read live and the rows come from the stamped lists themselves, not
+    // from `rows`/`visaRows`/`headerSlots`: those are plain values of the last composition, and
+    // the flow can re-run after a stamp flips but before the next recomposition, which would pair
+    // a settled verdict with the previous (still filtered) list.
     val rowIndexOf by rememberUpdatedState { request: ShowCountryRequest ->
-        // Rows are derived flows that lag the reset the tap made, so settledness is judged on
-        // the filters each list was *built under* (carried in its stamp), never on the raw
-        // filter flows, which run ahead of the rows: an index into the old, still-filtered
-        // list would land in the wrong section.
-        val settled = if (request.mode == PassportMode.VISA) {
-            stampedVisaRows.settledForShow(PassportMode.VISA)
-        } else {
-            stampedRows.settledForShow(PassportMode.TRAVEL)
-        }
-        if (mode != request.mode || !settled) {
-            null
-        } else if (request.mode == PassportMode.VISA) {
-            visaRowItemIndex(visaRows, request.code, headerSlots.size - visaHeaderCategorySlots(visaRows).size)
-        } else {
-            travelRowItemIndex(
-                rows, grouping, collapsedHeaders, query, request.code,
-                headerSlots.size - travelHeaderSlots(rows, grouping, collapsedHeaders, query).size,
-            )
-        }
+        showCountryIndex(
+            request, mode, stampedRows, stampedVisaRows, grouping, collapsedHeaders, query,
+            sortTravel = { sortSectionsByLabel(it, grouping) { place -> geoNameText(place).asString(context) } },
+            headerSlotsFor = { travelRows, visaRowList ->
+                passportHeaderSlots(
+                    mode, visa == null, partnerAvailable, nationality == null,
+                    stats.been == 0 && stats.wishlist == 0,
+                    visaRowList, travelRows, grouping, collapsedHeaders, query,
+                )
+            },
+        )
     }
     LaunchedEffect(showCountry) {
         val request = showCountry ?: return@LaunchedEffect
@@ -901,6 +877,49 @@ private fun AzRail(
             }
         }
     }
+    }
+}
+
+/**
+ * One entry per item the Passport `LazyColumn` emits, in emission order: the section's header
+ * label on a header item, null on every other (the leading mode/search/filter items and the rows).
+ * Mirrors the emission loops of `PassportScreen`, so a raw item index can be turned back into
+ * "which header is this", and so a country's row index can be found by counting.
+ */
+internal fun passportHeaderSlots(
+    mode: PassportMode,
+    visaMissing: Boolean,
+    partnerAvailable: Boolean,
+    noNationality: Boolean,
+    noMarks: Boolean,
+    visaRows: List<VisaRow>,
+    rows: List<PlaceRow>,
+    grouping: Grouping,
+    collapsedHeaders: Set<String>,
+    query: String,
+): List<String?> = if (mode == PassportMode.VISA) {
+    buildList {
+        add(null) // "mode"
+        if (visaMissing) {
+            add(null) // "visa-missing"
+        } else {
+            add(null) // "visa-summary"
+            if (partnerAvailable) add(null) // "visa-partner"
+            add(null) // "visa-search"
+            add(null) // "visa-filters"
+            if (visaRows.isEmpty()) add(null) // "visa-empty"
+            addAll(visaHeaderCategorySlots(visaRows).map { it?.name })
+        }
+    }
+} else {
+    buildList {
+        add(null) // "mode"
+        if (noNationality) add(null) // "passport-prompt"
+        if (noMarks) add(null) // "start"
+        add(null) // "stats"
+        add(null) // "controls"
+        if (rows.isEmpty()) add(null) // "empty"
+        addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
     }
 }
 

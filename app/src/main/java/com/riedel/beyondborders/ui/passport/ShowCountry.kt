@@ -91,6 +91,43 @@ internal fun visaRowItemIndex(rows: List<VisaRow>, code: String, leading: Int): 
 }
 
 /**
+ * The item index of the requested country's row, or null while the list is not ready (wrong
+ * mode, or the stamped list still carries filters the show-country reset clears) or the row is
+ * not emitted. The rows are taken from the stamped lists passed in, and the leading item count
+ * from [headerSlotsFor] called with those same rows, so a verdict of "settled" and the index
+ * always describe the same list; nothing here is a value captured at an earlier composition.
+ * [sortTravel] puts the stamped travel rows in display order (the screen's label sort).
+ */
+internal fun showCountryIndex(
+    request: ShowCountryRequest,
+    mode: PassportMode,
+    travel: StampedRows<PlaceRow>,
+    visa: StampedRows<VisaRow>,
+    grouping: Grouping,
+    collapsedHeaders: Set<String>,
+    query: String,
+    sortTravel: (List<PlaceRow>) -> List<PlaceRow>,
+    headerSlotsFor: (travelRows: List<PlaceRow>, visaRows: List<VisaRow>) -> List<String?>,
+): Int? {
+    val settled = if (request.mode == PassportMode.VISA) {
+        visa.settledForShow(PassportMode.VISA)
+    } else {
+        travel.settledForShow(PassportMode.TRAVEL)
+    }
+    if (mode != request.mode || !settled) return null
+    val travelRows = sortTravel(travel.rows)
+    val slots = headerSlotsFor(travelRows, visa.rows)
+    return if (request.mode == PassportMode.VISA) {
+        visaRowItemIndex(visa.rows, request.code, slots.size - visaHeaderCategorySlots(visa.rows).size)
+    } else {
+        travelRowItemIndex(
+            travelRows, grouping, collapsedHeaders, query, request.code,
+            slots.size - travelHeaderSlots(travelRows, grouping, collapsedHeaders, query).size,
+        )
+    }
+}
+
+/**
  * Where to scroll so the row at [rowIndex] is visible: one item earlier, which is the
  * section's pinned header for a first row (so the row is not hidden under it) and the
  * neighbouring row otherwise.

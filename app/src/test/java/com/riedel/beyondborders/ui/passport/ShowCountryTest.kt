@@ -147,4 +147,68 @@ class ShowCountryTest {
             showInListPlan(PassportMode.VISA, present = true, collapseKey = europeKey, collapsed = setOf(europeKey)),
         )
     }
+
+    private val full = listOf(
+        vrow("FR", VisaCategory.VISA_FREE),
+        vrow("DE", VisaCategory.VISA_FREE),
+        vrow("EG", VisaCategory.VISA_ON_ARRIVAL),
+    )
+
+    // Leading items as the screen builds them: mode + visa-summary/search/filters = 4.
+    private fun slots(visaRows: List<VisaRow>) =
+        passportHeaderSlots(PassportMode.VISA, false, false, false, false, visaRows, emptyList(), Grouping.CONTINENT, emptySet(), "")
+
+    @Test
+    fun `the visa index is counted on the stamped rows even when the screen last composed a filtered list`() {
+        // The screen's captured list was the Easy-filtered one (EG only); the stamp has since
+        // flipped to the full, settled list. The index must describe the stamped list.
+        val seen = mutableListOf<List<VisaRow>>()
+        val index = showCountryIndex(
+            ShowCountryRequest("EG", PassportMode.VISA), PassportMode.VISA,
+            StampedRows(emptyList()), StampedRows(full), Grouping.CONTINENT, emptySet(), "",
+            sortTravel = { it },
+            headerSlotsFor = { _, v -> seen += v; slots(v) },
+        )
+        assertEquals(8, index)
+        assertEquals(listOf(full), seen)
+    }
+
+    @Test
+    fun `a stamp that still carries the filters yields no index however the live filters read`() {
+        val filtered = StampedRows(listOf(vrow("EG", VisaCategory.VISA_ON_ARRIVAL)), visaFilter = VisaFilter.Easy)
+        assertNull(
+            showCountryIndex(
+                ShowCountryRequest("EG", PassportMode.VISA), PassportMode.VISA,
+                StampedRows(emptyList()), filtered, Grouping.CONTINENT, emptySet(), "",
+                sortTravel = { it }, headerSlotsFor = { _, v -> slots(v) },
+            ),
+        )
+    }
+
+    @Test
+    fun `the travel index uses slots built from the same collapse set as the walk`() {
+        fun slotsFor(collapsed: Set<String>) = { t: List<PlaceRow>, v: List<VisaRow> ->
+            passportHeaderSlots(PassportMode.TRAVEL, false, false, false, false, v, t, Grouping.CONTINENT, collapsed, "")
+        }
+        // Europe collapsed: FR and DE are not emitted, EG follows Europe's header and Africa's header.
+        val collapsed = setOf(europeKey)
+        val index = showCountryIndex(
+            ShowCountryRequest("EG", PassportMode.TRAVEL), PassportMode.TRAVEL,
+            StampedRows(travel), StampedRows(emptyList()), Grouping.CONTINENT, collapsed, "",
+            sortTravel = { it }, headerSlotsFor = slotsFor(collapsed),
+        )
+        // 3 leading (mode, stats, controls) + Europe header + Africa header = 5.
+        assertEquals(5, index)
+    }
+
+    @Test
+    fun `a request for the other mode than the screen shows has no index`() {
+        assertNull(
+            showCountryIndex(
+                ShowCountryRequest("FR", PassportMode.VISA), PassportMode.TRAVEL,
+                StampedRows(travel), StampedRows(full), Grouping.CONTINENT, emptySet(), "",
+                sortTravel = { it }, headerSlotsFor = { _, v -> slots(v) },
+            ),
+        )
+    }
 }
