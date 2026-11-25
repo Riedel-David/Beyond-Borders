@@ -44,6 +44,9 @@ class UsTest(unittest.TestCase):
         self.assertEqual(self.stance("Level 3: Reconsider Travel"), 2)
         self.assertEqual(self.stance("Level 4: Do Not Travel"), 3)
 
+    def test_us_entries_carry_no_label_key(self):
+        self.assertNotIn("labelKey", b.merge_us([("a", {"stance": 1, "label": "Level 1", "updated": "2026-10-01", "url": "u"})]))
+
     def test_label_is_the_sources_own_wording_and_date_is_the_update_date(self):
         e = b.parse_us([us("France - Level 2: Exercise Increased Caution")], INDEX)["FR"]
         self.assertEqual(e["label"], "Level 2: Exercise Increased Caution")
@@ -74,6 +77,36 @@ class UsTest(unittest.TestCase):
 class UkTest(unittest.TestCase):
     def stance(self, flags):
         return b.parse_uk({"france": uk("France", flags)}, INDEX)["FR"]["stance"]
+
+    def key(self, flags):
+        return b.parse_uk({"france": uk("France", flags)}, INDEX)["FR"]["labelKey"]
+
+    def test_no_alert_has_the_key_uk_none(self):
+        self.assertEqual(self.key([]), "uk_none")
+
+    def test_whole_country_all_travel_has_the_key_uk_all_whole(self):
+        self.assertEqual(self.key(["avoid_all_travel_to_whole_country"]), "uk_all_whole")
+
+    def test_whole_country_all_but_essential_has_the_key_uk_essential_whole(self):
+        self.assertEqual(self.key(["avoid_all_but_essential_travel_to_whole_country"]), "uk_essential_whole")
+
+    def test_parts_all_travel_has_the_key_uk_all_parts(self):
+        self.assertEqual(self.key(["avoid_all_travel_to_parts"]), "uk_all_parts")
+
+    def test_parts_all_but_essential_has_the_key_uk_essential_parts(self):
+        self.assertEqual(self.key(["avoid_all_but_essential_travel_to_parts"]), "uk_essential_parts")
+
+    def test_both_parts_flags_have_the_key_uk_all_parts_essential_other(self):
+        self.assertEqual(self.key(["avoid_all_travel_to_parts", "avoid_all_but_essential_travel_to_parts"]),
+                         "uk_all_parts_essential_other")
+
+    def test_every_text_uk_label_can_write_has_a_key(self):
+        import itertools
+        flags = list(b.UK_PHRASE)
+        for n in range(len(flags) + 1):
+            for combo in itertools.combinations(flags, n):
+                self.assertIn(b.uk_label(list(combo)), b.UK_LABEL_KEYS)
+        self.assertEqual(len(set(b.UK_LABEL_KEYS.values())), 6)
 
     def test_no_alert_is_stance_zero(self):
         self.assertEqual(self.stance([]), 0)
@@ -129,6 +162,12 @@ class DeTest(unittest.TestCase):
         self.assertEqual(self.row()["stance"], 0)
         self.assertEqual(self.row()["label"], "Keine formelle Reisewarnung")
         self.assertNotIn("notes", self.row())
+
+    def test_each_de_label_has_its_key(self):
+        self.assertEqual(self.row()["labelKey"], "de_none")
+        self.assertEqual(self.row(ABRAT)["labelKey"], "de_advised_against")
+        self.assertEqual(self.row(partial=True)["labelKey"], "de_partial")
+        self.assertEqual(self.row(warning=True)["labelKey"], "de_warning")
 
     def test_abraten_without_a_formal_flag_is_stance_two_with_its_own_label_and_notes(self):
         r = self.row(ABRAT)

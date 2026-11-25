@@ -48,6 +48,11 @@ data class AdvisoryEntry(
      * against travel: "Von Reisen nach X wird abgeraten". Any source may carry them.
      */
     val notes: List<String> = emptyList(),
+    /**
+     * Names which of the pipeline's own UK/German label texts [label] is, so the screen can show
+     * its translation. Null for a US entry, an older file or a blank value; [label] is then shown.
+     */
+    val labelKey: String? = null,
 )
 
 // Defensive caps on the optional `notes` field; the pipeline writes at most 3 of at most 400 characters.
@@ -159,7 +164,9 @@ private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
             .map { if (it.length > MAX_ADVISORY_NOTE_CHARS) capNote(it) else it }
             .take(MAX_ADVISORY_NOTES)
     }
-    return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList(), notes ?: emptyList())
+    // Optional and additive, like notes: only a non-blank string counts, anything else means "no key".
+    val labelKey = (o.opt("labelKey") as? String)?.trim()?.takeIf(String::isNotEmpty)
+    return AdvisoryEntry(stance, label, updated, url, tags ?: emptyList(), notes ?: emptyList(), labelKey)
 }
 
 /** Cuts at [MAX_ADVISORY_NOTE_CHARS] chars including the ellipsis, never between the halves of a surrogate pair. */

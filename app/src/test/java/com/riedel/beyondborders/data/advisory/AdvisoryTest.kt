@@ -73,6 +73,16 @@ class AdvisoryTest {
     }
 
     @Test
+    fun `a label key is read when it is a non-blank string and is otherwise null`() {
+        assertEquals("de_partial", deEntry(""", "labelKey": "de_partial"""").labelKey)
+        assertNull(deEntry("").labelKey)
+        assertNull(deEntry(""", "labelKey": "  """").labelKey)
+        assertNull(deEntry(""", "labelKey": 5""").labelKey)
+        assertNull(deEntry(""", "labelKey": null""").labelKey)
+        assertEquals("L", deEntry(""", "labelKey": 5""").label)
+    }
+
+    @Test
     fun `non-string or blank notes are dropped and a non-array notes field is ignored`() {
         assertEquals(listOf("a", "b"), deEntry(""", "notes": ["a", 5, null, "  ", {"x": 1}, "b"]""").notes)
         assertEquals(emptyList<String>(), deEntry(""", "notes": "Von Reisen wird abgeraten"""").notes)

@@ -153,6 +153,15 @@ anything in it that is not a string. It is an additive field, so `dataFormat` st
 (and writes nothing) if a page is missing for any country with all flags false, or for more than 10% of
 countries.
 
+The UK and German `label` texts are English and German whatever the app's language, so each such entry
+also carries the optional `labelKey`, which names the text and lets the app show its own translation:
+UK `uk_none`, `uk_all_whole`, `uk_essential_whole`, `uk_all_parts`, `uk_essential_parts`,
+`uk_all_parts_essential_other`; DE `de_none`, `de_advised_against`, `de_partial`, `de_warning`. US
+entries (the feed's own wording) have none. The app falls back to `label` for a missing, blank or
+unknown key, so the field is additive and `dataFormat` stays 1. A new key needs a string in every
+`values*/strings_advisory.xml`. Adding the field changes every UK/DE entry, so the first run after it
+counts as a change and moves `generatedAt` once (`keep_if_unchanged` compares whole entries).
+
 ```sh
 python3 tools/advisory/build_advisory.py                        # downloads all three feeds (~430 small calls)
 python3 tools/advisory/build_advisory.py --source tools/advisory/cache   # offline, from the last download

@@ -11,4 +11,14 @@
     <string name="advisory_open_source_for">Abrir la fuente, %1$s</string>
     <string name="advisory_as_of">Datos a fecha de %1$s</string>
     <string name="advisory_check_official">Estas son las calificaciones de tres gobiernos. El texto que se muestra para las del Reino Unido y de Alemania se redacta aquí a partir de los indicadores que publican; las frases entre comillas son del propio gobierno. Consulta la fuente oficial antes de viajar. Aquí no se combina ni se puntúa nada.</string>
+    <string name="advisory_label_uk_none">El FCDO no emite ninguna advertencia de viaje para este país</string>
+    <string name="advisory_label_uk_all_whole">El FCDO desaconseja todo viaje a todo el país</string>
+    <string name="advisory_label_uk_essential_whole">El FCDO desaconseja todo viaje salvo el imprescindible a todo el país</string>
+    <string name="advisory_label_uk_all_parts">El FCDO desaconseja todo viaje a partes del país</string>
+    <string name="advisory_label_uk_essential_parts">El FCDO desaconseja todo viaje salvo el imprescindible a partes del país</string>
+    <string name="advisory_label_uk_all_parts_essential_other">El FCDO desaconseja todo viaje a partes del país y todo viaje salvo el imprescindible a otras partes</string>
+    <string name="advisory_label_de_none">Sin advertencia formal de viaje (Reisewarnung)</string>
+    <string name="advisory_label_de_advised_against">Sin advertencia formal de viaje (Reisewarnung), pero se desaconseja viajar (ver notas)</string>
+    <string name="advisory_label_de_partial">Advertencia parcial de viaje (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Advertencia formal de viaje (Reisewarnung)</string>
 </resources>

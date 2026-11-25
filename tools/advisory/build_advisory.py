@@ -307,6 +307,24 @@ def uk_stance(flags: list) -> int:
     return 0
 
 
+# The UK and DE labels are text this pipeline writes, in English and German whatever the app locale.
+# `labelKey` names which of them it is, so the app can show its own translation; `label` stays as the
+# fallback for an app that does not know the key. US labels are the source's own and get no key.
+UK_LABEL_KEYS = {
+    "FCDO has no travel warning for this country": "uk_none",
+    "FCDO " + UK_PHRASE["avoid_all_travel_to_whole_country"]: "uk_all_whole",
+    "FCDO " + UK_PHRASE["avoid_all_but_essential_travel_to_whole_country"]: "uk_essential_whole",
+    "FCDO " + UK_PHRASE["avoid_all_travel_to_parts"]: "uk_all_parts",
+    "FCDO " + UK_PHRASE["avoid_all_but_essential_travel_to_parts"]: "uk_essential_parts",
+    "FCDO advises against all travel to parts of the country, and all but essential travel to other parts":
+        "uk_all_parts_essential_other",
+}
+
+
+def uk_label_key(label: str) -> str:
+    return UK_LABEL_KEYS[label]  # a KeyError means uk_label gained a text with no key
+
+
 def uk_label(flags: list) -> str:
     if not flags:
         return "FCDO has no travel warning for this country"
@@ -337,6 +355,7 @@ def parse_uk(pages: dict, index: dict) -> dict:
         entry = {
             "stance": uk_stance(flags),
             "label": uk_label(flags),
+            "labelKey": uk_label_key(uk_label(flags)),
             "updated": iso_date(page.get("public_updated_at") or d.get("updated_at")),
             "url": "https://www.gov.uk/foreign-travel-advice/" + slug,
         }
@@ -365,6 +384,14 @@ DE_MAX_MISSING_SHARE = 0.10
 
 DE_LABEL_NONE = "Keine formelle Reisewarnung"
 DE_LABEL_ADVISED_AGAINST = "Keine formelle Reisewarnung, aber Reiseabraten (siehe Hinweise)"
+
+
+DE_LABEL_KEYS = {
+    DE_LABEL_NONE: "de_none",
+    DE_LABEL_ADVISED_AGAINST: "de_advised_against",
+    "Teilreisewarnung": "de_partial",
+    "Reisewarnung": "de_warning",
+}
 
 
 def de_label(warning: bool, partial: bool, notes: list = ()) -> str:
@@ -767,6 +794,7 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
         entry = {
             "stance": de_stance(warning, partial, notes),
             "label": de_label(warning, partial, notes),
+            "labelKey": DE_LABEL_KEYS[de_label(warning, partial, notes)],
             "updated": updated.date().isoformat(),
             "url": DE_LINK + str(key),
         }

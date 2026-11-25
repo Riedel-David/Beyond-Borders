@@ -111,7 +111,7 @@ private fun AdvisoryRow(key: String, source: String, entry: AdvisoryEntry?, loca
         }
         val (container, content) = advisoryColors(advisoryTone(entry.stance))
         Text(
-            entry.label,
+            advisoryLabelRes(entry.labelKey)?.let { stringResource(it) } ?: entry.label,
             style = MaterialTheme.typography.bodyMedium,
             color = content,
             modifier = Modifier
@@ -220,6 +220,24 @@ internal fun advisoryPalette(tone: AdvisoryTone, dark: Boolean): Pair<Int, Int> 
     AdvisoryTone.CAUTION -> 0xFFFFE2A0.toInt() to 0xFF3A2A00.toInt()
     AdvisoryTone.WARNING -> 0xFFF9DEDC.toInt() to 0xFF410E0B.toInt()
     AdvisoryTone.DANGER -> 0xFFB3261E.toInt() to 0xFFFFFFFF.toInt()
+}
+
+/**
+ * The string resource for a pipeline-written label key (tools/advisory/build_advisory.py), or null
+ * for a missing or unknown key, in which case the entry's own `label` text is shown.
+ */
+internal fun advisoryLabelRes(key: String?): Int? = when (key) {
+    "uk_none" -> R.string.advisory_label_uk_none
+    "uk_all_whole" -> R.string.advisory_label_uk_all_whole
+    "uk_essential_whole" -> R.string.advisory_label_uk_essential_whole
+    "uk_all_parts" -> R.string.advisory_label_uk_all_parts
+    "uk_essential_parts" -> R.string.advisory_label_uk_essential_parts
+    "uk_all_parts_essential_other" -> R.string.advisory_label_uk_all_parts_essential_other
+    "de_none" -> R.string.advisory_label_de_none
+    "de_advised_against" -> R.string.advisory_label_de_advised_against
+    "de_partial" -> R.string.advisory_label_de_partial
+    "de_warning" -> R.string.advisory_label_de_warning
+    else -> null
 }
 
 internal fun advisoryTone(stance: Int): AdvisoryTone = when (stance) {

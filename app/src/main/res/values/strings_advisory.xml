@@ -11,4 +11,14 @@
     <string name="advisory_open_source_for">Open source, %1$s</string>
     <string name="advisory_as_of">Data as of %1$s</string>
     <string name="advisory_check_official">These are the ratings of three governments. The wording shown for the UK and German ratings is written here from the flags they publish, and sentences in quotation marks are the government\'s own, so check the official source before you travel. Nothing is combined or scored here.</string>
+    <string name="advisory_label_uk_none">FCDO has no travel warning for this country</string>
+    <string name="advisory_label_uk_all_whole">FCDO advises against all travel to the whole country</string>
+    <string name="advisory_label_uk_essential_whole">FCDO advises against all but essential travel to the whole country</string>
+    <string name="advisory_label_uk_all_parts">FCDO advises against all travel to parts of the country</string>
+    <string name="advisory_label_uk_essential_parts">FCDO advises against all but essential travel to parts of the country</string>
+    <string name="advisory_label_uk_all_parts_essential_other">FCDO advises against all travel to parts of the country, and all but essential travel to other parts</string>
+    <string name="advisory_label_de_none">No formal travel warning</string>
+    <string name="advisory_label_de_advised_against">No formal travel warning, but travel is advised against (see notes)</string>
+    <string name="advisory_label_de_partial">Partial travel warning (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Formal travel warning (Reisewarnung)</string>
 </resources>

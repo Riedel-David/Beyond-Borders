@@ -97,4 +97,18 @@ class AdvisorySectionTest {
         assertTrue((neutral and 255) > (neutral shr 16 and 255))
         assertTrue((caution shr 16 and 255) - (caution and 255) >= 0x40)
     }
+
+    @Test
+    fun `every pipeline label key maps to its own string and unknown or missing keys fall back to the label`() {
+        val keys = listOf(
+            "uk_none", "uk_all_whole", "uk_essential_whole", "uk_all_parts", "uk_essential_parts",
+            "uk_all_parts_essential_other", "de_none", "de_advised_against", "de_partial", "de_warning",
+        )
+        val res = keys.map { advisoryLabelRes(it) }
+        assertTrue(res.all { it != null })
+        assertEquals(keys.size, res.toSet().size)
+        assertNull(advisoryLabelRes(null))
+        assertNull(advisoryLabelRes("uk_from_the_future"))
+        assertNull(advisoryLabelRes(""))
+    }
 }

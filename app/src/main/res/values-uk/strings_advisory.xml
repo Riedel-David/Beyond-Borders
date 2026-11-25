@@ -11,4 +11,14 @@
     <string name="advisory_open_source_for">Відкрити джерело, %1$s</string>
     <string name="advisory_as_of">Дані станом на %1$s</string>
     <string name="advisory_check_official">Це оцінки трьох урядів. Формулювання для оцінок Великобританії та Німеччини складені тут за позначками, які вони публікують; речення в лапках належать самому уряду. Перед поїздкою перевірте офіційне джерело. Тут нічого не об\'єднується та не оцінюється.</string>
+    <string name="advisory_label_uk_none">FCDO не оголошує попереджень щодо поїздок до цієї країни</string>
+    <string name="advisory_label_uk_all_whole">FCDO не радить жодних поїздок до всієї країни</string>
+    <string name="advisory_label_uk_essential_whole">FCDO не радить жодних поїздок до всієї країни, окрім необхідних</string>
+    <string name="advisory_label_uk_all_parts">FCDO не радить жодних поїздок до окремих частин країни</string>
+    <string name="advisory_label_uk_essential_parts">FCDO не радить жодних поїздок до окремих частин країни, окрім необхідних</string>
+    <string name="advisory_label_uk_all_parts_essential_other">FCDO не радить жодних поїздок до окремих частин країни, а до інших частин — жодних, окрім необхідних</string>
+    <string name="advisory_label_de_none">Офіційного попередження щодо поїздок немає (Reisewarnung)</string>
+    <string name="advisory_label_de_advised_against">Офіційного попередження щодо поїздок немає (Reisewarnung), але поїздки не рекомендуються (див. примітки)</string>
+    <string name="advisory_label_de_partial">Часткове попередження щодо поїздок (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Офіційне попередження щодо поїздок (Reisewarnung)</string>
 </resources>
