@@ -331,6 +331,19 @@ class AdvisoryTest {
     }
 
     @Test
+    fun `an older file that would also be implausible is reported as not newer`() {
+        val stale = withGenerated("2026-11-10T00:00:00Z", manyCountries(10))
+        val inUse = Instant.parse("2026-11-20T00:00:00Z")
+        assertEquals(AdvisoryRejection.NOT_NEWER, verifyAdvisory(stale, inUse, now, inUseCountries = 200))
+    }
+
+    @Test
+    fun `a newer implausible file is still rejected as implausible`() {
+        val thin = withGenerated("2026-11-24T00:00:00Z", manyCountries(10))
+        assertEquals(AdvisoryRejection.IMPLAUSIBLE, verifyAdvisory(thin, Instant.parse("2026-11-20T00:00:00Z"), now, inUseCountries = 200))
+    }
+
+    @Test
     fun `a file below 80 percent of the copy in use is rejected`() {
         val b = withGenerated("2026-11-24T00:00:00Z", manyCountries(159))
         assertEquals(AdvisoryRejection.IMPLAUSIBLE, verifyAdvisory(b, null, now, inUseCountries = 200, minCountries = 1))
