@@ -4,6 +4,7 @@ files that are live right now.
 Usage: python3 -I tools/advisory/make_site.py <advisory.json> <base-url> <out-dir>
        python3 -I tools/advisory/make_site.py --check <advisory.json>
        python3 -I tools/advisory/make_site.py --check-heartbeat <advisory-heartbeat.json> [--max-age-days N]
+       python3 -I tools/advisory/make_site.py --check-advisory-age <advisory.json> [--max-age-days N]
 
 A Pages deployment replaces the whole site, so publishing advisory.json alone would delete
 manifest.json and every visa_<code>.json, and the app's visa updater would find nothing. This copies
@@ -54,6 +55,19 @@ def check_heartbeat(raw: bytes, now: datetime, max_age_days: int = None) -> date
             raise SiteError(f"heartbeat is dated in the future ({at:%Y-%m-%d})")
         if now - at > timedelta(days=max_age_days):
             raise SiteError(f"heartbeat is from {at:%Y-%m-%d}, {(now - at).days} days ago (limit {max_age_days})")
+    return at
+
+
+def check_advisory_age(raw: bytes, now: datetime, max_age_days: int) -> datetime:
+    """The live advisory.json's generatedAt, refused when older than max_age_days. Used when no
+    heartbeat exists yet: a bundled copy carried by visa-refresh is not a missed refresh until the
+    first scheduled advisory-refresh run has had time to happen."""
+    try:
+        at = datetime.strptime(json.loads(raw)["generatedAt"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except (ValueError, KeyError, TypeError) as e:
+        raise SiteError(f"advisory.json generatedAt does not parse: {e!r}")
+    if now - at > timedelta(days=max_age_days):
+        raise SiteError(f"advisory.json is from {at:%Y-%m-%d}, {(now - at).days} days ago (limit {max_age_days})")
     return at
 
 
@@ -114,7 +128,8 @@ def main(argv) -> int:
             print(f"{argv[1]} is not a usable advisory.json: {e}", file=sys.stderr)
             return 1
         return 0
-    if argv and argv[0] == "--check-heartbeat":
+    if argv and argv[0] in ("--check-heartbeat", "--check-advisory-age"):
+        check = check_advisory_age if argv[0] == "--check-advisory-age" else check_heartbeat
         days = HEARTBEAT_MAX_AGE_DAYS
         if len(argv) == 4 and argv[2] == "--max-age-days":
             days = int(argv[3])
@@ -122,11 +137,12 @@ def main(argv) -> int:
             print(__doc__, file=sys.stderr)
             return 2
         try:
-            at = check_heartbeat(Path(argv[1]).read_bytes(), datetime.now(timezone.utc), days)
+            at = check(Path(argv[1]).read_bytes(), datetime.now(timezone.utc), days)
         except (SiteError, OSError) as e:
             print(f"{argv[1]}: {e}", file=sys.stderr)
             return 1
-        print(f"advisory refresh last ran {at:%Y-%m-%d %H:%M} UTC")
+        what = "advisory data generated" if argv[0] == "--check-advisory-age" else "advisory refresh last ran"
+        print(f"{what} {at:%Y-%m-%d %H:%M} UTC")
         return 0
     if len(argv) != 3:
         print(__doc__, file=sys.stderr)

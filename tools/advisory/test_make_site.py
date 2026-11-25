@@ -66,6 +66,15 @@ class MakeSiteTest(unittest.TestCase):
                 m.check_heartbeat(bad, now, 10)
         m.check_heartbeat(stale, now)  # no limit given: only the shape is judged (the carry-over uses this)
 
+    def test_advisory_age_is_refused_only_beyond_the_limit_or_when_unreadable(self):
+        now = datetime(2026, 11, 25, tzinfo=timezone.utc)
+        def adv(days):
+            return json.dumps({"generatedAt": (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")}).encode()
+        self.assertEqual(m.check_advisory_age(adv(9), now, 10), now - timedelta(days=9))
+        for bad in (adv(11), b"{}", b"nope"):
+            with self.assertRaises(m.SiteError):
+                m.check_advisory_age(bad, now, 10)
+
     def test_check_heartbeat_mode_exits_nonzero_for_a_stale_file(self):
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "h.json"
