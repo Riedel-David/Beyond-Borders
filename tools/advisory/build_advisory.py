@@ -207,7 +207,7 @@ def us_notes(summary: str, country: str) -> list:
     due to ...'), which the label already says. A feed summary can be cut short (Mexico's is, so its
     'Do Not Travel to' list is not in it); what is not there is not invented."""
     cname = re.escape(country.strip())
-    units = de_units(summary)[1:]
+    units = de_units(summary, english=True)[1:]
     notes = []
     for u in _redundant([u for u in units if _US_REGION.search(u.text) and not u.text.rstrip().endswith(":")]):
         if re.search(r"for any reason", u.text, re.I) \
@@ -234,7 +234,7 @@ def uk_notes(page: dict) -> list:
         heading = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))).strip()
         if not re.search(r"\bFCDO advises against\b", heading.replace("\u202f", " ")):
             continue
-        for u in de_units(chunk[m.end():]):
+        for u in de_units(chunk[m.end():], english=True):
             if re.search(r"\b(?:FCDO )?advises against\b", u.text) and not u.text.rstrip().endswith(":"):
                 text = _split_sentences(u.text)[0]
                 notes.append(trim_note(text))
@@ -463,25 +463,31 @@ class Unit:
         self.text, self.context, self.heading = text, context, heading
 
 
-def _join_items(items: list) -> str:
+def _join_items(items: list, english: bool = False) -> str:
+    """German items are fragments of one sentence, so a space joins after punctuation or a conjunction
+    and '; ' otherwise. English (UK/US) items are separate clauses: an item that does not already end
+    in . ; : gets '; ' in front of the next, always ('all travel to A; all but essential travel to B')."""
     out = ""
     for it in items:
+        if english:
+            out += (" " if not out or out[-1] in ".;:" else "; ") + it
+            continue
         glue = not out or out[-1] in ",;:." or out.rsplit(" ", 1)[-1] in ("und", "sowie", "oder", "bzw.")
         out += (" " if glue else "; ") + it
     return out.strip()
 
 
-def _list_unit(head: str, items: list, tail: str, context: str, heading: str = "") -> Unit:
+def _list_unit(head: str, items: list, tail: str, context: str, heading: str = "", english: bool = False) -> Unit:
     """'Von Reisen in folgende Regionen wird abgeraten:' + its <li> items, or 'Von Reisen' + items +
     'wird abgeraten.' (Tunisia): one sentence the page only broke up for layout. The items are
     joined with '; ' unless they already end in punctuation. Over the length limit the sentence is
     not shortened: if it is selected as a note, trim_note fails the build (NoteTooLong) naming the
     source and country."""
     tail = (" " + tail) if tail else ""
-    return Unit(head + " " + _join_items(items) + tail, context=context, heading=heading)
+    return Unit(head + " " + _join_items(items, english) + tail, context=context, heading=heading)
 
 
-def de_units(content: str) -> list:
+def de_units(content: str, english: bool = False) -> list:
     """The page as sentences. A paragraph that stops without a full stop, or ends in a colon, goes on
     in the list items that follow it (and a lower-case paragraph after the list: Tunisia's
     'Von Reisen' / four <li> / 'wird abgeraten.'); headings end a sentence. A list that nothing
@@ -494,7 +500,7 @@ def de_units(content: str) -> list:
         head, items, tail = state["head"], state["items"], " ".join(state["tail"])
         if head is not None:
             if items and (head.endswith(":") or tail):
-                units.append(_list_unit(head, items, tail, last_p[0], heading[0]))
+                units.append(_list_unit(head, items, tail, last_p[0], heading[0], english))
             else:
                 units.append(Unit(head if not tail else head + " " + tail, context=last_p[0], heading=heading[0]))
                 for it in items:
@@ -518,7 +524,9 @@ def de_units(content: str) -> list:
                     if text[-1] in ".!?":
                         flush()
                 else:
-                    state["head"] += " " + text
+                    # UK lists whose <li> wraps a <p> arrive here as lower-case paragraphs, not items.
+                    state["head"] = _join_items([state["head"], text], True) if english \
+                        else state["head"] + " " + text
                     if text[-1] in ".!?":
                         flush()
                 continue

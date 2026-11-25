@@ -666,6 +666,29 @@ class TerritorySectionTest(unittest.TestCase):
             re.compile(pat)
 
 
+class EnglishListJoinTest(unittest.TestCase):
+    def test_english_items_without_punctuation_are_joined_with_a_semicolon(self):
+        self.assertEqual(b._join_items(["all travel to A", "all but essential travel to B"], english=True),
+                         "all travel to A; all but essential travel to B")
+
+    def test_english_items_that_already_end_in_punctuation_get_a_plain_space(self):
+        self.assertEqual(b._join_items(["all of Arauca;", "Cúcuta."], english=True), "all of Arauca; Cúcuta.")
+
+    def test_german_joining_is_unchanged(self):
+        items = ["Provinz A", "Provinz B und", "Provinz C"]
+        self.assertEqual(b._join_items(items), "Provinz A; Provinz B und Provinz C")
+
+    def test_a_uk_warning_list_keeps_its_two_clauses_apart(self):
+        html_ = ("<h2>Warnings and insurance</h2><h2>FCDO advises against all travel to areas</h2>"
+                 "<p>FCDO advises against:</p><ul><li>all travel to within 10km of the border</li>"
+                 "<li>all but essential travel to the rest</li></ul>")
+        wrapped = html_.replace("<li>", "<li><p>").replace("</li>", "</p></li>")  # Saudi Arabia's shape
+        for body in (html_, wrapped):
+            page_ = {"details": {"parts": [{"body": body}]}}
+            self.assertEqual(b.uk_notes(page_),
+                             ["FCDO advises against: all travel to within 10km of the border; all but essential travel to the rest"])
+
+
 class UsUkNotesTest(unittest.TestCase):
     def test_tags_split_on_commas_and_keep_us_intact(self):
         self.assertEqual(b.us_tags("<p>Exercise increased caution in X due to crime, terrorism, and U.S. citizen detention.</p>"),
