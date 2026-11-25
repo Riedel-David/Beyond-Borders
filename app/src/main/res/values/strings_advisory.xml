@@ -10,7 +10,7 @@
     <string name="advisory_open_source">Open source</string>
     <string name="advisory_open_source_for">Open source, %1$s</string>
     <string name="advisory_as_of">Data as of %1$s</string>
-    <string name="advisory_check_official">These are the ratings of three governments. The wording shown for the UK and German ratings is written here from the flags they publish, and sentences in quotation marks are the government\'s own, so check the official source before you travel. Nothing is combined or scored here.</string>
+    <string name="advisory_check_official">Check the official source before you travel.</string>
     <string name="advisory_label_uk_none">FCDO has no travel warning for this country</string>
     <string name="advisory_label_uk_all_whole">FCDO advises against all travel to the whole country</string>
     <string name="advisory_label_uk_essential_whole">FCDO advises against all but essential travel to the whole country</string>

@@ -223,7 +223,7 @@ only: residence permits and EU/Schengen family-member rules are not taken into a
 The expanded country row in the Visa tab shows what the US State Department, the UK Foreign,
 Commonwealth & Development Office and the German Auswärtiges Amt currently advise for that
 country, side by side: each government's own rating (the US wording as published; the UK and
-German ones are short summaries of the flags those governments publish), the date of that
+German ones are short summaries of the flags those governments publish, shown in the app's language with the German official terms kept in brackets), the date of that
 advice and a link to its country page. Where a government publishes sentences about parts of a country or, for
 Germany, "wird abgeraten" advice, up to three of them are quoted word for word under its row (the German
 ones in German quotation marks and tagged German for screen readers). Nothing is combined or scored beyond a count of how many

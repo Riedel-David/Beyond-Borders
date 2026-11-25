@@ -10,7 +10,7 @@
     <string name="advisory_open_source">Abrir a fonte</string>
     <string name="advisory_open_source_for">Abrir a fonte, %1$s</string>
     <string name="advisory_as_of">Dados de %1$s</string>
-    <string name="advisory_check_official">Estas são as classificações de três governos. O texto mostrado para as do Reino Unido e da Alemanha é redigido aqui a partir dos indicadores que eles publicam; as frases entre aspas são do próprio governo. Consulte a fonte oficial antes de viajar. Aqui nada é combinado nem pontuado.</string>
+    <string name="advisory_check_official">Consulte a fonte oficial antes de viajar.</string>
     <string name="advisory_label_uk_none">O FCDO não emite nenhum aviso de viagem para este país</string>
     <string name="advisory_label_uk_all_whole">O FCDO desaconselha todas as viagens a todo o país</string>
     <string name="advisory_label_uk_essential_whole">O FCDO desaconselha todas as viagens, exceto as essenciais, a todo o país</string>
