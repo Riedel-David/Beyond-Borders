@@ -105,6 +105,7 @@
     <string name="settings_visa_check_now">Comprobar ahora</string>
     <string name="settings_visa_advisory_as_of">Avisos de viaje a fecha de %1$s</string>
     <string name="settings_advisory_result_current">Los avisos de viaje ya están al día.</string>
+    <string name="settings_advisory_result_not_published">Todavía no se ha publicado ninguna actualización de los avisos de viaje.</string>
     <string name="settings_advisory_result_updated">Avisos de viaje actualizados.</string>
     <string name="settings_advisory_result_failed">No se pudieron actualizar los avisos de viaje.</string>
     <string name="settings_advisory_result_newer_app">Avisos de viaje: el archivo más reciente requiere una versión más nueva de la app.</string>

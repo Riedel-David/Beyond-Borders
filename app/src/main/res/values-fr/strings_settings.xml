@@ -105,6 +105,7 @@
     <string name="settings_visa_check_now">Vérifier maintenant</string>
     <string name="settings_visa_advisory_as_of">Avis aux voyageurs en date du %1$s</string>
     <string name="settings_advisory_result_current">Les avis aux voyageurs sont déjà à jour.</string>
+    <string name="settings_advisory_result_not_published">Aucune mise à jour des avis aux voyageurs n\'a encore été publiée.</string>
     <string name="settings_advisory_result_updated">Avis aux voyageurs mis à jour.</string>
     <string name="settings_advisory_result_failed">Impossible d\'actualiser les avis aux voyageurs.</string>
     <string name="settings_advisory_result_newer_app">Avis aux voyageurs : le dernier fichier nécessite une version plus récente de l\'application.</string>

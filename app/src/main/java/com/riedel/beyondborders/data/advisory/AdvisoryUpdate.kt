@@ -73,9 +73,11 @@ class FileAdvisoryStore(private val dir: File) : AdvisoryStore {
 
 /**
  * NEEDS_NEWER_APP: the published file is in a newer format than this build reads. Calm, not a
- * failure: the bundled or stored copy keeps working. A 404 (not published yet) is [UP_TO_DATE].
+ * failure: the bundled or stored copy keeps working. NOT_PUBLISHED: the host answered 404, so there is
+ * nothing to be up to date with; also calm (the worker treats it as success), but Check now says so
+ * rather than claiming the data is current.
  */
-enum class AdvisoryOutcome { UPDATED, UP_TO_DATE, OFFLINE, REJECTED, NEEDS_NEWER_APP }
+enum class AdvisoryOutcome { UPDATED, UP_TO_DATE, NOT_PUBLISHED, OFFLINE, REJECTED, NEEDS_NEWER_APP }
 
 /** Only a network failure is worth the scheduler's backoff; everything else waits for the next period. */
 internal fun shouldRetryAdvisory(outcome: AdvisoryOutcome): Boolean = outcome == AdvisoryOutcome.OFFLINE
@@ -96,8 +98,8 @@ internal fun runAdvisoryUpdate(
     } catch (e: IOException) {
         return AdvisoryOutcome.OFFLINE
     } catch (e: VisaFetchNotFound) {
-        // Not published yet: nothing newer than what is in use, which is not the user's problem.
-        return AdvisoryOutcome.UP_TO_DATE
+        // Not published yet: not the user's problem, so calm, but not "up to date" either.
+        return AdvisoryOutcome.NOT_PUBLISHED
     } catch (e: VisaFetchRejected) {
         return AdvisoryOutcome.REJECTED
     }

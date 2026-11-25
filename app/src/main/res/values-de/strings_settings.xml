@@ -105,6 +105,7 @@
     <string name="settings_visa_check_now">Jetzt prüfen</string>
     <string name="settings_visa_advisory_as_of">Reisehinweise, Stand: %1$s</string>
     <string name="settings_advisory_result_current">Reisehinweise sind bereits aktuell.</string>
+    <string name="settings_advisory_result_not_published">Es wurde noch kein Update der Reisehinweise veröffentlicht.</string>
     <string name="settings_advisory_result_updated">Reisehinweise aktualisiert.</string>
     <string name="settings_advisory_result_failed">Reisehinweise konnten nicht aktualisiert werden.</string>
     <string name="settings_advisory_result_newer_app">Reisehinweise: Die neueste Datei erfordert eine neuere Version der App.</string>

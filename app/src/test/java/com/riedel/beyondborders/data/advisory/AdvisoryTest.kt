@@ -476,9 +476,9 @@ class AdvisoryTest {
     }
 
     @Test
-    fun `a 404 means nothing newer and is not a failure`() {
+    fun `a 404 is a calm not-published outcome and not a failure`() {
         val store = FakeStore(bytes = fixtureBytes)
-        assertEquals(AdvisoryOutcome.UP_TO_DATE, runAdvisoryUpdate(FakeFetcher(fail = VisaFetchNotFound("HTTP 404")), store, { null }, { now }, minCountries = 1))
+        assertEquals(AdvisoryOutcome.NOT_PUBLISHED, runAdvisoryUpdate(FakeFetcher(fail = VisaFetchNotFound("HTTP 404")), store, { null }, { now }, minCountries = 1))
         assertArrayEquals(fixtureBytes, store.bytes)
     }
 

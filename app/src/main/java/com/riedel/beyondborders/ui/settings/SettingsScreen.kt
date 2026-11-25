@@ -1048,6 +1048,7 @@ internal fun advisoryCheckFailed(outcome: AdvisoryOutcome): Boolean =
 @StringRes
 internal fun advisoryResultText(outcome: AdvisoryOutcome): Int = when (outcome) {
     AdvisoryOutcome.UP_TO_DATE -> R.string.settings_advisory_result_current
+    AdvisoryOutcome.NOT_PUBLISHED -> R.string.settings_advisory_result_not_published
     AdvisoryOutcome.UPDATED -> R.string.settings_advisory_result_updated
     AdvisoryOutcome.NEEDS_NEWER_APP -> R.string.settings_advisory_result_newer_app
     AdvisoryOutcome.OFFLINE, AdvisoryOutcome.REJECTED -> R.string.settings_advisory_result_failed

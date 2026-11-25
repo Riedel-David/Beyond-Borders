@@ -1,5 +1,6 @@
 package com.riedel.beyondborders.ui.settings
 
+import com.riedel.beyondborders.R
 import com.riedel.beyondborders.data.advisory.AdvisoryOutcome
 import com.riedel.beyondborders.data.visa.update.VisaCheckOutcome
 import kotlinx.coroutines.CancellationException
@@ -59,6 +60,7 @@ class CheckNowTest {
         assertTrue(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.UP_TO_DATE)))
         assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.UPDATED)))
         assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.OFFLINE)))
+        assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.UpToDate, AdvisoryOutcome.NOT_PUBLISHED)))
         assertFalse(shouldAutoClearCheck(VisaCheckState.Done(VisaCheckOutcome.Offline, AdvisoryOutcome.UP_TO_DATE)))
     }
 
@@ -68,5 +70,7 @@ class CheckNowTest {
         assertTrue(advisoryCheckFailed(AdvisoryOutcome.REJECTED))
         assertFalse(advisoryCheckFailed(AdvisoryOutcome.UPDATED))
         assertFalse(advisoryCheckFailed(AdvisoryOutcome.UP_TO_DATE))
+        assertFalse(advisoryCheckFailed(AdvisoryOutcome.NOT_PUBLISHED))
+        assertEquals(R.string.settings_advisory_result_not_published, advisoryResultText(AdvisoryOutcome.NOT_PUBLISHED))
     }
 }

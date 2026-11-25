@@ -103,6 +103,7 @@
     <string name="settings_visa_check_now">Check now</string>
     <string name="settings_visa_advisory_as_of">Travel advisories as of %1$s</string>
     <string name="settings_advisory_result_current">Travel advisories are already up to date.</string>
+    <string name="settings_advisory_result_not_published">No travel advisory update has been published yet.</string>
     <string name="settings_advisory_result_updated">Travel advisories updated.</string>
     <string name="settings_advisory_result_failed">Couldn\'t refresh travel advisories.</string>
     <string name="settings_advisory_result_newer_app">Travel advisories: the latest file needs a newer version of the app.</string>

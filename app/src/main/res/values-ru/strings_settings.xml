@@ -105,6 +105,7 @@
     <string name="settings_visa_check_now">Проверить сейчас</string>
     <string name="settings_visa_advisory_as_of">Рекомендации для путешественников на %1$s</string>
     <string name="settings_advisory_result_current">Рекомендации для путешественников уже актуальны.</string>
+    <string name="settings_advisory_result_not_published">Обновление рекомендаций для путешественников ещё не опубликовано.</string>
     <string name="settings_advisory_result_updated">Рекомендации для путешественников обновлены.</string>
     <string name="settings_advisory_result_failed">Не удалось обновить рекомендации для путешественников.</string>
     <string name="settings_advisory_result_newer_app">Рекомендации для путешественников: для последнего файла нужна более новая версия приложения.</string>
