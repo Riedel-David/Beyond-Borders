@@ -262,11 +262,14 @@ def parse_us(feed, index: dict) -> dict:
         if not codes:
             unmapped.append(name)
             continue
+        link = e.get("Link")
+        if not isinstance(link, str) or not link:
+            raise BuildError(f"US {name}: entry has no Link")
         entry = {
             "stance": us_stance(int(m.group(1))),
             "label": label.strip(),
             "updated": iso_date(e.get("Updated") or e.get("Published")),
-            "url": e["Link"],
+            "url": link,
         }
         tags = us_tags(e.get("Summary", ""))
         if tags:
@@ -327,8 +330,11 @@ UK_LABEL_KEYS = {
 }
 
 
-def uk_label_key(label: str) -> str:
-    return UK_LABEL_KEYS[label]  # a KeyError means uk_label gained a text with no key
+def uk_label_key(label: str, slug: str = "?") -> str:
+    try:
+        return UK_LABEL_KEYS[label]
+    except KeyError:  # uk_label gained a text with no key
+        raise BuildError(f"UK {slug}: label {label!r} has no labelKey") from None
 
 
 def uk_label(flags: list) -> str:
@@ -361,7 +367,7 @@ def parse_uk(pages: dict, index: dict) -> dict:
         entry = {
             "stance": uk_stance(flags),
             "label": uk_label(flags),
-            "labelKey": uk_label_key(uk_label(flags)),
+            "labelKey": uk_label_key(uk_label(flags), slug),
             "updated": iso_date(page.get("public_updated_at") or d.get("updated_at")),
             "url": "https://www.gov.uk/foreign-travel-advice/" + slug,
         }
@@ -795,6 +801,13 @@ def warn(msg: str) -> None:
     print(f"warning: {msg}", file=sys.stderr)
 
 
+def de_label_key(label: str, code: str) -> str:
+    try:
+        return DE_LABEL_KEYS[label]
+    except KeyError:  # de_label gained a text with no key
+        raise BuildError(f"DE {code}: label {label!r} has no labelKey") from None
+
+
 def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None) -> dict:
     """details: node id -> detail payload. A country whose three flags are all false and whose page
     is missing cannot be told from one with Reiseabraten, so that is an error, never 'no warning'.
@@ -842,11 +855,14 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
                         continue  # about another country, as de_notes judges it
                     if sentence_sha(sent) not in (reviewed.get(code) or {}):
                         tripped.append(f"{code} [{sentence_sha(sent)[:12]}] {sent[:200]}")
-        updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
+        try:
+            updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
+        except (KeyError, TypeError, ValueError, OverflowError, OSError) as exc:
+            raise BuildError(f"DE {code}: missing or malformed lastModified {e.get('lastModified')!r}") from exc
         entry = {
             "stance": de_stance(warning, partial, notes),
             "label": de_label(warning, partial, notes),
-            "labelKey": DE_LABEL_KEYS[de_label(warning, partial, notes)],
+            "labelKey": de_label_key(de_label(warning, partial, notes), code),
             "updated": updated.date().isoformat(),
             "url": DE_LINK + str(key),
         }

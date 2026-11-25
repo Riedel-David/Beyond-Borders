@@ -53,6 +53,13 @@ class UsTest(unittest.TestCase):
         self.assertEqual(e["updated"], "2026-10-02")
         self.assertEqual(e["tags"], ["terrorism", "unrest"])
 
+    def test_an_entry_without_a_link_is_a_build_error_naming_the_country(self):
+        e = us("France - Level 2: Exercise Increased Caution")
+        del e["Link"]
+        with self.assertRaises(b.BuildError) as cm:
+            b.parse_us([e], INDEX)
+        self.assertIn("France", str(cm.exception))
+
     def test_a_title_without_a_level_is_an_error(self):
         with self.assertRaises(b.BuildError):
             b.parse_us([us("France - Exercise caution")], INDEX)
@@ -80,6 +87,11 @@ class UkTest(unittest.TestCase):
 
     def key(self, flags):
         return b.parse_uk({"france": uk("France", flags)}, INDEX)["FR"]["labelKey"]
+
+    def test_a_label_with_no_key_is_a_build_error_naming_the_page(self):
+        with self.assertRaises(b.BuildError) as cm:
+            b.uk_label_key("FCDO says something new", "france")
+        self.assertIn("france", str(cm.exception))
 
     def test_no_alert_has_the_key_uk_none(self):
         self.assertEqual(self.key([]), "uk_none")
@@ -162,6 +174,18 @@ class DeTest(unittest.TestCase):
         self.assertEqual(self.row()["stance"], 0)
         self.assertEqual(self.row()["label"], "Keine formelle Reisewarnung")
         self.assertNotIn("notes", self.row())
+
+    def test_a_missing_or_malformed_last_modified_is_a_build_error_naming_the_country(self):
+        for bad in ("missing", "soon", None):
+            entry = de("FR")
+            if bad == "missing":
+                del entry["lastModified"]
+            else:
+                entry["lastModified"] = bad
+            feed = {"response": {"lastModified": 1, "1": entry}}
+            with self.assertRaises(b.BuildError) as cm:
+                b.parse_de(feed, VALID, {"1": page("<p>x</p>")})
+            self.assertIn("DE FR", str(cm.exception))
 
     def test_each_de_label_has_its_key(self):
         self.assertEqual(self.row()["labelKey"], "de_none")
