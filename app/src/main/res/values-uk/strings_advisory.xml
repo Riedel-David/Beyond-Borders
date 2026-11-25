@@ -19,6 +19,7 @@
     <string name="advisory_label_uk_all_parts_essential_other">FCDO не радить жодних поїздок до окремих частин країни, а до інших частин — жодних, окрім необхідних</string>
     <string name="advisory_label_de_none">Офіційного попередження щодо поїздок немає (Reisewarnung)</string>
     <string name="advisory_label_de_advised_against">Офіційного попередження щодо поїздок немає (Reisewarnung), але поїздки не рекомендуються (див. примітки)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Офіційного попередження щодо поїздок немає (Reisewarnung), але поїздки не рекомендуються</string>
     <string name="advisory_label_de_partial">Часткове попередження щодо поїздок (Teilreisewarnung)</string>
     <string name="advisory_label_de_warning">Офіційне попередження щодо поїздок (Reisewarnung)</string>
 </resources>

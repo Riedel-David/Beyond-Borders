@@ -113,6 +113,13 @@ class AdvisorySectionTest {
     }
 
     @Test
+    fun `the German advised-against label stops pointing at notes when the entry has none`() {
+        assertNotEquals(advisoryLabelRes("de_advised_against", true), advisoryLabelRes("de_advised_against", false))
+        assertEquals(advisoryLabelRes("de_advised_against"), advisoryLabelRes("de_advised_against", true))
+        assertEquals(advisoryLabelRes("de_partial", true), advisoryLabelRes("de_partial", false))
+    }
+
+    @Test
     fun `the advisory is hidden on every own passport country and shown elsewhere`() {
         assertEquals(false, showsAdvisory("DE", listOf("DE")))
         assertEquals(false, showsAdvisory("fr", listOf("DE", "FR")))

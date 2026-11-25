@@ -19,6 +19,7 @@
     <string name="advisory_label_uk_all_parts_essential_other">Das FCDO rät von allen Reisen in Teile des Landes und von allen nicht notwendigen Reisen in andere Teile ab</string>
     <string name="advisory_label_de_none">Keine formelle Reisewarnung</string>
     <string name="advisory_label_de_advised_against">Keine formelle Reisewarnung, aber Reiseabraten (siehe Hinweise)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Keine formelle Reisewarnung, aber Reiseabraten</string>
     <string name="advisory_label_de_partial">Teilreisewarnung</string>
     <string name="advisory_label_de_warning">Reisewarnung</string>
 </resources>

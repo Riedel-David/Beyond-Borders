@@ -19,6 +19,7 @@
     <string name="advisory_label_uk_all_parts_essential_other">Le FCDO déconseille tout voyage dans certaines parties du pays et tout voyage non essentiel dans d\'autres</string>
     <string name="advisory_label_de_none">Pas d\'avertissement de voyage formel (Reisewarnung)</string>
     <string name="advisory_label_de_advised_against">Pas d\'avertissement de voyage formel (Reisewarnung), mais voyager est déconseillé (voir les notes)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Pas d\'avertissement de voyage formel (Reisewarnung), mais voyager est déconseillé</string>
     <string name="advisory_label_de_partial">Avertissement de voyage partiel (Teilreisewarnung)</string>
     <string name="advisory_label_de_warning">Avertissement de voyage formel (Reisewarnung)</string>
 </resources>

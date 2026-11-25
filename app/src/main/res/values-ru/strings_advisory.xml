@@ -19,6 +19,7 @@
     <string name="advisory_label_uk_all_parts_essential_other">FCDO не рекомендует любые поездки в отдельные части страны, а в другие части — любые, кроме необходимых</string>
     <string name="advisory_label_de_none">Официального предупреждения о поездках нет (Reisewarnung)</string>
     <string name="advisory_label_de_advised_against">Официального предупреждения о поездках нет (Reisewarnung), но поездки не рекомендуются (см. примечания)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Официального предупреждения о поездках нет (Reisewarnung), но поездки не рекомендуются</string>
     <string name="advisory_label_de_partial">Частичное предупреждение о поездках (Teilreisewarnung)</string>
     <string name="advisory_label_de_warning">Официальное предупреждение о поездках (Reisewarnung)</string>
 </resources>

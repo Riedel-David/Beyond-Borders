@@ -117,7 +117,7 @@ private fun AdvisoryRow(key: String, source: String, entry: AdvisoryEntry?, loca
             return@Column
         }
         val (container, content) = advisoryColors(advisoryTone(entry.stance))
-        val translated = advisoryLabelRes(entry.labelKey)?.let { stringResource(it) }
+        val translated = advisoryLabelRes(entry.labelKey, entry.notes.isNotEmpty())?.let { stringResource(it) }
         Text(
             // The feed's own wording (US always; UK/DE only when no label key is known) is in the
             // source's language, whatever the app's, so it is tagged for TalkBack's pronunciation.
@@ -245,9 +245,11 @@ internal fun advisoryPalette(tone: AdvisoryTone, dark: Boolean): Pair<Int, Int> 
 
 /**
  * The string resource for a pipeline-written label key (tools/advisory/build_advisory.py), or null
- * for a missing or unknown key, in which case the entry's own `label` text is shown.
+ * for a missing or unknown key, in which case the entry's own `label` text is shown. The DE
+ * "advised against" label points at the notes, so without any (an over-long note is dropped at parse
+ * time while the entry stays) it gets a variant that promises none.
  */
-internal fun advisoryLabelRes(key: String?): Int? = when (key) {
+internal fun advisoryLabelRes(key: String?, hasNotes: Boolean = true): Int? = when (key) {
     "uk_none" -> R.string.advisory_label_uk_none
     "uk_all_whole" -> R.string.advisory_label_uk_all_whole
     "uk_essential_whole" -> R.string.advisory_label_uk_essential_whole
@@ -255,7 +257,8 @@ internal fun advisoryLabelRes(key: String?): Int? = when (key) {
     "uk_essential_parts" -> R.string.advisory_label_uk_essential_parts
     "uk_all_parts_essential_other" -> R.string.advisory_label_uk_all_parts_essential_other
     "de_none" -> R.string.advisory_label_de_none
-    "de_advised_against" -> R.string.advisory_label_de_advised_against
+    "de_advised_against" ->
+        if (hasNotes) R.string.advisory_label_de_advised_against else R.string.advisory_label_de_advised_against_no_notes
     "de_partial" -> R.string.advisory_label_de_partial
     "de_warning" -> R.string.advisory_label_de_warning
     else -> null
