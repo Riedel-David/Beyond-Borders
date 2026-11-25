@@ -748,6 +748,27 @@ class UsUkNotesTest(unittest.TestCase):
         self.assertTrue(any("Border State" in n for n in out))
         self.assertFalse(any(n.startswith("Reconsider travel to X") for n in out))
 
+    def test_us_note_over_the_limit_is_dropped_with_a_warning(self):
+        import contextlib, io
+        long_s = "Do not travel to the Border State due to " + ", ".join(f"reason{i}" for i in range(400)) + "."
+        summary = f"<p>Reconsider travel to X due to crime.</p><p>{long_s}</p><p>Do not travel to the Coast due to crime.</p>"
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            out = b.us_notes(summary, "X")
+        self.assertEqual(out, ["Do not travel to the Coast due to crime."])
+        self.assertIn("US X", err.getvalue())
+        self.assertIn("exceeds", err.getvalue())
+
+    def test_uk_note_over_the_limit_is_dropped_with_a_warning(self):
+        import contextlib, io
+        long_s = "FCDO advises against all travel to " + ", ".join(f"Place{i}" for i in range(400)) + "."
+        pg = {"details": {"parts": [{"body": f"<h2>Areas where FCDO advises against travel</h2><p>{long_s}</p>"}]}}
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            out = b.uk_notes(pg, "Y")
+        self.assertEqual(out, [])
+        self.assertIn("UK Y", err.getvalue())
+
     def test_uk_notes_come_from_the_advises_against_headings(self):
         pg = {"details": {"parts": []}}
         self.assertEqual(b.uk_notes(pg), [])

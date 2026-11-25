@@ -213,11 +213,13 @@ def us_notes(summary: str, country: str) -> list:
         if re.search(r"for any reason", u.text, re.I) \
                 or re.match(r"^(?:Do not travel|Reconsider travel)\s+(?:to|in)\s+" + cname + r"\b\s*(?:due|[.,])", u.text, re.I):
             continue
-        notes.append(trim_note(u.text))
+        note = trim_note(u.text, drop_for=f"US {country.strip()}")
+        if note is not None:
+            notes.append(note)
     return notes[:DE_MAX_NOTES]
 
 
-def uk_notes(page: dict) -> list:
+def uk_notes(page: dict, name: str = "?") -> list:
     """The first sentence under each 'Areas where FCDO advises against ...' heading of the warnings
     part (and under 'FCDO advises against all travel to X'), which says where. Headings vary in
     spacing (non-breaking spaces), so they are compared with whitespace collapsed."""
@@ -237,7 +239,9 @@ def uk_notes(page: dict) -> list:
         for u in de_units(chunk[m.end():], english=True):
             if re.search(r"\b(?:FCDO )?advises against\b", u.text) and not u.text.rstrip().endswith(":"):
                 text = _split_sentences(u.text)[0]
-                notes.append(trim_note(text))
+                note = trim_note(text, drop_for=f"UK {name}")
+                if note is not None:
+                    notes.append(note)
                 break
     seen, out = set(), []
     for n in notes:
@@ -372,7 +376,7 @@ def parse_uk(pages: dict, index: dict) -> dict:
             "url": "https://www.gov.uk/foreign-travel-advice/" + slug,
         }
         try:
-            notes = uk_notes(page) if entry["stance"] else []
+            notes = uk_notes(page, name) if entry["stance"] else []
         except NoteTooLong as exc:
             raise BuildError(f"UK {slug}: {exc}") from exc
         if notes:
@@ -565,10 +569,15 @@ def utf16_len(text: str) -> int:
     return len(text.encode("utf-16-le")) // 2
 
 
-def trim_note(sent: str) -> str:
+def trim_note(sent: str, drop_for=None):
     """A note is carried whole or not at all: the sources' terms forbid showing their text incomplete,
-    so over the limit the build fails loudly (a human decides) instead of cutting."""
+    so over the limit it is never cut. German notes (drop_for None) fail the build loudly, a human
+    decides. US and UK notes pass drop_for ("US Mexico"): the note is dropped with a warning in the
+    build log (returns None), so one long sentence does not stop the weekly build for every source."""
     units = utf16_len(sent)
+    if units > DE_NOTE_MAX_CHARS and drop_for is not None:
+        warn(f"{drop_for}: note of {units} chars exceeds {DE_NOTE_MAX_CHARS}, dropped: {sent[:80]!r}...")
+        return None
     if units > DE_NOTE_MAX_CHARS:
         raise NoteTooLong(f"note of {units} chars exceeds {DE_NOTE_MAX_CHARS}: {sent[:80]!r}...")
     return sent
