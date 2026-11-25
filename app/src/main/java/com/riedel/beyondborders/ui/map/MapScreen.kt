@@ -1836,25 +1836,27 @@ private fun SelectedPlaceCard(
             // The live region is the header's text only (below): announcing the whole card
             // re-read every chip and visit on each status change.
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // No flag (or still decoding): no slot at all. With one, the slot is a
-                // fixed width so the text does not shift between a wide and a square flag.
-                flag?.let {
-                    val (w, h) = flagThumbSize(it.bitmap.width, it.bitmap.height, 64f, 40f)
-                    val shape = RoundedCornerShape(4.dp)
-                    // The tap target is the slot itself, 64 dp wide and at least 48 dp tall:
-                    // the flag inside is at most 40 dp, so the height is padded by layout
-                    // size alone and the header row keeps its look.
-                    Box(
-                        Modifier
-                            .width(64.dp)
-                            .heightIn(min = 48.dp)
-                            .clip(shape)
-                            .semantics { contentDescription = showInListLabel }
-                            .clickable(role = Role.Button, onClick = onShowInList),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                // The slot is always there, so the jump to the list has a tap target even for a place
+                // with no flag asset or one that has not decoded yet; a neutral box stands in for the
+                // flag. With a flag the slot is a fixed width so the text does not shift between a wide
+                // and a square flag.
+                val shape = RoundedCornerShape(4.dp)
+                // The tap target is the slot itself, 64 dp wide and at least 48 dp tall:
+                // the flag inside is at most 40 dp, so the height is padded by layout
+                // size alone and the header row keeps its look.
+                Box(
+                    Modifier
+                        .width(64.dp)
+                        .heightIn(min = 48.dp)
+                        .clip(shape)
+                        .semantics { contentDescription = showInListLabel }
+                        .clickable(role = Role.Button, onClick = onShowInList),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (flag != null) {
+                        val (w, h) = flagThumbSize(flag.bitmap.width, flag.bitmap.height, 64f, 40f)
                         Image(
-                            bitmap = it.bitmap,
+                            bitmap = flag.bitmap,
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
@@ -1862,9 +1864,15 @@ private fun SelectedPlaceCard(
                                 .clip(shape)
                                 .border(1.dp, Color.White.copy(alpha = 0.25f), shape),
                         )
+                    } else {
+                        Box(
+                            Modifier
+                                .size(40.dp, 28.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), shape),
+                        )
                     }
-                    Spacer(Modifier.width(12.dp))
                 }
+                Spacer(Modifier.width(12.dp))
                 // The live region is scoped to the text, not the whole header row: the flag
                 // button's long label would otherwise be announced on every selection.
                 Column(Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }) {
