@@ -553,10 +553,16 @@ class NoteTooLong(BuildError):
     pass
 
 
+def utf16_len(text: str) -> int:
+    """Length the app sees: Kotlin's String.length counts UTF-16 units, so a character outside the
+    BMP is two, where Python's len() says one."""
+    return len(text.encode("utf-16-le")) // 2
+
+
 def trim_note(sent: str) -> str:
     """A note is carried whole or not at all: the sources' terms forbid showing their text incomplete,
     so over the limit the build fails loudly (a human decides) instead of cutting."""
-    units = len(sent.encode("utf-16-le")) // 2  # the app counts UTF-16 units (Kotlin String.length)
+    units = utf16_len(sent)
     if units > DE_NOTE_MAX_CHARS:
         raise NoteTooLong(f"note of {units} chars exceeds {DE_NOTE_MAX_CHARS}: {sent[:80]!r}...")
     return sent
@@ -738,7 +744,7 @@ def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = Fa
     for u in _redundant(found):
         text = u.text
         if _BACKREF.search(text) and u.context and u.context not in text \
-                and len(u.context) + 1 + len(text) <= DE_NOTE_MAX_CHARS:
+                and utf16_len(u.context) + 1 + utf16_len(text) <= DE_NOTE_MAX_CHARS:
             text = u.context + " " + text
         specific = bool(is_own and is_own(u.text)) or bool(re.search(r"\bgewarnt\b", u.text))
         notes.append((0 if specific else 1, trim_note(text)))

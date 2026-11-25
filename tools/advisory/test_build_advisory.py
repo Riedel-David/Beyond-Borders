@@ -689,6 +689,21 @@ class EnglishListJoinTest(unittest.TestCase):
                              ["FCDO advises against: all travel to within 10km of the border; all but essential travel to the rest"])
 
 
+class BackrefLengthTest(unittest.TestCase):
+    def test_a_prefix_that_would_push_the_note_over_in_utf16_units_is_skipped_not_fatal(self):
+        # Astral characters are one code point but two UTF-16 units: the pair fits by len(), not by the app's count.
+        context = "x" * 1400 + "\U0001F600" * 40 + "."
+        sent = "Von Reisen in die o.g. Gebiete wird abgeraten."
+        self.assertLessEqual(len(context) + 1 + len(sent), b.DE_NOTE_MAX_CHARS)
+        self.assertGreater(b.utf16_len(context) + 1 + b.utf16_len(sent), b.DE_NOTE_MAX_CHARS)
+        html_ = "<p>" + context + "</p><p>" + sent + "</p>"
+        self.assertEqual(b.de_notes(html_), [sent])
+
+    def test_a_prefix_that_fits_is_still_prepended(self):
+        html_ = "<p>Das Gebiet im Norden ist unsicher.</p><p>Von Reisen in die o.g. Gebiete wird abgeraten.</p>"
+        self.assertEqual(b.de_notes(html_)[0].split(" ")[0], "Das")
+
+
 class UsUkNotesTest(unittest.TestCase):
     def test_tags_split_on_commas_and_keep_us_intact(self):
         self.assertEqual(b.us_tags("<p>Exercise increased caution in X due to crime, terrorism, and U.S. citizen detention.</p>"),
