@@ -84,6 +84,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -312,7 +313,17 @@ fun PassportScreen(
         // tab) must not leave the request to replay on a later visit.
         try {
             val index = withTimeoutOrNull(2_000) {
-                snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+                val first = snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+                // The index describes the stamped lists, but the LazyColumn lays out a frame
+                // later (a filter reset by the jump changes the item count), so scrolling now
+                // could clamp to the old list. Let two frames pass, re-resolve against live
+                // state, then wait until the list actually holds that row. The surrounding
+                // timeout keeps all of this from hanging.
+                withFrameNanos { }
+                withFrameNanos { }
+                val settled = rowIndexOf(request) ?: first
+                snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > scrollTargetFor(settled) }
+                settled
             }
             if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
         } finally {
