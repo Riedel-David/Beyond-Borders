@@ -199,9 +199,11 @@ class SettingsViewModel(
 
     fun setVisaAutoUpdate(enabled: Boolean) {
         settings.setVisaAutoUpdate(enabled)
-        visaUpdates.sync(enabled)
+        // Guarded like BeyondBordersApp: a failure scheduling one job must not skip the other or
+        // reach the UI thread. Neither sync is a suspend function, so this cannot swallow a cancellation.
+        runCatching { visaUpdates.sync(enabled) }
         // The one switch covers both weekly jobs; they stay separate jobs.
-        advisoryUpdates.sync(enabled)
+        runCatching { advisoryUpdates.sync(enabled) }
         // A stale "Up to date" beside a switch that was just flipped reads as a reply to it.
         clearVisaResult()
     }
