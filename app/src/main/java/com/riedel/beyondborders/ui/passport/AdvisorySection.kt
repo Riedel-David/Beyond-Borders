@@ -15,7 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +31,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -61,7 +65,10 @@ import java.util.Locale
 internal fun AdvisorySection(countryCode: String, modifier: Modifier = Modifier) {
     val repo = (LocalContext.current.applicationContext as? BeyondBordersApp)?.container?.advisory ?: return
     val version by repo.dataVersion.collectAsState()
-    val data by produceState<AdvisoryData?>(null, repo, version) { value = repo.current() }
+    // Starts from the repository's cache so a second expansion does not pop in a frame late, and
+    // keeps the old value while a refreshed copy loads, so an open block never blinks out.
+    var data by remember(repo) { mutableStateOf<AdvisoryData?>(repo.cached()) }
+    LaunchedEffect(repo, version) { data = repo.current() }
     val advisory = data ?: return
     val entries = advisory.forPlace(countryCode)
     val agreement = agreementOf(entries)
@@ -110,8 +117,11 @@ private fun AdvisoryRow(key: String, source: String, entry: AdvisoryEntry?, loca
             return@Column
         }
         val (container, content) = advisoryColors(advisoryTone(entry.stance))
+        val translated = advisoryLabelRes(entry.labelKey)?.let { stringResource(it) }
         Text(
-            advisoryLabelRes(entry.labelKey)?.let { stringResource(it) } ?: entry.label,
+            // The feed's own wording (US always; UK/DE only when no label key is known) is in the
+            // source's language, whatever the app's, so it is tagged for TalkBack's pronunciation.
+            if (translated != null) AnnotatedString(translated) else sourceLanguageText(key, entry.label),
             style = MaterialTheme.typography.bodyMedium,
             color = content,
             modifier = Modifier
@@ -119,23 +129,26 @@ private fun AdvisoryRow(key: String, source: String, entry: AdvisoryEntry?, loca
                 .padding(horizontal = 8.dp, vertical = 2.dp),
         )
         // A source's own sentences, quoted as published. The Auswärtiges Amt's are German in every
-        // app locale, so they are tagged German for TalkBack's pronunciation; the US and UK ones are
-        // English. Never truncated (the app drops a note over its length cap rather than cut it): the AA's terms forbid showing its text incomplete, so a sentence
+        // app locale and the US and UK ones English, so each is tagged with its own language for
+        // TalkBack's pronunciation. Never truncated (the app drops a note over its length cap rather than cut it): the AA's terms forbid showing its text incomplete, so a sentence
         // wraps in full at any font scale.
         entry.notes.forEach { note ->
-            val german = key == GERMAN_SOURCE
             Text(
-                buildAnnotatedString {
-                    if (german) withStyle(SpanStyle(localeList = LocaleList("de"))) { append(quoteAdvisoryNote(key, note)) }
-                    else append(quoteAdvisoryNote(key, note))
-                },
+                sourceLanguageText(key, quoteAdvisoryNote(key, note)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (entry.tags.isNotEmpty()) {
+            // The tags are the feed's English words inside a localised sentence: only they are tagged.
+            val tags = entry.tags.joinToString(", ")
+            val line = stringResource(R.string.advisory_tags, tags)
+            val at = line.lastIndexOf(tags)
             Text(
-                stringResource(R.string.advisory_tags, entry.tags.joinToString(", ")),
+                if (at < 0) AnnotatedString(line) else buildAnnotatedString {
+                    append(line)
+                    addStyle(SpanStyle(localeList = sourceLocaleList(key)), at, at + tags.length)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -187,6 +200,14 @@ private fun advisoryColors(tone: AdvisoryTone): Pair<Color, Color> {
 }
 
 // --- pure functions, unit-testable without Android ---------------------------
+
+/** The language the source publishes in: German for the Auswärtiges Amt, English for the US and UK. */
+internal fun sourceLanguageTag(sourceKey: String): String = if (sourceKey == GERMAN_SOURCE) "de" else "en"
+
+private fun sourceLocaleList(sourceKey: String) = LocaleList(sourceLanguageTag(sourceKey))
+
+private fun sourceLanguageText(sourceKey: String, text: String): AnnotatedString =
+    buildAnnotatedString { withStyle(SpanStyle(localeList = sourceLocaleList(sourceKey))) { append(text) } }
 
 /** The source key whose notes are German. */
 internal const val GERMAN_SOURCE = "DE"

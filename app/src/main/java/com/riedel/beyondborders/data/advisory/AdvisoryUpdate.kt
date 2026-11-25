@@ -150,6 +150,12 @@ class AdvisoryRepository(
         result
     }
 
+    /**
+     * The data if [current] has already loaded it, else null (also null for "no data"). Never
+     * touches the disk, so a screen can use it as a first value without waiting for [current].
+     */
+    fun cached(): AdvisoryData? = synchronized(lock) { if (loaded) cache else null }
+
     fun invalidate() {
         synchronized(lock) { cache = null; loaded = false; generation++ }
         _dataVersion.update { it + 1 }
