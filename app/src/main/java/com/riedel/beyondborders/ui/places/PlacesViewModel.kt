@@ -430,16 +430,13 @@ class PlacesViewModel(
         viewModelScope.launch { repo.deleteVisit(id) }
     }
 
-    /** The rows the passport list should render, already filtered and ordered. */
-    /** [rows] together with the filters they were built under, in one value, so a reader can
-     * tell which filters a list reflects (the raw filter flows run ahead of the derived rows). */
+    /** The rows the passport list should render, already filtered and ordered, together with the
+     * filters they were built under in one value, so a reader can tell which filters a list reflects
+     * (the raw filter flows run ahead of the derived rows). */
     val rowsStamped: StateFlow<StampedRows<PlaceRow>> =
         combine(allPlaces, statuses, _query, _grouping, _statusFilter) { places, st, q, grouping, filter ->
             StampedRows(buildRows(places, st, q, filter, grouping), query = q, statusFilter = filter)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, StampedRows(emptyList()))
-
-    val rows: StateFlow<List<PlaceRow>> =
-        rowsStamped.map { it.rows }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /**
      * Which place codes the map's visa lens should paint in each band, empty while
@@ -468,7 +465,8 @@ class PlacesViewModel(
         combine(stats, _regionMode) { stats, mode -> regionBandCodes(mode, stats) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    /** The rows the visa list should render, already filtered and ordered. */
+    /** The rows the visa list should render, already filtered and ordered, stamped with the filters
+     * they were built under (see [rowsStamped]). */
     val visaRowsStamped: StateFlow<StampedRows<VisaRow>> =
         combine(
             allPlaces,
@@ -482,9 +480,6 @@ class PlacesViewModel(
             )
         }
             .stateIn(viewModelScope, SharingStarted.Eagerly, StampedRows(emptyList()))
-
-    val visaRows: StateFlow<List<VisaRow>> =
-        visaRowsStamped.map { it.rows }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
