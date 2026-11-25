@@ -181,7 +181,16 @@ feed entry maps to an ISO code. An unmapped name is an error that lists it: add 
 code at all, so both are matched by name against `places.json`).
 
 `.github/workflows/advisory-refresh.yml` runs it on Wednesdays and publishes the result to GitHub Pages
-with no pull request. Pages deployments replace the whole site, so `tools/advisory/make_site.py` copies
+(the `publish` job), and its `pull-request` job rebuilds independently and opens a data pull request on
+`data/advisory-YYYY-MM-DD` when the bundled `advisory.json` differs from main in anything but
+`generatedAt` and the sources' `fetchedAt` (`tools/advisory/data_pr.py`, which also writes the PR's list
+of changed countries, capped at 40 lines). Only one such PR is open at a time, an older one is closed in
+favour of the new one, and a stale one is closed when main already matches; merging it releases nothing.
+The two jobs do not wait for each other, so a failed PR job does not stop the publication, and the other
+way round; either failing opens the same issue. The PR job needs the same repo setting as the visa one
+(Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests"); its
+branches start `data/advisory-`, the visa ones `data/visa-`, and each workflow closes only its own.
+Pages deployments replace the whole site, so `tools/advisory/make_site.py` copies
 the live visa files (verified against the live manifest) into the same deployment, and
 `visa-refresh.yml` carries the live `advisory.json` the other way. A failed run publishes nothing and
 opens an issue that quotes the build's error text (also in the run's step summary).
@@ -204,5 +213,7 @@ flat, so `TERRITORY_HEADINGS` in `build_advisory.py` lists them per country (DK,
 sentence under such a heading is no note, but the tripwire still sees it, so on a country with no
 formal flag a new one has to be reviewed. Domestic sub-regions (Xinjiang, Oromia) are not territories.
 
-Before a release, refresh the bundled asset: run the build (`--previous` the live file) and commit
-`advisory.json`, so a fresh install without network starts from current data.
+The weekly data PR keeps the bundled asset current, so a fresh install without network starts from
+current data once it is merged. Before a release, check that no `data/advisory-` PR is waiting; if the PR
+job is broken, refresh by hand as the fallback: run the build (`--previous` the live file) and commit
+`advisory.json`.

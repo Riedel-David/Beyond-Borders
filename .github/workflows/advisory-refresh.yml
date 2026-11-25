@@ -5,8 +5,16 @@ name: Advisory data refresh
 # visa data. Advisories change on any day, so this runs mid-week (Wednesday 06:30 UTC), clear of
 # visa-refresh (Monday 07:00) and visa-freshness (Monday 09:30).
 #
-# Publish only, no pull request: the app bundles a copy for first run and offline, refreshed by hand
-# with the same build (docs/DATA.md).
+# The same run also opens a weekly data pull request (the `pull-request` job) that keeps the copy
+# bundled in the app for first run and offline (app/src/main/assets/advisory.json) current, like
+# visa-refresh.yml does for the visa data. It rebuilds independently of `publish` (so the PR and the
+# published file can differ by a few minutes of feed drift, as with visa) and needs neither job the
+# other: a failing PR job does not stop the publication installed apps depend on, and the other way
+# round. The PR is opened only when the rebuilt file differs from main in anything but generatedAt
+# and the sources' fetchedAt (tools/advisory/data_pr.py), on one data/advisory-YYYY-MM-DD branch; an
+# older open one is closed in favour of it, and a stale one is closed when main already matches.
+# Merging it does NOT release anything. Only branches starting data/advisory- are touched here;
+# visa-refresh.yml owns data/visa-, so the two never close each other's pull requests.
 #
 # A Pages deployment replaces the WHOLE site, so this job does not deploy advisory.json alone. It
 # assembles one site holding advisory.json and the visa files that are live right now
@@ -22,6 +30,11 @@ name: Advisory data refresh
 # Every run also publishes advisory-heartbeat.json (tools/advisory/make_site.py). advisory.json does
 # not change in a quiet week, so it cannot show that this job still runs; the heartbeat can, and
 # visa-freshness.yml fails when it is older than 10 days.
+#
+# Repo settings needed besides Pages (see visa-refresh.yml): Settings > Actions > General > "Allow
+# GitHub Actions to create and approve pull requests". A PR opened with GITHUB_TOKEN does not
+# trigger pull_request workflows, so the checks are started with `gh workflow run ci.yml` on the
+# data branch.
 on:
   schedule:
     - cron: "30 6 * * 3"
@@ -122,11 +135,113 @@ jobs:
             echo "END_OF_ERROR"
           } >> "$GITHUB_OUTPUT"
 
+  # Keeps the bundled copy current. No `needs` either way (see the header). It never deploys Pages,
+  # so it sits outside the pages-publish concurrency group. The token is widened here only.
+  pull-request:
+    # A dispatch from another ref must not open a PR against main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      error: ${{ steps.explain.outputs.error }}
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The build overwrites the bundled file, so main's copy is kept aside to compare against.
+      - name: Rebuild advisory.json
+        run: |
+          set -o pipefail  # the build's exit code must survive the tee
+          git show HEAD:app/src/main/assets/advisory.json > "$RUNNER_TEMP/main-advisory.json"
+          python3 -m unittest discover -s tools/advisory -p 'test_*.py'
+          # Judged against main's file (the build's default), so a week without a change leaves it
+          # identical. A failed build writes nothing and the job goes red with no PR.
+          python3 -I tools/advisory/build_advisory.py 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Decide whether anything changed
+        id: diff
+        run: |
+          changed="$(python3 -I tools/advisory/data_pr.py changed "$RUNNER_TEMP/main-advisory.json" app/src/main/assets/advisory.json)"
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          if [ "$changed" = false ]; then
+            echo "No change in the advisory data." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Close stale data pull requests
+        if: steps.diff.outputs.changed == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh pr list --state open --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("data/advisory-")) | .number' |
+          while read -r N; do
+            gh pr close "$N" --delete-branch --comment "Data on main now matches the latest advisories."
+          done
+
+      - name: Open or update the data pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          BRANCH="data/advisory-$(date -u +%F)"
+          {
+            echo "Weekly refresh of the bundled travel advisories (US State Department, UK FCDO, Auswärtiges Amt). Shipped as published; no app-side curation."
+            echo
+            echo "Merging does not release anything. Countries that differ from main:"
+            echo
+            echo '```'
+            python3 -I tools/advisory/data_pr.py body "$RUNNER_TEMP/main-advisory.json" app/src/main/assets/advisory.json
+            echo '```'
+          } > "$RUNNER_TEMP/body.md"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$BRANCH"
+          git add app/src/main/assets/advisory.json
+          git commit -m "Refresh the bundled advisories from the latest US, UK and German publications"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+
+          # One data PR at a time: close older ones (and drop their branches).
+          gh pr list --state open --json number,headRefName \
+            --jq '.[] | select((.headRefName | startswith("data/advisory-")) and .headRefName != "'"$BRANCH"'") | .number' |
+          while read -r N; do
+            gh pr close "$N" --delete-branch --comment "Superseded by $BRANCH."
+          done
+
+          if [ -n "$(gh pr list --state open --head "$BRANCH" --json number --jq '.[].number')" ]; then
+            gh pr edit "$BRANCH" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --head "$BRANCH" --base main \
+              --title "Advisory data refresh $(date -u +%F)" --body-file "$RUNNER_TEMP/body.md"
+          fi
+
+          # Start the required checks on the pushed head commit.
+          gh workflow run ci.yml --ref "$BRANCH"
+
+      - name: Explain the failure
+        id: explain
+        if: failure()
+        run: |
+          TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran, or in a step that does not log)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
+          { echo "### Advisory data pull request failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "error<<END_OF_ERROR"
+            echo "$TEXT"
+            echo "END_OF_ERROR"
+          } >> "$GITHUB_OUTPUT"
+
   # Scheduled runs only: a manual dispatch is watched by whoever started it, and an issue nobody
   # closes is worse than none. The token is widened here only, not for the job that deploys.
   notify:
-    needs: [publish]
-    if: ${{ always() && github.event_name == 'schedule' && needs.publish.result == 'failure' }}
+    needs: [publish, pull-request]
+    if: ${{ always() && github.event_name == 'schedule' && (needs.publish.result == 'failure' || needs.pull-request.result == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -136,13 +251,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          BUILD_ERROR: ${{ needs.publish.outputs.error }}
+          PUBLISH: ${{ needs.publish.result }}
+          PR: ${{ needs.pull-request.result }}
+          PUBLISH_ERROR: ${{ needs.publish.outputs.error }}
+          PR_ERROR: ${{ needs.pull-request.outputs.error }}
         run: |
           TITLE="Advisory data refresh failed"
-          BODY="The publish job failed: $RUN_URL"
-          if [ -n "$BUILD_ERROR" ]; then
-            BODY="$BODY"$'\n\n```\n'"$BUILD_ERROR"$'\n```\n'
-          fi
+          FAILED=""
+          [ "$PUBLISH" = failure ] && FAILED="publish"
+          [ "$PR" = failure ] && FAILED="${FAILED:+$FAILED and }pull-request"
+          BODY="The $FAILED job failed: $RUN_URL"
+          # Two jobs can fail on the same bad feed; the text is the same then, so show it once.
+          for ERR in "$PUBLISH_ERROR" "$PR_ERROR"; do
+            if [ -n "$ERR" ] && [ "$ERR" != "${SHOWN:-}" ]; then
+              BODY="$BODY"$'\n\n```\n'"$ERR"$'\n```\n'
+              SHOWN="$ERR"
+            fi
+          done
           N="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$TITLE\" in:title" --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number' | head -n 1)"
           if [ -z "$N" ]; then
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY Steps: docs/DATA.md."
