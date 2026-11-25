@@ -42,8 +42,8 @@
     <string name="visa_adjective_de">deutscher</string>
     <string name="visa_adjective_gb">britischer</string>
 
-    <string name="visa_as_of_notice">Stand %1$s (%2$s Reisepass) – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
-    <string name="visa_as_of_notice_two">Stand %1$s (%2$s und %3$s Reisepass) – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
+    <string name="visa_as_of_notice">Stand %1$s (%2$s Reisepass) – vor der Buchung bei offiziellen Regierungsstellen prüfen</string>
+    <string name="visa_as_of_notice_two">Stand %1$s (%2$s und %3$s Reisepass) – vor der Buchung bei offiziellen Regierungsstellen prüfen</string>
 
 
     <!-- Passport list -->
@@ -81,5 +81,5 @@
     <string name="visa_partner_caveat">Nur pro Reisepass: Aufenthaltstitel und Familienangehörigen-Regeln der EU/des Schengen-Raums sind nicht berücksichtigt.</string>
     <string name="visa_partner_toggle">Reisebegleitung: wohin wir beide können</string>
     <string name="visa_summary_partner">Gemeinsame Antwort für beide Reisepässe</string>
-    <string name="visa_as_of_notice_partner">Gemeinsame Antwort für beide Reisepässe, Stand %1$s – vor Buchung bei der offiziellen Regierungsquelle prüfen</string>
+    <string name="visa_as_of_notice_partner">Gemeinsame Antwort für beide Reisepässe, Stand %1$s – vor der Buchung bei offiziellen Regierungsstellen prüfen</string>
 </resources>

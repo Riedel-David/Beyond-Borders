@@ -43,8 +43,8 @@
     <string name="visa_adjective_de">alemán</string>
     <string name="visa_adjective_gb">británico</string>
 
-    <string name="visa_as_of_notice">Datos a fecha de %1$s (pasaporte %2$s): verifícalos en la fuente oficial del gobierno antes de reservar</string>
-    <string name="visa_as_of_notice_two">Datos a fecha de %1$s (pasaportes %2$s y %3$s): verifícalos en la fuente oficial del gobierno antes de reservar</string>
+    <string name="visa_as_of_notice">Datos a fecha de %1$s (pasaporte %2$s): comprueba los datos con las autoridades oficiales antes de reservar</string>
+    <string name="visa_as_of_notice_two">Datos a fecha de %1$s (pasaportes %2$s y %3$s): comprueba los datos con las autoridades oficiales antes de reservar</string>
 
 
     <!-- Passport list -->
@@ -82,5 +82,5 @@
     <string name="visa_partner_caveat">Solo por pasaporte: no se tienen en cuenta los permisos de residencia ni las normas de la UE/Schengen para familiares.</string>
     <string name="visa_partner_toggle">Modo acompañante: adónde podemos ir los dos</string>
     <string name="visa_summary_partner">Respuesta conjunta para ambos pasaportes</string>
-    <string name="visa_as_of_notice_partner">Respuesta conjunta para ambos pasaportes, a fecha de %1$s: verifícala en la fuente oficial del gobierno antes de reservar</string>
+    <string name="visa_as_of_notice_partner">Respuesta conjunta para ambos pasaportes, a fecha de %1$s: compruébala con las autoridades oficiales antes de reservar</string>
 </resources>

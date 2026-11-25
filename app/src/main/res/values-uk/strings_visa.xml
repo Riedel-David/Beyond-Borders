@@ -44,8 +44,8 @@
     <string name="visa_adjective_de">німецький</string>
     <string name="visa_adjective_gb">британський</string>
 
-    <string name="visa_as_of_notice">Дані станом на %1$s (%2$s паспорт) — перевір в офіційному урядовому джерелі перед бронюванням</string>
-    <string name="visa_as_of_notice_two">Дані станом на %1$s (%2$s і %3$s паспорти) — перевір в офіційному урядовому джерелі перед бронюванням</string>
+    <string name="visa_as_of_notice">Дані станом на %1$s (%2$s паспорт) — перевір в офіційних урядових органів перед бронюванням</string>
+    <string name="visa_as_of_notice_two">Дані станом на %1$s (%2$s і %3$s паспорти) — перевір в офіційних урядових органів перед бронюванням</string>
 
 
     <!-- Passport list -->
@@ -83,5 +83,5 @@
     <string name="visa_partner_caveat">Лише за паспортами: посвідки на проживання та правила ЄС/Шенгену для членів родини не враховуються.</string>
     <string name="visa_partner_toggle">Режим партнера: куди можемо обоє</string>
     <string name="visa_summary_partner">Спільна відповідь для обох паспортів</string>
-    <string name="visa_as_of_notice_partner">Спільна відповідь для обох паспортів, дані станом на %1$s — перевір в офіційному урядовому джерелі перед бронюванням</string>
+    <string name="visa_as_of_notice_partner">Спільна відповідь для обох паспортів, дані станом на %1$s — перевір в офіційних урядових органів перед бронюванням</string>
 </resources>

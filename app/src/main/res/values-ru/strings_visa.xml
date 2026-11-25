@@ -44,8 +44,8 @@
     <string name="visa_adjective_de">немецкий</string>
     <string name="visa_adjective_gb">британский</string>
 
-    <string name="visa_as_of_notice">Данные на %1$s (паспорт: %2$s) — перед бронированием сверься с официальным государственным источником</string>
-    <string name="visa_as_of_notice_two">Данные на %1$s (паспорта: %2$s и %3$s) — перед бронированием сверься с официальным государственным источником</string>
+    <string name="visa_as_of_notice">Данные на %1$s (паспорт: %2$s) — перед бронированием сверься с официальными госорганами</string>
+    <string name="visa_as_of_notice_two">Данные на %1$s (паспорта: %2$s и %3$s) — перед бронированием сверься с официальными госорганами</string>
 
 
     <!-- Passport list -->
@@ -83,5 +83,5 @@
     <string name="visa_partner_caveat">Только по паспортам: вид на жительство и правила ЕС/Шенгена для членов семьи не учитываются.</string>
     <string name="visa_partner_toggle">Режим партнёра: куда можем оба</string>
     <string name="visa_summary_partner">Общий ответ для обоих паспортов</string>
-    <string name="visa_as_of_notice_partner">Общий ответ для обоих паспортов, данные на %1$s — перед бронированием сверься с официальным государственным источником</string>
+    <string name="visa_as_of_notice_partner">Общий ответ для обоих паспортов, данные на %1$s — перед бронированием сверься с официальными госорганами</string>
 </resources>
