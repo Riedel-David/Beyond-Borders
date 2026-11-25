@@ -229,7 +229,16 @@ fun PassportScreen(
     // was left on. The scroll itself waits below for the list to exist.
     // A plain guarded write, not an effect: an effect runs after the first frame, which
     // would draw the restored stats screen once before the list.
-    if (showCountry != null && showStatsDetail) showStatsDetail = false
+    // Once per request: the request stays pending for the wait and the scroll (about two
+    // seconds), and a stats card tapped after landing must stay open. The holder is not
+    // state, so reading it never recomposes; it is cleared when the root consumes the request.
+    val closedForRequest = remember { arrayOfNulls<ShowCountryRequest>(1) }
+    if (showCountry == null) {
+        closedForRequest[0] = null
+    } else if (closedForRequest[0] !== showCountry) {
+        closedForRequest[0] = showCountry
+        if (showStatsDetail) showStatsDetail = false
+    }
 
     // Shared by both modes, since the fast-scroll overlay below reads from whichever
     // one is on screen: a rememberSaveable would restore a scroll offset that no
