@@ -306,8 +306,9 @@ class DeNotesTest(unittest.TestCase):
             b.de_notes(f"<p>{long_sentence}</p>")
 
     def test_the_limit_counts_utf16_units_like_the_apps_string_length(self):
-        # 400 emoji are 400 code points but 800 UTF-16 units; 600 of them is over the app's limit.
-        s = "Von Reisen nach " + "😀" * 600 + " wird abgeraten."
+        # An emoji is one code point but two UTF-16 units; three quarters of the limit in emoji is under
+        # it counted in code points and well over it counted the way the app's String.length does.
+        s = "Von Reisen nach " + "😀" * (b.DE_NOTE_MAX_CHARS * 3 // 4) + " wird abgeraten."
         self.assertLess(len(s), b.DE_NOTE_MAX_CHARS)
         with self.assertRaises(b.BuildError):
             b.de_notes(f"<p>{s}</p>")
