@@ -160,7 +160,10 @@ private fun parseEntry(o: JSONObject?): AdvisoryEntry? {
     val host = runCatching { java.net.URI(url).host }.getOrNull()?.lowercase()
     if (host !in ADVISORY_URL_HOSTS) return null
     runCatching { LocalDate.parse(updated) }.getOrNull() ?: return null
-    val tags = o.optJSONArray("tags")?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf(String::isNotBlank) } }
+    // Like notes: optString would turn a JSON null (or a number) into the text "null"/"5".
+    val tags = o.optJSONArray("tags")?.let { a ->
+        (0 until a.length()).mapNotNull { (a.opt(it) as? String)?.trim()?.takeIf(String::isNotEmpty) }
+    }
     // Optional and additive: absent, not an array, or non-string members all mean "no notes" for that
     // part, so an older or odd file can never cost the entry itself.
     val notes = o.optJSONArray("notes")?.let { a ->

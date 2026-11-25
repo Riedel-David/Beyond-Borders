@@ -83,6 +83,11 @@ class AdvisoryTest {
     }
 
     @Test
+    fun `non-string or blank tags are dropped rather than read as the text null`() {
+        assertEquals(listOf("crime"), deEntry(""", "tags": [null, "crime", 5, " "]""").tags)
+    }
+
+    @Test
     fun `non-string or blank notes are dropped and a non-array notes field is ignored`() {
         assertEquals(listOf("a", "b"), deEntry(""", "notes": ["a", 5, null, "  ", {"x": 1}, "b"]""").notes)
         assertEquals(emptyList<String>(), deEntry(""", "notes": "Von Reisen wird abgeraten"""").notes)
