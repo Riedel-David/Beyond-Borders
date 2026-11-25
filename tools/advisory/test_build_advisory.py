@@ -57,11 +57,11 @@ class UsTest(unittest.TestCase):
         with self.assertRaises(b.BuildError):
             b.parse_us([us("France - Exercise caution")], INDEX)
 
-    def test_gaza_and_the_west_bank_share_palestine_and_the_stricter_one_wins(self):
+    def test_gaza_and_the_west_bank_share_palestine_and_disagreeing_ratings_cap_at_parts(self):
         rows = b.parse_us([us("Gaza - Level 4: Do Not Travel"), us("The West Bank - Level 3: Reconsider Travel")], INDEX)
-        self.assertEqual(rows["PS"]["stance"], 3)
+        self.assertEqual(rows["PS"]["stance"], 2)
         rows = b.parse_us([us("The West Bank - Level 3: Reconsider Travel"), us("Gaza - Level 4: Do Not Travel")], INDEX)
-        self.assertEqual(rows["PS"]["stance"], 3)
+        self.assertEqual(rows["PS"]["stance"], 2)
 
     def test_the_title_prefix_and_odd_names_still_resolve(self):
         rows = b.parse_us([us("Mexico Travel Advisory - Level 2: Exercise Increased Caution"),
@@ -650,16 +650,23 @@ class UsUkNotesTest(unittest.TestCase):
         pg = {"details": {"parts": []}}
         self.assertEqual(b.uk_notes(pg), [])
 
-    def test_palestine_keeps_the_stricter_stance_and_names_both_labels(self):
+    def test_disagreeing_merge_is_capped_at_parts_of_the_country_and_names_both_labels(self):
         found = [("a", {"stance": 3, "label": "The Gaza: Level 4: Do Not Travel", "updated": "2026-10-01",
                         "url": "https://travel.state.gov/g", "tags": [], "notes": []}),
                  ("b", {"stance": 2, "label": "West Bank: Level 3: Reconsider Travel", "updated": "2026-10-05",
                         "url": "https://travel.state.gov/w", "tags": [], "notes": []})]
         e = b.merge_us(found)
-        self.assertEqual(e["stance"], 3)
+        self.assertEqual(e["stance"], 2)
         self.assertEqual(e["updated"], "2026-10-05")
         self.assertIn("Gaza", e["label"])
         self.assertIn("West Bank", e["label"])
+
+    def test_agreeing_merge_keeps_its_stance(self):
+        row = {"stance": 3, "label": "Level 4: Do Not Travel", "updated": "2026-10-01",
+               "url": "https://travel.state.gov/x", "tags": [], "notes": []}
+        e = b.merge_us([("a", dict(row)), ("b", dict(row))])
+        self.assertEqual(e["stance"], 3)
+        self.assertEqual(e["label"], "Level 4: Do Not Travel")
 
 
 if __name__ == "__main__":

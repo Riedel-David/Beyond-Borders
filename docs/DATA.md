@@ -163,6 +163,10 @@ unknown key, so the field is additive and `dataFormat` stays 1. A new key needs 
 `values*/strings_advisory.xml`. Adding the field changes every UK/DE entry, so the first run after it
 counts as a change and moves `generatedAt` once (`keep_if_unchanged` compares whole entries).
 
+When several US feed entries map to one ISO code (Gaza and the West Bank are both Palestine), the most cautious
+supplies link, tags and notes and the label names every rating. If the ratings differ the stance is capped at 2
+(parts of the country), so one part's Level 4 does not count the whole territory as advised against.
+
 ```sh
 python3 tools/advisory/build_advisory.py                        # downloads all three feeds (~430 small calls)
 python3 tools/advisory/build_advisory.py --source tools/advisory/cache   # offline, from the last download

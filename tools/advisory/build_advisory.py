@@ -287,12 +287,15 @@ def parse_us(feed, index: dict) -> dict:
 def merge_us(found: list) -> dict:
     """One ISO code, several feed entries (Gaza and the West Bank are both Palestine). The most
     cautious one supplies stance, link, tags and notes, so a calm page cannot hide a warning one. If
-    the ratings differ, the label names both, so 'Level 4' is not read as covering the whole territory."""
+    the ratings differ, the label names both, so 'Level 4' is not read as covering the whole territory,
+    and the stance is capped at 2 (parts of the country): one part's warning must not count the
+    whole country as advised against."""
     best = max(found, key=lambda f: f[1]["stance"])  # max keeps the first of equals
     entry = dict(best[1])
     if len({f[1]["label"] for f in found}) > 1:
         ordered = sorted(found, key=lambda f: -f[1]["stance"])
         entry["label"] = "; ".join(f"{n}: {e['label']}" for n, e in ordered)
+        entry["stance"] = min(entry["stance"], 2)
     entry["updated"] = max(f[1]["updated"] for f in found)
     return entry
 
