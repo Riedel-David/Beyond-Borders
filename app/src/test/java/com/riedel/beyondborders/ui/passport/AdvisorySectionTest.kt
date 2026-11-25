@@ -126,4 +126,34 @@ class AdvisorySectionTest {
         assertEquals(true, showsAdvisory("FR", listOf("DE")))
         assertEquals(true, showsAdvisory("FR", emptyList()))
     }
+
+    @Test
+    fun `a single passport hides only its own country`() {
+        val own = ownPassportCodes("DE", null, null)
+        assertEquals(false, showsAdvisory("DE", own))
+        assertEquals(true, showsAdvisory("FR", own))
+    }
+
+    @Test
+    fun `a second passport hides its country too`() {
+        val own = ownPassportCodes("DE", "FR", null)
+        assertEquals(false, showsAdvisory("FR", own))
+        assertEquals(false, showsAdvisory("DE", own))
+        assertEquals(true, showsAdvisory("IT", own))
+    }
+
+    @Test
+    fun `in partner mode the partner's country shows while the user's own and second countries hide`() {
+        val own = ownPassportCodes("DE", "FR", listOf("DE", "FR"))
+        assertEquals(true, showsAdvisory("JP", own)) // the partner's passport country is not in `own`
+        assertEquals(false, showsAdvisory("DE", own))
+        assertEquals(false, showsAdvisory("FR", own))
+    }
+
+    @Test
+    fun `own passport matching ignores case`() {
+        val own = ownPassportCodes("de", null, listOf("Fr"))
+        assertEquals(false, showsAdvisory("DE", own))
+        assertEquals(false, showsAdvisory("fr", own))
+    }
 }

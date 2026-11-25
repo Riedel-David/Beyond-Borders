@@ -68,7 +68,8 @@ internal fun AdvisorySection(countryCode: String, modifier: Modifier = Modifier)
     // Starts from the repository's cache so a second expansion does not pop in a frame late, and
     // keeps the old value while a refreshed copy loads, so an open block never blinks out.
     var data by remember(repo) { mutableStateOf<AdvisoryData?>(repo.cached()) }
-    LaunchedEffect(repo, version) { data = repo.current() }
+    // Only a non-null result replaces the held value: current() is null when nothing could be read.
+    LaunchedEffect(repo, version) { repo.current()?.let { data = it } }
     val advisory = data ?: return
     val entries = advisory.forPlace(countryCode)
     val agreement = agreementOf(entries)
@@ -263,6 +264,10 @@ internal fun advisoryLabelRes(key: String?, hasNotes: Boolean = true): Int? = wh
     "de_warning" -> R.string.advisory_label_de_warning
     else -> null
 }
+
+/** The user's own passport codes: first, second, and (in partner mode) the registries the pair's own side is built from. */
+internal fun ownPassportCodes(first: String, second: String?, partnerOwn: List<String>?): List<String> =
+    listOfNotNull(first, second) + (partnerOwn ?: emptyList())
 
 /** False for the user's own passport country (ISO codes, case-insensitive): a rating of home is not travel advice. */
 internal fun showsAdvisory(placeCode: String, ownPassports: Collection<String>): Boolean =
