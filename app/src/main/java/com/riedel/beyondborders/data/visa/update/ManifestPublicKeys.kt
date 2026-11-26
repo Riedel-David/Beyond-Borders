@@ -4,9 +4,9 @@ package com.riedel.beyondborders.data.visa.update
  * The public keys a published manifest.json may be signed with: ECDSA P-256, each one the
  * X.509 SubjectPublicKeyInfo in DER, base64 (one line, no PEM header).
  *
- * PLACEHOLDER: the list is empty until the owner generates the real key pair (docs/DATA.md,
- * "Signing the manifest"). An empty list means no key is configured, so every signature
- * fails and the updater downloads nothing: do not release an app with this list empty.
+ * Generated 2026-11-26; the private half is the MANIFEST_SIGNING_KEY repository secret
+ * (docs/DATA.md, "Signing the manifest"). An empty list means no key is configured, so every
+ * signature fails and the updater downloads nothing: never release an app with this list empty.
  *
  * Rotation: ship the new key here in an app release (old and new side by side), switch the
  * MANIFEST_SIGNING_KEY secret, and drop the old key in a later release.
@@ -15,5 +15,5 @@ package com.riedel.beyondborders.data.visa.update
  * per line, in double quotes, and nothing else in the parentheses but comments.
  */
 internal val MANIFEST_PUBLIC_KEYS: List<String> = listOf(
-    // "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...",
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXObN9ybmHod5XCug3Jip6AOX2a/ud0t4xtzCdq4737TXQrC8ChqYi+xBmQdAOtGahMq1nAAdaho1DKjozCkD9A==",
 )
