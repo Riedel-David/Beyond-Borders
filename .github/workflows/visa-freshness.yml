@@ -102,8 +102,8 @@ jobs:
 
   # advisory.json is stable in a quiet week, so its own date cannot show whether advisory-refresh.yml
   # still runs. Every run of that job publishes advisory-heartbeat.json, and this fails when it is
-  # missing or older than 10 days (one missed Monday run is 7 days old by the next Monday, so it takes two misses to fail here;
-  the failed run itself opens an issue).
+  # missing or older than 10 days (one missed Monday run is 7 days old by the next Monday, so it takes
+  # two misses to fail here; the failed run itself opens an issue).
   advisory-heartbeat:
     runs-on: ubuntu-latest
     timeout-minutes: 10
