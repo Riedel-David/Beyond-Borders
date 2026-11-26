@@ -158,6 +158,7 @@
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Сообщить о проблеме</string>
+    <string name="settings_privacy_policy">Политика конфиденциальности</string>
     <string name="settings_licences_title">Источники данных и лицензии</string>
     <string name="settings_licences_close">Закрыть</string>
     <string name="settings_licence_app">Beyond Borders</string>

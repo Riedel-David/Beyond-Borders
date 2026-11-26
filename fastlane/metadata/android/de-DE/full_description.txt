@@ -1,4 +1,4 @@
-Beyond Borders ist ein Reisetracker und eine Karte besuchter Länder mit eingebautem Visa-Checker für deinen Reisepass. Sie funktioniert offline: kein Konto, keine Werbung, kein Tracking. Einzige Netzwerknutzung: ein optionaler wöchentlicher Download neuer Visa-Daten und Reisehinweise von GitHub Pages (HTTPS, in unbegrenzten Netzen oder per „Jetzt prüfen“), abschaltbar in den Einstellungen; es wird keine Kennung gesendet.
+Beyond Borders ist ein Reisetracker und eine Karte besuchter Länder mit Visa-Checker für deinen Reisepass. Sie funktioniert offline: kein Konto, keine Werbung, kein Tracking. Einzige Netzwerknutzung: ein optionaler wöchentlicher Download neuer Visa-Daten und Reisehinweise von GitHub Pages (HTTPS, in unbegrenzten Netzen oder per „Jetzt prüfen“), abschaltbar in den Einstellungen; nur Pass-Dateinamen werden gesendet.
 
 Es gibt sie wegen eines Ärgernisses: Die meisten Reisetracker wählen mehr aus, als du antippst. Tippst du auf Dänemark, bekommst du Grönland dazu. Hier sind das getrennte Orte, die App kennt keine Eltern-Kind-Beziehung und kann eine Auswahl nicht versehentlich weitergeben.
 

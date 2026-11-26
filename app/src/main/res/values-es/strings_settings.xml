@@ -155,6 +155,7 @@
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Informar de un problema</string>
+    <string name="settings_privacy_policy">Política de privacidad</string>
     <string name="settings_licences_title">Fuentes de datos y licencias</string>
     <string name="settings_licences_close">Cerrar</string>
     <string name="settings_licence_app">Beyond Borders</string>

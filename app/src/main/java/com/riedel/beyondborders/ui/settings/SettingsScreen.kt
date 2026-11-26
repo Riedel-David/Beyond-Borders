@@ -675,6 +675,8 @@ fun SettingsScreen(
             HorizontalDivider()
             ReportProblemLink()
             HorizontalDivider()
+            PrivacyPolicyLink()
+            HorizontalDivider()
             val playContext = LocalContext.current
             NavRow(
                 title = stringResource(R.string.settings_rate_play),
