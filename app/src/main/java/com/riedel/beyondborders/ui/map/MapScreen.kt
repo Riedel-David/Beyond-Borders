@@ -259,6 +259,8 @@ fun MapScreen(
     val palette = LocalMapPalette.current
 
     val controller = remember { PlacesMapController() }
+    // From the configuration, not a measured size: the effect below must not wait on layout.
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
 
     // Centre on the home country once passport, registry and map are all there. Keyed on all
     // three (mapReady is state the controller flips), never on a measured size, so it cannot
@@ -272,7 +274,7 @@ fun MapScreen(
         // Remember the passport even when skipping, so a later change in Settings still centres.
         viewModel.homeCameraFor = code
         if (!centre) return@LaunchedEffect
-        val target = homeCamera(place.bounds)
+        val target = homeCamera(place.bounds, screenWidthDp.toDouble())
         // Saved now, not when the animation ends: leaving the tab mid-flight destroys the map
         // before its idle callback runs, and the rebuilt one would start back at the world view.
         viewModel.mapCamera = target

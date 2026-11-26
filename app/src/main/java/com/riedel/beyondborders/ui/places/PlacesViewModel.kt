@@ -1,6 +1,10 @@
 package com.riedel.beyondborders.ui.places
 
+import kotlin.math.PI
+import kotlin.math.atan
+import kotlin.math.exp
 import kotlin.math.ln
+import kotlin.math.tan
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -1646,25 +1650,39 @@ internal fun reviewStateAfter(state: ReviewState, choice: ReviewChoice, nowMs: L
 
 /**
  * The "slightly zoomed" camera on a home country. MapLibre zoom 0 shows the world 512 dp wide, so
- * the zoom at which the box spans about a quarter of a 400 dp phone is log2(100 * 360 / (512 * span)).
+ * the zoom at which the box spans about a quarter of a [widthDp] wide map is
+ * log2(widthDp / 4 * 360 / (512 * span)); 400 dp is the phone this was tuned on.
+ * The centre is the middle of the box in Mercator y, not the mean latitude, so a tall country
+ * far from the equator (Norway, Chile) is not drawn off-centre.
  * Latitude counts 1.5 times because Mercator stretches it. Clamped so a small country is not a
  * tight fit and a huge one (Russia) falls back to nearly the world view. A box with west > east
  * crosses the antimeridian, so its longitude span wraps instead of going negative.
  */
-internal fun homeCamera(bounds: Bounds): MapCamera {
+internal fun homeCamera(bounds: Bounds, widthDp: Double = HOME_REFERENCE_WIDTH_DP): MapCamera {
     val rawLon = bounds.east - bounds.west
     val lonSpan = if (rawLon < 0) rawLon + 360.0 else rawLon
     val latSpan = bounds.north - bounds.south
     var lon = bounds.west + lonSpan / 2
     if (lon > 180.0) lon -= 360.0
-    val lat = (bounds.north + bounds.south) / 2
+    val lat = mercatorToLatitude((latitudeToMercator(bounds.north) + latitudeToMercator(bounds.south)) / 2)
     val span = maxOf(lonSpan, latSpan * 1.5)
-    val zoom = if (span <= 0.0) HOME_ZOOM_MAX else ln(100.0 * 360.0 / (512.0 * span)) / ln(2.0)
+    val zoom = if (span <= 0.0 || widthDp <= 0.0) HOME_ZOOM_MAX else ln(widthDp / 4.0 * 360.0 / (512.0 * span)) / ln(2.0)
     return MapCamera(lat, lon, zoom.coerceIn(HOME_ZOOM_MIN, HOME_ZOOM_MAX))
 }
 
 private const val HOME_ZOOM_MIN = 1.0
 private const val HOME_ZOOM_MAX = 3.0
+internal const val HOME_REFERENCE_WIDTH_DP = 400.0
+
+private const val MERCATOR_MAX_LAT = 85.0511287798
+
+/** Web-Mercator y of a latitude, in radians; the latitude is clamped to the projection's limit. */
+internal fun latitudeToMercator(lat: Double): Double =
+    ln(tan(PI / 4 + Math.toRadians(lat.coerceIn(-MERCATOR_MAX_LAT, MERCATOR_MAX_LAT)) / 2))
+
+/** The latitude, in degrees, at a Web-Mercator y given in radians. */
+internal fun mercatorToLatitude(y: Double): Double =
+    Math.toDegrees(2 * atan(exp(y)) - PI / 2)
 
 /**
  * Whether the map should glide to the home country now. Yes when the passport differs from the
