@@ -164,7 +164,7 @@
     <string name="settings_licence_font">Police</string>
     <string name="settings_licence_flags">Drapeaux</string>
     <string name="settings_licence_visa">Données de visa</string>
-    <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, dérivé de Wikipédia (contributeurs, CC BY-SA 4.0), voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
+    <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, adapté à partir des contributeurs de Wikipédia et partagé sous CC BY-SA 4.0, voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
     <string name="settings_sources_heading">Sources de données</string>
     <string name="settings_licences_heading">Licences open source</string>
     <string name="settings_source_advisory">Avis aux voyageurs</string>

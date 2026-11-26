@@ -161,7 +161,7 @@
     <string name="settings_licence_font">Schriftart</string>
     <string name="settings_licence_flags">Flaggen</string>
     <string name="settings_licence_visa">Visumdaten</string>
-    <string name="settings_licence_visa_body">Datensatz zu Visumbestimmungen, abgeleitet von Wikipedia-Autoren (CC BY-SA 4.0), siehe THIRD_PARTY_NOTICES.md im Repository</string>
+    <string name="settings_licence_visa_body">Datensatz zu Visumbestimmungen, bearbeitet nach Wikipedia-Autoren und weitergegeben unter CC BY-SA 4.0, siehe THIRD_PARTY_NOTICES.md im Repository</string>
     <string name="settings_sources_heading">Datenquellen</string>
     <string name="settings_licences_heading">Open-Source-Lizenzen</string>
     <string name="settings_source_advisory">Reisehinweise</string>

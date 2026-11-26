@@ -22,7 +22,7 @@ app's categories and day counts; some answers are hand-corrected or added in
 `tools/visa/rules.py`; and the DE asset additionally carries links to the German
 Foreign Office's travel advice (see below). **Share-alike:** these `visa*.json` assets (not the
 app's source code, which stays GPL-3.0) are distributed under CC BY-SA 4.0 as well, and
-anyone reusing them must keep that licence and this attribution. No endorsement by
+anyone reusing them must keep that licence and this attribution. The upstream dataset states the same terms in its `LICENSE-DATA.md` (CC BY-SA 4.0 for `data/`, MIT for its code) and every passport file it publishes carries `"license": "CC BY-SA 4.0"`; the assets here carry the licence name and URL in `dataset.licence` and `dataset.licenceUrl`, and the app's visa screen shows them. The advisory data below is not Wikipedia-derived and is not covered by this section. No endorsement by
 Wikipedia, its contributors or the dataset's author is implied.
 
 ## Natural Earth (public domain)

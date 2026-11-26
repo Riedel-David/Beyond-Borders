@@ -167,7 +167,7 @@
     <string name="settings_licence_font">Шрифт</string>
     <string name="settings_licence_flags">Флаги</string>
     <string name="settings_licence_visa">Визовые данные</string>
-    <string name="settings_licence_visa_body">Набор данных о визовых требованиях на основе материалов участников Википедии (CC BY-SA 4.0), см. THIRD_PARTY_NOTICES.md в репозитории</string>
+    <string name="settings_licence_visa_body">Набор данных о визовых требованиях адаптирован на основе материалов участников Википедии и распространяется по лицензии CC BY-SA 4.0, см. THIRD_PARTY_NOTICES.md в репозитории</string>
     <string name="settings_sources_heading">Источники данных</string>
     <string name="settings_licences_heading">Лицензии открытого ПО</string>
     <string name="settings_source_advisory">Рекомендации для путешественников</string>

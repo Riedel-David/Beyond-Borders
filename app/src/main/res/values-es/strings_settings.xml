@@ -164,7 +164,7 @@
     <string name="settings_licence_font">Tipografía</string>
     <string name="settings_licence_flags">Banderas</string>
     <string name="settings_licence_visa">Datos de visado</string>
-    <string name="settings_licence_visa_body">Conjunto de datos sobre requisitos de visado, derivado de colaboradores de Wikipedia (CC BY-SA 4.0); consulta THIRD_PARTY_NOTICES.md en el repositorio</string>
+    <string name="settings_licence_visa_body">Conjunto de datos sobre requisitos de visado, adaptado a partir de colaboradores de Wikipedia y compartido bajo CC BY-SA 4.0; consulta THIRD_PARTY_NOTICES.md en el repositorio</string>
     <string name="settings_sources_heading">Fuentes de datos</string>
     <string name="settings_licences_heading">Licencias de código abierto</string>
     <string name="settings_source_advisory">Avisos de viaje</string>

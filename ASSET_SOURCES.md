@@ -48,6 +48,10 @@ revision <id>" — the article URL and revision of each passport are in its asse
 (`dataset.sourceUrl`, `dataset.sourceRevision`), and the article's page history lists
 the contributors.
 
+The upstream repository's `LICENSE-DATA.md` sets the same terms (credit "Wikipedia contributors", link the
+article and the licence, indicate changes, share adaptations under CC BY-SA 4.0); each asset records the
+licence in `dataset.licence` / `dataset.licenceUrl`. `advisory.json` is not Wikipedia-derived and is not under this licence.
+
 `build_visa.py` always downloads the latest publication into `tools/visa/cache/`
 (gitignored), so a rebuild is not reproducible from this repository alone. What the
 committed assets were built from is therefore recorded instead:
