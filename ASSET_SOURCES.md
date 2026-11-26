@@ -91,7 +91,7 @@ link of three governments. Sources, fetched live by the script:
 
 Rebuild with `python3 tools/advisory/build_advisory.py` (needs network; `--source tools/advisory/cache` for offline)
 and commit the file; details and the tests are in [`docs/DATA.md`](docs/DATA.md). The published copy is rebuilt
-every Wednesday by `.github/workflows/advisory-refresh.yml`. The file records its own `generatedAt` and each
+every Monday by `.github/workflows/advisory-refresh.yml`. The file records its own `generatedAt` and each
 source's `fetchedAt`, so it is not pinned to a checksum like the visa files. Licences and the Auswärtiges Amt
 terms: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 

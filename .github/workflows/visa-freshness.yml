@@ -102,7 +102,8 @@ jobs:
 
   # advisory.json is stable in a quiet week, so its own date cannot show whether advisory-refresh.yml
   # still runs. Every run of that job publishes advisory-heartbeat.json, and this fails when it is
-  # missing or older than 10 days (one missed Wednesday run is 12 days by the next Monday).
+  # missing or older than 10 days (one missed Monday run is 7 days old by the next Monday, so it takes two misses to fail here;
+  the failed run itself opens an issue).
   advisory-heartbeat:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -136,7 +137,7 @@ jobs:
             fi
             [ "$RC" = 0 ] || exit 1
             # advisory.json can be live from visa-refresh's bundled copy days before the first
-            # advisory-refresh (Wednesday) has run. Until that copy is older than the heartbeat
+            # advisory-refresh (Monday 08:00) has run. Until that copy is older than the heartbeat
             # limit, a missing heartbeat is pending, not a finding.
             if python3 -I tools/advisory/make_site.py --check-advisory-age "$RUNNER_TEMP/advisory.json" --max-age-days 10 2> "$RUNNER_TEMP/why.txt"; then
               echo "::notice::advisory-heartbeat.json is not published yet; the live advisory.json is recent, so the first advisory refresh is still pending."

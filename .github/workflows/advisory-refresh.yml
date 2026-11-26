@@ -2,8 +2,8 @@ name: Advisory data refresh
 
 # Weekly publication of advisory.json (US State Department, UK FCDO and Auswärtiges Amt travel
 # advisories, tools/advisory/build_advisory.py) to the GitHub Pages site that already serves the
-# visa data. Advisories change on any day, so this runs mid-week (Wednesday 06:30 UTC), clear of
-# visa-refresh (Monday 07:00) and visa-freshness (Monday 09:30).
+# visa data. It runs on Mondays at 08:00 UTC, an hour after visa-refresh (07:00, whose publish it
+# must follow: this build verifies the live visa files) and before visa-freshness (09:30).
 #
 # The same run also opens a weekly data pull request (the `pull-request` job) that keeps the copy
 # bundled in the app for first run and offline (app/src/main/assets/advisory.json) current, like
@@ -37,7 +37,7 @@ name: Advisory data refresh
 # data branch.
 on:
   schedule:
-    - cron: "30 6 * * 3"
+    - cron: "0 8 * * 1"
   workflow_dispatch:
 
 permissions:
