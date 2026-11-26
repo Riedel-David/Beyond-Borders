@@ -42,12 +42,9 @@
     <string name="visa_adjective_de">alemão</string>
     <string name="visa_adjective_gb">britânico</string>
 
-    <string name="visa_as_of_notice">Dados de %1$s (passaporte %2$s): confirma na fonte oficial do governo antes de reservar</string>
-    <string name="visa_as_of_notice_two">Dados de %1$s (passaportes %2$s e %3$s): confirma na fonte oficial do governo antes de reservar</string>
+    <string name="visa_as_of_notice">Dados de %1$s (passaporte %2$s): confirma junto das autoridades oficiais antes de reservar</string>
+    <string name="visa_as_of_notice_two">Dados de %1$s (passaportes %2$s e %3$s): confirma junto das autoridades oficiais antes de reservar</string>
 
-    <string name="visa_official_link">Orientações oficiais</string>
-    <string name="visa_official_link_for">Orientações do Ministério dos Negócios Estrangeiros: %1$s</string>
-    <string name="visa_iata_link">IATA Travel Centre (pesquisa lá)</string>
 
     <!-- Passport list -->
     <string name="visa_search_destinations">Pesquisar destinos</string>
@@ -84,5 +81,5 @@
     <string name="visa_partner_caveat">Apenas por passaporte: as autorizações de residência e as regras da UE/Schengen para familiares não são consideradas.</string>
     <string name="visa_partner_toggle">Modo acompanhante: para onde podemos ir os dois</string>
     <string name="visa_summary_partner">Resposta conjunta para os dois passaportes</string>
-    <string name="visa_as_of_notice_partner">Resposta conjunta para os dois passaportes, dados de %1$s: confirma na fonte oficial do governo antes de reservar</string>
+    <string name="visa_as_of_notice_partner">Resposta conjunta para os dois passaportes, dados de %1$s: confirma junto das autoridades oficiais antes de reservar</string>
 </resources>

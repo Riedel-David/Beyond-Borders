@@ -1,0 +1,16 @@
+{"dataFormat": 1, "generatedAt": "2026-11-24T07:00:00Z",
+ "sources": {"US": {"label": "US State Department", "fetchedAt": "2026-11-24T06:50:00Z"},
+             "UK": {"label": "UK FCDO", "fetchedAt": "2026-11-24T06:51:00Z"},
+             "DE": {"label": "Auswärtiges Amt", "fetchedAt": "2026-11-24T06:52:00Z"}},
+ "countries": {
+  "FR": {"US": {"stance": 1, "label": "Level 2: Exercise increased caution", "updated": "2026-10-02", "url": "https://travel.state.gov/fr", "tags": ["terrorism", "civil-unrest"]},
+         "UK": {"stance": 0, "label": "No travel restrictions", "updated": "2026-11-01", "url": "https://www.gov.uk/foreign-travel-advice/france"},
+         "DE": {"stance": 0, "label": "Keine Reisewarnung", "updated": "2026-09-15", "url": "https://www.auswaertiges-amt.de/fr"}},
+  "SY": {"US": {"stance": 3, "label": "Level 4: Do not travel", "updated": "2026-08-01", "url": "https://travel.state.gov/sy"},
+         "UK": {"stance": 3, "label": "FCDO advises against all travel", "updated": "2026-08-03", "url": "https://www.gov.uk/foreign-travel-advice/syria"}},
+  "GL": {"DE": {"stance": 0, "label": "Keine Reisewarnung", "updated": "2026-09-15", "url": "https://www.auswaertiges-amt.de/gl"}},
+  "XX": {"US": {"stance": 7, "label": "bad stance", "updated": "2026-01-01", "url": "https://travel.state.gov/"},
+         "UK": {"stance": 2, "label": "bad url", "updated": "2026-01-01", "url": "http://x.example/"},
+         "DE": {"stance": 2, "label": "bad date", "updated": "yesterday", "url": "https://travel.state.gov/"}},
+  "france": {"US": {"stance": 1, "label": "not an ISO key", "updated": "2026-01-01", "url": "https://travel.state.gov/"}}
+ }}

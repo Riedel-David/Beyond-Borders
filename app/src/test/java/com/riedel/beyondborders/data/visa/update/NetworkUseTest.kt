@@ -12,7 +12,6 @@ class NetworkUseTest {
         "data/visa/update/VisaUpdate.kt", // the updater's one host
         "ui/ReviewPrompt.kt", // opens the Play page in the Play app or a browser
         "ui/settings/LicencesDialog.kt", // opens the repository page in a browser
-        "ui/places/TravelAdvice.kt", // opens the UK government advice page in a browser
     )
 
     @Test

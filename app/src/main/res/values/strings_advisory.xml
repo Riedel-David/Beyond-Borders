@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Government travel advisories</string>
+    <string name="advisory_agreement">Sources advising against travel to the whole country: %1$d of %2$d</string>
+    <string name="advisory_partial_data">Only %1$d of %2$d sources have data for this place.</string>
+    <string name="advisory_none">No advisory data for this place from any source.</string>
+    <string name="advisory_no_data">No data</string>
+    <string name="advisory_tags">Risk tags: %1$s</string>
+    <string name="advisory_updated">Updated %1$s</string>
+    <string name="advisory_open_source">Open source</string>
+    <string name="advisory_open_source_for">Open source, %1$s</string>
+    <string name="advisory_as_of">Data as of %1$s</string>
+    <string name="advisory_check_official">Check the official source before you travel.</string>
+    <string name="advisory_label_uk_none">FCDO has no travel warning for this country</string>
+    <string name="advisory_label_uk_all_whole">FCDO advises against all travel to the whole country</string>
+    <string name="advisory_label_uk_essential_whole">FCDO advises against all but essential travel to the whole country</string>
+    <string name="advisory_label_uk_all_parts">FCDO advises against all travel to parts of the country</string>
+    <string name="advisory_label_uk_essential_parts">FCDO advises against all but essential travel to parts of the country</string>
+    <string name="advisory_label_uk_all_parts_essential_other">FCDO advises against all travel to parts of the country, and all but essential travel to other parts</string>
+    <string name="advisory_label_de_none">No formal travel warning</string>
+    <string name="advisory_label_de_advised_against">No formal travel warning, but travel is advised against (see notes)</string>
+    <string name="advisory_label_de_advised_against_no_notes">No formal travel warning, but travel is advised against</string>
+    <string name="advisory_label_de_partial">Partial travel warning (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Formal travel warning (Reisewarnung)</string>
+</resources>

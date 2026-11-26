@@ -99,3 +99,57 @@ jobs:
           if [ "$SCHEMA_CHANGED" = "yes" ]; then
             report "index schema changed" "Index schema_version is $SCHEMA, major version changed."
           fi
+
+  # advisory.json is stable in a quiet week, so its own date cannot show whether advisory-refresh.yml
+  # still runs. Every run of that job publishes advisory-heartbeat.json, and this fails when it is
+  # missing or older than 10 days (one missed Wednesday run is 12 days by the next Monday).
+  advisory-heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check that the advisory refresh is still running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LIVE=https://riedel-david.github.io/Beyond-Borders
+          problem() {  # $1 = details; one open issue per title, then fail the run
+            TITLE="Advisory data: refresh is not running"
+            echo "::error::$1"
+            echo "**Needs attention:** $1" >> "$GITHUB_STEP_SUMMARY"
+            if [ -z "$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number')" ]; then
+              gh issue create --title "$TITLE" --body "$1 Check the Advisory data refresh workflow; steps: docs/DATA.md."
+            fi
+            exit 1
+          }
+          RC=0
+          python3 -I tools/advisory/fetch_live.py "$LIVE/advisory-heartbeat.json" "$RUNNER_TEMP/heartbeat.json" --probe "$LIVE/manifest.json" || RC=$?
+          if [ "$RC" = 3 ]; then
+            # Before the first publication there is nothing to be late. Once advisory.json is live
+            # (it can be there from visa-refresh's bundled copy), a missing heartbeat is a finding.
+            RC=0
+            python3 -I tools/advisory/fetch_live.py "$LIVE/advisory.json" "$RUNNER_TEMP/advisory.json" --probe "$LIVE/manifest.json" || RC=$?
+            if [ "$RC" = 3 ]; then
+              echo "Nothing published yet; nothing to check."
+              exit 0
+            fi
+            [ "$RC" = 0 ] || exit 1
+            # advisory.json can be live from visa-refresh's bundled copy days before the first
+            # advisory-refresh (Wednesday) has run. Until that copy is older than the heartbeat
+            # limit, a missing heartbeat is pending, not a finding.
+            if python3 -I tools/advisory/make_site.py --check-advisory-age "$RUNNER_TEMP/advisory.json" --max-age-days 10 2> "$RUNNER_TEMP/why.txt"; then
+              echo "::notice::advisory-heartbeat.json is not published yet; the live advisory.json is recent, so the first advisory refresh is still pending."
+              echo "### Advisory refresh heartbeat" >> "$GITHUB_STEP_SUMMARY"
+              echo "Pending: no heartbeat yet, but the live advisory.json is less than 10 days old." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            problem "The published site has advisory.json but no advisory-heartbeat.json: Advisory data refresh has never published ($(tail -n 1 "$RUNNER_TEMP/why.txt" | cut -c1-200))."
+          elif [ "$RC" != 0 ]; then
+            exit 1
+          fi
+          if ! python3 -I tools/advisory/make_site.py --check-heartbeat "$RUNNER_TEMP/heartbeat.json" 2> "$RUNNER_TEMP/why.txt"; then
+            problem "$(tail -n 1 "$RUNNER_TEMP/why.txt" | cut -c1-300)"
+          fi
+          echo "### Advisory refresh heartbeat" >> "$GITHUB_STEP_SUMMARY"
+          echo "Last refresh: $(python3 -I -c "import json,sys; print(json.load(open(sys.argv[1]))['refreshedAt'])" "$RUNNER_TEMP/heartbeat.json")" >> "$GITHUB_STEP_SUMMARY"

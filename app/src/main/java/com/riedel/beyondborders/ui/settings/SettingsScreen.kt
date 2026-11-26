@@ -78,6 +78,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import com.riedel.beyondborders.data.advisory.AdvisoryOutcome
 import com.riedel.beyondborders.data.visa.update.VisaCheckOutcome
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -132,6 +133,8 @@ fun SettingsScreen(
             resolver = context.applicationContext.contentResolver,
             snapshot = container.cloudSnapshot,
             visaUpdates = container.visaUpdates,
+            advisoryUpdates = container.advisoryUpdates,
+            advisory = container.advisory,
         ),
     )
 
@@ -149,6 +152,7 @@ fun SettingsScreen(
     val lastBackupAt by viewModel.lastBackupAt.collectAsStateWithLifecycle()
     val visaAutoUpdate by viewModel.visaAutoUpdate.collectAsStateWithLifecycle()
     val visaLastCheckAt by viewModel.visaLastCheckAt.collectAsStateWithLifecycle()
+    val advisoryAsOf by viewModel.advisoryAsOf.collectAsStateWithLifecycle()
     val snapshotAvailable by viewModel.snapshotAvailable.collectAsStateWithLifecycle()
     val reset by viewModel.reset.collectAsStateWithLifecycle()
     val importPreview by viewModel.importPreview.collectAsStateWithLifecycle()
@@ -444,6 +448,7 @@ fun SettingsScreen(
             )
             val visaLocale = LocalConfiguration.current.locales[0]
             val visaCheckedDate = formatLastBackup(visaLastCheckAt, ZoneId.systemDefault(), visaLocale)
+            val advisoryAsOfDate = formatLastBackup(advisoryAsOf, ZoneId.systemDefault(), visaLocale)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -467,10 +472,19 @@ fun SettingsScreen(
                     }
                 }
             }
+            // The date of the data in use, not of the last check: a check that found nothing newer
+            // leaves it unchanged, and that is exactly what the user wants to be able to see.
+            if (advisoryAsOfDate != null) {
+                Text(
+                    stringResource(R.string.settings_visa_advisory_as_of, advisoryAsOfDate),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             (visaCheck as? VisaCheckState.Done)?.let { done ->
                 // A good result fades after a few seconds; a failure stays until the next try.
                 LaunchedEffect(done) {
-                    if (shouldAutoClearVisaResult(done.outcome)) {
+                    if (shouldAutoClearCheck(done)) {
                         delay(VISA_RESULT_VISIBLE_MS)
                         viewModel.clearVisaResult()
                     }
@@ -487,6 +501,12 @@ fun SettingsScreen(
                     ),
                     isError = failed,
                     topPadding = 4.dp,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                FeedbackText(
+                    message = stringResource(advisoryResultText(done.advisory)),
+                    isError = advisoryCheckFailed(done.advisory),
+                    topPadding = 2.dp,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -1016,3 +1036,25 @@ internal const val VISA_RESULT_VISIBLE_MS = 5_000L
  * update stays until the next check, because the user may not have been looking.
  */
 internal fun shouldAutoClearVisaResult(outcome: VisaCheckOutcome): Boolean = outcome is VisaCheckOutcome.UpToDate
+
+/**
+ * Check now covers both datasets, so the pair fades only when both reported "nothing to do".
+ * "Not published yet" is as calm as "up to date" for advisories: there is nothing to act on, and
+ * leaving it up would pin the line for good on an install the weekly job has not reached yet.
+ */
+internal fun shouldAutoClearCheck(done: VisaCheckState.Done): Boolean =
+    shouldAutoClearVisaResult(done.outcome) &&
+        (done.advisory == AdvisoryOutcome.UP_TO_DATE || done.advisory == AdvisoryOutcome.NOT_PUBLISHED)
+
+/** Offline and rejected are both "the refresh did not happen" as far as the user can tell. */
+internal fun advisoryCheckFailed(outcome: AdvisoryOutcome): Boolean =
+    outcome == AdvisoryOutcome.OFFLINE || outcome == AdvisoryOutcome.REJECTED
+
+@StringRes
+internal fun advisoryResultText(outcome: AdvisoryOutcome): Int = when (outcome) {
+    AdvisoryOutcome.UP_TO_DATE -> R.string.settings_advisory_result_current
+    AdvisoryOutcome.NOT_PUBLISHED -> R.string.settings_advisory_result_not_published
+    AdvisoryOutcome.UPDATED -> R.string.settings_advisory_result_updated
+    AdvisoryOutcome.NEEDS_NEWER_APP -> R.string.settings_advisory_result_newer_app
+    AdvisoryOutcome.OFFLINE, AdvisoryOutcome.REJECTED -> R.string.settings_advisory_result_failed
+}

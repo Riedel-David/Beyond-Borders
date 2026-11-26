@@ -14,6 +14,9 @@ import com.riedel.beyondborders.data.backup.BackupMerge
 import com.riedel.beyondborders.data.backup.CloudSnapshot
 import com.riedel.beyondborders.data.visa.update.VisaCheckOutcome
 import com.riedel.beyondborders.data.visa.update.VisaUpdateScheduling
+import com.riedel.beyondborders.data.advisory.AdvisoryOutcome
+import com.riedel.beyondborders.data.advisory.AdvisoryRepository
+import com.riedel.beyondborders.data.advisory.AdvisoryScheduling
 import com.riedel.beyondborders.data.backup.TravelBackup
 import com.riedel.beyondborders.data.place.PlaceRepository
 import com.riedel.beyondborders.data.visa.VisaRegistry
@@ -57,7 +60,7 @@ sealed interface TransferState {
 sealed interface VisaCheckState {
     data object Idle : VisaCheckState
     data object Running : VisaCheckState
-    data class Done(val outcome: VisaCheckOutcome) : VisaCheckState
+    data class Done(val outcome: VisaCheckOutcome, val advisory: AdvisoryOutcome) : VisaCheckState
 }
 
 /**
@@ -88,6 +91,8 @@ class SettingsViewModel(
     private val visaUpdates: VisaUpdateScheduling = VisaUpdateScheduling.None,
     private val today: () -> LocalDate = LocalDate::now,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    private val advisoryUpdates: AdvisoryScheduling = AdvisoryScheduling.None,
+    private val advisory: AdvisoryRepository? = null,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
@@ -105,6 +110,19 @@ class SettingsViewModel(
     val lastBackupAt: StateFlow<Long?> = settings.lastBackupAt
     val visaAutoUpdate: StateFlow<Boolean> = settings.visaAutoUpdate
     val visaLastCheckAt: StateFlow<Long?> = settings.visaLastCheckAt
+
+    // Epoch millis of the advisory data in use (bundled or downloaded), null when there is none.
+    // Reloaded whenever a download replaces it, so a finished Check now shows the new date.
+    private val _advisoryAsOf = MutableStateFlow<Long?>(null)
+    val advisoryAsOf: StateFlow<Long?> = _advisoryAsOf.asStateFlow()
+
+    init {
+        advisory?.let { repo ->
+            viewModelScope.launch {
+                repo.dataVersion.collect { _advisoryAsOf.value = repo.current()?.generatedAt?.toEpochMilli() }
+            }
+        }
+    }
 
     // The detail of an unexpected failure goes to the log; the user sees the generic text.
     private fun loggedFailure(t: Throwable, @StringRes fallback: Int): UiText {
@@ -181,7 +199,11 @@ class SettingsViewModel(
 
     fun setVisaAutoUpdate(enabled: Boolean) {
         settings.setVisaAutoUpdate(enabled)
-        visaUpdates.sync(enabled)
+        // Guarded like BeyondBordersApp: a failure scheduling one job must not skip the other or
+        // reach the UI thread. Neither sync is a suspend function, so this cannot swallow a cancellation.
+        runCatching { visaUpdates.sync(enabled) }
+        // The one switch covers both weekly jobs; they stay separate jobs.
+        runCatching { advisoryUpdates.sync(enabled) }
         // A stale "Up to date" beside a switch that was just flipped reads as a reply to it.
         clearVisaResult()
     }
@@ -200,8 +222,9 @@ class SettingsViewModel(
         if (_visaCheck.value == VisaCheckState.Running) return
         _visaCheck.value = VisaCheckState.Running
         viewModelScope.launch {
-            val outcome = withContext(Dispatchers.IO) { visaUpdates.checkNow() }
-            _visaCheck.value = VisaCheckState.Done(outcome)
+            _visaCheck.value = withContext(Dispatchers.IO) {
+                checkBoth(visa = visaUpdates::checkNow, advisory = advisoryUpdates::checkNow)
+            }
         }
     }
 
@@ -443,16 +466,44 @@ class SettingsViewModel(
             resolver: ContentResolver,
             snapshot: CloudSnapshot,
             visaUpdates: VisaUpdateScheduling = VisaUpdateScheduling.None,
+            advisoryUpdates: AdvisoryScheduling = AdvisoryScheduling.None,
+            advisory: AdvisoryRepository? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(settings, places, resolver, snapshot, visaUpdates) as T
+                return SettingsViewModel(settings, places, resolver, snapshot, visaUpdates, advisoryUpdates = advisoryUpdates, advisory = advisory) as T
             }
         }
     }
 }
 
 // --- pure functions, unit-testable without Android ---------------------------
+
+/**
+ * Runs both refreshes, one after the other, each in its own guard: an exception from the
+ * first becomes that side's failure and the second still runs, so neither can block or
+ * mark failure of the other. Cancellation is the one thing that must propagate.
+ */
+internal suspend fun checkBoth(
+    visa: suspend () -> VisaCheckOutcome,
+    advisory: suspend () -> AdvisoryOutcome,
+): VisaCheckState.Done {
+    val visaOutcome = try {
+        visa()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        VisaCheckOutcome.Unavailable
+    }
+    val advisoryOutcome = try {
+        advisory()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AdvisoryOutcome.REJECTED
+    }
+    return VisaCheckState.Done(visaOutcome, advisoryOutcome)
+}
 
 /** How many affected place names the preview dialog names before falling back to
  * "and N more". Ten reads as a sample; the full list of up to 252 would not. */

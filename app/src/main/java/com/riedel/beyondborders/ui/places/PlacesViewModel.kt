@@ -430,11 +430,13 @@ class PlacesViewModel(
         viewModelScope.launch { repo.deleteVisit(id) }
     }
 
-    /** The rows the passport list should render, already filtered and ordered. */
-    val rows: StateFlow<List<PlaceRow>> =
+    /** The rows the passport list should render, already filtered and ordered, together with the
+     * filters they were built under in one value, so a reader can tell which filters a list reflects
+     * (the raw filter flows run ahead of the derived rows). */
+    val rowsStamped: StateFlow<StampedRows<PlaceRow>> =
         combine(allPlaces, statuses, _query, _grouping, _statusFilter) { places, st, q, grouping, filter ->
-            buildRows(places, st, q, filter, grouping)
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+            StampedRows(buildRows(places, st, q, filter, grouping), query = q, statusFilter = filter)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, StampedRows(emptyList()))
 
     /**
      * Which place codes the map's visa lens should paint in each band, empty while
@@ -463,17 +465,21 @@ class PlacesViewModel(
         combine(stats, _regionMode) { stats, mode -> regionBandCodes(mode, stats) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    /** The rows the visa list should render, already filtered and ordered. */
-    val visaRows: StateFlow<List<VisaRow>> =
+    /** The rows the visa list should render, already filtered and ordered, stamped with the filters
+     * they were built under (see [rowsStamped]). */
+    val visaRowsStamped: StateFlow<StampedRows<VisaRow>> =
         combine(
             allPlaces,
             viewVisas,
             statuses,
             combine(_query, _visaFilter, _wishlistOnly) { q, filter, wish -> Triple(q, filter, wish) },
         ) { places, (visa, secondVisa), st, (q, filter, wish) ->
-            buildVisaRows(places, visa, secondVisa, st, q, filter, wish)
+            StampedRows(
+                buildVisaRows(places, visa, secondVisa, st, q, filter, wish),
+                query = q, visaFilter = filter, wishlistOnly = wish,
+            )
         }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, StampedRows(emptyList()))
 
     /** "9 of your 12 wishlist places need no embassy" — the join neither dataset can
      * do alone. Null while there is nothing to say: no visa asset, or no wishlist. */
@@ -661,6 +667,35 @@ class PlacesViewModel(
     fun setStatusFilter(value: StatusFilter) { _statusFilter.value = value }
     fun select(code: String?) { _selectedCode.value = code }
     fun setMode(value: PassportMode) { _mode.value = value }
+
+    /**
+     * Makes [code] reachable in the Passport list for a "show this country" jump: selects
+     * it, picks the mode, and, when the country has a row, drops whatever would hide it
+     * (see [showInListPlan]). Returns whether the row exists, so a country with nothing
+     * to show leaves the user's query and filters alone.
+     */
+    fun showInList(code: String, mode: PassportMode): Boolean {
+        select(code)
+        setMode(mode)
+        val place = placeOf(code)
+        val grouping = _grouping.value
+        val plan = showInListPlan(
+            mode = mode,
+            present = if (mode == PassportMode.VISA) combinedRequirementOf(code) != null else place != null,
+            collapseKey = place?.let { "${grouping.name}:${sectionHeader(it, grouping)}" },
+            collapsed = settings.collapsedHeaders.value,
+        )
+        if (!plan.present) return false
+        setQuery("")
+        if (plan.resetStatusFilter) setStatusFilter(StatusFilter.ALL)
+        if (plan.resetVisaFilters) {
+            setVisaFilter(VisaFilter.All)
+            setWishlistOnly(false)
+        }
+        plan.collapseKeyToDrop?.let { settings.setCollapsedHeaders(settings.collapsedHeaders.value - it) }
+        return true
+    }
+
     fun setVisaFilter(value: VisaFilter) { _visaFilter.value = value }
     fun setWishlistOnly(value: Boolean) { _wishlistOnly.value = value }
 
@@ -1641,4 +1676,40 @@ internal fun shouldCentreOnHome(centredFor: String?, code: String, saved: MapCam
     centredFor == code -> false
     centredFor != null -> true
     else -> saved == null || saved.zoom < HOME_ZOOM_MIN
+}
+
+/**
+ * A derived row list with the filters it was built under. The fields a list does not use
+ * keep their defaults, which the settle check for the other mode ignores.
+ */
+data class StampedRows<T>(
+    val rows: List<T>,
+    val query: String = "",
+    val statusFilter: StatusFilter = StatusFilter.ALL,
+    val visaFilter: VisaFilter = VisaFilter.All,
+    val wishlistOnly: Boolean = false,
+)
+
+/** What [PlacesViewModel.showInList] changes to make a country's row reachable. */
+internal data class ShowInListPlan(
+    val present: Boolean,
+    val resetStatusFilter: Boolean,
+    val resetVisaFilters: Boolean,
+    val collapseKeyToDrop: String?,
+)
+
+/**
+ * Nothing is reset for a country with no row to show ([present] false): wiping the user's
+ * filters for a jump that cannot land helps no one. The collapse key is dropped only in
+ * the travel list, the only one with collapsible sections, and only if it is collapsed.
+ */
+internal fun showInListPlan(
+    mode: PassportMode,
+    present: Boolean,
+    collapseKey: String?,
+    collapsed: Set<String>,
+): ShowInListPlan = when {
+    !present -> ShowInListPlan(false, false, false, null)
+    mode == PassportMode.VISA -> ShowInListPlan(true, false, true, null)
+    else -> ShowInListPlan(true, true, false, collapseKey?.takeIf { it in collapsed })
 }

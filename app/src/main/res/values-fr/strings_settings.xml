@@ -10,7 +10,7 @@
     <string name="welcome_title">Beyond Borders</string>
     <string name="welcome_intro">Marque les lieux que tu as visités, ceux où tu as vécu ou ceux où tu veux aller, sur une carte de %1$d lieux. Des territoires comme le Groenland ou Porto Rico comptent à part, séparément du pays dont ils dépendent.</string>
     <string name="welcome_intro_bare">Marque les lieux que tu as visités, ceux où tu as vécu ou ceux où tu veux aller.</string>
-    <string name="welcome_privacy">Rien de ce que tu marques ne nous est envoyé. Pas de compte, pas de serveur. L\'app télécharge seulement des mises à jour publiques des données de visa et n\'envoie rien sur toi. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
+    <string name="welcome_privacy">Rien de ce que tu marques ne nous est envoyé. Pas de compte, pas de serveur. L\'app télécharge seulement des mises à jour publiques des données de visa et des avis aux voyageurs et n\'envoie rien sur toi. (La sauvegarde d\'Android peut quand même inclure tes données si elle est activée.)</string>
     <string name="welcome_passport_hint">Les conditions de visa s\'affichent pour un passeport à la fois. Choisis le tien ; tu pourras le changer plus tard dans les Paramètres.</string>
     <string name="welcome_get_started">Commencer</string>
 
@@ -93,16 +93,22 @@
     <string name="settings_restore_button">Restaurer depuis la sauvegarde d\'Android</string>
     <string name="settings_restore_detail">La sauvegarde d\'Android a laissé sur ce téléphone un instantané de ton historique. La restauration le fusionne avec les données actuelles, exactement comme l\'import d\'un fichier.</string>
     <string name="settings_visa_title">Données de visa</string>
-    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Le commutateur ne commande que la vérification automatique hebdomadaire, qui ne se fait qu\'en Wi-Fi ou sur un autre réseau sans limite de données. « Vérifier maintenant » fonctionne dans les deux cas. Les nouvelles données sont utilisées aussitôt.</string>
+    <string name="settings_visa_detail">Télécharge de petits fichiers depuis GitHub, sans envoyer aucune donnée personnelle. Le commutateur ne commande que la vérification automatique hebdomadaire des données de visa et des avis aux voyageurs, qui ne se fait qu\'en Wi-Fi ou sur un autre réseau sans limite de données. « Vérifier maintenant » met à jour les deux et fonctionne dans les deux cas. Les nouvelles données sont utilisées aussitôt.</string>
     <string name="settings_visa_checking">Vérification…</string>
     <string name="settings_visa_result_current">Les données de visa sont déjà à jour.</string>
     <string name="settings_visa_result_updated">Données de visa mises à jour et déjà utilisées.</string>
     <string name="settings_visa_result_offline">Serveur injoignable. Vérifie ta connexion ou réessaie plus tard.</string>
     <string name="settings_visa_result_unavailable">Mise à jour indisponible pour le moment.</string>
-    <string name="settings_visa_auto">Mettre à jour les données de visa automatiquement</string>
+    <string name="settings_visa_auto">Mettre à jour les données de visa et les avis aux voyageurs automatiquement</string>
     <string name="settings_visa_last_checked">Dernière vérification : %1$s</string>
     <string name="settings_visa_last_checked_never">Dernière vérification : jamais</string>
     <string name="settings_visa_check_now">Vérifier maintenant</string>
+    <string name="settings_visa_advisory_as_of">Avis aux voyageurs en date du %1$s</string>
+    <string name="settings_advisory_result_current">Les avis aux voyageurs sont déjà à jour.</string>
+    <string name="settings_advisory_result_not_published">Aucune mise à jour des avis aux voyageurs n\'a encore été publiée.</string>
+    <string name="settings_advisory_result_updated">Avis aux voyageurs mis à jour.</string>
+    <string name="settings_advisory_result_failed">Impossible d\'actualiser les avis aux voyageurs.</string>
+    <string name="settings_advisory_result_newer_app">Avis aux voyageurs : le dernier fichier nécessite une version plus récente de l\'application.</string>
     <string name="settings_cancel">Annuler</string>
 
     <string name="settings_import_title">Importer ce fichier ?</string>
@@ -145,11 +151,11 @@
     <string name="settings_about_map">Frontières de Natural Earth (domaine public), dessinées avec MapLibre. Toute la carte est intégrée à l\'app, elle fonctionne donc sans réseau et sans compte.</string>
     <string name="settings_about_backup_title">Sauvegardes</string>
     <string name="settings_about_backup">La sauvegarde automatique d\'Android transmet un instantané de ton historique à ton compte Google : c\'est le système qui crée cette copie, l\'app n\'envoie jamais rien elle-même. Un téléphone réinstallé ou neuf démarre vide : rien n\'est remis en place tant que tu n\'appuies pas sur Restaurer. La base de données, tes paramètres et un identifiant propre à chaque installation restent entièrement hors de la sauvegarde. Désactive-la dans les paramètres de sauvegarde d\'Android si tu préfères.</string>
-    <string name="settings_licences_button">Licences open source</string>
+    <string name="settings_licences_button">Sources de données et licences</string>
 
     <!-- Licences dialog -->
     <string name="settings_report_problem">Signaler un problème</string>
-    <string name="settings_licences_title">Licences open source</string>
+    <string name="settings_licences_title">Sources de données et licences</string>
     <string name="settings_licences_close">Fermer</string>
     <string name="settings_licence_app">Beyond Borders</string>
     <string name="settings_licence_map">Carte</string>
@@ -159,8 +165,13 @@
     <string name="settings_licence_flags">Drapeaux</string>
     <string name="settings_licence_visa">Données de visa</string>
     <string name="settings_licence_visa_body">Jeu de données sur les conditions de visa, dérivé de Wikipédia (contributeurs, CC BY-SA 4.0), voir THIRD_PARTY_NOTICES.md dans le dépôt</string>
-    <string name="settings_licence_advice">Liens vers les conseils officiels</string>
-    <string name="settings_licence_advice_body">Auswärtiges Amt (ministère fédéral allemand des Affaires étrangères)</string>
+    <string name="settings_sources_heading">Sources de données</string>
+    <string name="settings_licences_heading">Licences open source</string>
+    <string name="settings_source_advisory">Avis aux voyageurs</string>
+    <string name="settings_source_advisory_body">Évaluations de trois gouvernements, affichées pour chaque pays. L\'app montre leur niveau d\'alerte et jusqu\'à trois de leurs propres phrases sur des régions du pays ou déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de chaque gouvernement.</string>
+    <string name="settings_source_us">Département d\'État américain (domaine public)</string>
+    <string name="settings_source_uk">Foreign, Commonwealth &amp; Development Office britannique. Contains public sector information licensed under the Open Government Licence v3.0.</string>
+    <string name="settings_source_de">Reise- und Sicherheitshinweise: Auswärtiges Amt. L\'app affiche le niveau d\'alerte de l\'Auswärtiges Amt avec son libellé court, sa date et jusqu\'à trois de ses propres phrases déconseillant de voyager, citées mot pour mot ; l\'avis complet se trouve sur le site de l\'Auswärtiges Amt.</string>
     <string name="settings_licence_libraries">Bibliothèques</string>
 
     <!-- Backup transfer results -->

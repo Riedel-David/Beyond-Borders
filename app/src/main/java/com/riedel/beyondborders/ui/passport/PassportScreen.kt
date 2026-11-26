@@ -83,6 +83,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -121,6 +126,7 @@ import com.riedel.beyondborders.ui.asString
 import com.riedel.beyondborders.ui.places.UNINHABITED_HEADER
 import com.riedel.beyondborders.ui.places.geoNameRes
 import com.riedel.beyondborders.ui.places.geoNameText
+import com.riedel.beyondborders.ui.places.VisaRow
 import com.riedel.beyondborders.ui.places.sortSectionsByLabel
 import kotlinx.coroutines.delay
 import com.riedel.beyondborders.data.place.Place
@@ -154,9 +160,12 @@ fun PassportScreen(
     viewModel: PlacesViewModel,
     openStats: Boolean? = null,
     onStatsConsumed: () -> Unit = {},
+    showCountry: ShowCountryRequest? = null,
+    onShowCountryConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val rowsByKey by viewModel.rows.collectAsStateWithLifecycle()
+    val stampedRows by viewModel.rowsStamped.collectAsStateWithLifecycle()
+    val rowsByKey = stampedRows.rows
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     // The stats detail popup needs a name and a status per code in a bucket, and
     // neither lives on [ContinentStat]/[RegionStat]/[NamedGroupStat] — just the
@@ -178,7 +187,8 @@ fun PassportScreen(
     val mode by viewModel.mode.collectAsStateWithLifecycle()
     val visa by viewModel.visa.collectAsStateWithLifecycle()
     val secondVisa by viewModel.secondVisa.collectAsStateWithLifecycle()
-    val visaRows by viewModel.visaRows.collectAsStateWithLifecycle()
+    val stampedVisaRows by viewModel.visaRowsStamped.collectAsStateWithLifecycle()
+    val visaRows = stampedVisaRows.rows
     val visaFilter by viewModel.visaFilter.collectAsStateWithLifecycle()
     val wishlistOnly by viewModel.wishlistOnly.collectAsStateWithLifecycle()
     val selectedCode by viewModel.selectedCode.collectAsStateWithLifecycle()
@@ -213,6 +223,21 @@ fun PassportScreen(
             showStatsDetail = it
             onStatsConsumed()
         }
+    }
+
+    // A "show this country" request lands on the list, never on a stats screen the app
+    // was left on. The scroll itself waits below for the list to exist.
+    // A plain guarded write, not an effect: an effect runs after the first frame, which
+    // would draw the restored stats screen once before the list.
+    // Once per request: the request stays pending for the wait and the scroll (about two
+    // seconds), and a stats card tapped after landing must stay open. The holder is not
+    // state, so reading it never recomposes; it is cleared when the root consumes the request.
+    val closedForRequest = remember { arrayOfNulls<ShowCountryRequest>(1) }
+    if (showCountry == null) {
+        closedForRequest[0] = null
+    } else if (closedForRequest[0] !== showCountry) {
+        closedForRequest[0] = showCountry
+        if (showStatsDetail) showStatsDetail = false
     }
 
     // Shared by both modes, since the fast-scroll overlay below reads from whichever
@@ -265,30 +290,53 @@ fun PassportScreen(
     // Remembered, not rebuilt per composition: this walks all 252 rows calling
     // sectionHeader on each, which is not something to redo while a finger is down.
     val headerSlots = remember(mode, visa == null, visaRows, rows, grouping, collapsedHeaders, query, nationality == null, noMarks, partnerAvailable) {
-        if (mode == PassportMode.VISA) {
-            buildList {
-                add(null) // "mode"
-                if (visa == null) {
-                    add(null) // "visa-missing"
-                } else {
-                    add(null) // "visa-summary"
-                    if (partnerAvailable) add(null) // "visa-partner"
-                    add(null) // "visa-search"
-                    add(null) // "visa-filters"
-                    if (visaRows.isEmpty()) add(null) // "visa-empty"
-                    addAll(visaHeaderCategorySlots(visaRows).map { it?.name })
-                }
+        passportHeaderSlots(
+            mode, visa == null, partnerAvailable, nationality == null, noMarks,
+            visaRows, rows, grouping, collapsedHeaders, query,
+        )
+    }
+
+    // Rows fill in asynchronously, so the target index is looked up from live state inside
+    // snapshotFlow and waited for, with a timeout so an absent country (no visa data, no
+    // passport) can never leave the request pending. Either way it is consumed.
+    // Everything here is read live and the rows come from the stamped lists themselves, not
+    // from `rows`/`visaRows`/`headerSlots`: those are plain values of the last composition, and
+    // the flow can re-run after a stamp flips but before the next recomposition, which would pair
+    // a settled verdict with the previous (still filtered) list.
+    val rowIndexOf by rememberUpdatedState { request: ShowCountryRequest ->
+        showCountryIndex(
+            request, mode, stampedRows, stampedVisaRows, grouping, collapsedHeaders, query,
+            sortTravel = { sortSectionsByLabel(it, grouping) { place -> geoNameText(place).asString(context) } },
+            headerSlotsFor = { travelRows, visaRowList ->
+                passportHeaderSlots(
+                    mode, visa == null, partnerAvailable, nationality == null,
+                    stats.been == 0 && stats.wishlist == 0,
+                    visaRowList, travelRows, grouping, collapsedHeaders, query,
+                )
+            },
+        )
+    }
+    LaunchedEffect(showCountry) {
+        val request = showCountry ?: return@LaunchedEffect
+        // Consumed in a finally: a cancelled scroll (the user's own touch, leaving the
+        // tab) must not leave the request to replay on a later visit.
+        try {
+            val index = withTimeoutOrNull(2_000) {
+                val first = snapshotFlow { rowIndexOf(request) }.filterNotNull().first()
+                // The index describes the stamped lists, but the LazyColumn lays out a frame
+                // later (a filter reset by the jump changes the item count), so scrolling now
+                // could clamp to the old list. Let two frames pass, re-resolve against live
+                // state, then wait until the list actually holds that row. The surrounding
+                // timeout keeps all of this from hanging.
+                withFrameNanos { }
+                withFrameNanos { }
+                val settled = rowIndexOf(request) ?: first
+                snapshotFlow { listState.layoutInfo.totalItemsCount }.first { listHoldsRow(it, settled) }
+                settled
             }
-        } else {
-            buildList {
-                add(null) // "mode"
-                if (nationality == null) add(null) // "passport-prompt"
-                if (noMarks) add(null) // "start"
-                add(null) // "stats"
-                add(null) // "controls"
-                if (rows.isEmpty()) add(null) // "empty"
-                addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
-            }
+            if (index != null) listState.animateScrollToItem(scrollTargetFor(index))
+        } finally {
+            onShowCountryConsumed()
         }
     }
 
@@ -336,7 +384,6 @@ fun PassportScreen(
                 onQuery = viewModel::setQuery,
                 onFilter = viewModel::setVisaFilter,
                 onSelect = viewModel::select,
-                nameOf = { code -> viewModel.placeOf(code)?.name },
                 combinedRequirementOf = viewModel::combinedRequirementOf,
                 partnerAvailable = partnerAvailable,
                 partnerMode = partnerMode,
@@ -850,6 +897,49 @@ private fun AzRail(
             }
         }
     }
+    }
+}
+
+/**
+ * One entry per item the Passport `LazyColumn` emits, in emission order: the section's header
+ * label on a header item, null on every other (the leading mode/search/filter items and the rows).
+ * Mirrors the emission loops of `PassportScreen`, so a raw item index can be turned back into
+ * "which header is this", and so a country's row index can be found by counting.
+ */
+internal fun passportHeaderSlots(
+    mode: PassportMode,
+    visaMissing: Boolean,
+    partnerAvailable: Boolean,
+    noNationality: Boolean,
+    noMarks: Boolean,
+    visaRows: List<VisaRow>,
+    rows: List<PlaceRow>,
+    grouping: Grouping,
+    collapsedHeaders: Set<String>,
+    query: String,
+): List<String?> = if (mode == PassportMode.VISA) {
+    buildList {
+        add(null) // "mode"
+        if (visaMissing) {
+            add(null) // "visa-missing"
+        } else {
+            add(null) // "visa-summary"
+            if (partnerAvailable) add(null) // "visa-partner"
+            add(null) // "visa-search"
+            add(null) // "visa-filters"
+            if (visaRows.isEmpty()) add(null) // "visa-empty"
+            addAll(visaHeaderCategorySlots(visaRows).map { it?.name })
+        }
+    }
+} else {
+    buildList {
+        add(null) // "mode"
+        if (noNationality) add(null) // "passport-prompt"
+        if (noMarks) add(null) // "start"
+        add(null) // "stats"
+        add(null) // "controls"
+        if (rows.isEmpty()) add(null) // "empty"
+        addAll(travelHeaderSlots(rows, grouping, collapsedHeaders, query))
     }
 }
 

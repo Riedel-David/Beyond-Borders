@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Avis aux voyageurs des gouvernements</string>
+    <string name="advisory_agreement">Sources déconseillant de voyager dans tout le pays : %1$d sur %2$d</string>
+    <string name="advisory_partial_data">Seules %1$d sources sur %2$d ont des données pour ce lieu.</string>
+    <string name="advisory_none">Aucune source n\'a d\'avis pour ce lieu.</string>
+    <string name="advisory_no_data">Aucune donnée</string>
+    <string name="advisory_tags">Risques signalés : %1$s</string>
+    <string name="advisory_updated">Mis à jour le %1$s</string>
+    <string name="advisory_open_source">Ouvrir la source</string>
+    <string name="advisory_open_source_for">Ouvrir la source, %1$s</string>
+    <string name="advisory_as_of">Données au %1$s</string>
+    <string name="advisory_check_official">Consultez la source officielle avant de voyager.</string>
+    <string name="advisory_label_uk_none">Le FCDO n\'émet aucun avertissement de voyage pour ce pays</string>
+    <string name="advisory_label_uk_all_whole">Le FCDO déconseille tout voyage dans l\'ensemble du pays</string>
+    <string name="advisory_label_uk_essential_whole">Le FCDO déconseille tout voyage non essentiel dans l\'ensemble du pays</string>
+    <string name="advisory_label_uk_all_parts">Le FCDO déconseille tout voyage dans certaines parties du pays</string>
+    <string name="advisory_label_uk_essential_parts">Le FCDO déconseille tout voyage non essentiel dans certaines parties du pays</string>
+    <string name="advisory_label_uk_all_parts_essential_other">Le FCDO déconseille tout voyage dans certaines parties du pays et tout voyage non essentiel dans d\'autres</string>
+    <string name="advisory_label_de_none">Pas d\'avertissement de voyage formel (Reisewarnung)</string>
+    <string name="advisory_label_de_advised_against">Pas d\'avertissement de voyage formel (Reisewarnung), mais voyager est déconseillé (voir les notes)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Pas d\'avertissement de voyage formel (Reisewarnung), mais voyager est déconseillé</string>
+    <string name="advisory_label_de_partial">Avertissement de voyage partiel (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Avertissement de voyage formel (Reisewarnung)</string>
+</resources>

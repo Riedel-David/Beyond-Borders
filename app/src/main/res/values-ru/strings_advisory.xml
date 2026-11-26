@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Рекомендации правительств для путешественников</string>
+    <string name="advisory_agreement">Источников, не советующих ехать в страну целиком: %1$d из %2$d</string>
+    <string name="advisory_partial_data">Данные об этом месте есть только в %1$d из %2$d источников.</string>
+    <string name="advisory_none">Ни в одном источнике нет рекомендаций для этого места.</string>
+    <string name="advisory_no_data">Нет данных</string>
+    <string name="advisory_tags">Теги риска: %1$s</string>
+    <string name="advisory_updated">Обновлено: %1$s</string>
+    <string name="advisory_open_source">Открыть источник</string>
+    <string name="advisory_open_source_for">Открыть источник, %1$s</string>
+    <string name="advisory_as_of">Данные на %1$s</string>
+    <string name="advisory_check_official">Перед поездкой проверьте официальный источник.</string>
+    <string name="advisory_label_uk_none">FCDO не выпускает предупреждений о поездках в эту страну</string>
+    <string name="advisory_label_uk_all_whole">FCDO не рекомендует любые поездки в страну целиком</string>
+    <string name="advisory_label_uk_essential_whole">FCDO не рекомендует любые поездки в страну целиком, кроме необходимых</string>
+    <string name="advisory_label_uk_all_parts">FCDO не рекомендует любые поездки в отдельные части страны</string>
+    <string name="advisory_label_uk_essential_parts">FCDO не рекомендует любые поездки в отдельные части страны, кроме необходимых</string>
+    <string name="advisory_label_uk_all_parts_essential_other">FCDO не рекомендует любые поездки в отдельные части страны, а в другие части — любые, кроме необходимых</string>
+    <string name="advisory_label_de_none">Официального предупреждения о поездках нет (Reisewarnung)</string>
+    <string name="advisory_label_de_advised_against">Официального предупреждения о поездках нет (Reisewarnung), но поездки не рекомендуются (см. примечания)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Официального предупреждения о поездках нет (Reisewarnung), но поездки не рекомендуются</string>
+    <string name="advisory_label_de_partial">Частичное предупреждение о поездках (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Официальное предупреждение о поездках (Reisewarnung)</string>
+</resources>

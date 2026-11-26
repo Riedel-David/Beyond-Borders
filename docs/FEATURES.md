@@ -77,7 +77,7 @@ Google account. After a reinstall, Settings shows **Restore from Android's backu
 opens the same preview an imported file gets, and nothing is applied until you confirm.
 Theme, colours, passports and widget configuration are deliberately left out and start
 fresh, as does the per-install id the merge uses to tell this device's writes from
-another's. The app never uploads anything itself (its only network use is downloading visa data); the
+another's. The app never uploads anything itself (its only network use is downloading visa data and travel advisories); the
 copy is made by the system, and Android's backup settings are where to switch it off.
 
 **Delete everything** (Settings) clears your places, both passports and the display
@@ -218,10 +218,25 @@ It applies to the Visa tab and the map Visa lens only, not to the stats or share
 own passports are left out of the picker, since one of them would be no partner. Per passport
 only: residence permits and EU/Schengen family-member rules are not taken into account.
 
+## Travel advisories
+
+The expanded country row in the Visa tab shows what the US State Department, the UK Foreign,
+Commonwealth & Development Office and the German Auswärtiges Amt currently advise for that
+country, side by side: each government's own rating (the US wording as published; the UK and
+German ones are short summaries of the flags those governments publish, shown in the app's language with the German official terms kept in brackets), the date of that
+advice and a link to its country page. Where a government publishes sentences about parts of a country or, for
+Germany, "wird abgeraten" advice, up to three of them are quoted word for word under its row (the German
+ones in German quotation marks and tagged German for screen readers). Nothing is combined or scored beyond a count of how many
+sources advise against travel to the whole country (US Level 4, UK all or all-but-essential, German formal Reisewarnung; a partial warning or the AA's "abgeraten" text does not count). That line appears only when the count is at least one; at zero the rows speak for themselves, so a quoted German "abgeraten" sentence is never contradicted by a "0 of 3". A place a source does not cover says so. The data is a
+snapshot, bundled with each release and refreshed weekly (see below), with its "as of" date
+shown; confirm with the official source before you travel. The expanded visa row no longer links to the official visa source or the IATA Travel Centre (deliberately removed: the advisory block has its own per-source links), though the data model still carries `officialUrl` and `iataUrl`. Settings → *Data sources and
+licences* names the three sources, with their licences and links.
+
 ## Visa data updates
 
-Downloaded visa data is used straight away, without closing the app. *Check now* in
-Settings works on any connection, whether or not the automatic check is on, and says
-whether the data was already current, was updated, or could not be fetched. The weekly
-automatic check runs on unmetered networks only, and the Settings → *Visa data* switch
-turns that weekly check off; it does not stop *Check now*.
+Downloaded visa data and travel advisories are used straight away, without closing the app.
+*Check now* in Settings refreshes both, on any connection, whether or not the automatic check
+is on, and says whether each was already current, was updated, or could not be fetched (a travel advisory file that is not published yet gets its own neutral message, "No travel advisory update has been published yet", rather than being called current, and the background check treats it as success; one written for a newer app version is reported as needing it, not as a failure); one
+failing never stops the other. The Visa data section also shows the date of the advisory data in
+use. The weekly automatic check runs on unmetered networks only, and the Settings → *Visa data*
+switch turns that weekly check off for both; it does not stop *Check now*.

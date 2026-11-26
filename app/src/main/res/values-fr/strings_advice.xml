@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="advice_link">Consulter les conseils aux voyageurs du gouvernement britannique (FCDO)</string>
-    <string name="advice_note">Ouvre un site externe dans ton navigateur. L\'app n\'envoie rien.</string>
-    <string name="advice_no_browser">Aucun navigateur trouvé pour ouvrir le lien.</string>
-</resources>

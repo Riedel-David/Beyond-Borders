@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="advisory_title">Avisos de viagem dos governos</string>
+    <string name="advisory_agreement">Fontes que desaconselham viajar para todo o país: %1$d de %2$d</string>
+    <string name="advisory_partial_data">Só %1$d de %2$d fontes têm dados deste lugar.</string>
+    <string name="advisory_none">Nenhuma fonte tem avisos de viagem para este lugar.</string>
+    <string name="advisory_no_data">Sem dados</string>
+    <string name="advisory_tags">Etiquetas de risco: %1$s</string>
+    <string name="advisory_updated">Atualizado em %1$s</string>
+    <string name="advisory_open_source">Abrir a fonte</string>
+    <string name="advisory_open_source_for">Abrir a fonte, %1$s</string>
+    <string name="advisory_as_of">Dados de %1$s</string>
+    <string name="advisory_check_official">Consulte a fonte oficial antes de viajar.</string>
+    <string name="advisory_label_uk_none">O FCDO não emite nenhum aviso de viagem para este país</string>
+    <string name="advisory_label_uk_all_whole">O FCDO desaconselha todas as viagens a todo o país</string>
+    <string name="advisory_label_uk_essential_whole">O FCDO desaconselha todas as viagens, exceto as essenciais, a todo o país</string>
+    <string name="advisory_label_uk_all_parts">O FCDO desaconselha todas as viagens a partes do país</string>
+    <string name="advisory_label_uk_essential_parts">O FCDO desaconselha todas as viagens, exceto as essenciais, a partes do país</string>
+    <string name="advisory_label_uk_all_parts_essential_other">O FCDO desaconselha todas as viagens a partes do país e todas as viagens, exceto as essenciais, a outras partes</string>
+    <string name="advisory_label_de_none">Sem aviso formal de viagem (Reisewarnung)</string>
+    <string name="advisory_label_de_advised_against">Sem aviso formal de viagem (Reisewarnung), mas viajar é desaconselhado (ver notas)</string>
+    <string name="advisory_label_de_advised_against_no_notes">Sem aviso formal de viagem (Reisewarnung), mas viajar é desaconselhado</string>
+    <string name="advisory_label_de_partial">Aviso parcial de viagem (Teilreisewarnung)</string>
+    <string name="advisory_label_de_warning">Aviso formal de viagem (Reisewarnung)</string>
+</resources>
