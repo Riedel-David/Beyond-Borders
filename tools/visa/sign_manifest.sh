@@ -22,7 +22,9 @@ work="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/sign.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 printf '%s\n' "$MANIFEST_SIGNING_KEY" > "$work/key.pem"
 
-openssl pkey -in "$work/key.pem" -noout -text 2>/dev/null | grep -qE 'prime256v1|P-256' \
+# Captured first: grep -q closing the pipe early would SIGPIPE openssl and fail under pipefail.
+key_text="$(openssl pkey -in "$work/key.pem" -noout -text 2>/dev/null || true)"
+grep -qE 'prime256v1|P-256' <<<"$key_text" \
   || { echo "sign_manifest: the key is not a readable ECDSA P-256 private key" >&2; exit 1; }
 
 openssl dgst -sha256 -sign "$work/key.pem" -out "$work/sig.der" "$site/manifest.json"
@@ -30,7 +32,7 @@ openssl pkey -in "$work/key.pem" -pubout -out "$work/pub.pem"
 openssl dgst -sha256 -verify "$work/pub.pem" -signature "$work/sig.der" "$site/manifest.json" >/dev/null \
   || { echo "sign_manifest: the fresh signature does not verify against the key's public half" >&2; exit 1; }
 
-# The key must be one the shipped app trusts, once the app lists any (an empty list is the pre-rollout state).
+# The key must be one the shipped app trusts, once the app lists any .
 pub_b64="$(openssl pkey -in "$work/key.pem" -pubout -outform DER | base64 | tr -d '\n')"
 python3 -I - "$pub_b64" "$(dirname "$0")" <<'PY'
 import sys

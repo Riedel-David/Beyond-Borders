@@ -92,6 +92,11 @@ class OpensslRoundTripTest(unittest.TestCase):
             self.assertFalse(openssl_verify(b'{"manifestVersion": 2}\n', der, pub))
             self.assertFalse(openssl_verify(b"x", der, "AAAA"))
 
+    def test_a_malformed_key_is_a_reported_problem_not_a_traceback(self):
+        sig = base64.b64encode(b"sig").decode()
+        self.assertFalse(openssl_verify(b"m", b"sig", "not base64 !!"))
+        self.assertEqual(len(check_signature(b"m", sig, ["not base64 !!", "AAA"])), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

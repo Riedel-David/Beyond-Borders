@@ -269,6 +269,9 @@ class VisaUpdateTest {
         for (files in listOf(tampered, foreign, garbage)) {
             val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = testKeys)
             assertFalse(r.manifestSeen)
+            // Pages can serve an old manifest next to a new signature, so this asks for a retry.
+            assertTrue(r.ioFailure)
+            assertEquals(VisaCheckOutcome.Offline, outcomeOf(r))
             assertTrue(r.applied.isEmpty())
             assertTrue(r.deleted.isEmpty())
             assertEquals(setOf("US"), store.codes())
@@ -279,8 +282,8 @@ class VisaUpdateTest {
     fun `no configured key means nothing is ever accepted`() {
         val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), FakeStore(), setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = emptyList())
         assertFalse(r.manifestSeen)
+        assertTrue(r.ioFailure)
         assertTrue(r.applied.isEmpty())
-        assertTrue(MANIFEST_PUBLIC_KEYS.isEmpty() || MANIFEST_PUBLIC_KEYS.all { it.isNotBlank() })
     }
 
     @Test

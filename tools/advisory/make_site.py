@@ -13,7 +13,8 @@ half-served or tampered file is never re-published), then adds advisory.json bes
 manifest.sig travels with manifest.json as a pair: the signature covers the manifest's exact bytes, so a
 manifest carried without it would make every app that requires signatures reject updates. A site with
 no manifest.sig yet (signing not rolled out) is carried without one unless --require-signature is
-given, which the workflow sets once signing is live; then a missing signature refuses the run. The other
+given, which the workflow sets once signing is live; then a missing signature refuses the run. When
+ManifestPublicKeys.kt lists keys, the pair must also verify (openssl), or the run is refused. The other
 direction is handled in visa-refresh.yml, which carries the live advisory.json into its own site.
 
 Every run also writes advisory-heartbeat.json ({"refreshedAt": ...}). advisory.json itself is stable
@@ -23,7 +24,10 @@ visa-refresh.yml carries it along like advisory.json, and visa-freshness.yml fai
 Refuses (exit 1, writes nothing) unless the out dir is empty, advisory.json is a well-formed
 dataFormat 1 file, and every file the live manifest lists downloads and verifies.
 """
+import base64
+import binascii
 import hashlib
+import importlib.util
 import json
 import re
 import sys
@@ -44,6 +48,16 @@ HEARTBEAT_MAX_AGE_DAYS = 10
 
 class SiteError(Exception):
     pass
+
+
+def _manifest_sig():
+    """tools/visa/manifest_sig.py by path: it is standard-library only, whereas importing
+    check_published would pull in tools/visa/make_site.py, which clashes with this file's name."""
+    path = Path(__file__).resolve().parents[1] / "visa" / "manifest_sig.py"
+    spec = importlib.util.spec_from_file_location("manifest_sig", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def heartbeat(now: datetime) -> bytes:
@@ -116,8 +130,10 @@ def check_advisory(raw: bytes) -> None:
 
 
 def build(advisory: bytes, base: str, get=fetch, now: datetime = None, get_optional=fetch_optional,
-          require_signature: bool = False) -> dict:
-    """Returns {file name: bytes} for the whole site."""
+          require_signature: bool = False, keys: list = None) -> dict:
+    """Returns {file name: bytes} for the whole site. keys: the public keys the app trusts (default: read
+    from ManifestPublicKeys.kt); when there are any, a live manifest/signature pair that does not
+    verify is refused rather than republished."""
     check_advisory(advisory)
     base = base.rstrip("/") + "/"
     manifest_raw = get(base + "manifest.json")
@@ -137,6 +153,18 @@ def build(advisory: bytes, base: str, get=fetch, now: datetime = None, get_optio
     elif not signature.strip():
         raise SiteError("the live manifest.sig is empty")
     else:
+        sig_mod = _manifest_sig()
+        if keys is None:
+            keys = sig_mod.app_keys(sig_mod.KEYS_FILE.read_text(encoding="utf-8"))
+        if keys:
+            try:
+                der = base64.b64decode(signature.strip(), validate=True)
+            except (binascii.Error, ValueError):
+                raise SiteError("the live manifest.sig is not valid base64")
+            if not any(sig_mod.openssl_verify(manifest_raw, der, k) for k in keys):
+                raise SiteError("the live manifest.sig does not verify against the live manifest.json with any key "
+                                "the app trusts: refusing to republish a mismatched pair (a deploy may still be "
+                                "propagating; re-run later)")
         files[SIGNATURE_FILE] = signature
     for code, meta in sorted(passports.items()):
         name = meta.get("file", "")

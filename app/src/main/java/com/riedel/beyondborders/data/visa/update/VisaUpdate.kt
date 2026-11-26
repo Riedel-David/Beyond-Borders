@@ -83,11 +83,14 @@ internal fun runUpdate(
     val now = today()
     val manifest = try {
         val raw = fetcher.fetch(MANIFEST_FILE, MAX_MANIFEST_BYTES)
-        // The signature is checked before the manifest is even parsed. Missing, malformed or
-        // invalid all mean "not recognised" (no unsigned fallback: that would be a downgrade
-        // hole), which keeps what is stored and bundled and reads as a plain rejection.
+        // The signature is checked before the manifest is even parsed. There is no unsigned
+        // fallback (that would be a downgrade hole). A verification failure is reported as an
+        // I/O failure, not a final rejection: GitHub Pages caches each file separately (about
+        // 10 minutes), so right after a deploy a device can get the old manifest.json with the
+        // new manifest.sig, which fails here although nothing is wrong. Retrying later heals
+        // that, and the outcome reads as offline. Either way nothing is downloaded or deleted.
         val signature = fetcher.fetch(SIGNATURE_FILE, MAX_SIGNATURE_BYTES).toString(Charsets.UTF_8)
-        if (!verifyManifestSignature(raw, signature, publicKeys)) return UpdateResult()
+        if (!verifyManifestSignature(raw, signature, publicKeys)) return UpdateResult(ioFailure = true)
         parseManifest(raw.toString(Charsets.UTF_8), now)
     } catch (e: IOException) {
         return UpdateResult(ioFailure = true)
