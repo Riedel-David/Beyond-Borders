@@ -783,7 +783,8 @@ def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = Fa
 # that entry is carried forward instead (the more cautious value). Nobody has to act for the weekly
 # build to finish: withheld countries are listed in the build log and the data PR, and the allowlist or
 # the extractor can be taught later.
-_WIRE_TRIGGER = re.compile(r"abgeraten|abzuraten|\bgewarnt\b|Lebensgefahr|Sperrzone|Sperrgebiet|\b(?:Vermeiden|Meiden)\s+Sie\b", re.I)
+_WIRE_STRONG = re.compile(r"abgeraten|abzuraten|\bgewarnt\b|Lebensgefahr|Sperrzone|Sperrgebiet", re.I)
+_WIRE_IMPERATIVE = re.compile(r"\b(?:Vermeiden|Meiden)\s+Sie\b", re.I)
 _WIRE_PLACE = re.compile(_TRIP + r"|Aufenthalt|Besuch|Gebiet|Region|Provinz|Grenz|Landesteil|Bundesstaat|Zone\b|Insel|Küste|Distrikt|Bezirk")
 REVIEWED = Path(__file__).resolve().parent / "de_reviewed.json"
 
@@ -808,7 +809,17 @@ def sha_tag(r: dict) -> str:
 
 def de_wire_hits(content: str) -> list:
     """Sentences of a page that look like advice about travel to a place."""
-    return [u.text for u in de_units(content) if _WIRE_TRIGGER.search(u.text) and _WIRE_PLACE.search(u.text)]
+    return [u.text for u in de_units(content) if _is_wire_hit(u.text)]
+
+
+def _is_wire_hit(sent: str) -> bool:
+    strong = bool(_WIRE_STRONG.search(sent))
+    if not (strong or _WIRE_IMPERATIVE.search(sent)) or not _WIRE_PLACE.search(sent):
+        return False
+    # A guidance sentence (only that start: a bare "Meiden Sie das betroffene Gebiet." is a real instruction) whose only trigger is the bare imperative ("Informieren
+    # Sie sich ... über betroffene Gebiete und meiden Sie diese") is what the extractor rules out
+    # on purpose; the net stays wide for everything else, including the same start with "abgeraten".
+    return strong or not _GUIDANCE.search(sent)
 
 
 def detail_content(detail, key: str):
