@@ -2,8 +2,8 @@ name: Advisory data refresh
 
 # Weekly publication of advisory.json (US State Department, UK FCDO and Auswärtiges Amt travel
 # advisories, tools/advisory/build_advisory.py) to the GitHub Pages site that already serves the
-# visa data. Advisories change on any day, so this runs mid-week (Wednesday 06:30 UTC), clear of
-# visa-refresh (Monday 07:00) and visa-freshness (Monday 09:30).
+# visa data. It runs on Mondays at 08:00 UTC, an hour after visa-refresh (07:00, whose publish it
+# must follow: this build verifies the live visa files) and before visa-freshness (09:30).
 #
 # The same run also opens a weekly data pull request (the `pull-request` job) that keeps the copy
 # bundled in the app for first run and offline (app/src/main/assets/advisory.json) current, like
@@ -37,7 +37,7 @@ name: Advisory data refresh
 # data branch.
 on:
   schedule:
-    - cron: "30 6 * * 3"
+    - cron: "0 8 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +57,7 @@ jobs:
       error: ${{ steps.explain.outputs.error }}
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
@@ -116,6 +117,12 @@ jobs:
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/site
+
+      # See the script: deploy-pages can look before GitHub lists the artifact just uploaded.
+      - name: Wait until the uploaded artifact is listed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/ci/wait_for_pages_artifact.sh
 
       - id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

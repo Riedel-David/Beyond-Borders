@@ -180,7 +180,7 @@ feed entry maps to an ISO code. An unmapped name is an error that lists it: add 
 `UK_ALIASES` in `build_advisory.py` (the US feed's `Category` is FIPS, not ISO, and the UK feed has no
 code at all, so both are matched by name against `places.json`).
 
-`.github/workflows/advisory-refresh.yml` runs it on Wednesdays and publishes the result to GitHub Pages
+`.github/workflows/advisory-refresh.yml` runs it on Mondays at 08:00 UTC (after visa-refresh) and publishes the result to GitHub Pages
 (the `publish` job), and its `pull-request` job rebuilds independently and opens a data pull request on
 `data/advisory-YYYY-MM-DD` when the bundled `advisory.json` differs from main in anything but
 `generatedAt` and the sources' `fetchedAt` (`tools/advisory/data_pr.py`, which also writes the PR's list
