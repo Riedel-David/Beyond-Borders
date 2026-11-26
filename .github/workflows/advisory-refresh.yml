@@ -96,15 +96,33 @@ jobs:
           python3 -m unittest discover -s tools/advisory -p 'test_*.py'
           # The build's own words (a tripwire on an unreviewed German sentence, an unmapped country)
           # go to the log, the job summary and the failure issue.
-          python3 -I tools/advisory/build_advisory.py ${ADVISORY_PREVIOUS:+--previous "$ADVISORY_PREVIOUS"} 2>&1 | tee "$RUNNER_TEMP/build.log"
+          python3 -I tools/advisory/build_advisory.py --quarantine-out "$RUNNER_TEMP/quarantine.json" ${ADVISORY_PREVIOUS:+--previous "$ADVISORY_PREVIOUS"} 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       # Warnings (the count of advised-against countries moved a lot, a situation flag appeared) do
       # not fail the run, so they would be lost in the log: put them where a person looks.
       - name: Show the build's warnings
         if: always()
         run: |
-          if [ -f "$RUNNER_TEMP/build.log" ] && grep -q '^warning:' "$RUNNER_TEMP/build.log"; then
-            { echo "### Advisory build warnings"; echo '```'; grep '^warning:' "$RUNNER_TEMP/build.log" | cut -c1-400; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          # The withheld German entries have their own step below; echoed page text loses its backticks.
+          W="$(grep '^warning:' "$RUNNER_TEMP/build.log" 2>/dev/null | grep -vE '^warning: (DE .* withheld|German entries withheld)' | tr -d '`' | cut -c1-400 || true)"
+          if [ -n "$W" ]; then
+            { echo "### Advisory build warnings"; echo '```'; echo "$W"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # A withheld German entry needs no action, but it must not be visible only in a PR that may
+      # not open: say so in the summary and as an annotation. Never fails the job.
+      - name: Show the withheld German entries
+        if: always()
+        run: |
+          F="$RUNNER_TEMP/quarantine.json"
+          [ -f "$F" ] || exit 0
+          LINES="$(python3 -I tools/advisory/data_pr.py withheld "$F")"
+          if [ -n "$LINES" ]; then
+            { echo "### German advisory entries withheld this week"; echo '```'; echo "$LINES"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            CODES="$(python3 -I tools/advisory/data_pr.py withheld-codes "$F")"
+            if [ -n "$CODES" ]; then
+              echo "::warning::German advisory entries withheld this week: $CODES"
+            fi
           fi
 
       - name: Assemble the site with the live visa files
@@ -165,7 +183,30 @@ jobs:
           python3 -m unittest discover -s tools/advisory -p 'test_*.py'
           # Judged against main's file (the build's default), so a week without a change leaves it
           # identical. A failed build writes nothing and the job goes red with no PR.
-          python3 -I tools/advisory/build_advisory.py 2>&1 | tee "$RUNNER_TEMP/build.log"
+          python3 -I tools/advisory/build_advisory.py --quarantine-out "$RUNNER_TEMP/quarantine.json" 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Show the build's warnings
+        if: always()
+        run: |
+          # The withheld German entries have their own step below; echoed page text loses its backticks.
+          W="$(grep '^warning:' "$RUNNER_TEMP/build.log" 2>/dev/null | grep -vE '^warning: (DE .* withheld|German entries withheld)' | tr -d '`' | cut -c1-400 || true)"
+          if [ -n "$W" ]; then
+            { echo "### Advisory build warnings"; echo '```'; echo "$W"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Show the withheld German entries
+        if: always()
+        run: |
+          F="$RUNNER_TEMP/quarantine.json"
+          [ -f "$F" ] || exit 0
+          LINES="$(python3 -I tools/advisory/data_pr.py withheld "$F")"
+          if [ -n "$LINES" ]; then
+            { echo "### German advisory entries withheld this week"; echo '```'; echo "$LINES"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            CODES="$(python3 -I tools/advisory/data_pr.py withheld-codes "$F")"
+            if [ -n "$CODES" ]; then
+              echo "::warning::German advisory entries withheld this week: $CODES"
+            fi
+          fi
 
       - name: Decide whether anything changed
         id: diff
@@ -201,7 +242,7 @@ jobs:
             echo "Merging does not release anything. Countries that differ from main:"
             echo
             echo '```'
-            python3 -I tools/advisory/data_pr.py body "$RUNNER_TEMP/main-advisory.json" app/src/main/assets/advisory.json
+            python3 -I tools/advisory/data_pr.py body "$RUNNER_TEMP/main-advisory.json" app/src/main/assets/advisory.json --quarantine "$RUNNER_TEMP/quarantine.json"
             echo '```'
           } > "$RUNNER_TEMP/body.md"
 

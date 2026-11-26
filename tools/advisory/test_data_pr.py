@@ -80,6 +80,52 @@ class DataPrTest(unittest.TestCase):
         self.assertNotIn("`", line)
         self.assertLess(len(line), 200)
 
+    def test_the_body_lists_the_withheld_german_entries(self):
+        held = [{"code": "BG", "sha": "362e57fa8a507e6a239cdb51290255d23663e4ca58d6d45f3178177a55bb6c4a",
+                 "sentence": "Meiden Sie `das` Gebiet."}]
+        text = d.body(BASE, BASE, withheld=held)
+        self.assertIn("German entries withheld this week", text)
+        self.assertIn("BG [362e57fa8a50] Meiden Sie 'das' Gebiet.", text)
+        self.assertNotIn("withheld", d.body(BASE, BASE, withheld=[]))
+        self.assertNotIn("withheld", d.body(BASE, BASE, withheld="garbage"))
+
+    def test_the_withheld_command_prints_lines_or_nothing(self):
+        import io
+        from contextlib import redirect_stdout
+        with tempfile.TemporaryDirectory() as t:
+            f = Path(t, "q.json")
+            for content, expect in (('[{"code":"BG","sha":"abc","sentence":"S"}]', "BG [abc] S\n"), ("[]", "\n"), ("junk", "\n")):
+                f.write_text(content)
+                buf = io.StringIO()
+                with redirect_stdout(buf):
+                    self.assertEqual(d.main(["withheld", str(f)]), 0)
+                self.assertEqual(buf.getvalue(), expect)
+
+    def test_the_withheld_list_is_capped_with_a_count_of_the_valid_rest(self):
+        held = [{"code": "AB", "sha": "x", "sentence": "s"}] * 3 + ["junk"] + [{"code": "CD", "sha": "", "sentence": "t"}] * 2
+        lines = d.withheld_lines(held, 2)
+        self.assertEqual(lines, ["AB [x] s", "AB [x] s", "... and 3 more"])
+        self.assertEqual(d.withheld_lines([{"code": "CD", "sha": "", "sentence": "t", "siblingPublished": True}]),
+                         ["CD t (sibling entry published)"])
+
+    def test_the_withheld_codes_are_sorted_unique_and_leave_siblings_out(self):
+        held = [{"code": "BG", "sha": "a", "sentence": "s"}, {"code": "AR", "sha": "b", "sentence": "t"},
+                {"code": "BG", "sha": "c", "sentence": "u"}, {"code": "PS", "sha": "d", "sentence": "v", "siblingPublished": True}]
+        self.assertEqual(d.withheld_codes(held), ["AR", "BG"])
+        self.assertEqual(d.withheld_codes("junk"), [])
+
+    def test_an_unreadable_or_malformed_withheld_file_is_said_on_stderr(self):
+        import io
+        from contextlib import redirect_stderr
+        with tempfile.TemporaryDirectory() as t:
+            bad = Path(t, "q.json")
+            bad.write_text("{}")
+            for path in (bad, Path(t, "missing.json")):
+                err = io.StringIO()
+                with redirect_stderr(err):
+                    self.assertEqual(d.load_withheld(path), [])
+                self.assertIn("warning:", err.getvalue())
+
     def test_the_command_line_prints_true_false_and_rejects_a_bad_new_file(self):
         with tempfile.TemporaryDirectory() as t:
             old, new = Path(t, "old.json"), Path(t, "new.json")
@@ -88,6 +134,13 @@ class DataPrTest(unittest.TestCase):
             self.assertEqual(d.main(["changed", str(old), str(new)]), 0)
             new.write_text("not json")
             self.assertEqual(d.main(["changed", str(old), str(new)]), 2)
+
+
+class CarriedForwardLineTest(unittest.TestCase):
+    def test_a_carried_forward_entry_shows_last_weeks_stance(self):
+        lines = d.withheld_lines([{"code": "BG", "sha": "ab" * 32, "sentence": "S.", "carriedForward": True,
+                                   "previousStance": 3}])
+        self.assertEqual(lines, ["BG [abababababab] S. \u2014 kept last week's German stance 3"])
 
 
 if __name__ == "__main__":

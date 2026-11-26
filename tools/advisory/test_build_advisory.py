@@ -510,7 +510,7 @@ class PreviousFileTest(unittest.TestCase):
             prev.write_text(json.dumps(doc))
             out = Path(d) / "out.json"
             real = b.build
-            b.build = lambda src, at: dict(doc, generatedAt=at)
+            b.build = lambda src, at, held=None, prev=None: dict(doc, generatedAt=at)
             try:
                 self.assertEqual(b.main(["--source", d, "--out", str(out), "--previous", str(prev)]), 0)
             finally:
@@ -648,6 +648,201 @@ class DeTripwireTest(unittest.TestCase):
         with redirect_stderr(buf):
             b.parse_de(feed, VALID, {"1": page("<p>Alles ruhig.</p>")})
         self.assertIn("FR", buf.getvalue())
+
+
+class DeQuarantineTest(unittest.TestCase):
+    TRIP = "<p>Meiden Sie das betroffene Gebiet.</p>"
+
+    def feed(self, n=20, flags=None):
+        resp = {"lastModified": 1}
+        for i in range(1, n + 1):
+            resp[str(i)] = de("FR", **(flags or {}))
+        return {"response": resp}
+
+    def test_a_tripping_country_is_left_out_and_the_rest_builds(self):
+        feed = {"response": {"lastModified": 1, "1": de("FR"), **{str(i): de("MX") for i in range(2, 30)}}}
+        details = {str(i): page("<p>Alles ruhig.</p>", str(i)) for i in range(2, 30)}
+        details["1"] = page(self.TRIP)
+        held = []
+        out = b.parse_de(feed, VALID, details, None, held)
+        self.assertNotIn("FR", out)
+        self.assertEqual(out["MX"]["stance"], 0)
+        self.assertEqual([(r["code"], r["sha"], r["sentence"]) for r in held],
+                         [("FR", b.sentence_sha("Meiden Sie das betroffene Gebiet."), "Meiden Sie das betroffene Gebiet.")])
+
+    def test_a_quarantined_sibling_never_drops_a_formal_warning_in_either_order(self):
+        # Two feed entries of one code (Gaza and the West Bank are both PS).
+        for warned, tripped in (("1", "2"), ("2", "1")):
+            resp = {"lastModified": 1, warned: de("PS", warning=True), tripped: de("PS")}
+            resp.update({str(i): de("MX") for i in range(10, 50)})
+            details = {str(i): page("<p>x</p>", str(i)) for i in range(10, 50)}
+            details[warned] = page("<p>x</p>", warned)
+            details[tripped] = page(self.TRIP, tripped)
+            held = []
+            out = b.parse_de({"response": resp}, VALID, details, None, held)
+            self.assertEqual(out["PS"]["stance"], 3, warned)
+            # the sentence stays visible, but the code is not a withheld country
+            self.assertEqual([(r["code"], r.get("siblingPublished")) for r in held], [("PS", True)])
+
+    def test_a_calm_sibling_does_not_leave_a_plain_no_warning_in_either_order(self):
+        for tripped, calm in (("1", "2"), ("2", "1")):
+            resp = {"lastModified": 1, tripped: de("PS"), calm: de("PS")}
+            resp.update({str(i): de("MX") for i in range(10, 50)})
+            details = {str(i): page("<p>x</p>", str(i)) for i in range(10, 50)}
+            details[calm] = page("<p>x</p>", calm)
+            details[tripped] = page(self.TRIP, tripped)
+            held = []
+            out = b.parse_de({"response": resp}, VALID, details, None, held)
+            self.assertNotIn("PS", out, tripped)
+            self.assertEqual([(r["code"], r.get("siblingPublished")) for r in held], [("PS", None)])
+
+    def test_a_sibling_with_a_partial_warning_publishes_and_the_sentence_is_recorded(self):
+        for tripped, flagged in (("1", "2"), ("2", "1")):
+            resp = {"lastModified": 1, tripped: de("PS"), flagged: de("PS", partial=True)}
+            resp.update({str(i): de("MX") for i in range(10, 50)})
+            details = {str(i): page("<p>x</p>", str(i)) for i in range(10, 50)}
+            details[flagged] = page("<p>x</p>", flagged)
+            details[tripped] = page(self.TRIP, tripped)
+            held = []
+            out = b.parse_de({"response": resp}, VALID, details, None, held)
+            self.assertEqual(out["PS"]["stance"], 2, tripped)
+            self.assertEqual([(r["code"], r.get("siblingPublished")) for r in held], [("PS", True)])
+
+    def test_a_sibling_with_only_an_extracted_note_does_not_publish_the_code(self):
+        for tripped, noted in (("1", "2"), ("2", "1")):
+            resp = {"lastModified": 1, tripped: de("PS"), noted: de("PS")}
+            resp.update({str(i): de("MX") for i in range(10, 50)})
+            details = {str(i): page("<p>x</p>", str(i)) for i in range(10, 50)}
+            details[noted] = page(ABRAT, noted)
+            details[tripped] = page(self.TRIP, tripped)
+            held = []
+            out = b.parse_de({"response": resp}, VALID, details, None, held)
+            self.assertNotIn("PS", out, tripped)
+            self.assertEqual([(r["code"], r.get("siblingPublished")) for r in held], [("PS", None)])
+
+    def test_a_code_is_withheld_when_every_entry_trips_and_a_sentence_is_listed_once(self):
+        resp = {"lastModified": 1, "1": de("PS"), "2": de("PS")}
+        resp.update({str(i): de("MX") for i in range(10, 50)})
+        details = {str(i): page("<p>x</p>", str(i)) for i in range(10, 50)}
+        details["1"] = page(self.TRIP + self.TRIP, "1")
+        details["2"] = page(self.TRIP, "2")
+        held = []
+        out = b.parse_de({"response": resp}, VALID, details, None, held)
+        self.assertNotIn("PS", out)
+        self.assertEqual([r["code"] for r in held], ["PS"])
+
+    def test_a_country_with_a_missing_page_is_left_out_not_carried_forward(self):
+        feed = {"response": {"lastModified": 1, "1": de("FR"), **{str(i): de("MX") for i in range(2, 30)}}}
+        details = {str(i): page("<p>x</p>", str(i)) for i in range(2, 30)}
+        held = []
+        out = b.parse_de(feed, VALID, details, None, held)
+        self.assertNotIn("FR", out)
+        self.assertEqual([r["code"] for r in held], ["FR"])
+
+    def test_a_reviewed_sentence_does_not_quarantine(self):
+        feed = {"response": {"lastModified": 1, "1": de("FR"), **{str(i): de("MX") for i in range(2, 30)}}}
+        details = {str(i): page("<p>x</p>", str(i)) for i in range(1, 30)}
+        details["1"] = page(self.TRIP)
+        out = b.parse_de(feed, VALID, details, {"FR": {b.sentence_sha("Meiden Sie das betroffene Gebiet."): "ok"}}, [])
+        self.assertIn("FR", out)
+
+    def test_more_than_ten_percent_quarantined_raises(self):
+        resp = {"lastModified": 1}
+        details = {}
+        for i, code in enumerate(["FR", "MX", "AF"] + ["PS"] * 17, 1):
+            resp[str(i)] = de(code)
+            details[str(i)] = page(self.TRIP if i <= 3 else "<p>x</p>", str(i))
+        with self.assertRaises(b.BuildError) as cm:
+            b.parse_de({"response": resp}, VALID, details)
+        self.assertIn("withheld", str(cm.exception))
+        self.assertIn("Meiden Sie das betroffene Gebiet", str(cm.exception))
+
+    def test_exactly_ten_percent_is_tolerated(self):
+        resp = {"lastModified": 1}
+        for i in range(1, 11):
+            resp[str(i)] = de("FR" if i == 1 else "MX")
+        details = {str(i): page("<p>x</p>", str(i)) for i in range(1, 11)}
+        details["1"] = page(self.TRIP)
+        out = b.parse_de({"response": resp}, VALID, details)
+        self.assertNotIn("FR", out)
+
+    def test_more_than_fifteen_quarantined_raises_even_below_ten_percent(self):
+        codes = [f"Q{i:02d}" for i in range(16)]
+        valid = set(codes) | {"MX"}
+        resp = {"lastModified": 1}
+        details = {}
+        for i, c in enumerate(codes, 1):
+            resp[str(i)] = de(c)
+            details[str(i)] = page(self.TRIP, str(i))
+        for i in range(17, 400):
+            resp[str(i)] = de("MX")
+            details[str(i)] = page("<p>x</p>", str(i))
+        with self.assertRaises(b.BuildError):
+            b.parse_de({"response": resp}, valid, details)
+        del resp["16"]  # fifteen is the limit and is tolerated
+        out = b.parse_de({"response": resp}, valid, details)
+        self.assertEqual(set(out), {"MX"})
+
+    def test_main_exits_zero_prints_the_withheld_country_and_writes_the_sidecar(self):
+        import io
+        from contextlib import redirect_stderr, redirect_stdout
+        doc = {"dataFormat": 1, "generatedAt": "x", "sources": {}, "countries": {}}
+        real = b.build
+
+        def fake(src, at, held=None, prev=None):
+            held.append({"code": "FR", "sha": "ab" * 32, "sentence": "Meiden Sie das betroffene Gebiet."})
+            return dict(doc, generatedAt=at)
+        with tempfile.TemporaryDirectory() as t:
+            out, side = Path(t, "a.json"), Path(t, "q.json")
+            b.build = fake
+            try:
+                err = io.StringIO()
+                with redirect_stderr(err), redirect_stdout(io.StringIO()):
+                    rc = b.main(["--source", t, "--out", str(out), "--quarantine-out", str(side)])
+            finally:
+                b.build = real
+            self.assertEqual(rc, 0)
+            self.assertIn("withheld", err.getvalue())
+            self.assertEqual(json.loads(side.read_text())[0]["code"], "FR")
+
+    def _tripping(self, previous_de):
+        feed = {"response": {"lastModified": 1, "1": de("FR"), **{str(i): de("MX") for i in range(2, 30)}}}
+        details = {str(i): page("<p>x</p>", str(i)) for i in range(1, 30)}
+        details["1"] = page(self.TRIP)
+        held = []
+        return b.parse_de(feed, VALID, details, None, held, previous_de), held
+
+    def test_last_weeks_stance_3_is_carried_forward_and_recorded(self):
+        prev = {"stance": 3, "label": "x"}
+        out, held = self._tripping({"FR": prev})
+        self.assertEqual(out["FR"], prev)
+        self.assertTrue(held[0]["carriedForward"])
+        self.assertEqual(held[0]["previousStance"], 3)
+
+    def test_last_weeks_stance_0_or_no_previous_is_dropped(self):
+        for prev in ({"FR": {"stance": 0}}, {}, None):
+            out, held = self._tripping(prev)
+            self.assertNotIn("FR", out)
+            self.assertNotIn("carriedForward", held[0])
+
+    def test_the_sidecar_is_written_before_the_over_limit_error(self):
+        import io
+        from contextlib import redirect_stderr
+        real = b.build
+
+        def fake(src, at, held=None, prev=None):
+            held.append({"code": "FR", "sha": "ab" * 32, "sentence": "x"})
+            raise b.BuildError("too many")
+        with tempfile.TemporaryDirectory() as t:
+            side = Path(t, "q.json")
+            b.build = fake
+            try:
+                with redirect_stderr(io.StringIO()):
+                    rc = b.main(["--source", t, "--out", str(Path(t, "a.json")), "--quarantine-out", str(side)])
+            finally:
+                b.build = real
+            self.assertEqual(rc, 1)
+            self.assertEqual(json.loads(side.read_text())[0]["code"], "FR")
 
 
 class TerritorySectionTest(unittest.TestCase):

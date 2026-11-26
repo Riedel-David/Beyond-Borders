@@ -1,7 +1,11 @@
 """What changed between two advisory.json files, for the weekly data pull request.
 
   data_pr.py changed OLD NEW        prints "true" or "false"
-  data_pr.py body OLD NEW [--limit N]   prints the changed countries, one line each
+  data_pr.py withheld FILE          prints the withheld German entries from FILE, one line each, nothing if none
+  data_pr.py withheld-codes FILE    prints the withheld country codes, comma-separated, siblings left out
+  data_pr.py body OLD NEW [--limit N] [--quarantine FILE]
+                                    prints the changed countries, one line each, and the German
+                                    entries the build withheld (FILE: build_advisory --quarantine-out)
 
 "Changed" means anything but the fields that move on every build: the top-level generatedAt and
 each source's fetchedAt (build_advisory.keep_if_unchanged leaves both alone only when nothing else
@@ -46,9 +50,9 @@ def changed(old, new) -> bool:
     return old is None or comparable(old) != comparable(new)
 
 
-def short(text) -> str:
+def short(text, cap=MAX_FIELD) -> str:
     s = str(text).replace("\n", " ").replace("`", "'")
-    return s if len(s) <= MAX_FIELD else s[:MAX_FIELD - 3] + "..."
+    return s if len(s) <= cap else s[:cap - 3] + "..."
 
 
 def describe(entry) -> str:
@@ -84,23 +88,78 @@ def change_lines(old, new):
     return lines
 
 
-def body(old, new, limit=DEFAULT_LIMIT) -> str:
+def withheld_lines(entries, limit=DEFAULT_LIMIT):
+    """'CODE [sha12] sentence' per withheld German sentence (no brackets when there is no hash; a
+    suffix when a sibling entry of the code still published), capped like the changes list;
+    [] for a missing or malformed list."""
+    if not isinstance(entries, list):
+        return []
+    lines = []
+    for r in entries:
+        if isinstance(r, dict) and isinstance(r.get("code"), str):
+            sha = str(r.get("sha", ""))[:12]
+            tag = f"[{short(sha)}] " if sha else ""
+            note = " (sibling entry published)" if r.get("siblingPublished") else ""
+            if r.get("carriedForward"):
+                note = f" \u2014 kept last week's German stance {short(str(r.get('previousStance', '')))}"
+            lines.append(f"{short(r['code'])} {tag}{short(r.get('sentence', ''), 200)}{note}")
+    if len(lines) > limit:
+        lines = lines[:limit] + [f"... and {len(lines) - limit} more"]
+    return lines
+
+
+def withheld_codes(entries):
+    """Sorted country codes whose German entry is withheld (not the sibling-published ones)."""
+    if not isinstance(entries, list):
+        return []
+    return sorted({r["code"] for r in entries if isinstance(r, dict) and isinstance(r.get("code"), str)
+                   and not r.get("siblingPublished")})
+
+
+def load_withheld(path):
+    """The list the build wrote. Unreadable or malformed is said on stderr (the PR body then has no
+    withheld section, which would otherwise look like 'none withheld') and gives []."""
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"warning: cannot read the withheld list {path}: {e}", file=sys.stderr)
+        return []
+    if not isinstance(data, list):
+        print(f"warning: the withheld list {path} is not a JSON list", file=sys.stderr)
+        return []
+    return data
+
+
+def body(old, new, limit=DEFAULT_LIMIT, withheld=None) -> str:
     lines = change_lines(old, new)
     shown = lines[:limit]
     out = [f"{len(lines)} change(s), as stance and label (0 = no advisory, 3 = advised against):", ""]
     out += shown
     if len(lines) > limit:
         out.append(f"... and {len(lines) - limit} more")
+    held = withheld_lines(withheld, limit)
+    if held:
+        out += ["", "German entries withheld this week (no German entry is shown for these countries until "
+                "the sentence is reviewed in tools/advisory/de_reviewed.json):", *held]
     return "\n".join(out)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("command", choices=("changed", "body"))
+    ap.add_argument("command", choices=("changed", "body", "withheld", "withheld-codes"))
     ap.add_argument("old")
-    ap.add_argument("new")
+    ap.add_argument("new", nargs="?")
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
+    ap.add_argument("--quarantine", help="the build's --quarantine-out file")
     args = ap.parse_args(argv)
+    if args.command == "withheld-codes":
+        print(",".join(withheld_codes(load_withheld(args.old))))
+        return 0
+    if args.command == "withheld":
+        print("\n".join(withheld_lines(load_withheld(args.old), args.limit)))
+        return 0
+    if args.new is None:
+        ap.error("NEW is required")
     new = load(args.new)
     if new is None:
         print(f"{args.new} is missing or not a JSON object", file=sys.stderr)
@@ -109,7 +168,7 @@ def main(argv=None) -> int:
     if args.command == "changed":
         print("true" if changed(old, new) else "false")
     else:
-        print(body(old, new, args.limit))
+        print(body(old, new, args.limit, load_withheld(args.quarantine) if args.quarantine else None))
     return 0
 
 
