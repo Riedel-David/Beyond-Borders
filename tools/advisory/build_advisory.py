@@ -21,6 +21,7 @@ countries, or a country that cannot be mapped to an ISO code is an error that na
 is written. A partial file would make the app show "no data" for a country that has data.
 """
 import argparse
+import copy
 import datetime
 import hashlib
 import html
@@ -403,6 +404,10 @@ DE_NOTE_MAX_CHARS = 1500
 # More than this share of countries without a fetched detail page means the detail endpoint is
 # broken, not that one country hiccuped.
 DE_MAX_MISSING_SHARE = 0.10
+DE_MAX_QUARANTINE = 15  # countries whose German entry may be withheld in one build
+# A carried-forward German entry keeps its `updated` date (it is copied unchanged), so that date is how
+# long ago the country was last judged from a clean page. Past this many days a person must look.
+DE_MAX_CARRY_DAYS = 35
 
 DE_LABEL_NONE = "Keine formelle Reisewarnung"
 DE_LABEL_ADVISED_AGAINST = "Keine formelle Reisewarnung, aber Reiseabraten (siehe Hinweise)"
@@ -771,9 +776,13 @@ def de_notes(content: str, is_foreign=None, is_own=None, full_warning: bool = Fa
 # A country with no formal flag and no extracted note is stance 0. If its page nevertheless has a
 # sentence that looks like travel advice, the extractor has missed a phrasing (that is how Tunisia,
 # Turkey and Angola slipped through), and a silent miss shows "no warning" for a country the AA
-# advises against. So the build fails on such a page unless a human has looked at that exact
-# sentence: tools/advisory/de_reviewed.json maps a country code to {sha256 of the sentence: reason}.
-# A reworded sentence has a new hash and is reviewed again.
+# advises against. So such a country's German entry is withheld (quarantined; the app shows only the
+# sources that are present, so nothing says "no warning") unless someone has looked at that exact
+# sentence: tools/advisory/de_reviewed.json maps a country code to {sha256 of the sentence: reason}. A
+# reworded sentence has a new hash. If last week's file had a German stance of 1 or more for the country,
+# that entry is carried forward instead (the more cautious value). Nobody has to act for the weekly
+# build to finish: withheld countries are listed in the build log and the data PR, and the allowlist or
+# the extractor can be taught later.
 _WIRE_TRIGGER = re.compile(r"abgeraten|abzuraten|\bgewarnt\b|Lebensgefahr|Sperrzone|Sperrgebiet|\b(?:Vermeiden|Meiden)\s+Sie\b", re.I)
 _WIRE_PLACE = re.compile(_TRIP + r"|Aufenthalt|Besuch|Gebiet|Region|Provinz|Grenz|Landesteil|Bundesstaat|Zone\b|Insel|Küste|Distrikt|Bezirk")
 REVIEWED = Path(__file__).resolve().parent / "de_reviewed.json"
@@ -791,6 +800,10 @@ def load_reviewed(path: Path = REVIEWED) -> dict:
     if not isinstance(data, dict) or not all(isinstance(v, dict) for v in data.values()):
         raise BuildError(f"{path} must map a country code to an object of sentence hashes")
     return data
+
+
+def sha_tag(r: dict) -> str:
+    return f"[{r['sha'][:12]}] " if r.get("sha") else ""
 
 
 def de_wire_hits(content: str) -> list:
@@ -817,16 +830,25 @@ def de_label_key(label: str, code: str) -> str:
         raise BuildError(f"DE {code}: label {label!r} has no labelKey") from None
 
 
-def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None) -> dict:
-    """details: node id -> detail payload. A country whose three flags are all false and whose page
-    is missing cannot be told from one with Reiseabraten, so that is an error, never 'no warning'.
-    reviewed: the tripwire's allowlist (see de_reviewed.json); None means nothing is reviewed."""
+def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None, quarantined: list = None,
+             previous_de: dict = None, today: datetime.date = None) -> dict:
+    """details: node id -> detail payload. A country whose flags are all false and whose page is
+    missing cannot be told from one with Reiseabraten, and neither can one whose page has an unexplained
+    advice-like sentence: that country is quarantined, its DE entry left out (never 'no warning') or, if
+    previous_de (code -> last week's DE entry) has a stance of 1 or more for it, carried forward, and
+    the rest is built. More than DE_MAX_MISSING_SHARE of the countries, or more than
+    DE_MAX_QUARANTINE, is a changed feed or a broken extractor and raises.
+    reviewed: the tripwire's allowlist (see de_reviewed.json); None means nothing is reviewed.
+    quarantined: a list that receives {"code", "sha", "sentence"} per withheld sentence, filled before
+    the limits are checked so a failed build can still show it."""
     resp = feed.get("response") if isinstance(feed, dict) else None
     if not isinstance(resp, dict):
         raise BuildError("DE feed has no 'response' object")
     details = details or {}
     reviewed = reviewed or {}
-    out, bad, unverified, missing, tripped = {}, [], [], [], []
+    out, bad, missing = {}, [], []
+    flagged = set()  # codes with an entry carrying a formal or partial warning
+    held_entries = []  # (code, [{code, sha, sentence}]) per feed entry that is withheld; judged per entry
     total = 0
     names = {str(e.get("countryCode", "")).upper(): str(e.get("countryName", ""))
              for e in resp.values() if isinstance(e, dict)}
@@ -843,14 +865,17 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
             raise BuildError(f"DE entry {code} has a non-numeric node id {key!r}")
         total += 1
         warning, partial = e["warning"], e["partialWarning"]
+        if warning or partial:
+            flagged.add(code)
         if e.get("situationWarning") is True or e.get("situationPartWarning") is True:
             warn(f"DE {code} has a situation warning flag set; the app does not show it yet")
         content = detail_content(details.get(str(key)), key)
-        notes = []
+        notes, here = [], []
         if content is None:
             missing.append(code)
             if not warning and not partial:
-                unverified.append(code)
+                here.append({"code": code, "sha": "",
+                             "sentence": "(German page text missing, so 'no warning' cannot be verified)"})
         else:
             try:
                 notes = de_notes(content, foreign_matcher(code, names), own_matcher(code, names), warning,
@@ -862,12 +887,18 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
                 for sent in de_wire_hits(content):
                     if is_foreign(_POINTER.sub("", sent)):
                         continue  # about another country, as de_notes judges it
-                    if sentence_sha(sent) not in (reviewed.get(code) or {}):
-                        tripped.append(f"{code} [{sentence_sha(sent)[:12]}] {sent[:200]}")
+                    sha = sentence_sha(sent)
+                    if sha in (reviewed.get(code) or {}):
+                        continue
+                    if all(r["sha"] != sha for r in here):
+                        here.append({"code": code, "sha": sha, "sentence": sent})
         try:
             updated = datetime.datetime.fromtimestamp(int(e["lastModified"]), datetime.timezone.utc)
         except (KeyError, TypeError, ValueError, OverflowError, OSError) as exc:
             raise BuildError(f"DE {code}: missing or malformed lastModified {e.get('lastModified')!r}") from exc
+        if here:
+            held_entries.append((code, here))
+            continue  # only this entry; a sibling of the same code may still publish
         entry = {
             "stance": de_stance(warning, partial, notes),
             "label": de_label(warning, partial, notes),
@@ -880,14 +911,68 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
         merge(out, code, entry)
     if bad:
         raise BuildError("DE entries with no usable ISO code: " + ", ".join(sorted(bad)))
-    if unverified:
-        raise BuildError("DE page text missing for countries with no formal warning, so 'no warning' "
-                         "cannot be verified: " + ", ".join(sorted(unverified)))
-    if tripped:
+    # A code with a tripped entry stays published only if a sibling entry carries a formal or partial
+    # warning; a calm sibling, or one with only an extracted note, must not leave a softer "no warning"
+    # or "advised against" standing for the whole code.
+    siblings = [(c, rs) for c, rs in held_entries if c in out and c in flagged]
+    held_entries = [(c, rs) for c, rs in held_entries if not (c in out and c in flagged)]
+    for c, _ in held_entries:
+        out.pop(c, None)
+    n_held = len({c for c, _ in held_entries})
+    seen, records = set(), []
+    for code, rs in sorted(held_entries, key=lambda x: x[0]):
+        for r in rs:
+            if (code, r["sha"] or r["sentence"]) not in seen:  # one sentence on two entries is listed once
+                seen.add((code, r["sha"] or r["sentence"]))
+                records.append(r)
+    # Recorded, not counted: the code still has a German entry from a sibling with a warning flag, but
+    # the sentence on the entry that was left out should be visible.
+    for code, rs in sorted(siblings, key=lambda x: x[0]):
+        for r in rs:
+            if (code, r["sha"] or r["sentence"]) not in seen:
+                seen.add((code, r["sha"] or r["sentence"]))
+                records.append(dict(r, siblingPublished=True))
+    if quarantined is not None:
+        quarantined.extend(records)
+    if total and (n_held > DE_MAX_MISSING_SHARE * total or n_held > DE_MAX_QUARANTINE):
+        lines = [f"{r['code']} {sha_tag(r)}{r['sentence'][:200]}" for r in records if not r.get("siblingPublished")]
         raise BuildError(
-            f"{len(tripped)} German page sentence(s) look like travel advice on a country the build "
-            "rates 'no warning'. Either teach de_notes the phrasing, or review the sentence and add "
-            "its full sha256 and a reason to tools/advisory/de_reviewed.json:\n  " + "\n  ".join(tripped))
+            f"{n_held} countries of {total} feed entries would have their German entry withheld (limit "
+            f"{DE_MAX_MISSING_SHARE:.0%} and {DE_MAX_QUARANTINE}); that looks like a changed feed or a broken "
+            "extractor, not a stray sentence:\n  " + "\n  ".join(lines))
+    # Last week's German stance of 1 or more is the more cautious value: keep it rather than drop it.
+    # The kept entry's `updated` is copied unchanged, so it dates the last clean judgement of the page:
+    # the carry may not outlive DE_MAX_CARRY_DAYS, or a stale warning would stand for ever.
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    carried, ages, stale = {}, {}, []
+    for code in sorted({c for c, _ in held_entries}):
+        prev = (previous_de or {}).get(code)
+        if isinstance(prev, dict) and isinstance(prev.get("stance"), int) and prev["stance"] >= 1:
+            try:
+                age = (today - datetime.date.fromisoformat(prev["updated"])).days
+            except (KeyError, TypeError, ValueError):
+                age = None
+            if age is None or age > DE_MAX_CARRY_DAYS:
+                hashes = ", ".join(sha_tag(r).strip() or "[no hash]" for r in records
+                                   if r["code"] == code and not r.get("siblingPublished"))
+                when = "has no readable updated date" if age is None else f"is {age} days old"
+                stale.append(f"{code} (kept German entry {when}; withheld sentence {hashes})")
+                continue
+            out[code] = copy.deepcopy(prev)
+            carried[code], ages[code] = prev["stance"], age
+    if stale:
+        raise BuildError(f"carried-forward German entries older than {DE_MAX_CARRY_DAYS} days need a person to "
+                         "review the withheld sentence (add its hash to tools/advisory/de_reviewed.json or teach "
+                         "the extractor): " + "; ".join(stale))
+    for r in records:
+        if r["code"] in carried and not r.get("siblingPublished"):
+            r["carriedForward"], r["previousStance"], r["ageDays"] = True, carried[r["code"]], ages[r["code"]]
+        tail = (f" - kept last week's German stance {r['previousStance']}, {r['ageDays']} days old"
+                if r.get("carriedForward") else "")
+        if r.get("siblingPublished"):
+            warn(f"DE {r['code']} entry withheld, sibling entry published: {sha_tag(r)}{r['sentence'][:200]}")
+        else:
+            warn(f"DE {r['code']} withheld, no German entry this week: {sha_tag(r)}{r['sentence'][:200]}{tail}")
     if total and len(missing) > DE_MAX_MISSING_SHARE * total:
         raise BuildError(f"DE page text missing for {len(missing)} of {total} countries: " + ", ".join(sorted(missing)))
     return out
@@ -1045,7 +1130,8 @@ def read_json(path: Path):
         raise BuildError(f"cannot read {path}: {e}")
 
 
-def build(src: Path, generated_at: str) -> dict:
+def build(src: Path, generated_at: str, quarantined: list = None, previous_de: dict = None,
+          today: datetime.date = None) -> dict:
     index, valid = load_places()
     check_targets(valid)
     for c in ("us.json", "de.json", "uk_index.json"):
@@ -1065,7 +1151,7 @@ def build(src: Path, generated_at: str) -> dict:
     per_source = {
         "US": parse_us(read_json(src / "us.json"), index),
         "UK": parse_uk(pages, index),
-        "DE": parse_de(de_feed, valid, details, load_reviewed()),
+        "DE": parse_de(de_feed, valid, details, load_reviewed(), quarantined, previous_de, today),
     }
     check_urls(per_source)
     for rows in per_source.values():
@@ -1079,34 +1165,62 @@ def build(src: Path, generated_at: str) -> dict:
     return assemble(per_source, fetched, generated_at)
 
 
-def main(argv=None) -> int:
+def write_quarantine(path, withheld: list) -> None:
+    """The sidecar for the data PR and the failure issue. Best effort: it is a convenience, so a path
+    that cannot be written is a warning, never the reason a build fails."""
+    if path is None:
+        return
+    try:
+        path.write_text(json.dumps(withheld, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except OSError as e:
+        warn(f"cannot write the withheld list {path}: {e}")
+
+
+def main(argv=None, today: datetime.date = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--source", type=Path, help="read cached feeds from DIR instead of downloading")
     ap.add_argument("--cache", type=Path, default=DEFAULT_CACHE, help="where downloads are saved")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--previous", type=Path, help="the file 'unchanged' is judged against (default: --out); "
                     "the weekly job passes the live published copy, which is newer than the bundled one")
+    ap.add_argument("--quarantine-out", type=Path, help="write the withheld German sentences here as JSON "
+                    "(a list of {code, sha, sentence}) for the data PR and the failure issue; an empty list "
+                    "when none. Written on success, and on a failure after some were withheld")
     args = ap.parse_args(argv)
+    withheld = []
+    prev = args.previous or args.out
+    old = None
+    if prev.is_file():
+        try:
+            old = json.loads(prev.read_text(encoding="utf-8"))
+        except ValueError:
+            old = None  # an unreadable previous file is simply replaced, and nothing is carried forward
+    rows = old.get("countries") if isinstance(old, dict) else None
+    previous_de = {c: r["DE"] for c, r in rows.items() if isinstance(r, dict) and isinstance(r.get("DE"), dict)} \
+        if isinstance(rows, dict) else {}
     try:
         src = args.source
         if src is None:
             download(args.cache)
             src = args.cache
-        doc = build(src, now_iso())
-        prev = args.previous or args.out
-        if prev.is_file():
-            try:
-                old = json.loads(prev.read_text(encoding="utf-8"))
-            except ValueError:
-                old = None  # an unreadable previous file is simply replaced
+        doc = build(src, now_iso(), withheld, previous_de, today)
+        if old is not None:
             warn_on_drift(doc, old)
             doc = keep_if_unchanged(doc, old)
     except BuildError as e:
         print(f"advisory build FAILED, nothing written: {e}", file=sys.stderr)
+        if withheld:  # after the message, so an unwritable path cannot hide the real error
+            write_quarantine(args.quarantine_out, withheld)
         return 1
+    write_quarantine(args.quarantine_out, withheld)
     args.out.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":"), sort_keys=False) + "\n", encoding="utf-8")
     counts = {s: sum(1 for c in doc["countries"].values() if s in c) for s in SOURCES}
     print(f"wrote {args.out}: {len(doc['countries'])} countries, per source {counts}")
+    if withheld:
+        codes = sorted({r["code"] for r in withheld if not r.get("siblingPublished")})
+        if codes:
+            print("warning: German entries withheld this week (no DE entry for these countries): "
+                  + ", ".join(codes), file=sys.stderr)
     return 0
 
 

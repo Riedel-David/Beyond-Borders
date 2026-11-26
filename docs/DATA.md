@@ -151,8 +151,8 @@ Those sentences are the optional DE-only field `notes` (a list of at most 3 stri
 characters, verbatim from the page, de-duplicated). Absent `notes` means none; a parser must ignore
 anything in it that is not a string. A note is never cut. A German note over
 `DE_NOTE_MAX_CHARS` fails the build (naming the country: a human decides); a US or UK note over it is dropped with a warning naming source, country and length in the build log, and the build continues (the stance and label are unaffected). The limit is `DE_NOTE_MAX_CHARS` (1500, UTF-16 units; `MAX_ADVISORY_NOTE_CHARS` in the app is the same number), and the app drops one that is. It is an additive field, so `dataFormat` stays 1. The build refuses
-(and writes nothing) if a page is missing for any country with all flags false, or for more than 10% of
-countries.
+(and writes nothing) if a page is missing for more than 10% of countries. A country with all flags false whose page is missing is
+withheld (see the tripwire below), not an error.
 
 The UK and German `label` texts are English and German whatever the app's language, so each such entry
 also carries the optional `labelKey`, which names the text and lets the app show its own translation:
@@ -204,14 +204,34 @@ and silently publishing an older bundled copy over a newer one is worse.
 Every advisory refresh also publishes `advisory-heartbeat.json` (the run time), even when the data is
 unchanged. `visa-freshness.yml` opens an issue when it is more than 10 days old or missing while
 `advisory.json` is live. German pages with no warning flag are scanned for travel-advice sentences
-that extraction missed; an unreviewed hit fails the build, and a reviewed one is recorded with a reason in
-`tools/advisory/de_reviewed.json` (sentence hash per country code).
+that extraction missed. A hit does not stop the build and needs no one. A sentence whose sha256 is in
+`tools/advisory/de_reviewed.json` (per country code, with a reason) is known and ignored; any other hit
+*quarantines* that feed entry (no rule clears a sentence, a reworded one has a new hash): its German
+entry is left out (the app shows only the sources that are present, so nothing says "no warning"), every
+other country and source builds, and the run stays green. If last week's file has a German stance of 1 or
+more for that code, that entry is carried forward instead of dropped (`carriedForward` and
+`previousStance` in the withheld record; stance 0, no entry or an unreadable previous file: dropped). The
+previous file is `--previous`, else `--out`. Judging is per feed entry, then per code (Gaza and the West Bank
+are both PS): if any entry of a code tripped, the whole code is withheld, unless another entry of it carries
+a formal or partial warning flag (an extracted note alone is not enough), in which case the code publishes
+with that sibling's stance (a formal warning is never dropped) and the tripped sentence is listed as
+"sibling entry published". A calm sibling never leaves a plain "no warning" behind. The build logs
+`warning: DE XX withheld, no German entry this week: [sha12] sentence` per sentence (`... entry withheld,
+sibling entry published: ...` when another entry of the code still shows, listed but not counted) and a
+closing `warning: German entries withheld this week (no DE entry for these countries): XX, YY`;
+`--quarantine-out` writes the list (also when the limits below fail the build), both workflow jobs put it
+in the job summary with a `::warning::` annotation on every run, and the data PR body lists "German
+entries withheld this week" as `CODE [sha12] sentence`, with "kept last week's German stance N" for a
+carried-forward one. Teach the extractor or add the hash and a reason later, at leisure. More than 10% of
+the feed's entries, or more than 15 (`DE_MAX_MISSING_SHARE`, `DE_MAX_QUARANTINE`; countries withheld,
+carried-forward ones included, against feed entries), is a changed feed or a broken extractor and fails
+the build.
 
 German notes are also not taken from a section about a territory of the country (Denmark's page keeps
 its Greenland advice under a `Grönland` heading, and Denmark is not Greenland). The page's headings are
 flat, so `TERRITORY_HEADINGS` in `build_advisory.py` lists them per country (DK, FR, GB, NL, US); a
 sentence under such a heading is no note, but the tripwire still sees it, so on a country with no
-formal flag a new one has to be reviewed. Domestic sub-regions (Xinjiang, Oromia) are not territories.
+formal flag a new one withholds that country's German entry until it is reviewed. Domestic sub-regions (Xinjiang, Oromia) are not territories.
 
 The weekly data PR keeps the bundled asset current, so a fresh install without network starts from
 current data once it is merged. Before a release, check that no `data/advisory-` PR is waiting; if the PR
