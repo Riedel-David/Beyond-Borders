@@ -651,6 +651,35 @@ class DeTripwireTest(unittest.TestCase):
         self.assertIn("FR", buf.getvalue())
 
 
+class WireGuidanceTest(unittest.TestCase):
+    BG = ("Informieren Sie sich über die Medien, Ihr Hotel und Ihren Reiseleiter/-veranstalter "
+          "über von Naturkatastrophen betroffene Gebiete und meiden Sie diese.")
+
+    def hits(self, sent):
+        return b.de_wire_hits("<p>" + sent + "</p>")
+
+    def test_a_guidance_sentence_the_extractor_rules_out_is_not_a_tripwire_hit(self):
+        self.assertFalse(b.is_travel_advice(self.BG))
+        self.assertEqual(self.hits(self.BG), [])
+
+    def test_a_guidance_sentence_that_also_says_abgeraten_is_still_a_hit(self):
+        s = "Informieren Sie sich über die Lage. Von Reisen in die Region X wird abgeraten."
+        self.assertEqual(self.hits(s), ["Von Reisen in die Region X wird abgeraten."])
+        s = "Informieren Sie sich vor Ort, denn von Reisen in die Region X wird abgeraten."
+        self.assertEqual(self.hits(s), [s])
+
+    def test_a_plain_imperative_without_guidance_wording_is_still_a_hit(self):
+        s = "Meiden Sie Reisen in die Provinz X."
+        self.assertEqual(self.hits(s), [s])
+
+    def test_a_country_whose_page_has_only_the_guidance_sentence_is_stance_zero_and_not_withheld(self):
+        feed = {"response": {"lastModified": 1, "contentList": ["1"], "1": de("FR")}}
+        held = []
+        out = b.parse_de(feed, VALID, {"1": page("<p>" + self.BG + "</p>")}, None, held)
+        self.assertEqual(out["FR"]["stance"], 0)
+        self.assertEqual(held, [])
+
+
 class DeQuarantineTest(unittest.TestCase):
     TRIP = "<p>Meiden Sie das betroffene Gebiet.</p>"
 
