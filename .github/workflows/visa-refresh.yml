@@ -163,6 +163,16 @@ jobs:
       - name: Assemble the site
         run: python3 -I tools/visa/make_site.py app/src/main/assets "$RUNNER_TEMP/site"
 
+      # manifest.sig is the detached ECDSA signature the app checks before it trusts manifest.json
+      # (the manifest comes from the same host as the data, so its hashes alone only catch
+      # corruption). The script fails when the secret is missing or empty and verifies its own
+      # output before anything is uploaded; there is deliberately no skip. The key never reaches
+      # the log. Setup and rollout order: docs/DATA.md, "Signing the manifest".
+      - name: Sign the manifest
+        env:
+          MANIFEST_SIGNING_KEY: ${{ secrets.MANIFEST_SIGNING_KEY }}
+        run: bash tools/visa/sign_manifest.sh "$RUNNER_TEMP/site"
+
       # A Pages deployment replaces the whole site, so advisory.json (published weekly by
       # advisory-refresh.yml) and its heartbeat must ride along or this deploy would delete them. The
       # live copy is newest; the bundled one is only the fallback.

@@ -97,6 +97,49 @@ published data can be newer than what is on main until the PR merges. That is in
 published, no app-side curation. `visa-freshness.yml` also checks the published `manifest.json` (reachable,
 versions 1, generated within 10 days, at least 150 passports).
 
+### Signing the manifest
+
+The manifest comes from the same host as the data (GitHub Pages of this repo), so its sha256 values only
+catch corruption. `manifest.sig` closes that: base64 of an ECDSA P-256 / SHA-256 signature (DER) over the exact
+bytes of `manifest.json`, made in `visa-refresh.yml` by `tools/visa/sign_manifest.sh` with the private key in the
+repository secret `MANIFEST_SIGNING_KEY`. The step fails (no skip) when the secret is missing or empty, and
+verifies its own output before upload. `advisory-refresh.yml` carries `manifest.sig` together with
+`manifest.json` when it redeploys the site; a manifest without its signature would make every new app reject
+updates. The app (`ManifestSignature.kt`, `ManifestPublicKeys.kt`) checks the signature before it parses the
+manifest. A missing, malformed or invalid signature counts as "manifest not recognised": nothing is
+downloaded or deleted, bundled and stored data stay, and the user sees the existing "unavailable" outcome.
+There is no unsigned fallback. An empty `MANIFEST_PUBLIC_KEYS` (the state until step 3) rejects everything.
+
+One-time key setup (on your machine; the private key never goes into the repo):
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out manifest-key.pem
+# public key as one base64 line (X.509 SubjectPublicKeyInfo, DER): this goes into ManifestPublicKeys.kt
+openssl pkey -in manifest-key.pem -pubout -outform DER | base64 | tr -d '\n'; echo
+gh secret set MANIFEST_SIGNING_KEY < manifest-key.pem
+# store manifest-key.pem in the password manager, then:
+rm -P manifest-key.pem   # or shred -u on Linux
+```
+
+Rollout order (old apps ignore `manifest.sig`, so step 1 is safe; step 3 is not reversible for installed apps):
+
+1. Set the secret, merge, and run "Visa data refresh" once from the Actions tab. The workflow now signs and
+   publishes `manifest.sig`. (Before the key is set the publish job fails loudly at "Sign the manifest".)
+2. Confirm the live signature verifies, by hand:
+   `curl -s https://riedel-david.github.io/Beyond-Borders/manifest.json -o m.json; curl -s .../manifest.sig | base64 -d > s.der;
+   echo '<public key base64>' | base64 -d | openssl pkey -pubin -inform DER -out pub.pem;
+   openssl dgst -sha256 -verify pub.pem -signature s.der m.json` must print `Verified OK`. Then set the repository
+   variable `MANIFEST_SIGNING_LIVE=true` (Settings > Secrets and variables > Actions > Variables), so
+   `advisory-refresh.yml` refuses to carry a manifest that has lost its signature.
+3. Only then put the public key into `MANIFEST_PUBLIC_KEYS` and release the app. `visa-freshness.yml` verifies
+   the live signature against the keys listed there from that point on (before it, only that the file exists
+   and is base64).
+
+Rotation: ship the new public key in an app release next to the old one, switch the secret once enough
+installs have it, and drop the old key in a later release. `sign_manifest.sh` refuses a signing key that is not
+in `MANIFEST_PUBLIC_KEYS` (once the list is non-empty), so a wrong secret cannot publish an update that every
+app rejects.
+
 ### Is a newer snapshot out?
 
 `.github/workflows/visa-freshness.yml` runs every Monday, and on demand from the Actions

@@ -1,7 +1,7 @@
 """Assemble the GitHub Pages folder for advisory-refresh.yml: the new advisory.json plus the visa
 files that are live right now.
 
-Usage: python3 -I tools/advisory/make_site.py <advisory.json> <base-url> <out-dir>
+Usage: python3 -I tools/advisory/make_site.py [--require-signature] <advisory.json> <base-url> <out-dir>
        python3 -I tools/advisory/make_site.py --check <advisory.json>
        python3 -I tools/advisory/make_site.py --check-heartbeat <advisory-heartbeat.json> [--max-age-days N]
        python3 -I tools/advisory/make_site.py --check-advisory-age <advisory.json> [--max-age-days N]
@@ -9,7 +9,11 @@ Usage: python3 -I tools/advisory/make_site.py <advisory.json> <base-url> <out-di
 A Pages deployment replaces the whole site, so publishing advisory.json alone would delete
 manifest.json and every visa_<code>.json, and the app's visa updater would find nothing. This copies
 the live manifest and each file it lists (checked against the manifest's own sha256 and size, so a
-half-served or tampered file is never re-published), then adds advisory.json beside them. The other
+half-served or tampered file is never re-published), then adds advisory.json beside them. The live
+manifest.sig travels with manifest.json as a pair: the signature covers the manifest's exact bytes, so a
+manifest carried without it would make every app that requires signatures reject updates. A site with
+no manifest.sig yet (signing not rolled out) is carried without one unless --require-signature is
+given, which the workflow sets once signing is live; then a missing signature refuses the run. The other
 direction is handled in visa-refresh.yml, which carries the live advisory.json into its own site.
 
 Every run also writes advisory-heartbeat.json ({"refreshedAt": ...}). advisory.json itself is stable
@@ -23,6 +27,7 @@ import hashlib
 import json
 import re
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -30,6 +35,7 @@ from pathlib import Path
 MANIFEST_FILE_RE = re.compile(r"visa_[a-z]{2}\.json")
 
 
+SIGNATURE_FILE = "manifest.sig"
 HEARTBEAT_FILE = "advisory-heartbeat.json"
 # The job runs weekly. A single missed run is 7 days of silence plus the weekday offset of the
 # check, so 10 days fails on the first missed week and tolerates a late one.
@@ -82,6 +88,22 @@ def fetch(url: str) -> bytes:
     raise SiteError(f"cannot fetch {url}: {last}")
 
 
+def fetch_optional(url: str):
+    """The body, or None on HTTP 404 (not published); any other failure raises SiteError."""
+    last = None
+    for _ in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=40) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None
+            last = e
+        except Exception as e:  # noqa: BLE001
+            last = e
+    raise SiteError(f"cannot fetch {url}: {last}")
+
+
 def check_advisory(raw: bytes) -> None:
     try:
         doc = json.loads(raw)
@@ -93,7 +115,8 @@ def check_advisory(raw: bytes) -> None:
         raise SiteError("advisory.json has too few countries")
 
 
-def build(advisory: bytes, base: str, get=fetch, now: datetime = None) -> dict:
+def build(advisory: bytes, base: str, get=fetch, now: datetime = None, get_optional=fetch_optional,
+          require_signature: bool = False) -> dict:
     """Returns {file name: bytes} for the whole site."""
     check_advisory(advisory)
     base = base.rstrip("/") + "/"
@@ -106,6 +129,15 @@ def build(advisory: bytes, base: str, get=fetch, now: datetime = None) -> dict:
     if not passports:
         raise SiteError("live manifest.json lists no passports")
     files = {"manifest.json": manifest_raw}
+    signature = get_optional(base + SIGNATURE_FILE)
+    if signature is None:
+        if require_signature:
+            raise SiteError("the live manifest.json has no manifest.sig, and signing is live: carrying the "
+                            "manifest without it would make every signature-requiring app reject updates")
+    elif not signature.strip():
+        raise SiteError("the live manifest.sig is empty")
+    else:
+        files[SIGNATURE_FILE] = signature
     for code, meta in sorted(passports.items()):
         name = meta.get("file", "")
         if not MANIFEST_FILE_RE.fullmatch(name):
@@ -144,6 +176,8 @@ def main(argv) -> int:
         what = "advisory data generated" if argv[0] == "--check-advisory-age" else "advisory refresh last ran"
         print(f"{what} {at:%Y-%m-%d %H:%M} UTC")
         return 0
+    require = "--require-signature" in argv
+    argv = [a for a in argv if a != "--require-signature"]
     if len(argv) != 3:
         print(__doc__, file=sys.stderr)
         return 2
@@ -151,14 +185,14 @@ def main(argv) -> int:
     try:
         if out.exists() and any(out.iterdir()):
             raise SiteError(f"{out} is not empty")
-        files = build(adv.read_bytes(), base)
+        files = build(adv.read_bytes(), base, require_signature=require)
     except (SiteError, OSError) as e:
         print(f"site assembly FAILED, nothing written: {e}", file=sys.stderr)
         return 1
     out.mkdir(parents=True, exist_ok=True)
     for name, raw in files.items():
         (out / name).write_bytes(raw)
-    print(f"assembled {len(files)} files into {out} ({len(files) - 3} visa files)")
+    print(f"assembled {len(files)} files into {out} ({len(files) - 3 - (SIGNATURE_FILE in files)} visa files)")
     return 0
 
 

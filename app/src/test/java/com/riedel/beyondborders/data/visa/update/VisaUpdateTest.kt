@@ -209,6 +209,15 @@ class VisaUpdateTest {
         }
     }
 
+    // A throwaway key pair made at test time; nothing here is a real key.
+    private val keyPair = java.security.KeyPairGenerator.getInstance("EC").apply { initialize(java.security.spec.ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+    private val testKeys = listOf(java.util.Base64.getEncoder().encodeToString(keyPair.public.encoded))
+
+    private fun sign(bytes: ByteArray, key: java.security.PrivateKey = keyPair.private): ByteArray =
+        java.util.Base64.getEncoder().encode(
+            java.security.Signature.getInstance("SHA256withECDSA").run { initSign(key); update(bytes); sign() },
+        )
+
     private fun site(vararg passports: Pair<String, String>): Map<String, ByteArray> {
         val files = HashMap<String, ByteArray>()
         val entries = HashMap<String, ManifestEntry>()
@@ -218,13 +227,14 @@ class VisaUpdateTest {
             entries[code] = entryFor(b, code, asOf)
         }
         files[MANIFEST_FILE] = manifestJson(entries).toByteArray()
+        files[SIGNATURE_FILE] = sign(files[MANIFEST_FILE]!!)
         return files
     }
 
     @Test
     fun `an update stores a newer wanted passport and reports it`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, setOf("FR"), { "2026-01-01" }, { TODAY })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = testKeys)
         assertEquals(listOf("FR"), r.applied)
         assertEquals("2026-11-11", r.appliedAsOf)
         assertTrue(r.manifestSeen)
@@ -232,9 +242,59 @@ class VisaUpdateTest {
     }
 
     @Test
+    fun `a missing signature rejects the manifest and keeps stored data`() {
+        val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
+        val files = site("FR" to "2026-11-11").toMutableMap().also { it.remove(SIGNATURE_FILE) }
+        val notFound = object : VisaFetcher {
+            override fun fetch(file: String, maxBytes: Int): ByteArray =
+                if (file == SIGNATURE_FILE) throw VisaFetchNotFound("HTTP 404") else files.getValue(file)
+        }
+        val r = runUpdate(notFound, store, setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = testKeys)
+        assertFalse(r.manifestSeen)
+        assertFalse(r.ioFailure)
+        assertTrue(r.applied.isEmpty())
+        assertTrue(r.deleted.isEmpty())
+        assertEquals(setOf("US"), store.codes())
+        assertEquals(VisaCheckOutcome.Unavailable, outcomeOf(r))
+    }
+
+    @Test
+    fun `a tampered manifest or a signature by another key is rejected without deleting anything`() {
+        val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
+        val good = site("FR" to "2026-11-11")
+        val tampered = good.toMutableMap().also { it[MANIFEST_FILE] = it[MANIFEST_FILE]!! + " ".toByteArray() }
+        val other = java.security.KeyPairGenerator.getInstance("EC").apply { initialize(256) }.generateKeyPair()
+        val foreign = good.toMutableMap().also { it[SIGNATURE_FILE] = sign(it[MANIFEST_FILE]!!, other.private) }
+        val garbage = good.toMutableMap().also { it[SIGNATURE_FILE] = "not base64 !!".toByteArray() }
+        for (files in listOf(tampered, foreign, garbage)) {
+            val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = testKeys)
+            assertFalse(r.manifestSeen)
+            assertTrue(r.applied.isEmpty())
+            assertTrue(r.deleted.isEmpty())
+            assertEquals(setOf("US"), store.codes())
+        }
+    }
+
+    @Test
+    fun `no configured key means nothing is ever accepted`() {
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), FakeStore(), setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = emptyList())
+        assertFalse(r.manifestSeen)
+        assertTrue(r.applied.isEmpty())
+        assertTrue(MANIFEST_PUBLIC_KEYS.isEmpty() || MANIFEST_PUBLIC_KEYS.all { it.isNotBlank() })
+    }
+
+    @Test
+    fun `a signature fetch cut short by the network asks for a retry`() {
+        val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11"), failing = setOf(SIGNATURE_FILE)), store, setOf("FR"), { "2026-01-01" }, { TODAY }, publicKeys = testKeys)
+        assertTrue(r.ioFailure)
+        assertEquals(setOf("US"), store.codes())
+    }
+
+    @Test
     fun `an update older than the bundled asset is not stored`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-01-01")), store, setOf("FR"), { "2026-06-01" }, { TODAY })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-01-01")), store, setOf("FR"), { "2026-06-01" }, { TODAY }, publicKeys = testKeys)
         assertTrue(r.applied.isEmpty())
         assertTrue(store.codes().isEmpty())
     }
@@ -242,7 +302,7 @@ class VisaUpdateTest {
     @Test
     fun `a dropped passport is deleted only when the manifest was understood`() {
         val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, emptySet(), { null }, { TODAY })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11")), store, emptySet(), { null }, { TODAY }, publicKeys = testKeys)
         assertEquals(listOf("US"), r.deleted)
         assertFalse("US" in store.codes())
     }
@@ -250,7 +310,7 @@ class VisaUpdateTest {
     @Test
     fun `a failed manifest fetch deletes nothing and asks for a retry`() {
         val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
-        val r = runUpdate(FakeFetcher(emptyMap()), store, setOf("US"), { null }, { TODAY })
+        val r = runUpdate(FakeFetcher(emptyMap()), store, setOf("US"), { null }, { TODAY }, publicKeys = testKeys)
         assertTrue(r.ioFailure)
         assertFalse(r.manifestSeen)
         assertEquals(setOf("US"), store.codes())
@@ -259,8 +319,9 @@ class VisaUpdateTest {
     @Test
     fun `an unrecognised manifest version deletes nothing and does not retry`() {
         val store = FakeStore(mapOf("US" to json("US", "2026-01-01")))
-        val files = mapOf(MANIFEST_FILE to manifestJson(emptyMap(), manifestVersion = 9).toByteArray())
-        val r = runUpdate(FakeFetcher(files), store, setOf("US"), { null }, { TODAY })
+        val manifestBytes = manifestJson(emptyMap(), manifestVersion = 9).toByteArray()
+        val files = mapOf(MANIFEST_FILE to manifestBytes, SIGNATURE_FILE to sign(manifestBytes))
+        val r = runUpdate(FakeFetcher(files), store, setOf("US"), { null }, { TODAY }, publicKeys = testKeys)
         assertFalse(r.ioFailure)
         assertFalse(r.manifestSeen)
         assertEquals(setOf("US"), store.codes())
@@ -272,7 +333,7 @@ class VisaUpdateTest {
         files["visa_fr.json"] = json("FR", "2026-11-11").also { it[0] = ' '.code.toByte() }
         val old = json("FR", "2026-01-01")
         val store = FakeStore(mapOf("FR" to old))
-        val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { "2025-01-01" }, { TODAY })
+        val r = runUpdate(FakeFetcher(files), store, setOf("FR"), { "2025-01-01" }, { TODAY }, publicKeys = testKeys)
         assertTrue(r.applied.isEmpty())
         assertTrue(store.read("FR")!!.contentEquals(old))
     }
@@ -280,7 +341,7 @@ class VisaUpdateTest {
     @Test
     fun `a failed file fetch is reported as a retry but other passports still apply`() {
         val store = FakeStore()
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11"), failing = setOf("visa_fr.json")), store, setOf("FR", "US"), oldBundle, { TODAY })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11"), failing = setOf("visa_fr.json")), store, setOf("FR", "US"), oldBundle, { TODAY }, publicKeys = testKeys)
         assertTrue(r.ioFailure)
         assertEquals(listOf("US"), r.applied)
     }
@@ -345,7 +406,7 @@ class VisaUpdateTest {
         val rejecting = object : VisaFetcher {
             override fun fetch(file: String, maxBytes: Int): ByteArray = throw VisaFetchRejected("HTTP 404")
         }
-        val r = runUpdate(rejecting, store, setOf("US"), { null }, { TODAY })
+        val r = runUpdate(rejecting, store, setOf("US"), { null }, { TODAY }, publicKeys = testKeys)
         assertFalse(r.ioFailure)
         assertFalse(r.manifestSeen)
         assertEquals(setOf("US"), store.codes())
@@ -389,7 +450,7 @@ class VisaUpdateTest {
             override fun write(code: String, bytes: ByteArray) = throw IOException("disk full")
             override fun delete(code: String) = Unit
         }
-        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11")), failing, setOf("FR", "US"), oldBundle, { TODAY })
+        val r = runUpdate(FakeFetcher(site("FR" to "2026-11-11", "US" to "2026-11-11")), failing, setOf("FR", "US"), oldBundle, { TODAY }, publicKeys = testKeys)
         assertFalse(r.ioFailure)
         assertTrue(r.manifestSeen)
         assertTrue(r.applied.isEmpty())

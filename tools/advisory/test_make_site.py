@@ -21,6 +21,10 @@ def live(files):
     return lambda url: files[url.rsplit("/", 1)[1]]
 
 
+def NO_SIG(url):
+    return None
+
+
 def site(visa=VISA, **meta):
     entry = {"file": "visa_de.json", "sha256": hashlib.sha256(VISA).hexdigest(), "bytes": len(VISA)}
     entry.update(meta)
@@ -29,31 +33,45 @@ def site(visa=VISA, **meta):
 
 class MakeSiteTest(unittest.TestCase):
     def test_the_site_holds_the_live_visa_files_and_the_new_advisory_file(self):
-        files = m.build(ADV, "https://x/y", live(site()))
+        files = m.build(ADV, "https://x/y", live(site()), get_optional=NO_SIG)
         self.assertEqual(set(files), {"manifest.json", "visa_de.json", "advisory.json", "advisory-heartbeat.json"})
         self.assertEqual(files["advisory.json"], ADV)
 
+    def test_a_live_signature_travels_with_the_manifest(self):
+        files = m.build(ADV, "https://x/y", live(site()), get_optional=lambda u: b"c2ln\n", require_signature=True)
+        self.assertEqual(files["manifest.sig"], b"c2ln\n")
+
+    def test_a_site_without_a_signature_is_carried_without_one_until_signing_is_live(self):
+        files = m.build(ADV, "https://x/y", live(site()), get_optional=NO_SIG)
+        self.assertNotIn("manifest.sig", files)
+
+    def test_a_missing_or_empty_signature_is_refused_once_signing_is_live(self):
+        with self.assertRaises(m.SiteError):
+            m.build(ADV, "https://x/y", live(site()), get_optional=NO_SIG, require_signature=True)
+        with self.assertRaises(m.SiteError):
+            m.build(ADV, "https://x/y", live(site()), get_optional=lambda u: b"  \n")
+
     def test_a_visa_file_that_does_not_match_the_manifest_is_refused(self):
         with self.assertRaises(m.SiteError):
-            m.build(ADV, "https://x/y", live(site(visa=b'{"passport":"XX"}')))
+            m.build(ADV, "https://x/y", live(site(visa=b'{"passport":"XX"}')), get_optional=NO_SIG)
 
     def test_an_unreachable_live_site_is_refused_rather_than_published_without_visa_files(self):
         def down(url):
             raise m.SiteError("offline")
         with self.assertRaises(m.SiteError):
-            m.build(ADV, "https://x/y", down)
+            m.build(ADV, "https://x/y", down, get_optional=NO_SIG)
 
     def test_a_manifest_naming_a_path_outside_the_site_is_refused(self):
         with self.assertRaises(m.SiteError):
-            m.build(ADV, "https://x/y", live(site(file="../evil.json")))
+            m.build(ADV, "https://x/y", live(site(file="../evil.json")), get_optional=NO_SIG)
 
     def test_a_malformed_advisory_file_is_refused(self):
         with self.assertRaises(m.SiteError):
-            m.build(b'{"dataFormat": 2, "countries": {}}', "https://x/y", live(site()))
+            m.build(b'{"dataFormat": 2, "countries": {}}', "https://x/y", live(site()), get_optional=NO_SIG)
 
     def test_every_site_carries_a_heartbeat_with_the_build_time(self):
         now = datetime(2026, 11, 25, 6, 30, 5, tzinfo=timezone.utc)
-        files = m.build(ADV, "https://x/y", live(site()), now=now)
+        files = m.build(ADV, "https://x/y", live(site()), now=now, get_optional=NO_SIG)
         self.assertEqual(json.loads(files["advisory-heartbeat.json"]), {"refreshedAt": "2026-11-25T06:30:05Z"})
 
     def test_a_heartbeat_older_than_the_limit_or_unreadable_is_refused(self):
