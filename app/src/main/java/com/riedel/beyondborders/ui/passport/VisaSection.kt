@@ -314,12 +314,12 @@ private fun VisaSummaryCard(
             }
             // With two passports the staler date is the honest one, as in asOfNoticeText.
             val asOf = if (secondVisa != null) minOf(visa.asOf, secondVisa.asOf) else visa.asOf
+            // The info button is a 48 dp touch target, taller than this one line of text. Centred, the
+            // two share a line; top-aligned, the text sat above the icon with an empty strip under it.
             Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     stringResource(R.string.visa_summary_disclaimer_short, asOf),
