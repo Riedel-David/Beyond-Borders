@@ -3,6 +3,7 @@
   data_pr.py changed OLD NEW        prints "true" or "false"
   data_pr.py withheld FILE          prints the withheld German entries from FILE, one line each, nothing if none
   data_pr.py withheld-codes FILE    prints the withheld country codes, comma-separated, siblings left out
+  data_pr.py withheld-notice FILE   prints one line per country that has no German advice at all this week
   data_pr.py body OLD NEW [--limit N] [--quarantine FILE]
                                     prints the changed countries, one line each, and the German
                                     entries the build withheld (FILE: build_advisory --quarantine-out)
@@ -23,6 +24,7 @@ from pathlib import Path
 VOLATILE_SOURCE_KEYS = ("fetchedAt",)
 DEFAULT_LIMIT = 40
 MAX_FIELD = 80
+WITHHELD_UNAVAILABLE = "withheld list unavailable: check the job log"
 
 
 def load(path):
@@ -90,22 +92,37 @@ def change_lines(old, new):
 
 def withheld_lines(entries, limit=DEFAULT_LIMIT):
     """'CODE [sha12] sentence' per withheld German sentence (no brackets when there is no hash; a
-    suffix when a sibling entry of the code still published), capped like the changes list;
-    [] for a missing or malformed list."""
+    suffix when a sibling entry of the code still published, or last week's stance and its age when it
+    was carried forward), capped like the changes list. An unreadable list (load_withheld's marker) is
+    one line saying so; any other non-list gives []."""
+    if entries == WITHHELD_UNAVAILABLE:
+        return [WITHHELD_UNAVAILABLE]
     if not isinstance(entries, list):
         return []
     lines = []
     for r in entries:
         if isinstance(r, dict) and isinstance(r.get("code"), str):
             sha = str(r.get("sha", ""))[:12]
-            tag = f"[{short(sha)}] " if sha else ""
+            tag = f"[{sha}] " if sha else ""
             note = " (sibling entry published)" if r.get("siblingPublished") else ""
             if r.get("carriedForward"):
-                note = f" \u2014 kept last week's German stance {short(str(r.get('previousStance', '')))}"
+                age = r.get("ageDays")
+                note = (f" \u2014 kept last week's German stance {short(str(r.get('previousStance', '')))}"
+                        + (f", {short(str(age))} days old" if age is not None else ""))
             lines.append(f"{short(r['code'])} {tag}{short(r.get('sentence', ''), 200)}{note}")
     if len(lines) > limit:
         lines = lines[:limit] + [f"... and {len(lines) - limit} more"]
     return lines
+
+
+def withheld_notice(entries):
+    """One loud line per country that is shown with no German advice at all (withheld and not carried
+    forward). Carried-forward and sibling-published countries still show German advice."""
+    if not isinstance(entries, list):
+        return []
+    codes = sorted({r["code"] for r in entries if isinstance(r, dict) and isinstance(r.get("code"), str)
+                    and not r.get("siblingPublished") and not r.get("carriedForward")})
+    return [f"NO GERMAN ADVICE IS SHOWN for {short(c)} until the withheld sentence is reviewed." for c in codes]
 
 
 def withheld_codes(entries):
@@ -117,28 +134,33 @@ def withheld_codes(entries):
 
 
 def load_withheld(path):
-    """The list the build wrote. Unreadable or malformed is said on stderr (the PR body then has no
-    withheld section, which would otherwise look like 'none withheld') and gives []."""
+    """The list the build wrote. Unreadable or malformed is said on stderr and gives WITHHELD_UNAVAILABLE,
+    which body() and withheld_lines() print as a visible line: a PR with no withheld section would
+    otherwise look like 'none withheld'."""
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
         print(f"warning: cannot read the withheld list {path}: {e}", file=sys.stderr)
-        return []
+        return WITHHELD_UNAVAILABLE
     if not isinstance(data, list):
         print(f"warning: the withheld list {path} is not a JSON list", file=sys.stderr)
-        return []
+        return WITHHELD_UNAVAILABLE
     return data
 
 
 def body(old, new, limit=DEFAULT_LIMIT, withheld=None) -> str:
     lines = change_lines(old, new)
     shown = lines[:limit]
-    out = [f"{len(lines)} change(s), as stance and label (0 = no advisory, 3 = advised against):", ""]
+    notice = withheld_notice(withheld)
+    out = [*notice, *([""] if notice else [])]
+    out += [f"{len(lines)} change(s), as stance and label (0 = no advisory, 3 = advised against):", ""]
     out += shown
     if len(lines) > limit:
         out.append(f"... and {len(lines) - limit} more")
     held = withheld_lines(withheld, limit)
-    if held:
+    if held == [WITHHELD_UNAVAILABLE]:
+        out += ["", WITHHELD_UNAVAILABLE]
+    elif held:
         out += ["", "German entries withheld this week (no German entry is shown for these countries until "
                 "the sentence is reviewed in tools/advisory/de_reviewed.json):", *held]
     return "\n".join(out)
@@ -146,7 +168,7 @@ def body(old, new, limit=DEFAULT_LIMIT, withheld=None) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("command", choices=("changed", "body", "withheld", "withheld-codes"))
+    ap.add_argument("command", choices=("changed", "body", "withheld", "withheld-codes", "withheld-notice"))
     ap.add_argument("old")
     ap.add_argument("new", nargs="?")
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
@@ -154,6 +176,9 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     if args.command == "withheld-codes":
         print(",".join(withheld_codes(load_withheld(args.old))))
+        return 0
+    if args.command == "withheld-notice":
+        print("\n".join(withheld_notice(load_withheld(args.old))))
         return 0
     if args.command == "withheld":
         print("\n".join(withheld_lines(load_withheld(args.old), args.limit)))

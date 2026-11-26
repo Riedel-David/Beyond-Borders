@@ -405,6 +405,9 @@ DE_NOTE_MAX_CHARS = 1500
 # broken, not that one country hiccuped.
 DE_MAX_MISSING_SHARE = 0.10
 DE_MAX_QUARANTINE = 15  # countries whose German entry may be withheld in one build
+# A carried-forward German entry keeps its `updated` date (it is copied unchanged), so that date is how
+# long ago the country was last judged from a clean page. Past this many days a person must look.
+DE_MAX_CARRY_DAYS = 35
 
 DE_LABEL_NONE = "Keine formelle Reisewarnung"
 DE_LABEL_ADVISED_AGAINST = "Keine formelle Reisewarnung, aber Reiseabraten (siehe Hinweise)"
@@ -785,7 +788,6 @@ _WIRE_PLACE = re.compile(_TRIP + r"|Aufenthalt|Besuch|Gebiet|Region|Provinz|Gren
 REVIEWED = Path(__file__).resolve().parent / "de_reviewed.json"
 
 
-
 def sentence_sha(sent: str) -> str:
     return hashlib.sha256(sent.encode("utf-8")).hexdigest()
 
@@ -829,7 +831,7 @@ def de_label_key(label: str, code: str) -> str:
 
 
 def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None, quarantined: list = None,
-             previous_de: dict = None) -> dict:
+             previous_de: dict = None, today: datetime.date = None) -> dict:
     """details: node id -> detail payload. A country whose flags are all false and whose page is
     missing cannot be told from one with Reiseabraten, and neither can one whose page has an unexplained
     advice-like sentence: that country is quarantined, its DE entry left out (never 'no warning') or, if
@@ -939,16 +941,34 @@ def parse_de(feed, valid_codes: set, details: dict = None, reviewed: dict = None
             f"{DE_MAX_MISSING_SHARE:.0%} and {DE_MAX_QUARANTINE}); that looks like a changed feed or a broken "
             "extractor, not a stray sentence:\n  " + "\n  ".join(lines))
     # Last week's German stance of 1 or more is the more cautious value: keep it rather than drop it.
-    carried = {}
-    for code in {c for c, _ in held_entries}:
+    # The kept entry's `updated` is copied unchanged, so it dates the last clean judgement of the page:
+    # the carry may not outlive DE_MAX_CARRY_DAYS, or a stale warning would stand for ever.
+    today = today or datetime.datetime.now(datetime.timezone.utc).date()
+    carried, ages, stale = {}, {}, []
+    for code in sorted({c for c, _ in held_entries}):
         prev = (previous_de or {}).get(code)
         if isinstance(prev, dict) and isinstance(prev.get("stance"), int) and prev["stance"] >= 1:
+            try:
+                age = (today - datetime.date.fromisoformat(prev["updated"])).days
+            except (KeyError, TypeError, ValueError):
+                age = None
+            if age is None or age > DE_MAX_CARRY_DAYS:
+                hashes = ", ".join(sha_tag(r).strip() or "[no hash]" for r in records
+                                   if r["code"] == code and not r.get("siblingPublished"))
+                when = "has no readable updated date" if age is None else f"is {age} days old"
+                stale.append(f"{code} (kept German entry {when}; withheld sentence {hashes})")
+                continue
             out[code] = copy.deepcopy(prev)
-            carried[code] = prev["stance"]
+            carried[code], ages[code] = prev["stance"], age
+    if stale:
+        raise BuildError(f"carried-forward German entries older than {DE_MAX_CARRY_DAYS} days need a person to "
+                         "review the withheld sentence (add its hash to tools/advisory/de_reviewed.json or teach "
+                         "the extractor): " + "; ".join(stale))
     for r in records:
         if r["code"] in carried and not r.get("siblingPublished"):
-            r["carriedForward"], r["previousStance"] = True, carried[r["code"]]
-        tail = f" - kept last week's German stance {r['previousStance']}" if r.get("carriedForward") else ""
+            r["carriedForward"], r["previousStance"], r["ageDays"] = True, carried[r["code"]], ages[r["code"]]
+        tail = (f" - kept last week's German stance {r['previousStance']}, {r['ageDays']} days old"
+                if r.get("carriedForward") else "")
         if r.get("siblingPublished"):
             warn(f"DE {r['code']} entry withheld, sibling entry published: {sha_tag(r)}{r['sentence'][:200]}")
         else:
@@ -1110,7 +1130,8 @@ def read_json(path: Path):
         raise BuildError(f"cannot read {path}: {e}")
 
 
-def build(src: Path, generated_at: str, quarantined: list = None, previous_de: dict = None) -> dict:
+def build(src: Path, generated_at: str, quarantined: list = None, previous_de: dict = None,
+          today: datetime.date = None) -> dict:
     index, valid = load_places()
     check_targets(valid)
     for c in ("us.json", "de.json", "uk_index.json"):
@@ -1130,7 +1151,7 @@ def build(src: Path, generated_at: str, quarantined: list = None, previous_de: d
     per_source = {
         "US": parse_us(read_json(src / "us.json"), index),
         "UK": parse_uk(pages, index),
-        "DE": parse_de(de_feed, valid, details, load_reviewed(), quarantined, previous_de),
+        "DE": parse_de(de_feed, valid, details, load_reviewed(), quarantined, previous_de, today),
     }
     check_urls(per_source)
     for rows in per_source.values():
@@ -1144,7 +1165,18 @@ def build(src: Path, generated_at: str, quarantined: list = None, previous_de: d
     return assemble(per_source, fetched, generated_at)
 
 
-def main(argv=None) -> int:
+def write_quarantine(path, withheld: list) -> None:
+    """The sidecar for the data PR and the failure issue. Best effort: it is a convenience, so a path
+    that cannot be written is a warning, never the reason a build fails."""
+    if path is None:
+        return
+    try:
+        path.write_text(json.dumps(withheld, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except OSError as e:
+        warn(f"cannot write the withheld list {path}: {e}")
+
+
+def main(argv=None, today: datetime.date = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--source", type=Path, help="read cached feeds from DIR instead of downloading")
     ap.add_argument("--cache", type=Path, default=DEFAULT_CACHE, help="where downloads are saved")
@@ -1152,7 +1184,8 @@ def main(argv=None) -> int:
     ap.add_argument("--previous", type=Path, help="the file 'unchanged' is judged against (default: --out); "
                     "the weekly job passes the live published copy, which is newer than the bundled one")
     ap.add_argument("--quarantine-out", type=Path, help="write the withheld German sentences here as JSON "
-                    "(a list of {code, sha, sentence}) for the data PR; an empty list when none")
+                    "(a list of {code, sha, sentence}) for the data PR and the failure issue; an empty list "
+                    "when none. Written on success, and on a failure after some were withheld")
     args = ap.parse_args(argv)
     withheld = []
     prev = args.previous or args.out
@@ -1170,17 +1203,16 @@ def main(argv=None) -> int:
         if src is None:
             download(args.cache)
             src = args.cache
-        doc = build(src, now_iso(), withheld, previous_de)
+        doc = build(src, now_iso(), withheld, previous_de, today)
         if old is not None:
             warn_on_drift(doc, old)
             doc = keep_if_unchanged(doc, old)
     except BuildError as e:
-        if args.quarantine_out:  # so the withheld steps and the failure issue can show what tripped
-            args.quarantine_out.write_text(json.dumps(withheld, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         print(f"advisory build FAILED, nothing written: {e}", file=sys.stderr)
+        if withheld:  # after the message, so an unwritable path cannot hide the real error
+            write_quarantine(args.quarantine_out, withheld)
         return 1
-    if args.quarantine_out:
-        args.quarantine_out.write_text(json.dumps(withheld, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    write_quarantine(args.quarantine_out, withheld)
     args.out.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":"), sort_keys=False) + "\n", encoding="utf-8")
     counts = {s: sum(1 for c in doc["countries"].values() if s in c) for s in SOURCES}
     print(f"wrote {args.out}: {len(doc['countries'])} countries, per source {counts}")

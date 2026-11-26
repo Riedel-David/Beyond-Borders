@@ -94,7 +94,7 @@ class DataPrTest(unittest.TestCase):
         from contextlib import redirect_stdout
         with tempfile.TemporaryDirectory() as t:
             f = Path(t, "q.json")
-            for content, expect in (('[{"code":"BG","sha":"abc","sentence":"S"}]', "BG [abc] S\n"), ("[]", "\n"), ("junk", "\n")):
+            for content, expect in (('[{"code":"BG","sha":"abc","sentence":"S"}]', "BG [abc] S\n"), ("[]", "\n"), ("junk", d.WITHHELD_UNAVAILABLE + "\n")):
                 f.write_text(content)
                 buf = io.StringIO()
                 with redirect_stdout(buf):
@@ -123,8 +123,24 @@ class DataPrTest(unittest.TestCase):
             for path in (bad, Path(t, "missing.json")):
                 err = io.StringIO()
                 with redirect_stderr(err):
-                    self.assertEqual(d.load_withheld(path), [])
+                    self.assertEqual(d.load_withheld(path), d.WITHHELD_UNAVAILABLE)
                 self.assertIn("warning:", err.getvalue())
+
+    def test_an_unreadable_withheld_file_puts_a_visible_line_in_the_pr_body(self):
+        text = d.body(BASE, BASE, withheld=d.load_withheld("/nonexistent/q.json"))
+        self.assertIn("withheld list unavailable: check the job log", text)
+
+    def test_the_body_opens_with_a_line_per_country_that_has_no_german_advice(self):
+        held = [{"code": "BG", "sha": "a", "sentence": "s"}, {"code": "AR", "sha": "b", "sentence": "t"},
+                {"code": "BG", "sha": "c", "sentence": "u"},
+                {"code": "PS", "sha": "d", "sentence": "v", "siblingPublished": True},
+                {"code": "TN", "sha": "e", "sentence": "w", "carriedForward": True, "previousStance": 3, "ageDays": 7}]
+        text = d.body(BASE, BASE, withheld=held)
+        first = text.splitlines()[:2]
+        self.assertEqual(first, ["NO GERMAN ADVICE IS SHOWN for AR until the withheld sentence is reviewed.",
+                                 "NO GERMAN ADVICE IS SHOWN for BG until the withheld sentence is reviewed."])
+        self.assertNotIn("NO GERMAN ADVICE IS SHOWN for TN", text)
+        self.assertNotIn("NO GERMAN ADVICE IS SHOWN for PS", text)
 
     def test_the_command_line_prints_true_false_and_rejects_a_bad_new_file(self):
         with tempfile.TemporaryDirectory() as t:
@@ -141,6 +157,11 @@ class CarriedForwardLineTest(unittest.TestCase):
         lines = d.withheld_lines([{"code": "BG", "sha": "ab" * 32, "sentence": "S.", "carriedForward": True,
                                    "previousStance": 3}])
         self.assertEqual(lines, ["BG [abababababab] S. \u2014 kept last week's German stance 3"])
+
+    def test_a_carried_forward_entry_shows_its_age(self):
+        lines = d.withheld_lines([{"code": "BG", "sha": "ab", "sentence": "S.", "carriedForward": True,
+                                   "previousStance": 3, "ageDays": 21}])
+        self.assertEqual(lines, ["BG [ab] S. \u2014 kept last week's German stance 3, 21 days old"])
 
 
 if __name__ == "__main__":

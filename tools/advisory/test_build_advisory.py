@@ -2,6 +2,7 @@
 
 Run: python3 -m unittest tools/advisory/test_build_advisory.py
 """
+import datetime
 import json
 import sys
 import tempfile
@@ -510,7 +511,7 @@ class PreviousFileTest(unittest.TestCase):
             prev.write_text(json.dumps(doc))
             out = Path(d) / "out.json"
             real = b.build
-            b.build = lambda src, at, held=None, prev=None: dict(doc, generatedAt=at)
+            b.build = lambda src, at, held=None, prev=None, today=None: dict(doc, generatedAt=at)
             try:
                 self.assertEqual(b.main(["--source", d, "--out", str(out), "--previous", str(prev)]), 0)
             finally:
@@ -789,7 +790,7 @@ class DeQuarantineTest(unittest.TestCase):
         doc = {"dataFormat": 1, "generatedAt": "x", "sources": {}, "countries": {}}
         real = b.build
 
-        def fake(src, at, held=None, prev=None):
+        def fake(src, at, held=None, prev=None, today=None):
             held.append({"code": "FR", "sha": "ab" * 32, "sentence": "Meiden Sie das betroffene Gebiet."})
             return dict(doc, generatedAt=at)
         with tempfile.TemporaryDirectory() as t:
@@ -805,19 +806,44 @@ class DeQuarantineTest(unittest.TestCase):
             self.assertIn("withheld", err.getvalue())
             self.assertEqual(json.loads(side.read_text())[0]["code"], "FR")
 
+    TODAY = datetime.date(2026, 11, 26)
+
     def _tripping(self, previous_de):
         feed = {"response": {"lastModified": 1, "1": de("FR"), **{str(i): de("MX") for i in range(2, 30)}}}
         details = {str(i): page("<p>x</p>", str(i)) for i in range(1, 30)}
         details["1"] = page(self.TRIP)
         held = []
-        return b.parse_de(feed, VALID, details, None, held, previous_de), held
+        return b.parse_de(feed, VALID, details, None, held, previous_de, self.TODAY), held
 
     def test_last_weeks_stance_3_is_carried_forward_and_recorded(self):
-        prev = {"stance": 3, "label": "x"}
+        prev = {"stance": 3, "label": "x", "updated": "2026-11-12"}
         out, held = self._tripping({"FR": prev})
         self.assertEqual(out["FR"], prev)
         self.assertTrue(held[0]["carriedForward"])
         self.assertEqual(held[0]["previousStance"], 3)
+        self.assertEqual(held[0]["ageDays"], 14)
+
+    def test_a_carried_entry_older_than_35_days_fails_the_build_naming_country_and_hash(self):
+        sha = b.sentence_sha("Meiden Sie das betroffene Gebiet.")[:12]
+        ok = {"stance": 3, "label": "x", "updated": "2026-10-22"}  # exactly 35 days: still carried
+        out, held = self._tripping({"FR": ok})
+        self.assertEqual(held[0]["ageDays"], 35)
+        for updated in ("2026-10-21", None, "soon"):
+            prev = {"stance": 3, "label": "x"}
+            if updated:
+                prev["updated"] = updated
+            with self.assertRaises(b.BuildError) as cm:
+                self._tripping({"FR": prev})
+            self.assertIn("FR", str(cm.exception))
+            self.assertIn(sha, str(cm.exception))
+
+    def test_the_withheld_warning_line_carries_the_age(self):
+        import io
+        from contextlib import redirect_stderr
+        err = io.StringIO()
+        with redirect_stderr(err):
+            self._tripping({"FR": {"stance": 2, "label": "x", "updated": "2026-11-16"}})
+        self.assertIn("kept last week's German stance 2, 10 days old", err.getvalue())
 
     def test_last_weeks_stance_0_or_no_previous_is_dropped(self):
         for prev in ({"FR": {"stance": 0}}, {}, None):
@@ -830,7 +856,7 @@ class DeQuarantineTest(unittest.TestCase):
         from contextlib import redirect_stderr
         real = b.build
 
-        def fake(src, at, held=None, prev=None):
+        def fake(src, at, held=None, prev=None, today=None):
             held.append({"code": "FR", "sha": "ab" * 32, "sentence": "x"})
             raise b.BuildError("too many")
         with tempfile.TemporaryDirectory() as t:
@@ -843,6 +869,28 @@ class DeQuarantineTest(unittest.TestCase):
                 b.build = real
             self.assertEqual(rc, 1)
             self.assertEqual(json.loads(side.read_text())[0]["code"], "FR")
+
+    def test_an_unwritable_sidecar_path_never_hides_the_real_error(self):
+        import io
+        from contextlib import redirect_stderr
+        real = b.build
+
+        def fake(src, at, held=None, prev=None, today=None):
+            held.append({"code": "FR", "sha": "ab" * 32, "sentence": "x"})
+            raise b.BuildError("too many")
+        with tempfile.TemporaryDirectory() as t:
+            b.build = fake
+            try:
+                err = io.StringIO()
+                with redirect_stderr(err):
+                    rc = b.main(["--source", t, "--out", str(Path(t, "a.json")),
+                                 "--quarantine-out", str(Path(t, "no", "such", "q.json"))])
+            finally:
+                b.build = real
+            self.assertEqual(rc, 1)
+            text = err.getvalue()
+            self.assertIn("advisory build FAILED, nothing written: too many", text)
+            self.assertLess(text.index("FAILED"), text.index("cannot write the withheld list"))
 
 
 class TerritorySectionTest(unittest.TestCase):

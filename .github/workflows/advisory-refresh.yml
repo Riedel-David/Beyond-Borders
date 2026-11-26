@@ -99,31 +99,12 @@ jobs:
           python3 -I tools/advisory/build_advisory.py --quarantine-out "$RUNNER_TEMP/quarantine.json" ${ADVISORY_PREVIOUS:+--previous "$ADVISORY_PREVIOUS"} 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       # Warnings (the count of advised-against countries moved a lot, a situation flag appeared) do
-      # not fail the run, so they would be lost in the log: put them where a person looks.
-      - name: Show the build's warnings
+      # not fail the run, so they would be lost in the log, and a withheld German entry must not be
+      # visible only in a PR that may not open: put both in the summary and as an annotation. One
+      # script for both jobs, so the filter lives once. Never fails.
+      - name: Show the build's warnings and the withheld German entries
         if: always()
-        run: |
-          # The withheld German entries have their own step below; echoed page text loses its backticks.
-          W="$(grep '^warning:' "$RUNNER_TEMP/build.log" 2>/dev/null | grep -vE '^warning: (DE .* withheld|German entries withheld)' | tr -d '`' | cut -c1-400 || true)"
-          if [ -n "$W" ]; then
-            { echo "### Advisory build warnings"; echo '```'; echo "$W"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      # A withheld German entry needs no action, but it must not be visible only in a PR that may
-      # not open: say so in the summary and as an annotation. Never fails the job.
-      - name: Show the withheld German entries
-        if: always()
-        run: |
-          F="$RUNNER_TEMP/quarantine.json"
-          [ -f "$F" ] || exit 0
-          LINES="$(python3 -I tools/advisory/data_pr.py withheld "$F")"
-          if [ -n "$LINES" ]; then
-            { echo "### German advisory entries withheld this week"; echo '```'; echo "$LINES"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-            CODES="$(python3 -I tools/advisory/data_pr.py withheld-codes "$F")"
-            if [ -n "$CODES" ]; then
-              echo "::warning::German advisory entries withheld this week: $CODES"
-            fi
-          fi
+        run: bash tools/advisory/show_build_notes.sh "$RUNNER_TEMP/build.log" "$RUNNER_TEMP/quarantine.json"
 
       - name: Assemble the site with the live visa files
         run: |
@@ -146,6 +127,11 @@ jobs:
           # Backticks are removed so the text cannot close the issue's code fence, and it sits in a
           # fence so a feed sentence containing an @name pings nobody.
           TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran, or in a step that does not log)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
+          # The sentences the build withheld before it failed (the over-limit and too-old errors), when it wrote them.
+          if [ -f "$RUNNER_TEMP/quarantine.json" ]; then
+            Q="$(python3 -I tools/advisory/data_pr.py withheld "$RUNNER_TEMP/quarantine.json" | tr -d '`' | cut -c1-300 | head -n 20)"
+            [ -n "$Q" ] && TEXT="$(printf '%s\n\nWithheld German sentences:\n%s' "$TEXT" "$Q" | head -c 5000)"
+          fi
           { echo "### Advisory refresh failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           # The text comes from feed content, so the delimiter is random per run and regenerated
           # if the text happens to contain it: a fixed one could be forged to end the output early.
@@ -185,28 +171,9 @@ jobs:
           # identical. A failed build writes nothing and the job goes red with no PR.
           python3 -I tools/advisory/build_advisory.py --quarantine-out "$RUNNER_TEMP/quarantine.json" 2>&1 | tee "$RUNNER_TEMP/build.log"
 
-      - name: Show the build's warnings
+      - name: Show the build's warnings and the withheld German entries
         if: always()
-        run: |
-          # The withheld German entries have their own step below; echoed page text loses its backticks.
-          W="$(grep '^warning:' "$RUNNER_TEMP/build.log" 2>/dev/null | grep -vE '^warning: (DE .* withheld|German entries withheld)' | tr -d '`' | cut -c1-400 || true)"
-          if [ -n "$W" ]; then
-            { echo "### Advisory build warnings"; echo '```'; echo "$W"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Show the withheld German entries
-        if: always()
-        run: |
-          F="$RUNNER_TEMP/quarantine.json"
-          [ -f "$F" ] || exit 0
-          LINES="$(python3 -I tools/advisory/data_pr.py withheld "$F")"
-          if [ -n "$LINES" ]; then
-            { echo "### German advisory entries withheld this week"; echo '```'; echo "$LINES"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-            CODES="$(python3 -I tools/advisory/data_pr.py withheld-codes "$F")"
-            if [ -n "$CODES" ]; then
-              echo "::warning::German advisory entries withheld this week: $CODES"
-            fi
-          fi
+        run: bash tools/advisory/show_build_notes.sh "$RUNNER_TEMP/build.log" "$RUNNER_TEMP/quarantine.json"
 
       - name: Decide whether anything changed
         id: diff
@@ -275,6 +242,11 @@ jobs:
         if: failure()
         run: |
           TEXT="$( { [ -f "$RUNNER_TEMP/build.log" ] && tail -n 25 "$RUNNER_TEMP/build.log" || echo "(no build output: the failure was before the build ran, or in a step that does not log)"; } | tr -d '`' | cut -c1-600 | head -c 3000)"
+          # The sentences the build withheld before it failed (the over-limit and too-old errors), when it wrote them.
+          if [ -f "$RUNNER_TEMP/quarantine.json" ]; then
+            Q="$(python3 -I tools/advisory/data_pr.py withheld "$RUNNER_TEMP/quarantine.json" | tr -d '`' | cut -c1-300 | head -n 20)"
+            [ -n "$Q" ] && TEXT="$(printf '%s\n\nWithheld German sentences:\n%s' "$TEXT" "$Q" | head -c 5000)"
+          fi
           { echo "### Advisory data pull request failed"; echo '```'; echo "$TEXT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           # The text comes from feed content, so the delimiter is random per run and regenerated
           # if the text happens to contain it: a fixed one could be forged to end the output early.
