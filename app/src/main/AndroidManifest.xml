@@ -13,8 +13,9 @@
          loader and telemetry heritage, neither of which the map exercises: it uses only
          a bundled style and local GeoJSON sources, and no Java class in the SDK's
          classes.jar touches WifiManager. INTERNET is now kept, and is used only by the
-         visa-data updater (data/visa/update: https fetches of small JSON files from
-         GitHub Pages, no personal data); ACCESS_WIFI_STATE is still stripped.
+         visa-data updater (data/visa/update) and the travel-advisory updater
+         (data/advisory): https fetches of small JSON files from GitHub Pages, no
+         personal data; ACCESS_WIFI_STATE is still stripped.
          ACCESS_NETWORK_STATE stays:
          MapLibre's ConnectivityReceiver is wired into MapView.onStart/onStop
          unconditionally (not gated by remote-source usage) and its onReceive calls

@@ -235,6 +235,11 @@ licences* names the three sources, with their licences and links.
 ## Visa data updates
 
 Downloaded visa data and travel advisories are used straight away, without closing the app.
+
+The visa manifest is signed (ECDSA P-256) and the app verifies the signature before it trusts
+any file the manifest lists; the travel advisory file is not signed, only checked for format, date
+and plausibility.
+
 *Check now* in Settings refreshes both, on any connection, whether or not the automatic check
 is on, and says whether each was already current, was updated, or could not be fetched (a travel advisory file that is not published yet gets its own neutral message, "No travel advisory update has been published yet", rather than being called current, and the background check treats it as success; one written for a newer app version is reported as needing it, not as a failure); one
 failing never stops the other. The Visa data section also shows the date of the advisory data in
