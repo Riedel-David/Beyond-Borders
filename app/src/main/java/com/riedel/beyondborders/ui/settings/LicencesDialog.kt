@@ -44,7 +44,10 @@ private val SOURCE_ENTRIES = listOf(
     SourceEntry(
         UiText.Res(R.string.settings_licence_visa),
         UiText.Res(R.string.settings_licence_visa_body),
-        listOf("github.com/Riedel-David/Visa-requirements" to "https://github.com/Riedel-David/Visa-requirements"),
+        listOf(
+            "github.com/Riedel-David/Visa-requirements" to "https://github.com/Riedel-David/Visa-requirements",
+            "CC BY-SA 4.0" to "https://creativecommons.org/licenses/by-sa/4.0/",
+        ),
     ),
     SourceEntry(
         UiText.Res(R.string.settings_source_advisory),

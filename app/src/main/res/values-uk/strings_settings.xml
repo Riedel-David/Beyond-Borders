@@ -167,7 +167,7 @@
     <string name="settings_licence_font">Шрифт</string>
     <string name="settings_licence_flags">Прапори</string>
     <string name="settings_licence_visa">Візові дані</string>
-    <string name="settings_licence_visa_body">Набір даних про візові вимоги, створений на основі внесків авторів Вікіпедії (CC BY-SA 4.0), див. THIRD_PARTY_NOTICES.md у репозиторії</string>
+    <string name="settings_licence_visa_body">Набір даних про візові вимоги, адаптований на основі внесків авторів Вікіпедії та поширюється за ліцензією CC BY-SA 4.0, див. THIRD_PARTY_NOTICES.md у репозиторії</string>
     <string name="settings_sources_heading">Джерела даних</string>
     <string name="settings_licences_heading">Ліцензії відкритого коду</string>
     <string name="settings_source_advisory">Рекомендації для мандрівників</string>

@@ -159,7 +159,7 @@
     <string name="settings_licence_font">Font</string>
     <string name="settings_licence_flags">Flags</string>
     <string name="settings_licence_visa">Visa data</string>
-    <string name="settings_licence_visa_body">Visa-requirements dataset, derived from Wikipedia contributors (CC BY-SA 4.0), see THIRD_PARTY_NOTICES.md in the repository</string>
+    <string name="settings_licence_visa_body">Visa-requirements dataset, adapted from Wikipedia contributors and shared under CC BY-SA 4.0, see THIRD_PARTY_NOTICES.md in the repository</string>
     <string name="settings_sources_heading">Data sources</string>
     <string name="settings_licences_heading">Open-source licences</string>
     <string name="settings_source_advisory">Travel advisories</string>
