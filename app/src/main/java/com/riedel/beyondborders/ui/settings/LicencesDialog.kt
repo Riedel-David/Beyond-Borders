@@ -159,3 +159,14 @@ internal fun LicencesDialog(onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_licences_close)) } },
     )
 }
+
+// The policy lives in the repo next to the code it describes, so the link follows
+// the same REPO_URL as the rest of About.
+@Composable
+internal fun PrivacyPolicyLink() {
+    val uriHandler = LocalUriHandler.current
+    NavRow(
+        title = stringResource(R.string.settings_privacy_policy),
+        onClick = { runCatching { uriHandler.openUri("$REPO_URL/blob/main/docs/PRIVACY.md") } },
+    )
+}

@@ -1,4 +1,4 @@
-Beyond Borders is a travel tracker and visited countries map with a built-in passport visa checker. It works offline: no account, no ads, no tracking, no analytics. Its only network use is an optional weekly download of updated visa data and travel advisories from GitHub Pages over HTTPS, on unmetered networks (plus a manual Check now); you can switch it off in Settings, and no account or identifier is sent.
+Beyond Borders is a travel tracker and visited countries map with a built-in passport visa checker. It works offline: no account, no ads, no tracking, no analytics. Its only network use is an optional weekly download of updated visa data and travel advisories from GitHub Pages over HTTPS, on unmetered networks (plus a manual Check now); you can switch it off in Settings, and only passport file names are sent.
 
 It exists because of one annoyance. Most travel trackers select more than you ask for: tap Denmark and you get Greenland, tap France and you get French Guiana. In Beyond Borders those are separate places, and the app has no parent-child link between places at all, so it cannot cascade a selection by accident.
 
