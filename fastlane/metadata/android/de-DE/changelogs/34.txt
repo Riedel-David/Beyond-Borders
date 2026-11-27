@@ -1,0 +1,5 @@
+- Reisehinweise der USA, Großbritanniens und Deutschlands auf jeder Ortskarte, mit Sprung zu den markierten Ländern auf der Karte.
+- Reisehinweise aktualisieren sich jetzt wöchentlich, und alle Daten-Updates werden per Signatur geprüft.
+- Die Karte zentriert jetzt richtig (Norwegen, Chile) und zoomt passend zu breiten Bildschirmen.
+- Ein Ort aus der Visa-Liste wird auf der Karte zentriert.
+- Russisch und Ukrainisch: korrekte Formulierung für „gelebt“.

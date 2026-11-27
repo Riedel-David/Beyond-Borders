@@ -1,0 +1,5 @@
+- Travel advisories from the US, UK and Germany on every place card, with a jump to the flagged countries on the map.
+- Travel advisories now update themselves weekly, and every data update is signature-checked.
+- The map now centres correctly (Norway, Chile) and zooms to fit wide screens.
+- Picking a place in the visa list centres it on the map.
+- Russian and Ukrainian: correct "lived" wording.
