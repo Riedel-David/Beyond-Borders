@@ -383,7 +383,7 @@ fun PassportScreen(
                 selectedCode = selectedCode,
                 onQuery = viewModel::setQuery,
                 onFilter = viewModel::setVisaFilter,
-                onSelect = viewModel::select,
+                onSelect = viewModel::selectFromList,
                 combinedRequirementOf = viewModel::combinedRequirementOf,
                 partnerAvailable = partnerAvailable,
                 partnerMode = partnerMode,

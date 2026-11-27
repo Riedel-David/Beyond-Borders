@@ -16,7 +16,8 @@ class HomeCameraTest {
     @Test
     fun `the camera is centred on the middle of the box`() {
         val c = homeCamera(germany)
-        assertEquals(51.165, c.latitude, 0.001)
+        val mid = (latitudeToMercator(47.27) + latitudeToMercator(55.06)) / 2
+        assertEquals(mercatorToLatitude(mid), c.latitude, 1e-6)
         assertEquals(10.455, c.longitude, 0.001)
     }
 
@@ -55,5 +56,48 @@ class HomeCameraTest {
     fun `the same passport never centres twice but a changed one always does`() {
         assertEquals(false, shouldCentreOnHome("DE", "DE", null))
         assertEquals(true, shouldCentreOnHome("DE", "FR", MapCamera(45.0, 20.0, 5.0)))
+    }
+
+    private val norway = Bounds(4.6, 58.0, 31.1, 71.2)
+
+    @Test
+    fun `latitude survives a Mercator round trip`() {
+        for (lat in listOf(-80.0, -33.5, 0.0, 51.2, 71.2, 84.0)) {
+            assertEquals(lat, mercatorToLatitude(latitudeToMercator(lat)), 1e-9)
+        }
+    }
+
+    @Test
+    fun `a high-latitude country centres north of its mean latitude`() {
+        val mean = (norway.north + norway.south) / 2
+        assertTrue(homeCamera(norway).latitude > mean + 0.5)
+    }
+
+    @Test
+    fun `an equatorial box keeps its mean latitude`() {
+        assertEquals(0.0, homeCamera(Bounds(10.0, -5.0, 20.0, 5.0)).latitude, 1e-9)
+    }
+
+    @Test
+    fun `zoom grows with the map width`() {
+        val narrow = homeCamera(germany, 360.0).zoom
+        val wide = homeCamera(germany, 800.0).zoom
+        assertTrue(wide > narrow)
+    }
+
+    @Test
+    fun `zoom stays within 1 to 3 at any width`() {
+        for (w in listOf(1.0, 200.0, 400.0, 1200.0, 5000.0)) {
+            for (b in listOf(germany, norway, Bounds(19.6, 41.2, 180.0, 77.7))) {
+                assertTrue(homeCamera(b, w).zoom in 1.0..3.0)
+            }
+        }
+    }
+
+    @Test
+    fun `400 dp reproduces the zoom the fixed phone width gave`() {
+        val old = Math.log(100.0 * 360.0 / (512.0 * ((55.06 - 47.27) * 1.5))) / Math.log(2.0)
+        assertEquals(old, homeCamera(germany, 400.0).zoom, 1e-9)
+        assertEquals(old, homeCamera(germany).zoom, 1e-9)
     }
 }
