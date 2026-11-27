@@ -10,7 +10,7 @@
     <string name="passport_state_collapsed">Свёрнуто</string>
     <string name="passport_state_expanded">Развёрнуто</string>
     <string name="passport_chip_been">Посещено</string>
-    <string name="passport_chip_lived">Проживание</string>
+    <string name="passport_chip_lived">Жил(а)</string>
     <string name="passport_chip_want">Хочу</string>
     <string name="passport_mark_been">Отметить «%1$s» как посещённое</string>
     <string name="passport_mark_lived">Отметить «%1$s» как место проживания</string>
@@ -37,7 +37,7 @@
         <item quantity="many">%1$d из %2$d континентов</item>
         <item quantity="other">%1$d из %2$d континента</item>
     </plurals>
-    <string name="passport_card_lived">Проживание: %1$d</string>
+    <string name="passport_card_lived">Жил(а): %1$d</string>
     <string name="passport_card_wishlist">В списке желаний: %1$d</string>
 
     <!-- Stats screen -->
@@ -124,7 +124,7 @@
     <string name="badge_group_islands">Островные государства</string>
     <string name="badge_group_giants">Гиганты</string>
     <string name="badge_group_special">Особые</string>
-    <string name="badge_group_lived">Проживание</string>
+    <string name="badge_group_lived">Жил(а)</string>
     <string name="badge_group_wishlist">Список желаний</string>
 
     <!-- Badge titles and descriptions -->
@@ -227,10 +227,10 @@
     <string name="badge_lived_1_title">Жизнь за границей</string>
     <string name="badge_lived_3_title">Проживание в %1$d местах</string>
     <plurals name="badge_lived_desc">
-        <item quantity="one">Отметь %1$d место как «Проживание».</item>
-        <item quantity="few">Отметь %1$d места как «Проживание».</item>
-        <item quantity="many">Отметь %1$d мест как «Проживание».</item>
-        <item quantity="other">Отметь %1$d места как «Проживание».</item>
+        <item quantity="one">Отметь %1$d место как «Жил(а)».</item>
+        <item quantity="few">Отметь %1$d места как «Жил(а)».</item>
+        <item quantity="many">Отметь %1$d мест как «Жил(а)».</item>
+        <item quantity="other">Отметь %1$d места как «Жил(а)».</item>
     </plurals>
     <string name="badge_wishlist_10_title">Мечтатель</string>
     <string name="badge_wishlist_10_desc">Добавь %1$d мест в список желаний.</string>

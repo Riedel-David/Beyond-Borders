@@ -13,12 +13,12 @@
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Відвідано</string>
-    <string name="map_legend_short_lived">Прожито</string>
+    <string name="map_legend_short_lived">Жив(ла)</string>
     <string name="map_legend_short_wanted">Хочу</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Торкнись країни та обери «Відвідано», «Проживання» або «Хочу»</string>
+    <string name="map_legend_nudge">Торкнись країни та обери «Відвідано», «Жив(ла)» або «Хочу»</string>
     <string name="map_legend_visited">Відвідано: %1$d</string>
-    <string name="map_legend_lived">Проживання: %1$d</string>
+    <string name="map_legend_lived">Жив(ла): %1$d</string>
     <string name="map_legend_wishlisted">Бажані: %1$d</string>
     <string name="map_legend_no_data">Немає даних: %1$d</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
@@ -60,7 +60,7 @@
     <string name="map_no_data_either">Немає даних ні для одного з паспортів — перевір офіційні джерела перед поїздкою.</string>
     <string name="map_no_data_this">Немає даних для цього паспорта — перевір офіційні джерела перед поїздкою.</string>
     <string name="map_chip_been">Відвідано</string>
-    <string name="map_chip_lived">Проживання</string>
+    <string name="map_chip_lived">Жив(ла)</string>
     <string name="map_chip_want">Хочу</string>
 
     <!-- Share cards (drawn onto a canvas) -->
@@ -81,13 +81,13 @@
     </plurals>
     <string name="share_tile_places_been">ВІДВІДАНО</string>
     <string name="share_tile_continents">КОНТИНЕНТИ</string>
-    <string name="share_tile_lived">ПРОЖИВАННЯ</string>
+    <string name="share_tile_lived">ЖИВ(ЛА)</string>
     <string name="share_tile_wishlist">СПИСОК БАЖАНЬ</string>
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
     <string name="places_filter_all">Усі</string>
     <string name="places_filter_been">Відвідано</string>
-    <string name="places_filter_lived">Проживання</string>
+    <string name="places_filter_lived">Жив(ла)</string>
     <string name="places_filter_want">Хочу</string>
     <string name="places_filter_none">Ще ні</string>
     <string name="places_mode_travel">Мої подорожі</string>

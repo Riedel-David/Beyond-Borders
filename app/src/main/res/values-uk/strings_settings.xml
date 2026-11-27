@@ -58,7 +58,7 @@
     <string name="settings_colours_title">Кольори карти</string>
     <string name="settings_colours_detail">Якщо вибрати колір, що вже використовується, два кольори поміняються місцями.</string>
     <string name="settings_status_been">Відвідано</string>
-    <string name="settings_status_lived">Проживання</string>
+    <string name="settings_status_lived">Жив(ла)</string>
     <string name="settings_status_want">Хочу</string>
     <string name="settings_colours_reset">Скинути кольори до типових</string>
     <!-- Accessibility name of a colour swatch: status, then colour -->
