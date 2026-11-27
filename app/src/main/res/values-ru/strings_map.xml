@@ -13,12 +13,12 @@
 
     <!-- Map: travel legend -->
     <string name="map_legend_short_visited">Посещено</string>
-    <string name="map_legend_short_lived">Проживание</string>
+    <string name="map_legend_short_lived">Жил(а)</string>
     <string name="map_legend_short_wanted">Хочу</string>
     <string name="map_legend_chip">%1$s %2$d</string>
-    <string name="map_legend_nudge">Нажми на страну и выбери «Посещено», «Проживание» или «Хочу»</string>
+    <string name="map_legend_nudge">Нажми на страну и выбери «Посещено», «Жил(а)» или «Хочу»</string>
     <string name="map_legend_visited">Посещено: %1$d</string>
-    <string name="map_legend_lived">Проживание: %1$d</string>
+    <string name="map_legend_lived">Жил(а): %1$d</string>
     <string name="map_legend_wishlisted">В списке желаний: %1$d</string>
     <string name="map_legend_no_data">Нет данных: %1$d</string>
     <!-- A band label supplied by the visa data, with its count: "12 Visa-free". -->
@@ -60,7 +60,7 @@
     <string name="map_no_data_either">Нет данных ни для одного из паспортов — перед поездкой проверь официальные источники.</string>
     <string name="map_no_data_this">Нет данных для этого паспорта — перед поездкой проверь официальные источники.</string>
     <string name="map_chip_been">Посещено</string>
-    <string name="map_chip_lived">Проживание</string>
+    <string name="map_chip_lived">Жил(а)</string>
     <string name="map_chip_want">Хочу</string>
 
     <!-- Share cards (drawn onto a canvas) -->
@@ -81,13 +81,13 @@
     </plurals>
     <string name="share_tile_places_been">ПОСЕЩЕНО</string>
     <string name="share_tile_continents">КОНТИНЕНТЫ</string>
-    <string name="share_tile_lived">ПРОЖИВАНИЕ</string>
+    <string name="share_tile_lived">ЖИЛ(А)</string>
     <string name="share_tile_wishlist">ЖЕЛАНИЯ</string>
 
     <!-- Passport filters and stats lines built in PlacesViewModel -->
     <string name="places_filter_all">Все</string>
     <string name="places_filter_been">Посещено</string>
-    <string name="places_filter_lived">Проживание</string>
+    <string name="places_filter_lived">Жил(а)</string>
     <string name="places_filter_want">Хочу</string>
     <string name="places_filter_none">Пока нет</string>
     <string name="places_mode_travel">Посещённые места</string>

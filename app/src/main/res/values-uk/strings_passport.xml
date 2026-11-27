@@ -10,7 +10,7 @@
     <string name="passport_state_collapsed">Згорнуто</string>
     <string name="passport_state_expanded">Розгорнуто</string>
     <string name="passport_chip_been">Відвідано</string>
-    <string name="passport_chip_lived">Проживання</string>
+    <string name="passport_chip_lived">Жив(ла)</string>
     <string name="passport_chip_want">Хочу</string>
     <string name="passport_mark_been">Позначити «%1$s» як відвідане</string>
     <string name="passport_mark_lived">Позначити «%1$s» як місце проживання</string>
@@ -37,7 +37,7 @@
         <item quantity="many">%1$d із %2$d континентів</item>
         <item quantity="other">%1$d із %2$d континенту</item>
     </plurals>
-    <string name="passport_card_lived">Проживання: %1$d</string>
+    <string name="passport_card_lived">Жив(ла): %1$d</string>
     <string name="passport_card_wishlist">У списку бажань: %1$d</string>
 
     <!-- Stats screen -->
@@ -124,7 +124,7 @@
     <string name="badge_group_islands">Острівні держави</string>
     <string name="badge_group_giants">Гіганти</string>
     <string name="badge_group_special">Особливі</string>
-    <string name="badge_group_lived">Проживання</string>
+    <string name="badge_group_lived">Жив(ла)</string>
     <string name="badge_group_wishlist">Список бажань</string>
 
     <!-- Badge titles and descriptions -->
