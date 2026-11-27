@@ -112,7 +112,11 @@ jobs:
           set -o pipefail  # make_site.py's exit code must survive the tee
           # Same log as the build, so a refusal here (live visa files that do not verify) reaches
           # the summary and the issue too.
-          python3 -I tools/advisory/make_site.py app/src/main/assets/advisory.json https://riedel-david.github.io/Beyond-Borders/ "$RUNNER_TEMP/site" 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+          # manifest.sig is carried with manifest.json (the signature covers its exact bytes). Once
+          # signing is live (repository variable MANIFEST_SIGNING_LIVE=true, rollout step 2 in
+          # docs/DATA.md) a live manifest without it refuses the run instead of publishing a site
+          # every signature-requiring app would reject.
+          python3 -I tools/advisory/make_site.py ${{ vars.MANIFEST_SIGNING_LIVE == 'true' && '--require-signature' || '' }} app/src/main/assets/advisory.json https://riedel-david.github.io/Beyond-Borders/ "$RUNNER_TEMP/site" 2>&1 | tee -a "$RUNNER_TEMP/build.log"
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

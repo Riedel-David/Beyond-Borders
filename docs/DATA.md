@@ -97,6 +97,62 @@ published data can be newer than what is on main until the PR merges. That is in
 published, no app-side curation. `visa-freshness.yml` also checks the published `manifest.json` (reachable,
 versions 1, generated within 10 days, at least 150 passports).
 
+### Signing the manifest
+
+The manifest comes from the same host as the data (GitHub Pages of this repo), so its sha256 values only
+catch corruption. `manifest.sig` closes that: base64 of an ECDSA P-256 / SHA-256 signature (DER) over the exact
+bytes of `manifest.json`, made in `visa-refresh.yml` by `tools/visa/sign_manifest.sh` with the private key in the
+repository secret `MANIFEST_SIGNING_KEY`. The step fails (no skip) when the secret is missing or empty, and
+verifies its own output before upload. `advisory-refresh.yml` carries `manifest.sig` together with
+`manifest.json` when it redeploys the site; a manifest without its signature would make every new app reject
+updates. The app (`ManifestSignature.kt`, `ManifestPublicKeys.kt`) checks the signature before it parses the
+manifest. A missing or malformed signature counts as "manifest not recognised" and a signature that does
+not verify as a failed check that is retried later (GitHub Pages caches each file separately for about ten
+minutes, so right after a deploy a device can briefly get an old `manifest.json` with the new `manifest.sig`;
+the user sees "offline"): either way nothing is downloaded or deleted, and bundled and stored data stay.
+There is no unsigned fallback. An empty `MANIFEST_PUBLIC_KEYS` would reject everything.
+
+One-time key setup (on your machine; the private key never goes into the repo):
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out manifest-key.pem
+# public key as one base64 line (X.509 SubjectPublicKeyInfo, DER): this goes into ManifestPublicKeys.kt
+openssl pkey -in manifest-key.pem -pubout -outform DER | base64 | tr -d '\n'; echo
+gh secret set MANIFEST_SIGNING_KEY < manifest-key.pem
+# store manifest-key.pem in the password manager, then:
+rm -P manifest-key.pem   # or shred -u on Linux
+```
+
+The public key was generated on 2026-11-26 and is already in `ManifestPublicKeys.kt`; the private half is
+the secret. An app that holds the key rejects an unsigned manifest, so the order matters (old apps ignore
+`manifest.sig`, so steps 1 and 2 are safe for them):
+
+1. Merge the PR that adds signing and the key.
+2. Run "Visa data refresh" from the Actions tab, then "Advisory refresh". The first signs and publishes
+   `manifest.sig`; the second must carry it along (`advisory-refresh.yml` refuses a run whose live
+   manifest/signature pair does not verify).
+3. Confirm the live signature verifies, by hand (`<public key base64>` is the string in `ManifestPublicKeys.kt`):
+
+   ```bash
+   curl -fsS https://riedel-david.github.io/Beyond-Borders/manifest.json -o m.json
+   curl -fsS https://riedel-david.github.io/Beyond-Borders/manifest.sig | base64 -d > s.der
+   echo '<public key base64>' | base64 -d | openssl pkey -pubin -inform DER -out pub.pem
+   openssl dgst -sha256 -verify pub.pem -signature s.der m.json   # must print: Verified OK
+   ```
+
+4. Set the repository variable `MANIFEST_SIGNING_LIVE=true` (Settings > Secrets and variables > Actions >
+   Variables), so `advisory-refresh.yml` refuses to carry a manifest that has lost its signature.
+5. Only then cut any app release.
+
+**Do not build a release from `main` until the live signature has verified (step 3).** The app holds the key,
+so it rejects every unsigned or mismatched manifest and would never update visa data. From the moment the key
+is listed, `visa-freshness.yml` also verifies the live signature against it.
+
+Rotation: ship the new public key in an app release next to the old one, switch the secret once enough
+installs have it, and drop the old key in a later release. `sign_manifest.sh` refuses a signing key that is not
+in `MANIFEST_PUBLIC_KEYS`, so a wrong secret cannot publish an update that every
+app rejects.
+
 ### Is a newer snapshot out?
 
 `.github/workflows/visa-freshness.yml` runs every Monday, and on demand from the Actions

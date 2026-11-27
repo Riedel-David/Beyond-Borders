@@ -69,7 +69,7 @@ data class UpdateResult(
 
 /**
  * One whole update run: manifest, plan, deletions, downloads. Never throws for network
- * trouble. Deletion happens only after the manifest was fetched AND recognised, so a
+ * trouble. Deletion happens only after the manifest was fetched, signed by a known key AND recognised, so a
  * failed or unrecognised fetch can never remove a stored copy ("not yet" is not "dropped").
  */
 internal fun runUpdate(
@@ -78,10 +78,20 @@ internal fun runUpdate(
     wanted: Set<String>,
     bundledAsOf: (String) -> String?,
     today: () -> String = ::todayUtc,
+    publicKeys: List<String> = MANIFEST_PUBLIC_KEYS,
 ): UpdateResult {
     val now = today()
     val manifest = try {
-        parseManifest(fetcher.fetch(MANIFEST_FILE, MAX_MANIFEST_BYTES).toString(Charsets.UTF_8), now)
+        val raw = fetcher.fetch(MANIFEST_FILE, MAX_MANIFEST_BYTES)
+        // The signature is checked before the manifest is even parsed. There is no unsigned
+        // fallback (that would be a downgrade hole). A verification failure is reported as an
+        // I/O failure, not a final rejection: GitHub Pages caches each file separately (about
+        // 10 minutes), so right after a deploy a device can get the old manifest.json with the
+        // new manifest.sig, which fails here although nothing is wrong. Retrying later heals
+        // that, and the outcome reads as offline. Either way nothing is downloaded or deleted.
+        val signature = fetcher.fetch(SIGNATURE_FILE, MAX_SIGNATURE_BYTES).toString(Charsets.UTF_8)
+        if (!verifyManifestSignature(raw, signature, publicKeys)) return UpdateResult(ioFailure = true)
+        parseManifest(raw.toString(Charsets.UTF_8), now)
     } catch (e: IOException) {
         return UpdateResult(ioFailure = true)
     } catch (e: VisaFetchRejected) {
