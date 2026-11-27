@@ -221,6 +221,9 @@ class PlacesViewModel(
      */
     var mapCamera: MapCamera? = null
 
+    /** A place the Passport tab wants centred the next time the map shows it; the map consumes it. */
+    var mapFocusRequest: String? = null
+
     /**
      * The passport the camera was last centred for, or null if it never was this process.
      * Like [mapCamera] a plain var: it only gates a one-shot, so tab switches (which rebuild
@@ -670,6 +673,12 @@ class PlacesViewModel(
     fun setGrouping(value: Grouping) { _grouping.value = value }
     fun setStatusFilter(value: StatusFilter) { _statusFilter.value = value }
     fun select(code: String?) { _selectedCode.value = code }
+
+    /** Select from a list outside the map: also ask the map to centre on it. */
+    fun selectFromList(code: String?) {
+        mapFocusRequest = code
+        select(code)
+    }
     fun setMode(value: PassportMode) { _mode.value = value }
 
     /**
@@ -1677,6 +1686,10 @@ internal const val HOME_REFERENCE_WIDTH_DP = 400.0
 private const val MERCATOR_MAX_LAT = 85.0511287798
 
 /** Web-Mercator y of a latitude, in radians; the latitude is clamped to the projection's limit. */
+/** The map centres only on a selection somebody asked it to show, never on one it already has in view. */
+internal fun shouldFlyToSelection(request: String?, selected: String?, mapReady: Boolean, regionActive: Boolean): Boolean =
+    mapReady && !regionActive && selected != null && request == selected
+
 internal fun latitudeToMercator(lat: Double): Double =
     ln(tan(PI / 4 + Math.toRadians(lat.coerceIn(-MERCATOR_MAX_LAT, MERCATOR_MAX_LAT)) / 2))
 

@@ -141,6 +141,7 @@ import com.riedel.beyondborders.ui.places.MapCamera
 import com.riedel.beyondborders.ui.places.PlacesViewModel
 import com.riedel.beyondborders.ui.places.homeCamera
 import com.riedel.beyondborders.ui.places.shouldCentreOnHome
+import com.riedel.beyondborders.ui.places.shouldFlyToSelection
 import com.riedel.beyondborders.ui.places.RegionBand
 import com.riedel.beyondborders.ui.places.RegionMode
 import com.riedel.beyondborders.ui.places.RegionStyleKey
@@ -324,6 +325,8 @@ fun MapScreen(
     // from a closure captured several recompositions ago, and .value is always
     // the live answer regardless of which composition captured this closure.
     fun tap(code: String?) {
+        // A pick on the map is already in view; drop any pending request from the list.
+        viewModel.mapFocusRequest = null
         // Any map tap clears the overflow panel so the map stays unobstructed. Plain
         // assignments, never a read of controlsExpanded: this runs from a MapLibre
         // callback whose closure may be several recompositions old.
@@ -416,6 +419,18 @@ fun MapScreen(
     // selected, invisible. Cleared whenever both are true.
     LaunchedEffect(selectedCode, regionActive) {
         if (regionActive && selectedCode != null) viewModel.select(null)
+    }
+
+    // A visa row on the Passport tab asks for its place to be centred; the request lives in the
+    // ViewModel because the map is destroyed on a tab switch. Consumed once, so coming back to a
+    // selection made on the map itself leaves the restored camera alone.
+    LaunchedEffect(selectedCode, controller.mapReady, regionActive) {
+        if (regionActive) viewModel.mapFocusRequest = null
+        if (!shouldFlyToSelection(viewModel.mapFocusRequest, selectedCode, controller.mapReady, regionActive)) {
+            return@LaunchedEffect
+        }
+        viewModel.mapFocusRequest = null
+        selectedCode?.let(viewModel::placeOf)?.let { controller.flyTo(it.bounds) }
     }
 
     BoxWithConstraints(modifier.fillMaxSize()) {

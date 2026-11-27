@@ -16,7 +16,8 @@ class HomeCameraTest {
     @Test
     fun `the camera is centred on the middle of the box`() {
         val c = homeCamera(germany)
-        assertEquals(51.3, c.latitude, 0.1)
+        val mid = (latitudeToMercator(47.27) + latitudeToMercator(55.06)) / 2
+        assertEquals(mercatorToLatitude(mid), c.latitude, 1e-6)
         assertEquals(10.455, c.longitude, 0.001)
     }
 
